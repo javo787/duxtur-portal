@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  role      String   @default("user")
+  doctorProfile DoctorProfile? 
+  comments  Comment[]
+}
+
+model DoctorProfile {
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  firstName   String
+  lastName    String
+  speciality  String
+  hospital    String?
+  bio         String?
+  photoUrl    String?
+  isVerified  Boolean @default(false)
+  articles    Article[]
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  imageUrl    String? 
+  summary     String?
+  symptoms    String?
+  causes      String?
+  treatment   String?
+  authorId    String
+  author      DoctorProfile @relation(fields: [authorId], references: [id])
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  comments    Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id])
+}
