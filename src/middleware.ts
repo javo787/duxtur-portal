@@ -1,51 +1,44 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { i18n } from './i18n-config';
-import { match as matchLocale } from '@formatjs/intl-localematcher';
-import Negotiator from 'negotiator';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config'; // Исправлено: убрали 'src/'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { i18n } from "./i18n-config"; // Исправлено: убрали 'src/'
 
-function getLocale(request: NextRequest): string | undefined {
-  const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
-  if (localeCookie && i18n.locales.includes(localeCookie as any)) {
-    return localeCookie;
+// 1. Инициализируем NextAuth
+const { auth } = NextAuth(authConfig);
+
+export async function middleware(request: NextRequest) {
+  // 2. Логика i18n (Языки)
+  const pathname = request.nextUrl.pathname;
+  
+  // Игнорируем системные файлы
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.') // файлы (картинки, фавикон)
+  ) {
+    return NextResponse.next();
   }
 
-  const negotiatorHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
-
-  const languages = new Negotiator({ headers: negotiatorHeaders }).languages();
-  // @ts-ignore
-  return matchLocale(languages, i18n.locales, i18n.defaultLocale);
-}
-
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-
-  // Если путь уже содержит локаль (например /ru/...), ничего не делаем
-  const pathnameHasLocale = i18n.locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  // Проверяем, есть ли язык в URL
+  const pathnameIsMissingLocale = i18n.locales.every(
+    (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
-  if (pathnameHasLocale) return;
+  // Если языка нет -> редирект на /ru/...
+  if (pathnameIsMissingLocale) {
+    const locale = i18n.defaultLocale;
+    return NextResponse.redirect(
+      new URL(`/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`, request.url)
+    );
+  }
 
-  // Если локали нет, определяем её и редиректим
-  const locale = getLocale(request);
-  
-  // Создаем новый URL
-  const newUrl = new URL(
-    `/${locale}${pathname.startsWith('/') ? '' : '/'}${pathname}`,
-    request.url
-  );
-
-  // Важно: сохраняем параметры запроса (например ?search=...)
-  newUrl.search = request.nextUrl.search;
-  
-  return NextResponse.redirect(newUrl);
+  // 3. Вызываем NextAuth (Проверка пароля)
+  return auth(request);
 }
 
 export const config = {
-  // Исправленный matcher: исключаем все системные файлы, картинки и API
-  matcher: [
-    '/((?!api|_next/static|_next/image|assets|favicon.ico|sw.js|site.webmanifest).*)',
-  ],
+  // На каких страницах запускать middleware
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

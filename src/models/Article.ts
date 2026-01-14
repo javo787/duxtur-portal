@@ -1,39 +1,50 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose from 'mongoose';
 
-// Повторяющаяся схема для мультиязычных полей
-const LocalizedString = {
-  ru: String,
-  uz: String,
-  tg: String,
-  kk: String,
-  ky: String
-};
+// 1. Очищаем кеш модели, если она уже существует (чтобы Next.js увидел новые поля)
+// Это критически важно при разработке!
+if (mongoose.models.Article) {
+  delete mongoose.models.Article;
+}
 
-const ArticleSchema = new Schema({
-  slug: { type: String, unique: true, required: true }, // /blog/migraine
-  image: { type: String }, // Cloudinary URL
+const ArticleSchema = new mongoose.Schema({
+  slug: { 
+    type: String, 
+    required: [true, 'Slug is required'], 
+    unique: true, 
+    index: true 
+  },
+  image: { type: String, required: false },
+  authorId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Doctor',
+    required: true
+  },
+  isVerified: { type: Boolean, default: false },
   
-  authorId: { type: Schema.Types.ObjectId, ref: 'Doctor', required: true },
-  isVerified: { type: Boolean, default: false }, // Галочка "Проверено"
+  // --- МУЛЬТИЯЗЫЧНЫЕ ПОЛЯ (Проверяем наличие всех 5 полей!) ---
+  title: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
+  overview: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
+  symptoms: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
+  causes: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
+  // Вот эти поля терялись:
+  diagnosis_treatment: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
+  prevention: {
+    ru: String, uz: String, tg: String, ky: String, kk: String
+  },
   
-  // === СТРУКТУРНЫЕ ПОЛЯ (MAYO CLINIC) ===
-  title: LocalizedString,
-  overview: LocalizedString,   // Краткое описание
-  symptoms: LocalizedString,   // Симптомы
-  causes: LocalizedString,     // Патогенез/Причины
-  riskFactors: LocalizedString, // Факторы риска
-  complications: LocalizedString, // Осложнения
-  diagnosis: LocalizedString,  // Диагностика
-  treatment: LocalizedString,  // Лечение
-  
-  // === КОНТРОЛЬ КАЧЕСТВА ===
-  // Массив ссылок. Если пустой - AI должен ругаться.
-  references: [{ type: String }], 
-  
+  references: [String],
   views: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
-const Article = models.Article || model('Article', ArticleSchema);
+const Article = mongoose.model('Article', ArticleSchema);
 export default Article;

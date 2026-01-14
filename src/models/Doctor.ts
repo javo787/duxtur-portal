@@ -1,33 +1,42 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose from 'mongoose';
 
-const DoctorSchema = new Schema({
-  name: { type: String, required: true },
-  slug: { type: String, unique: true, required: true }, // Для URL: /doctor/rustam-azimov
-  specialty: { 
-    ru: String, 
-    uz: String, 
-    tg: String, 
-    kk: String, 
-    ky: String 
+const DoctorSchema = new mongoose.Schema({
+  // Связь с аккаунтом (User)
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
   },
-  image: { type: String }, // Ссылка на Cloudinary
-  experience: { type: Number, required: true },
-  price: { type: Number, required: true },
-  rating: { type: Number, default: 5.0 },
-  reviewsCount: { type: Number, default: 0 },
-  languages: [String], // ["ru", "uz", "en"]
   
-  // Описание врача на всех языках
-  about: {
+  name: { type: String, required: true },
+  slug: { type: String, unique: true },
+  
+  // Контакты для проверки админом
+  phone: { type: String, required: true },
+  
+  // Профессиональные данные
+  specialty: {
     ru: String,
     uz: String,
-    tg: String,
     kk: String,
-    ky: String
+    ky: String,
+    tg: String
   },
+  experience: { type: Number, default: 0 },
   
-  createdAt: { type: Date, default: Date.now }
-});
+  // Ссылки на фото
+  image: { type: String }, // Аватар
+  documentImage: { type: String, required: true }, // ФОТО ДИПЛОМА
+  
+  // Статус модерации
+  status: { 
+    type: String, 
+    enum: ['pending', 'approved', 'rejected'], 
+    default: 'pending' // По умолчанию - на проверке
+  },
 
-const Doctor = models.Doctor || model('Doctor', DoctorSchema);
-export default Doctor;
+  languages: [String],
+  price: { type: Number, default: 0 }
+}, { timestamps: true });
+
+export default mongoose.models.Doctor || mongoose.model('Doctor', DoctorSchema);
