@@ -1,15 +1,15 @@
 import NextAuth from 'next-auth';
-import { authConfig } from '@/auth.config'; // Используем @ (корень src)
+import { authConfig } from '@/auth.config';
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { i18n } from "@/i18n-config";       // Используем @ (корень src)
+import { i18n } from "@/i18n-config";
 
 const { auth } = NextAuth(authConfig);
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Игнорируем системные файлы
+  // 1. Игнорируем системные файлы
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -19,11 +19,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Проверяем язык
+  // 2. Проверяем язык
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
+  // Если языка нет -> редирект
   if (pathnameIsMissingLocale) {
     const locale = i18n.defaultLocale;
     return NextResponse.redirect(
@@ -31,7 +32,9 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  return auth(request);
+  // 3. Вызываем NextAuth
+  // ИСПРАВЛЕНИЕ: Добавили (auth as any), чтобы TypeScript не ругался на типы
+  return (auth as any)(request);
 }
 
 export const config = {

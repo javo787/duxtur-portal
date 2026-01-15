@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import type { Metadata } from 'next';
 
-export async function generateMetadata({ params }: { params: { slug: string; lang: string } }): Promise<Metadata> {
+// 1. Мета-теги
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
   await dbConnect();
   const { slug, lang } = await params;
   const article = await Article.findOne({ slug });
@@ -17,10 +18,13 @@ export async function generateMetadata({ params }: { params: { slug: string; lan
   };
 }
 
-export default async function BlogPage({ params }: { params: { slug: string; lang: string } }) {
+export default async function BlogPage({ params }: { params: Promise<{ slug: string; lang: string }> }) {
   await dbConnect();
   const { slug, lang } = await params;
-  const article = await Article.findOne({ slug }).populate('authorId');
+
+  // ИСПРАВЛЕНИЕ: Добавили ': any', чтобы TypeScript не ругался на authorId.name
+  // .lean() ускоряет работу, превращая результат в простой JSON
+  const article: any = await Article.findOne({ slug }).populate('authorId').lean();
 
   if (!article) notFound();
 
@@ -31,20 +35,19 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
   
   const date = new Date(article.createdAt).toLocaleDateString(lang, { day: 'numeric', month: 'long', year: 'numeric' });
 
-  // 1. Создаем список для Меню Навигации (только те секции, где есть текст)
+  // Создаем меню навигации
   const sections = [
     { id: 'symptoms', title: 'Симптомы', content: t(article.symptoms) },
     { id: 'causes', title: 'Причины', content: t(article.causes) },
     { id: 'diagnosis', title: 'Диагностика и лечение', content: t(article.diagnosis_treatment) },
     { id: 'prevention', title: 'Профилактика', content: t(article.prevention) },
-  ].filter(s => s.content.length > 0); // Убираем пустые
+  ].filter(s => s.content && s.content.length > 0);
 
   return (
     <article className="min-h-screen bg-white font-sans text-gray-900 pb-20">
       
-      {/* --- HEADER (Как в Healthline: заголовок, потом фото) --- */}
+      {/* HEADER */}
       <div className="container mx-auto max-w-4xl px-6 pt-12 pb-6">
-         {/* Хлебные крошки */}
          <nav className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-6 flex items-center gap-2">
            <span>Главная</span> <span>/</span> <span>Болезни</span> <span>/</span> <span className="text-blue-600">{t(article.title)}</span>
          </nav>
@@ -56,6 +59,7 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
          <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-8 border-b border-gray-100 pb-8">
             <div className="flex items-center gap-2">
                <span className="font-bold text-gray-900">Автор:</span>
+               {/* Здесь была ошибка. Теперь TypeScript не ругается благодаря 'any' */}
                <span className="underline decoration-blue-200 decoration-2">{article.authorId?.name || "Dr. Expert"}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -67,11 +71,11 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
          </div>
       </div>
 
-      {/* --- HERO IMAGE --- */}
+      {/* HERO IMAGE */}
       <div className="container mx-auto max-w-4xl px-6 mb-12">
         <div className="relative w-full h-[400px] rounded-3xl overflow-hidden shadow-sm">
            <img 
-             src={article.image} 
+             src={article.image || "https://source.unsplash.com/random/800x600?medicine"} 
              alt={t(article.title)} 
              className="w-full h-full object-cover"
            />
@@ -80,15 +84,13 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
 
       <div className="container mx-auto max-w-7xl px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
         
-        {/* --- ЛЕВАЯ КОЛОНКА (Основной текст) --- */}
+        {/* ЛЕВАЯ КОЛОНКА */}
         <div className="lg:col-span-8">
-          
-          {/* Введение */}
           <div className="text-xl leading-8 text-gray-800 mb-10 font-medium">
              <ReactMarkdown>{t(article.overview)}</ReactMarkdown>
           </div>
 
-          {/* --- МЕНЮ НАВИГАЦИИ (Table of Contents) --- */}
+          {/* Содержание */}
           {sections.length > 0 && (
             <div className="bg-gray-50 rounded-2xl p-6 mb-12 border border-gray-100">
               <h3 className="font-bold text-lg mb-4 text-gray-900">Содержание</h3>
@@ -105,7 +107,6 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
             </div>
           )}
 
-          {/* Секции контента */}
           <div className="space-y-16">
             {sections.map((sec) => (
               <section key={sec.id} id={sec.id} className="scroll-mt-24">
@@ -132,41 +133,31 @@ export default async function BlogPage({ params }: { params: { slug: string; lan
             ))}
           </div>
           
-          {/* Источники (Fake for design) */}
-          <div className="mt-16 pt-8 border-t border-gray-200">
-             <button className="text-sm font-bold text-gray-500 hover:text-gray-900 flex items-center">
-               <span className="mr-2">+</span> Показать источники
-             </button>
-          </div>
+          {/* Источники */}
+          {article.references && article.references.length > 0 && (
+            <div className="mt-16 pt-8 border-t border-gray-200">
+               <h4 className="font-bold text-gray-900 mb-4">Источники:</h4>
+               <ul className="space-y-2 text-sm text-gray-500">
+                 {article.references.map((ref: string, i: number) => (
+                   <li key={i} className="flex gap-2">
+                     <span>{i+1}.</span>
+                     <a href="#" className="hover:text-blue-600 hover:underline">{ref}</a>
+                   </li>
+                 ))}
+               </ul>
+            </div>
+          )}
         </div>
 
-        {/* --- ПРАВАЯ КОЛОНКА (Сайдбар) --- */}
+        {/* ПРАВАЯ КОЛОНКА */}
         <div className="lg:col-span-4 space-y-8">
-          {/* Рекламный блок / Запись (Sticky) */}
           <div className="sticky top-8">
              <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100 text-center">
                 <h3 className="font-bold text-xl text-blue-900 mb-2">Нужна помощь врача?</h3>
-                <p className="text-blue-700/80 mb-6">Найдите лучших специалистов в вашем городе за 2 минуты.</p>
+                <p className="text-blue-700/80 mb-6">Запишитесь на прием к автору этой статьи.</p>
                 <button className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition transform hover:-translate-y-1">
                   Найти врача
                 </button>
-             </div>
-
-             <div className="mt-8">
-               <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider">Популярное</h4>
-               <div className="space-y-4">
-                 {[1,2,3].map((i) => (
-                   <div key={i} className="flex gap-4 group cursor-pointer">
-                      <div className="w-20 h-20 rounded-xl bg-gray-200 shrink-0 overflow-hidden">
-                        <img src={`https://source.unsplash.com/random/100x100?sig=${i}`} className="w-full h-full object-cover group-hover:scale-110 transition"/>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-blue-600 block mb-1">ЗДОРОВЬЕ</span>
-                        <h5 className="font-bold text-gray-800 leading-snug group-hover:text-blue-600 transition">Топ 5 продуктов для иммунитета</h5>
-                      </div>
-                   </div>
-                 ))}
-               </div>
              </div>
           </div>
         </div>
