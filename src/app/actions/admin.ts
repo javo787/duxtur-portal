@@ -8,9 +8,9 @@ export async function updateDoctorStatus(doctorId: string, status: 'approved' | 
   await dbConnect();
   await Doctor.findByIdAndUpdate(doctorId, { status });
   
-  // ВАЖНО: Обновляем кэш для ВСЕХ языковых версий админки
-  // Так как мы не знаем, на каком языке сидит админ, используем layout или путь
+  // Обновляем кэш для всего сайта
   revalidatePath('/', 'layout'); 
   
-  return { success: true };
+  // ВАЖНО: Мы убрали "return { success: true }".
+  // Теперь функция возвращает Promise<void>, и TypeScript счастлив.
 }
