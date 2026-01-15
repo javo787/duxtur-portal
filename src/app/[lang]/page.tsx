@@ -42,8 +42,6 @@ export default async function Home(props: Props) {
     ]
   };
 
-  // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-  // Мы явно говорим TypeScript, что это массив любых объектов (any[])
   let articles: any[] = [];
   
   try {
@@ -174,7 +172,8 @@ export default async function Home(props: Props) {
           ) : (
              <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
                 <div className="text-4xl mb-4">📝</div>
-                <p className="text-lg font-medium">{dict.no_articles || "Пока статей нет"}</p>
+                {/* ИСПРАВЛЕНИЕ ЗДЕСЬ: (dict as any) */}
+                <p className="text-lg font-medium">{(dict as any).no_articles || "Пока статей нет"}</p>
                 <Link href={`/${lang}/admin/write`} className="mt-4 text-blue-600 font-bold hover:underline">
                    Написать первую статью →
                 </Link>
