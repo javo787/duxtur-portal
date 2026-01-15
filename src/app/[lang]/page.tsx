@@ -10,7 +10,7 @@ type Props = {
   params: Promise<{ lang: Locale }>;
 };
 
-// 1. МЕТА-ТЕГОВ (SEO)
+// 1. МЕТА-ТЕГИ
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const dict = await getDictionary(lang);
@@ -33,24 +33,20 @@ export default async function Home(props: Props) {
   const lang = params.lang;
   const dict = await getDictionary(lang);
 
-  // --- ПОДКЛЮЧАЕМ БАЗУ ДАННЫХ ---
   await dbConnect();
   
-  // УЛУЧШЕНИЕ 1: Правильный запрос
-  // Ищем статьи, у которых ЕСТЬ заголовок на текущем языке ИЛИ на русском (fallback)
-  // Это гарантирует, что мы всегда получим 6 статей для показа
   const query = {
     $or: [
-      { [`title.${lang}`]: { $exists: true, $ne: "" } }, // Есть перевод на текущий язык
-      { [`title.ru`]: { $exists: true, $ne: "" } }      // Или есть русский оригинал
+      { [`title.${lang}`]: { $exists: true, $ne: "" } }, 
+      { [`title.ru`]: { $exists: true, $ne: "" } }
     ]
   };
 
-  let articles = [];
+  // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+  // Мы явно говорим TypeScript, что это массив любых объектов (any[])
+  let articles: any[] = [];
   
   try {
-    // УЛУЧШЕНИЕ 2: .lean()
-    // .lean() превращает тяжелые объекты Mongoose в легкий JSON. Это ускоряет сайт.
     articles = await Article.find(query)
       .sort({ createdAt: -1 })
       .limit(6)
@@ -58,16 +54,13 @@ export default async function Home(props: Props) {
       .lean(); 
   } catch (error) {
     console.error("Ошибка загрузки статей:", error);
-    // Сайт не упадет, просто блок статей будет пустым
   }
 
-  // Хелпер: Безопасное получение перевода
   const getLocalized = (field: any) => {
     if (!field) return "";
     return field[lang] || field['ru'] || "";
   };
 
-  // 2. SCHEMA.ORG (SEO для Google)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MedicalOrganization',
@@ -109,7 +102,6 @@ export default async function Home(props: Props) {
 
       {/* HERO SECTION */}
       <section className="bg-gradient-to-br from-blue-50 via-white to-blue-50 py-16 md:py-24 relative overflow-hidden">
-        {/* Декоративный фон */}
         <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/medical-icons.png')]"></div>
         
         <div className="container mx-auto px-4 text-center max-w-4xl relative z-10">
@@ -124,7 +116,6 @@ export default async function Home(props: Props) {
             {dict.hero_subtitle}
           </p>
 
-          {/* УЛУЧШЕНИЕ 3: Рабочий поиск */}
           <form action={`/${lang}/search`} className="bg-white p-2 rounded-2xl shadow-xl flex flex-col md:flex-row gap-2 border border-gray-100 max-w-2xl mx-auto transition hover:shadow-2xl">
             <div className="flex-1 relative">
               <svg className="w-5 h-5 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -208,7 +199,6 @@ export default async function Home(props: Props) {
   );
 }
 
-// UI COMPONENTS
 function BlogCard({ image, category, title, doctor, verifiedLabel, btnText }: any) {
   return (
     <div className="group flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-blue-100/50 transition-all duration-300 h-full transform hover:-translate-y-1">
