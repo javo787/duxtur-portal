@@ -25,6 +25,17 @@ const ArticleSchema = new mongoose.Schema({
   causes:             { ru: String, uz: String, tg: String, ky: String, kk: String },
   diagnosis_treatment:{ ru: String, uz: String, tg: String, ky: String, kk: String },
   prevention:         { ru: String, uz: String, tg: String, ky: String, kk: String },
+  // Динамические секции (для гибкой структуры)
+section1_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+section1_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+section2_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+section2_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+section3_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+section3_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+section4_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+section4_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+section5_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+section5_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
   
   references: [String],
   views:      { type: Number, default: 0 },
