@@ -56,18 +56,25 @@ const slug = transliterate(rawTitle)
   + '-' + Date.now().toString().slice(-5);
 
     const newArticle = await Article.create({
-      slug,
-      authorId: doctor._id,
-      image: articleData.image || '',
-      title: { [language]: cleanText(articleData.title) },
-      overview: { [language]: cleanText(articleData.overview) },
-      symptoms: { [language]: cleanText(articleData.symptoms) },
-      causes: { [language]: cleanText(articleData.causes) },
-      diagnosis_treatment: { [language]: cleanText(articleData.diagnosis_treatment) },
-      prevention: { [language]: cleanText(articleData.prevention) },
-      references: articleData.references,
-      isVerified: true,
-    });
+  slug,
+  authorId: doctor._id,
+  image: articleData.image || '',
+  title: { [language]: articleData.title },
+  overview: { [language]: articleData.overview },
+  // Динамические секции
+  section1_title: { [language]: articleData.section1_title || '' },
+  section1_content: { [language]: articleData.section1_content || '' },
+  section2_title: { [language]: articleData.section2_title || '' },
+  section2_content: { [language]: articleData.section2_content || '' },
+  section3_title: { [language]: articleData.section3_title || '' },
+  section3_content: { [language]: articleData.section3_content || '' },
+  section4_title: { [language]: articleData.section4_title || '' },
+  section4_content: { [language]: articleData.section4_content || '' },
+  section5_title: { [language]: articleData.section5_title || '' },
+  section5_content: { [language]: articleData.section5_content || '' },
+  references: articleData.references,
+  isVerified: true,
+});
 
     return { success: true, slug: newArticle.slug };
   } catch (error: any) {
