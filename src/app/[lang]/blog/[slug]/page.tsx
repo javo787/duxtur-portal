@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getDictionary } from '@/get-dictionary';
 import { Locale } from '@/i18n-config';
+import ArticleEngagement from '@/components/ArticleEngagement';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
   await dbConnect();
