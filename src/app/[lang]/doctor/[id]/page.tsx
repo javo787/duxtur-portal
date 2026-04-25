@@ -1,147 +1,262 @@
-import { getDictionary } from '@/get-dictionary';
-import { Locale } from '@/i18n-config';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import dbConnect from '@/lib/mongodb';
+import Doctor from '@/models/Doctor';
+import Article from '@/models/Article';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
-type Props = {
-  params: Promise<{ lang: Locale; id: string }>;
-};
+type Props = { params: Promise<{ lang: string; id: string }> };
 
-// Фейковые данные (потом заменим на Базу Данных)
-const MOCK_DOCTOR = {
-  name: "Dr. Azimov Rustam",
-  specialty: { ru: "Кардиолог", uz: "Kardiolog", tg: "Кардиолог", kk: "Кардиолог", ky: "Кардиолог" },
-  image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-  experience: 12,
-  languages: ["Русский", "Tojik", "English"],
-  price: 150,
-  rating: 4.9,
-  reviews_count: 124,
-  about: {
-    ru: "Врач высшей категории. Специализируется на диагностике и лечении сердечно-сосудистых заболеваний. Провел более 5000 успешных консультаций.",
-    uz: "Oliy toifali shifokor. Yurak-qon tomir kasalliklarini tashxislash va davolashga ixtisoslashgan.",
-    tg: "Табиби дараҷаи олӣ. Ба ташхис ва табобати бемориҳои дилу рагҳо тахассус дорад.",
-    kk: "Жоғары санатты дәрігер.",
-    ky: "Жогорку категориядагы дарыгер."
-  }
-};
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await dbConnect();
+  const { id, lang } = await params;
+  const doctor = await Doctor.findOne({ $or: [{ slug: id }, { _id: id.match(/^[a-f\d]{24}$/i) ? id : null }] });
+  if (!doctor) return { title: 'Врач не найден' };
+  const specialty = doctor.specialty?.[lang] || doctor.specialty?.ru || '';
+  return {
+    title: `${doctor.name} — ${specialty} | Duxtur.com`,
+    description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.com`,
+  };
+}
 
-export default async function DoctorProfile(props: Props) {
-  const params = await props.params;
-  const { lang, id } = params;
-  const dict = await getDictionary(lang);
+export default async function DoctorProfilePage({ params }: Props) {
+  await dbConnect();
+  const { lang, id } = await params;
 
-  // Генерируем слоты времени (просто для визуала)
-  const timeSlots = ["09:00", "09:30", "10:00", "11:30", "14:00", "15:30", "16:00"];
+  const doctor: any = await Doctor.findOne({
+    $or: [
+      { slug: id },
+      ...(id.match(/^[a-f\d]{24}$/i) ? [{ _id: id }] : []),
+    ],
+  }).lean();
+
+  if (!doctor) notFound();
+
+  const articles: any[] = await Article.find({ authorId: doctor._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const t = (field: any) => {
+    if (!field) return '';
+    return field[lang] || field['ru'] || '';
+  };
+
+  const specialtyLabel = t(doctor.specialty);
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 pb-20">
-      {/* HEADER (Упрощенный) */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href={`/${lang}`} className="text-2xl font-bold text-blue-600">duxtur<span className="text-gray-400">.com</span></Link>
-          <LanguageSwitcher />
+    <div className="min-h-screen bg-[#f8f9fc] font-sans">
+
+      {/* HEADER */}
+      <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href={`/${lang}`} className="text-xl font-extrabold text-blue-600">
+            duxtur<span className="text-gray-300 font-light">.com</span>
+          </Link>
+          <Link href={`/${lang}`} className="text-sm text-gray-400 hover:text-gray-700 transition font-medium">
+            ← Назад
+          </Link>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumbs */}
-        <div className="text-sm text-gray-400 mb-6">
-          <Link href={`/${lang}`} className="hover:text-blue-600">Home</Link> / 
-          <span> Doctors </span> / 
-          <span className="text-gray-800 font-medium"> {MOCK_DOCTOR.name}</span>
-        </div>
+      {/* HERO — градиентный баннер */}
+      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white">
+        <div className="max-w-5xl mx-auto px-6 py-14 flex flex-col md:flex-row items-center gap-10">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* ЛЕВАЯ КОЛОНКА: ИНФО */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Карточка профиля */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
-              <div className="w-full md:w-48 h-48 rounded-xl overflow-hidden shrink-0">
-                <img src={MOCK_DOCTOR.image} alt={MOCK_DOCTOR.name} className="w-full h-full object-cover" />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-blue-600 font-bold text-sm uppercase tracking-wider block mb-1">
-                      {MOCK_DOCTOR.specialty[lang as keyof typeof MOCK_DOCTOR.specialty] || MOCK_DOCTOR.specialty.ru}
-                    </span>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{MOCK_DOCTOR.name}</h1>
-                    
-                    {/* Рейтинг */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex text-yellow-400">
-                        {"★".repeat(5)}
-                      </div>
-                      <span className="font-bold text-gray-900">{MOCK_DOCTOR.rating}</span>
-                      <span className="text-gray-400 text-sm">({MOCK_DOCTOR.reviews_count} {dict.reviews})</span>
-                    </div>
-                  </div>
-                  
-                  <div className="hidden md:flex flex-col items-end">
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                      Verified
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                  <div>
-                    <p className="text-gray-400 mb-1">{dict.doc_exp}</p>
-                    <p className="font-medium text-gray-900">{MOCK_DOCTOR.experience} {dict.years}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 mb-1">{dict.doc_lang}</p>
-                    <div className="flex gap-1">
-                      {MOCK_DOCTOR.languages.map(l => (
-                        <span key={l} className="bg-gray-100 px-2 py-0.5 rounded text-gray-600">{l}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Аватар */}
+          <div className="relative shrink-0">
+            <div className="w-36 h-36 md:w-44 md:h-44 rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl">
+              <img
+                src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                alt={doctor.name}
+                className="w-full h-full object-cover"
+              />
             </div>
-
-            {/* О Враче */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold mb-4">About Doctor</h3>
-              <p className="text-gray-600 leading-relaxed">
-                {MOCK_DOCTOR.about[lang as keyof typeof MOCK_DOCTOR.about] || MOCK_DOCTOR.about.ru}
-              </p>
+            {/* Verified badge */}
+            <div className="absolute -bottom-3 -right-3 bg-green-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Верифицирован
             </div>
           </div>
 
-          {/* ПРАВАЯ КОЛОНКА: ЗАПИСЬ (Sticky) */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-blue-100 sticky top-24">
-              <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">{dict.doc_price}</span>
-                <span className="text-2xl font-bold text-blue-600">{MOCK_DOCTOR.price} {dict.somoni}</span>
-              </div>
+          {/* Инфо */}
+          <div className="flex-1 text-center md:text-left">
+            <p className="text-blue-300 font-bold text-sm uppercase tracking-widest mb-2">
+              {specialtyLabel}
+            </p>
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
+              {doctor.name}
+            </h1>
 
-              <h4 className="font-bold text-gray-900 mb-4">Выберите время приема:</h4>
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                {timeSlots.map(time => (
-                  <button key={time} className="py-2 rounded-lg border border-gray-200 text-sm font-medium hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition">
-                    {time}
-                  </button>
-                ))}
-              </div>
-
-              <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200">
-                {dict.book_btn}
-              </button>
-              
-              <p className="text-center text-xs text-gray-400 mt-4">
-                Оплата производится в клинике после приема
-              </p>
+            {/* Статы */}
+            <div className="flex flex-wrap gap-6 justify-center md:justify-start mt-6">
+              <Stat
+                icon="📝"
+                value={articles.length.toString()}
+                label={articles.length === 1 ? 'статья' : articles.length < 5 ? 'статьи' : 'статей'}
+              />
+              {doctor.experience > 0 && (
+                <Stat icon="🏥" value={`${doctor.experience}`} label="лет опыта" />
+              )}
+              {doctor.languages?.length > 0 && (
+                <Stat icon="🌐" value={doctor.languages.join(', ')} label="языки" />
+              )}
             </div>
           </div>
-
         </div>
       </div>
-    </main>
+
+      {/* ОСНОВНОЙ КОНТЕНТ */}
+      <div className="max-w-5xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* ЛЕВАЯ ЧАСТЬ — статьи */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-extrabold text-gray-900">
+              Статьи автора
+              <span className="ml-3 text-base font-bold text-gray-400">
+                {articles.length}
+              </span>
+            </h2>
+          </div>
+
+          {articles.length === 0 ? (
+            <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm">
+              <div className="text-4xl mb-3">✍️</div>
+              <p className="font-bold text-gray-600 mb-1">Статьи готовятся</p>
+              <p className="text-sm text-gray-400">Врач скоро опубликует первый материал</p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {articles.map((article) => (
+                <Link
+                  key={article._id}
+                  href={`/${lang}/blog/${article.slug}`}
+                  className="group flex bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-300"
+                >
+                  <div className="w-36 md:w-48 shrink-0 overflow-hidden">
+                    <img
+                      src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
+                      alt={t(article.title)}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                    />
+                  </div>
+                  <div className="p-5 flex flex-col justify-between flex-1">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-600 text-xs font-bold flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Проверено врачом
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition leading-snug line-clamp-2">
+                        {t(article.title)}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-2 line-clamp-2 leading-relaxed">
+                        {t(article.overview)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
+                      <span className="text-xs text-gray-400">
+                        {new Date(article.createdAt).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                      <span className="text-blue-600 text-xs font-bold group-hover:translate-x-1 transition">
+                        Читать →
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ПРАВАЯ ЧАСТЬ — карточка врача */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-24 space-y-4">
+
+            {/* О враче */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-extrabold text-gray-900 mb-4 text-sm uppercase tracking-wider">
+                О враче
+              </h3>
+              <div className="space-y-4">
+                <InfoRow
+                  icon="🏥"
+                  label="Специализация"
+                  value={specialtyLabel}
+                />
+                {doctor.experience > 0 && (
+                  <InfoRow
+                    icon="📅"
+                    label="Стаж"
+                    value={`${doctor.experience} лет`}
+                  />
+                )}
+                {doctor.languages?.length > 0 && (
+                  <InfoRow
+                    icon="🌐"
+                    label="Языки"
+                    value={doctor.languages.join(', ')}
+                  />
+                )}
+                {doctor.phone && (
+                  <InfoRow
+                    icon="📞"
+                    label="Телефон"
+                    value={doctor.phone}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Верификация */}
+            <div className="bg-green-50 rounded-3xl p-5 border border-green-100">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-green-800 text-sm">Верифицированный автор</p>
+                  <p className="text-green-700 text-xs mt-1 leading-relaxed">
+                    Диплом и квалификация подтверждены командой Duxtur.com
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ icon, value, label }: { icon: string; value: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-2xl">
+      <span className="text-xl">{icon}</span>
+      <div>
+        <p className="font-extrabold text-white leading-none">{value}</p>
+        <p className="text-blue-200 text-xs mt-0.5">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="text-lg shrink-0 mt-0.5">{icon}</span>
+      <div>
+        <p className="text-xs text-gray-400 font-medium">{label}</p>
+        <p className="text-sm font-bold text-gray-800 mt-0.5">{value}</p>
+      </div>
+    </div>
   );
 }
