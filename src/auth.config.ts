@@ -10,7 +10,6 @@ export const authConfig = {
       const role = (auth?.user as any)?.role;
       const pathname = nextUrl.pathname;
 
-      // /admin/portal — только для portal_admin
       if (pathname.includes('/admin/portal')) {
         if (!isLoggedIn || role !== 'portal_admin') {
           const lang = pathname.split('/')[1] || 'ru';
@@ -19,8 +18,7 @@ export const authConfig = {
         return true;
       }
 
-      // /admin/write — только для авторизованных врачей (или admin)
-      if (pathname.includes('/admin/write') || pathname.includes('/admin/dashboard')) {
+      if (pathname.includes('/admin/write')) {
         if (!isLoggedIn) {
           const lang = pathname.split('/')[1] || 'ru';
           return Response.redirect(new URL(`/${lang}/login`, nextUrl));
@@ -28,16 +26,12 @@ export const authConfig = {
         return true;
       }
 
-      // Уже залогинен -> редирект с /login
-      if (isLoggedIn && pathname.includes('/return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));login')) {
+      if (isLoggedIn && pathname.includes('/login')) {
         const lang = pathname.split('/')[1] || 'ru';
         if (role === 'portal_admin') {
           return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
         }
-        if (role === 'portal_admin') {
-  return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
-}
-return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));
+        return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));
       }
 
       return true;
