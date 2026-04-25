@@ -73,7 +73,7 @@ export default async function Home(props: Props) {
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
             <Link href={`/${lang}#articles`} className="hover:text-blue-600 transition">Статьи</Link>
-            <Link href={`/${lang}#authors`} className="hover:text-blue-600 transition">Авторы</Link>
+            <Link href={`/${lang}/authors`} className="hover:text-blue-600 transition">Авторы</Link>
             <Link href={`/${lang}#categories`} className="hover:text-blue-600 transition">Категории</Link>
           </nav>
           <div className="flex items-center gap-4">
