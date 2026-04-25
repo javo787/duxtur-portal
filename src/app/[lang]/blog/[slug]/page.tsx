@@ -7,23 +7,16 @@ import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ShareButtons from '@/components/ShareButtons';
 
-const sectionLabels: Record<string, Record<string, string>> = {
-  symptoms:            { ru: 'Симптомы',     uz: 'Belgilar',     tg: 'Аломатҳо',  kk: 'Белгілер',  ky: 'Белгилер' },
-  causes:              { ru: 'Причины',      uz: 'Sabablar',     tg: 'Сабабҳо',   kk: 'Себептер',  ky: 'Себептер' },
-  diagnosis_treatment: { ru: 'Лечение',      uz: 'Davolash',     tg: 'Табобат',   kk: 'Емдеу',     ky: 'Дарылоо' },
-  prevention:          { ru: 'Профилактика', uz: 'Profilaktika', tg: 'Пешгирӣ',   kk: 'Алдын алу', ky: 'Алдын алуу' },
-};
-
 const uiLabels: Record<string, Record<string, string>> = {
-  verified: { ru: 'Проверено врачом',  uz: 'Tekshirilgan',       tg: 'Тасдиқшуда',          kk: 'Тексерілген',  ky: 'Текшерилген' },
-  contents: { ru: 'Содержание',        uz: 'Mundarija',           tg: 'Мундариҷа',           kk: 'Мазмұны',      ky: 'Мазмуну' },
-  sources:  { ru: 'Источники',         uz: 'Manbalar',            tg: 'Сарчашмаҳо',          kk: 'Дереккөздер',  ky: 'Булактар' },
-  back:     { ru: 'Главная',           uz: 'Bosh sahifa',         tg: 'Саҳифаи асосӣ',       kk: 'Басты бет',    ky: 'Башкы бет' },
-  readmin:  { ru: 'мин чтения',        uz: 'daqiqa o\'qish',      tg: 'дақиқаи хондан',      kk: 'мин оқу',      ky: 'мүн окуу' },
-  author:   { ru: 'Об авторе',         uz: 'Muallif haqida',      tg: 'Дар бораи муаллиф',   kk: 'Автор туралы', ky: 'Автор жөнүндө' },
-  articles: { ru: 'Все статьи автора →', uz: 'Muallif maqolalari →', tg: 'Мақолаҳои муаллиф →', kk: 'Автор мақалалары →', ky: 'Автордун макалалары →' },
-  related:  { ru: 'Похожие статьи',    uz: 'O\'xshash maqolalar', tg: 'Мақолаҳои монанд',    kk: 'Ұқсас мақалалар', ky: 'Окшош макалалар' },
-  disclaimer: { ru: 'Важно', uz: 'Muhim', tg: 'Муҳим', kk: 'Маңызды', ky: 'Маанилүү' },
+  verified:        { ru: 'Проверено врачом', uz: 'Tekshirilgan',       tg: 'Тасдиқшуда',          kk: 'Тексерілген',     ky: 'Текшерилген' },
+  contents:        { ru: 'Содержание',       uz: 'Mundarija',           tg: 'Мундариҷа',           kk: 'Мазмұны',         ky: 'Мазмуну' },
+  sources:         { ru: 'Источники',        uz: 'Manbalar',            tg: 'Сарчашмаҳо',          kk: 'Дереккөздер',     ky: 'Булактар' },
+  back:            { ru: 'Главная',          uz: 'Bosh sahifa',         tg: 'Саҳифаи асосӣ',       kk: 'Басты бет',       ky: 'Башкы бет' },
+  readmin:         { ru: 'мин чтения',       uz: 'daqiqa o\'qish',      tg: 'дақиқаи хондан',      kk: 'мин оқу',         ky: 'мүн окуу' },
+  author:          { ru: 'Об авторе',        uz: 'Muallif haqida',      tg: 'Дар бораи муаллиф',   kk: 'Автор туралы',    ky: 'Автор жөнүндө' },
+  articles:        { ru: 'Все статьи автора →', uz: 'Muallif maqolalari →', tg: 'Мақолаҳои муаллиф →', kk: 'Автор мақалалары →', ky: 'Автордун макалалары →' },
+  related:         { ru: 'Похожие статьи',   uz: 'O\'xshash maqolalar', tg: 'Мақолаҳои монанд',    kk: 'Ұқсас мақалалар', ky: 'Окшош макалалар' },
+  disclaimer:      { ru: 'Важно',            uz: 'Muhim',               tg: 'Муҳим',               kk: 'Маңызды',         ky: 'Маанилүү' },
   disclaimer_text: {
     ru: 'Эта статья носит информационный характер и не заменяет консультацию врача. При наличии симптомов обратитесь к специалисту.',
     uz: 'Bu maqola ma\'lumot maqsadida bo\'lib, shifokor maslahatini almashtirmaydi.',
@@ -33,8 +26,7 @@ const uiLabels: Record<string, Record<string, string>> = {
   },
 };
 
-const L  = (key: string, lang: string) => uiLabels[key]?.[lang]      || uiLabels[key]?.ru      || key;
-const SL = (key: string, lang: string) => sectionLabels[key]?.[lang] || sectionLabels[key]?.ru || key;
+const L = (key: string, lang: string) => uiLabels[key]?.[lang] || uiLabels[key]?.ru || key;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
   await dbConnect();
@@ -47,18 +39,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: article.image ? [article.image] : [],
-      type: 'article',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: article.image ? [article.image] : [],
-    },
+    openGraph: { title, description, images: article.image ? [article.image] : [], type: 'article' },
+    twitter: { card: 'summary_large_image', title, description, images: article.image ? [article.image] : [] },
   };
 }
 
@@ -75,8 +57,9 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
 
   // Время чтения
   const fullText = [
-    t(article.overview), t(article.symptoms),
-    t(article.causes), t(article.diagnosis_treatment), t(article.prevention),
+    t(article.overview), t(article.symptoms), t(article.causes),
+    t(article.diagnosis_treatment), t(article.prevention),
+    ...[1,2,3,4,5].map(i => t(article[`section${i}_content`])),
   ].join(' ');
   const readingMinutes = Math.max(1, Math.ceil(fullText.split(' ').length / 200));
 
@@ -85,7 +68,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     ? Math.round((article.ratings.reduce((a: number, b: number) => a + b, 0) / article.ratings.length) * 10) / 10
     : 0;
 
-  // Похожие статьи — от того же автора
+  // Похожие статьи
   const relatedArticles: any[] = await Article.find({
     authorId: article.authorId?._id,
     slug: { $ne: slug },
@@ -95,16 +78,30 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  const sections = [
-    { id: 'symptoms',   key: 'symptoms',            content: t(article.symptoms) },
-    { id: 'causes',     key: 'causes',              content: t(article.causes) },
-    { id: 'treatment',  key: 'diagnosis_treatment', content: t(article.diagnosis_treatment) },
-    { id: 'prevention', key: 'prevention',          content: t(article.prevention) },
-  ].filter((s) => s.content && s.content.length > 0);
+  // Поддержка старых статей (фиксированные секции)
+  const legacySections = [
+    { id: 'symptoms',   title: { ru:'Симптомы', uz:'Belgilar',    tg:'Аломатҳо', kk:'Белгілер', ky:'Белгилер' },    content: t(article.symptoms) },
+    { id: 'causes',     title: { ru:'Причины',  uz:'Sabablar',    tg:'Сабабҳо',  kk:'Себептер', ky:'Себептер' },    content: t(article.causes) },
+    { id: 'treatment',  title: { ru:'Лечение',  uz:'Davolash',    tg:'Табобат',  kk:'Емдеу',    ky:'Дарылоо' },     content: t(article.diagnosis_treatment) },
+    { id: 'prevention', title: { ru:'Профилактика', uz:'Profilaktika', tg:'Пешгирӣ', kk:'Алдын алу', ky:'Алдын алуу' }, content: t(article.prevention) },
+  ]
+    .filter(s => s.content && s.content.length > 0)
+    .map(s => ({ ...s, title: s.title[lang as keyof typeof s.title] || s.title.ru }));
+
+  // Новые динамические секции
+  const dynamicSections = [1,2,3,4,5]
+    .map(i => ({
+      id: `section${i}`,
+      title: t(article[`section${i}_title`]),
+      content: t(article[`section${i}_content`]),
+    }))
+    .filter(s => s.title && s.content);
+
+  // Используем динамические если есть, иначе legacy
+  const sections = dynamicSections.length > 0 ? dynamicSections : legacySections;
 
   const articleUrl = `https://duxtur.com/${lang}/blog/${article.slug}`;
 
-  // JSON-LD для SEO
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MedicalWebPage',
@@ -141,7 +138,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
             <Link href={`/${lang}/blog`} className="text-sm text-gray-400 hover:text-gray-700 font-medium transition hidden md:block">
               Blog
             </Link>
-            <Link href={`/${lang}`} className="text-sm text-gray-400 hover:text-gray-700 font-medium transition flex items-center gap-1">
+            <Link href={`/${lang}`} className="text-sm text-gray-400 hover:text-gray-700 font-medium transition">
               ← {L('back', lang)}
             </Link>
           </div>
@@ -150,7 +147,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
 
       <article className="pb-24">
 
-        {/* HERO — фото с заголовком поверх */}
+        {/* HERO */}
         <div className="relative w-full h-72 md:h-[460px] bg-gray-900 overflow-hidden">
           <img
             src={article.image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=1200'}
@@ -202,15 +199,9 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 <p className="text-xs text-blue-500 mt-0.5">{t(article.authorId?.specialty) || 'Врач'}</p>
               </div>
             </Link>
-
             <div className="flex items-center gap-4 flex-wrap">
               <span className="text-xs text-gray-400">{date}</span>
-              {/* КНОПКИ ПОДЕЛИТЬСЯ */}
-              <ShareButtons
-                url={articleUrl}
-                title={t(article.title)}
-                lang={lang}
-              />
+              <ShareButtons url={articleUrl} title={t(article.title)} lang={lang} />
             </div>
           </div>
         </div>
@@ -250,7 +241,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                         <span className="w-6 h-6 rounded-full bg-white text-blue-600 text-xs font-extrabold flex items-center justify-center shrink-0 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition">
                           {i + 1}
                         </span>
-                        <span className="group-hover:underline">{SL(sec.key, lang)}</span>
+                        <span className="group-hover:underline">{sec.title}</span>
                       </a>
                     </li>
                   ))}
@@ -264,7 +255,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 <section key={sec.id} id={sec.id} className="scroll-mt-20">
                   <h2 className="text-2xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
                     <span className="w-1 h-8 bg-blue-500 rounded-full shrink-0" />
-                    {SL(sec.key, lang)}
+                    {sec.title}
                   </h2>
                   <div className="prose prose-lg prose-slate max-w-none text-gray-700 leading-8">
                     <ReactMarkdown
@@ -312,7 +303,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
               </div>
             )}
 
-            {/* ENGAGEMENT — звёздочки + лайки */}
+            {/* ENGAGEMENT */}
             <ArticleEngagement
               slug={article.slug}
               initialRating={avgRating}
@@ -322,13 +313,9 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
               lang={lang}
             />
 
-            {/* ПОДЕЛИТЬСЯ (повтор внизу статьи) */}
+            {/* ПОДЕЛИТЬСЯ внизу */}
             <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
-              <ShareButtons
-                url={articleUrl}
-                title={t(article.title)}
-                lang={lang}
-              />
+              <ShareButtons url={articleUrl} title={t(article.title)} lang={lang} />
             </div>
           </div>
 
@@ -339,9 +326,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
               {/* Карточка автора */}
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-br from-slate-800 to-blue-900 p-6 text-white">
-                  <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3">
-                    {L('author', lang)}
-                  </p>
+                  <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3">{L('author', lang)}</p>
                   <div className="flex items-center gap-3">
                     <img
                       src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
@@ -373,7 +358,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 text-center">
                   <p className="text-4xl font-extrabold text-gray-900">{avgRating}</p>
                   <div className="flex justify-center my-2 gap-0.5">
-                    {[1, 2, 3, 4, 5].map((s) => (
+                    {[1,2,3,4,5].map((s) => (
                       <svg key={s} className={`w-5 h-5 ${s <= Math.round(avgRating) ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
