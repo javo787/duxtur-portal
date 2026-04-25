@@ -29,12 +29,15 @@ export const authConfig = {
       }
 
       // Уже залогинен -> редирект с /login
-      if (isLoggedIn && pathname.includes('/login')) {
+      if (isLoggedIn && pathname.includes('/return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));login')) {
         const lang = pathname.split('/')[1] || 'ru';
         if (role === 'portal_admin') {
           return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
         }
-        return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));
+        if (role === 'portal_admin') {
+  return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
+}
+return Response.redirect(new URL(`/${lang}/admin/write`, nextUrl));
       }
 
       return true;
