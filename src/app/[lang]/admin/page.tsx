@@ -216,14 +216,25 @@ function WriteTab({ lang }: { lang: string }) {
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            <Section title="📋 Обзор" content={article.overview} onChange={(v) => setArticle({ ...article, overview: v })} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Section title="🔍 Симптомы" content={article.symptoms} onChange={(v) => setArticle({ ...article, symptoms: v })} />
-              <Section title="🧬 Причины" content={article.causes} onChange={(v) => setArticle({ ...article, causes: v })} />
-            </div>
-            <Section title="💊 Диагностика и лечение" content={article.diagnosis_treatment} onChange={(v) => setArticle({ ...article, diagnosis_treatment: v })} />
-            <Section title="🛡️ Профилактика" content={article.prevention} onChange={(v) => setArticle({ ...article, prevention: v })} />
-          </div>
+  <Section
+    title="📋 Обзор"
+    content={article.overview}
+    onChange={(v) => setArticle({ ...article, overview: v })}
+  />
+  {[1, 2, 3, 4, 5].map((i) => {
+    const titleKey = `section${i}_title`;
+    const contentKey = `section${i}_content`;
+    if (!article[titleKey] && !article[contentKey]) return null;
+    return (
+      <Section
+        key={i}
+        title={article[titleKey] || `Раздел ${i}`}
+        content={article[contentKey]}
+        onChange={(v) => setArticle({ ...article, [contentKey]: v })}
+      />
+    );
+  })}
+</div>
 
           {article.references?.length > 0 && (
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
