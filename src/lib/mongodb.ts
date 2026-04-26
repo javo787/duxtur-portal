@@ -52,3 +52,5 @@ async function dbConnect() {
 }
 
 export default dbConnect;
+
+import '@/lib/models';
