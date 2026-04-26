@@ -1,8 +1,7 @@
-import mongoose from 'mongoose';
+// src/models/Article.ts
+// ПОЛНОСТЬЮ ЗАМЕНИТЬ ФАЙЛ
 
-if (mongoose.models.Article) {
-  delete mongoose.models.Article;
-}
+import mongoose from 'mongoose';
 
 const ArticleSchema = new mongoose.Schema({
   slug: { 
@@ -18,6 +17,11 @@ const ArticleSchema = new mongoose.Schema({
     required: true
   },
   isVerified: { type: Boolean, default: false },
+
+  // E-E-A-T поля
+  aiGenerated: { type: Boolean, default: true },  // создана с помощью AI?
+  reviewedBy: { type: String, default: '' },       // имя врача который проверил
+  reviewedAt: { type: Date },                      // дата проверки
   
   title:              { ru: String, uz: String, tg: String, ky: String, kk: String },
   overview:           { ru: String, uz: String, tg: String, ky: String, kk: String },
@@ -25,26 +29,27 @@ const ArticleSchema = new mongoose.Schema({
   causes:             { ru: String, uz: String, tg: String, ky: String, kk: String },
   diagnosis_treatment:{ ru: String, uz: String, tg: String, ky: String, kk: String },
   prevention:         { ru: String, uz: String, tg: String, ky: String, kk: String },
-  // Динамические секции (для гибкой структуры)
-section1_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
-section1_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
-section2_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
-section2_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
-section3_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
-section3_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
-section4_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
-section4_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
-section5_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
-section5_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+
+  section1_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section1_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section2_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section2_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section3_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section3_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section4_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section4_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section5_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
+  section5_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
   
   references: [String],
   views:      { type: Number, default: 0 },
 
-  // Новые поля
-  ratings:   { type: [Number], default: [] },  // массив оценок [5, 4, 5, 3...]
-  likesUp:   { type: Number, default: 0 },
-  likesDown: { type: Number, default: 0 },
+  // Агрегированный рейтинг (не массив — безопаснее и быстрее)
+  ratingSum:   { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 },
+  ratings:     { type: [Number], default: [] }, // оставляем для обратной совместимости
+  likesUp:     { type: Number, default: 0 },
+  likesDown:   { type: Number, default: 0 },
 }, { timestamps: true });
 
-const Article = mongoose.model('Article', ArticleSchema);
-export default Article;
+export default mongoose.models.Article || mongoose.model('Article', ArticleSchema);
