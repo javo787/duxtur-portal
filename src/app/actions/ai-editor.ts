@@ -161,24 +161,50 @@ OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
 }
 
 // ─── Общая функция вызова Gemini ───
+
 async function callGemini(prompt: string) {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let text = response.text();
+    console.log('--- [GEMINI RAW] First 200 chars:', text.substring(0, 200));
 
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    text = text.replace(/[\x00-\x1F\x7F]/g, (char) => {
-      if (char === '\n') return '\\n';
-      if (char === '\r') return '\\r';
-      if (char === '\t') return '\\t';
-      return '';
+    // Убираем markdown блоки
+    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+    // Находим JSON между первой { и последней }
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.substring(firstBrace, lastBrace + 1);
+    }
+
+    // Убираем управляющие символы ТОЛЬКО вне строк JSON
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+    // Фиксируем переносы строк внутри строковых значений
+    text = text.replace(/"([^"]*?)"/gs, (_match: string, inner: string) => {
+      const fixed = inner
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t');
+      return `"${fixed}"`;
     });
 
     const parsed = JSON.parse(text);
     return { success: true, data: parsed };
   } catch (error: any) {
     console.error('AI Error:', error);
-    return { success: false, error: error.message };
+
+    // Попытка 2 — попросить Gemini исправить JSON
+    try {
+      const fixPrompt = `The following text should be valid JSON but has errors. Fix it and return ONLY valid JSON, nothing else:\n\n${error.text || ''}`;
+      const retry = await model.generateContent(fixPrompt);
+      const retryText = retry.response.text().replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const parsed = JSON.parse(retryText);
+      return { success: true, data: parsed };
+    } catch {
+      return { success: false, error: error.message };
+    }
   }
 }
