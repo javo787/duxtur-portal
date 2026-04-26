@@ -71,7 +71,7 @@ export default function HomeCategories({ lang, dict }: { lang: string; dict: any
         <div
           ref={scrollRef}
           className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ scrollbarWidth: 'none' } as React.CSSProperties}
         >
           {CATEGORIES.map((cat) => (
             <Link
