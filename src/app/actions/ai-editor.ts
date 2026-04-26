@@ -183,7 +183,7 @@ async function callGemini(prompt: string) {
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
     // Фиксируем переносы строк внутри строковых значений
-    text = text.replace(/"([^"]*?)"/gs, (_match: string, inner: string) => {
+    text = text.replace(/"([\s\S]*?)"/g, (_match: string, inner: string) => {
       const fixed = inner
         .replace(/\n/g, '\\n')
         .replace(/\r/g, '\\r')
