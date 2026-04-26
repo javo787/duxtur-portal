@@ -210,12 +210,13 @@ function WriteTab({ lang }: { lang: string }) {
   const [isUploading, setIsUploading] = useState(false);
   const [article, setArticle] = useState<any>(null);
   const [publishedSlug, setPublishedSlug] = useState('');
-  const [showTutorial, setShowTutorial] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !localStorage.getItem('duxtur_tutorial_done');
-    }
-    return false;
-  });
+  const [showTutorial, setShowTutorial] = useState(false);
+
+useEffect(() => {
+  if (!localStorage.getItem('duxtur_tutorial_done')) {
+    setShowTutorial(true);
+  }
+}, []);
 
   const currentMode = MODES.find(m => m.id === mode)!;
   const isOverLimit = draft.length > currentMode.limit;
