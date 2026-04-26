@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FadeIn from '@/components/FadeIn';
 
 export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
   return (
@@ -11,6 +12,7 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
 
       <div className="relative max-w-5xl mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+        <FadeIn direction="left">
           <div className="max-w-xl text-center md:text-left">
             <span className="inline-block text-xs bg-blue-600 text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-wider mb-5">
               Для врачей
@@ -36,7 +38,9 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
               ))}
             </ul>
           </div>
+         </FadeIn>
 
+        <FadeIn direction="right" delay={200}>
           <div className="shrink-0 text-center">
             <Link href={`/${lang}/register`}
               className="inline-flex items-center gap-3 bg-white text-slate-900 font-extrabold py-5 px-10 rounded-2xl hover:bg-blue-50 transition shadow-2xl transform hover:-translate-y-1 text-lg active:scale-95">
@@ -47,6 +51,7 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
             </Link>
             <p className="text-slate-500 text-xs mt-3">Верификация за 24 часа</p>
           </div>
+        </FadeIn>
         </div>
       </div>
     </section>
