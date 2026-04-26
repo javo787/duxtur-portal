@@ -1,7 +1,9 @@
+// src/models/Doctor.ts
+// ПОЛНОСТЬЮ ЗАМЕНИТЬ ФАЙЛ
+
 import mongoose from 'mongoose';
 
 const DoctorSchema = new mongoose.Schema({
-  // Связь с аккаунтом (User)
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
@@ -10,29 +12,27 @@ const DoctorSchema = new mongoose.Schema({
   
   name: { type: String, required: true },
   slug: { type: String, unique: true },
-  
-  // Контакты для проверки админом
   phone: { type: String, required: true },
   
-  // Профессиональные данные
   specialty: {
-    ru: String,
-    uz: String,
-    kk: String,
-    ky: String,
-    tg: String
+    ru: String, uz: String, kk: String, ky: String, tg: String
   },
   experience: { type: Number, default: 0 },
+
+  // E-E-A-T: credentials врача
+  workplace:   { type: String, default: '' },   // место работы (клиника/больница)
+  education:   { type: String, default: '' },   // университет / учёная степень
+  licenseNumber: { type: String, default: '' }, // номер лицензии (не показываем публично)
+  bio: { type: String, default: '' },           // биография
+
+  image: { type: String },
+  documentImage: { type: String, required: true },
   
-  // Ссылки на фото
-  image: { type: String }, // Аватар
-  documentImage: { type: String, required: true }, // ФОТО ДИПЛОМА
-  
-  // Статус модерации
+  // ИСПРАВЛЕНО: добавлен 'banned'
   status: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
-    default: 'pending' // По умолчанию - на проверке
+    enum: ['pending', 'approved', 'rejected', 'banned'], 
+    default: 'pending'
   },
 
   languages: [String],
