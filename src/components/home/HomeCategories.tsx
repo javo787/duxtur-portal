@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
+import FadeIn from '@/components/FadeIn';
 
 const CATEGORIES = [
   { icon: '❤️', color: 'from-red-500 to-rose-400',     bg: 'bg-red-50',    border: 'border-red-100',    text: 'text-red-600',    slug: 'cardiology' },
@@ -59,7 +60,9 @@ export default function HomeCategories({ lang, dict }: { lang: string; dict: any
 
   return (
     <section className="py-8 bg-white border-y border-gray-100">
+      
       <div className="max-w-7xl mx-auto px-4">
+      <FadeIn direction="up">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">
           {dict.cat_title}
         </p>
@@ -81,6 +84,7 @@ export default function HomeCategories({ lang, dict }: { lang: string; dict: any
             </Link>
           ))}
         </div>
+       </FadeIn>
       </div>
     </section>
   );
