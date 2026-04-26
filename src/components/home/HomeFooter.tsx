@@ -1,3 +1,6 @@
+// src/components/home/HomeFooter.tsx
+// ПОЛНОСТЬЮ ЗАМЕНИТЬ ФАЙЛ
+
 import Link from 'next/link';
 
 export default function HomeFooter({ lang }: { lang: string }) {
@@ -58,19 +61,28 @@ export default function HomeFooter({ lang }: { lang: string }) {
             </ul>
           </div>
 
-          {/* Контакты */}
+          {/* О портале — НОВЫЙ БЛОК */}
           <div>
-            <h4 className="font-bold text-gray-900 text-sm mb-4">Контакты</h4>
+            <h4 className="font-bold text-gray-900 text-sm mb-4">О портале</h4>
             <ul className="space-y-2.5">
-              <li>
-                <a href="https://t.me/duxturcom" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition">
-                  <svg className="w-4 h-4 text-[#229ED9]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.667l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.892z"/>
-                  </svg>
-                  Telegram
-                </a>
-              </li>
+              {[
+                { href: `/${lang}/about`, label: 'О нас' },
+                { href: `/${lang}/editorial`, label: 'Редакционная политика' },
+                { href: 'https://t.me/duxturcom', label: 'Контакты', external: true },
+              ].map((link) => (
+                <li key={link.href}>
+                  {'external' in link && link.external ? (
+                    <a href={link.href} target="_blank" rel="noopener noreferrer"
+                      className="text-sm text-gray-500 hover:text-blue-600 transition">
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="text-sm text-gray-500 hover:text-blue-600 transition">
+                      {link.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -78,7 +90,13 @@ export default function HomeFooter({ lang }: { lang: string }) {
         {/* Нижняя строка */}
         <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-400">
           <p>© {currentYear} Duxtur.com — Все права защищены</p>
-          <p>Информация на сайте носит ознакомительный характер. Проконсультируйтесь с врачом.</p>
+          <div className="flex items-center gap-4">
+            <Link href={`/${lang}/editorial`} className="hover:text-blue-600 transition">
+              Редакционная политика
+            </Link>
+            <span>·</span>
+            <p>Информация носит ознакомительный характер. Проконсультируйтесь с врачом.</p>
+          </div>
         </div>
       </div>
     </footer>
