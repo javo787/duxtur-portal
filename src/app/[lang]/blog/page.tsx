@@ -10,13 +10,37 @@ type Props = { params: Promise<{ lang: string }>; searchParams: Promise<{ catego
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const titles: Record<string, string> = {
-    ru: 'Все статьи — Duxtur.com',
-    uz: 'Barcha maqolalar — Duxtur.com',
-    tg: 'Ҳамаи мақолаҳо — Duxtur.com',
-    kk: 'Барлық мақалалар — Duxtur.com',
-    ky: 'Бардык макалалар — Duxtur.com',
+    ru: "Все статьи — Duxtur.com",
+    uz: "Barcha maqolalar — Duxtur.com",
+    tg: "Ҳамаи мақолаҳо — Duxtur.com",
+    kk: "Барлық мақалалар — Duxtur.com",
+    ky: "Бардык макалалар — Duxtur.com",
   };
-  return { title: titles[lang] || titles.ru };
+  const descs: Record<string, string> = {
+    ru: "Медицинские статьи от практикующих врачей. Кардиология, неврология, педиатрия и другие специализации.",
+    uz: "Amaliyotchi shifokorlardan tibbiy maqolalar. Kardiologiya, nevrologiya, pediatriya.",
+    tg: "Мақолаҳои тиббӣ аз табибони амалкунанда. Кардиология, неврология, педиатрия.",
+    kk: "Тәжірибелі дәрігерлерден медициналық мақалалар. Кардиология, неврология, педиатрия.",
+    ky: "Практикалык дарыгерлерден медициналык макалалар. Кардиология, неврология, педиатрия.",
+  };
+  return {
+    title: titles[lang] || titles.ru,
+    description: descs[lang] || descs.ru,
+    alternates: {
+      canonical: `https://duxtur.com/${lang}/blog`,
+      languages: Object.fromEntries(
+        ["ru", "uz", "tg", "kk", "ky"].map((l) => [
+          l,
+          `https://duxtur.com/${l}/blog`,
+        ])
+      ),
+    },
+    openGraph: {
+      title: titles[lang] || titles.ru,
+      description: descs[lang] || descs.ru,
+      type: "website",
+    },
+  };
 }
 
 const CATEGORIES = [
