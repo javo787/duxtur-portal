@@ -321,13 +321,15 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                 </h4>
                 <ul className="space-y-2">
                   {article.references.map((ref: string, i: number) => {
-                    const urlMatch = ref.match(/https?:\/\/[^\s]+/);
-                    const label = ref.replace(/https?:\/\/[^\s]+/, '').trim().replace(/^[-–—:]\s*/, '');
+                    const urlMatch = ref.match(/(?:https?:\/\/)?(?:www\.)[^\s]+/) || ref.match(/https?:\/\/[^\s]+/);
+const rawUrl = urlMatch ? urlMatch[0] : null;
+const href = rawUrl && !rawUrl.startsWith('http') ? 'https://' + rawUrl : rawUrl;
+const label = rawUrl ? ref.replace(rawUrl, '').trim().replace(/^[-–—:]\s*/, '') : ref;
                     return (
                       <li key={i} className="flex gap-3 text-sm text-gray-500">
                         <span className="text-blue-400 font-bold shrink-0">{i + 1}.</span>
                         {urlMatch ? (
-                          <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer"
+                          <a href={href!} target="_blank" rel="noopener noreferrer"
                             className="text-blue-600 hover:underline leading-relaxed">
                             {label || ref}
                           </a>
