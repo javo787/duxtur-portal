@@ -24,6 +24,7 @@ const DoctorSchema = new mongoose.Schema({
   education:   { type: String, default: '' },   // университет / учёная степень
   licenseNumber: { type: String, default: '' }, // номер лицензии (не показываем публично)
   bio: { type: String, default: '' },           // биография
+  sameAs: { type: [String], default: [] }, // LinkedIn, ResearchGate, и др.
 
   image: { type: String },
   documentImage: { type: String, required: true },
