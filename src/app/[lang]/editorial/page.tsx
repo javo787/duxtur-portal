@@ -174,14 +174,16 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               Если вы обнаружили медицинскую неточность, устаревшую информацию или нарушение редакционных стандартов — сообщите нам. Мы рассматриваем каждое обращение.
             </p>
+            {/* НАЙТИ и ЗАМЕНИТЬ кнопку в editorial/page.tsx — секция 07 */}
             
               href="https://t.me/duxturcom"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition"
             >
-              Написать редакции в Telegram
+              Написать редакции в Telegram →
             </a>
+            
           </section>
 
         </div>
