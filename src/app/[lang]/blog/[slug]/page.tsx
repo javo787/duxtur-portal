@@ -110,6 +110,8 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   const sections = dynamicSections.length > 0 ? dynamicSections : legacySections;
 
   const articleUrl = `https://duxtur.com/${lang}/blog/${article.slug}`;
+  const authorSlug = article.authorId?.slug || article.authorId?._id;
+  const authorUrl = `https://duxtur.com/${lang}/doctor/${authorSlug}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -122,8 +124,15 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     dateModified: article.updatedAt,
     author: {
       '@type': 'Person',
+      '@id': authorUrl,
       name: article.authorId?.name,
       jobTitle: t(article.authorId?.specialty),
+      url: authorUrl,
+      worksFor: {
+        '@type': 'Organization',
+        name: 'Duxtur.com',
+        url: 'https://duxtur.com',
+      },
     },
     publisher: {
       '@type': 'Organization',
@@ -132,6 +141,7 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     },
     medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
   };
+  
 
   return (
     <div className="min-h-screen bg-white font-sans">
