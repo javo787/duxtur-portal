@@ -1,3 +1,5 @@
+// src/proxy.ts — ПОЛНОСТЬЮ ЗАМЕНИТЬ
+
 import NextAuth from 'next-auth';
 import { authConfig } from '@/auth.config';
 import { NextResponse } from "next/server";
@@ -6,10 +8,10 @@ import { i18n } from "@/i18n-config";
 
 const { auth } = NextAuth(authConfig);
 
-export async function middleware(request: NextRequest) {
+// ИЗМЕНЕНО: функция называется proxy, не middleware
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // 1. Игнорируем системные файлы
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -19,12 +21,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Проверяем язык
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
   );
 
-  // Если языка нет -> редирект
   if (pathnameIsMissingLocale) {
     const locale = i18n.defaultLocale;
     return NextResponse.redirect(
@@ -32,8 +32,6 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // 3. Вызываем NextAuth
-  // ИСПРАВЛЕНИЕ: Добавили (auth as any), чтобы TypeScript не ругался на типы
   return (auth as any)(request);
 }
 
