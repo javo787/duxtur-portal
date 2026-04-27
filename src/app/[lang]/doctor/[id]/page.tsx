@@ -275,9 +275,6 @@ export default async function DoctorProfilePage({ params }: Props) {
                 </div>
               </div>
             )}
-
-            {/* Верификация */}
-            <div className="bg-green-50 rounded-3xl p-5 border border-green-100">
             
             {/* Верификация */}
             <div className="bg-green-50 rounded-3xl p-5 border border-green-100">
