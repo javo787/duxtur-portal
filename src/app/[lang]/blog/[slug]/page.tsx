@@ -140,6 +140,14 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
       url: 'https://duxtur.com',
     },
     medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: `https://duxtur.com/${lang}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `https://duxtur.com/${lang}/blog` },
+        { '@type': 'ListItem', position: 3, name: t(article.title), item: articleUrl },
+      ],
+    },
   };
   
 
