@@ -42,9 +42,29 @@ export default async function DoctorProfilePage({ params }: Props) {
   };
 
   const specialtyLabel = t(doctor.specialty);
+  const doctorUrl = `https://duxtur.com/${lang}/doctor/${doctor.slug || doctor._id}`;
+
+  const jsonLd: any = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': doctorUrl,
+    name: doctor.name,
+    jobTitle: specialtyLabel,
+    url: doctorUrl,
+    image: doctor.image || undefined,
+    worksFor: doctor.workplace
+      ? { '@type': 'Organization', name: doctor.workplace }
+      : { '@type': 'Organization', name: 'Duxtur.com', url: 'https://duxtur.com' },
+    alumniOf: doctor.education
+      ? { '@type': 'EducationalOrganization', name: doctor.education }
+      : undefined,
+    description: doctor.bio || undefined,
+  };
+  Object.keys(jsonLd).forEach((k) => jsonLd[k] === undefined && delete jsonLd[k]);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc] font-sans">
+     <div className="min-h-screen bg-[#f8f9fc] font-sans">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* HEADER */}
       <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
@@ -85,9 +105,15 @@ export default async function DoctorProfilePage({ params }: Props) {
             <p className="text-blue-300 font-bold text-sm uppercase tracking-widest mb-2">
               {specialtyLabel}
             </p>
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-3 leading-tight">
               {doctor.name}
             </h1>
+
+            {doctor.bio && (
+              <p className="text-blue-100/80 text-sm leading-relaxed max-w-xl mt-2 mb-4">
+                {doctor.bio}
+              </p>
+            )}
 
             {/* Статы */}
             <div className="flex flex-wrap gap-6 justify-center md:justify-start mt-6">
@@ -196,18 +222,25 @@ export default async function DoctorProfilePage({ params }: Props) {
                     value={`${doctor.experience} лет`}
                   />
                 )}
+                {doctor.workplace && (
+                  <InfoRow
+                    icon="🏛️"
+                    label="Место работы"
+                    value={doctor.workplace}
+                  />
+                )}
+                {doctor.education && (
+                  <InfoRow
+                    icon="🎓"
+                    label="Образование"
+                    value={doctor.education}
+                  />
+                )}
                 {doctor.languages?.length > 0 && (
                   <InfoRow
                     icon="🌐"
                     label="Языки"
                     value={doctor.languages.join(', ')}
-                  />
-                )}
-                {doctor.phone && (
-                  <InfoRow
-                    icon="📞"
-                    label="Телефон"
-                    value={doctor.phone}
                   />
                 )}
               </div>
