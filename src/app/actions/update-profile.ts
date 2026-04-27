@@ -15,6 +15,7 @@ interface DoctorProfileData {
   bio?: string;
   workplace?: string;
   education?: string;
+  sameAs?: string[];
 }
 
 export async function updateDoctorProfile(data: DoctorProfileData) {
