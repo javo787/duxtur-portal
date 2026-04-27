@@ -41,6 +41,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description,
     openGraph: { title, description, images: article.image ? [article.image] : [], type: 'article' },
     twitter: { card: 'summary_large_image', title, description, images: article.image ? [article.image] : [] },
+    alternates: {
+      languages: {
+        'ru': `https://duxtur.com/ru/blog/${slug}`,
+        'uz': `https://duxtur.com/uz/blog/${slug}`,
+        'tg': `https://duxtur.com/tg/blog/${slug}`,
+        'kk': `https://duxtur.com/kk/blog/${slug}`,
+        'ky': `https://duxtur.com/ky/blog/${slug}`,
+      },
+    },
   };
 }
 
