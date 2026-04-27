@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: "Duxtur.com — Медицина на вашем языке",
   },
   description: "Верифицированные медицинские статьи от врачей Центральной Азии.",
-  metadataBase: new URL("https://duxtur.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur-portal.vercel.app"),
   verification: {
     google: "ZcN23s2ZiPZ9vBjP4QpQ25RPjKwCikDBiyQt5o4TuA4",
   },
