@@ -17,6 +17,10 @@ const uiLabels: Record<string, Record<string, string>> = {
   articles:        { ru: 'Все статьи автора →', uz: 'Muallif maqolalari →', tg: 'Мақолаҳои муаллиф →', kk: 'Автор мақалалары →', ky: 'Автордун макалалары →' },
   related:         { ru: 'Похожие статьи',   uz: 'O\'xshash maqolalar', tg: 'Мақолаҳои монанд',    kk: 'Ұқсас мақалалар', ky: 'Окшош макалалар' },
   disclaimer:      { ru: 'Важно',            uz: 'Muhim',               tg: 'Муҳим',               kk: 'Маңызды',         ky: 'Маанилүү' },
+  published:       { ru: 'Опубликовано', uz: 'Chop etilgan', tg: 'Нашр шуд', kk: 'Жарияланды', ky: 'Жарыяланды' },
+  updated:         { ru: 'Обновлено', uz: 'Yangilangan', tg: 'Навсозӣ шуд', kk: 'Жаңартылды', ky: 'Жаңыртылды' },
+  medicalReview:   { ru: 'Медицинская проверка', uz: 'Tibbiy tekshiruv', tg: 'Тафтиши тиббӣ', kk: 'Медициналық тексеру', ky: 'Медициналык текшерүү' },
+  reviewedByLabel: { ru: 'Проверено', uz: 'Tekshirdi', tg: 'Тасдиқ шуд', kk: 'Тексерді', ky: 'Текшерди' },
   disclaimer_text: {
     ru: 'Эта статья носит информационный характер и не заменяет консультацию врача. При наличии симптомов обратитесь к специалисту.',
     uz: 'Bu maqola ma\'lumot maqsadida bo\'lib, shifokor maslahatini almashtirmaydi.',
@@ -56,7 +60,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function BlogPage({ params }: { params: Promise<{ slug: string; lang: string }> }) {
   await dbConnect();
   const { slug, lang } = await params;
-  const article: any = await Article.findOne({ slug }).populate('authorId').lean();
+  const article: any = await Article.findOne({ slug })
+    .populate('authorId')
+    .populate('reviewedById')
+    .lean();
   if (!article) notFound();
 
   const t = (field: any) => {
@@ -83,9 +90,15 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     slug: { $ne: slug },
   }).limit(3).lean();
 
-  const date = new Date(article.createdAt).toLocaleDateString('ru', {
+  const datePublished = new Date(article.createdAt).toLocaleDateString('ru', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
+  const dateUpdated = article.updatedAt
+    ? new Date(article.updatedAt).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+  const dateMedicalReview = article.lastMedicalReview
+    ? new Date(article.lastMedicalReview).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
 
   // Поддержка старых статей (фиксированные секции)
   const legacySections = [
@@ -122,6 +135,13 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
     image: article.image,
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
+    lastReviewed: article.lastMedicalReview || article.updatedAt,
+    reviewedBy: {
+        '@type': 'Person',
+        '@id': `https://duxtur.com/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+        name: article.reviewedById?.name,
+        url: `https://duxtur.com/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+      },
     author: {
       '@type': 'Person',
       '@id': authorUrl,
@@ -227,15 +247,45 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
               </div>
             </Link>
             <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-xs text-gray-400">{date}</span>
-              {article.reviewedBy && (
-                <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1 rounded-full font-medium">
+              {/* Даты */}
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{L('published', lang)}</span>
+                <span className="text-xs text-gray-600 font-semibold mt-0.5">{datePublished}</span>
+              </div>
+
+              {dateUpdated && dateUpdated !== datePublished && (
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{L('updated', lang)}</span>
+                  <span className="text-xs text-gray-600 font-semibold mt-0.5">{dateUpdated}</span>
+                </div>
+              )}
+
+              {dateMedicalReview && (
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-green-600 font-medium uppercase tracking-wider">{L('medicalReview', lang)}</span>
+                  <span className="text-xs text-green-700 font-semibold mt-0.5">{dateMedicalReview}</span>
+                </div>
+              )}
+
+              {/* Reviewer — ссылка если есть ID, строка если старая запись */}
+              {article.reviewedById ? (
+                <Link
+                  href={`/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`}
+                  className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1.5 rounded-full font-medium hover:bg-green-100 transition"
+                >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Проверено: {article.reviewedBy}
+                  {L('reviewedByLabel', lang)}: <span className="font-bold ml-1">{article.reviewedById?.name}</span>
+                </Link>
+              ) : article.reviewedBy ? (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1.5 rounded-full font-medium">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  {L('reviewedByLabel', lang)}: {article.reviewedBy}
                 </span>
-              )}
+              ) : null}
               <ShareButtons url={articleUrl} title={t(article.title)} lang={lang} />
             </div>
           </div>
