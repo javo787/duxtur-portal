@@ -248,12 +248,18 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
           <div className="lg:col-span-8">
 
             {/* Breadcrumb */}
-            <nav className="text-xs text-gray-400 mb-8 flex items-center gap-2 flex-wrap">
-              <Link href={`/${lang}`} className="hover:text-blue-600 transition font-medium">Duxtur.com</Link>
-              <span>/</span>
-              <Link href={`/${lang}/blog`} className="hover:text-blue-600 transition font-medium">Blog</Link>
-              <span>/</span>
-              <span className="text-gray-600 line-clamp-1">{t(article.title)}</span>
+            <nav aria-label="breadcrumb" className="mb-8">
+              <ol className="flex items-center gap-1.5 flex-wrap text-xs text-gray-400">
+                <li>
+                  <Link href={`/${lang}`} className="hover:text-blue-600 transition font-medium">Duxtur.com</Link>
+                </li>
+                <li className="select-none">/</li>
+                <li>
+                  <Link href={`/${lang}/blog`} className="hover:text-blue-600 transition font-medium">Blog</Link>
+                </li>
+                <li className="select-none">/</li>
+                <li className="text-gray-600 line-clamp-1 max-w-xs">{t(article.title)}</li>
+              </ol>
             </nav>
 
             {/* Overview */}
