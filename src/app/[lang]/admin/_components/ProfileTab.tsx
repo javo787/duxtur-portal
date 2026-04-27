@@ -159,6 +159,15 @@ export function ProfileTab({ lang }: { lang: string }) {
                 placeholder="ТГМУ, специальность «Лечебное дело», 2010"
                 hint="ВУЗ, специальность и год окончания"
               />
+              <div className="md:col-span-2">
+                <Field
+                  label="🔗 Внешние профили (sameAs)"
+                  value={profile.sameAs?.join(', ') || ''}
+                  onChange={(v) => setProfile((p: any) => ({ ...p, sameAs: v.split(',').map((l: string) => l.trim()).filter(Boolean) }))}
+                  placeholder="https://linkedin.com/in/..., https://researchgate.net/profile/..."
+                  hint="Ссылки через запятую — LinkedIn, ResearchGate, профиль в медреестре. Повышают доверие Google."
+                />
+              </div>
             </div>
 
             {/* Биография */}
