@@ -60,4 +60,6 @@ const ArticleSchema = new mongoose.Schema({
   likesDown:   { type: Number, default: 0 },
 }, { timestamps: true });
 
-export default mongoose.models.Article || mongoose.model('Article', ArticleSchema);
+// Сбрасываем кеш модели чтобы подхватить изменения схемы
+delete (mongoose.models as any).Article;
+export default mongoose.model('Article', ArticleSchema);
