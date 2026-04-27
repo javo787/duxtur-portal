@@ -27,14 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titles[lang] || titles.ru,
     description: descs[lang] || descs.ru,
     alternates: {
-      canonical: `https://duxtur.com/${lang}/blog`,
-      languages: Object.fromEntries(
-        ["ru", "uz", "tg", "kk", "ky"].map((l) => [
-          l,
-          `https://duxtur.com/${l}/blog`,
-        ])
-      ),
-    },
+  canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/${lang}/blog`,
+  languages: Object.fromEntries(
+    ["ru", "uz", "tg", "kk", "ky"].map((l) => [
+      l,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/${l}/blog`,
+    ])
+  ),
+},
     openGraph: {
       title: titles[lang] || titles.ru,
       description: descs[lang] || descs.ru,
