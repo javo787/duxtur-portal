@@ -302,12 +302,23 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
                   {L('sources', lang)}
                 </h4>
                 <ul className="space-y-2">
-                  {article.references.map((ref: string, i: number) => (
-                    <li key={i} className="flex gap-3 text-sm text-gray-500">
-                      <span className="text-blue-400 font-bold shrink-0">{i + 1}.</span>
-                      <span>{ref}</span>
-                    </li>
-                  ))}
+                  {article.references.map((ref: string, i: number) => {
+                    const urlMatch = ref.match(/https?:\/\/[^\s]+/);
+                    const label = ref.replace(/https?:\/\/[^\s]+/, '').trim().replace(/^[-–—:]\s*/, '');
+                    return (
+                      <li key={i} className="flex gap-3 text-sm text-gray-500">
+                        <span className="text-blue-400 font-bold shrink-0">{i + 1}.</span>
+                        {urlMatch ? (
+                          <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline leading-relaxed">
+                            {label || ref}
+                          </a>
+                        ) : (
+                          <span className="leading-relaxed">{ref}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
