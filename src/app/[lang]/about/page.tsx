@@ -190,13 +190,8 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
           <p className="text-gray-600 text-sm leading-relaxed mb-5">
             Нашли ошибку в статье? Хотите предложить тему? Есть вопросы о верификации? Напишите нам — редакция отвечает в течение 24 часов.
           </p>
-          
-            href="https://t.me/duxturcom"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition active:scale-95"
-          >
-            Написать в Telegram →
+          <a href="https://t.me/duxturcom" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition active:scale-95">
+            Написать в Telegram
           </a>
         </section>
 
