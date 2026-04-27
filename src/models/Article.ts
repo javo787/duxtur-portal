@@ -19,9 +19,17 @@ const ArticleSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
 
   // E-E-A-T поля
-  aiGenerated: { type: Boolean, default: true },  // создана с помощью AI?
-  reviewedBy: { type: String, default: '' },       // имя врача который проверил
-  reviewedAt: { type: Date },                      // дата проверки
+  
+  aiGenerated: { type: Boolean, default: true },
+
+  reviewedById: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Doctor',
+    default: null,
+  },
+  reviewedBy:  { type: String, default: '' },
+  reviewedAt:  { type: Date },
+  lastMedicalReview: { type: Date },
   
   title:              { ru: String, uz: String, tg: String, ky: String, kk: String },
   overview:           { ru: String, uz: String, tg: String, ky: String, kk: String },
