@@ -43,7 +43,14 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   const specialtyLabel = t(doctor.specialty);
   const doctorUrl = `https://duxtur.com/${lang}/doctor/${doctor.slug || doctor._id}`;
-
+  // Дата последней медицинской проверки — берём из самой свежей статьи
+  const lastReviewedArticle = articles.find(a => a.lastMedicalReview);
+  const lastMedicalReviewDate = lastReviewedArticle?.lastMedicalReview
+    ? new Date(lastReviewedArticle.lastMedicalReview).toLocaleDateString('ru', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : null;
+  
   const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -59,6 +66,9 @@ export default async function DoctorProfilePage({ params }: Props) {
       ? { '@type': 'EducationalOrganization', name: doctor.education }
       : undefined,
     description: doctor.bio || undefined,
+  sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
+  // lastReviewed — дата последней медпроверки для Google
+  lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
   };
   Object.keys(jsonLd).forEach((k) => jsonLd[k] === undefined && delete jsonLd[k]);
 
@@ -246,6 +256,29 @@ export default async function DoctorProfilePage({ params }: Props) {
               </div>
             </div>
 
+            {/* Последняя медицинская проверка */}
+            {lastMedicalReviewDate && (
+              <div className="bg-blue-50 rounded-3xl p-5 border border-blue-100">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-blue-800 text-sm">Медицинская проверка</p>
+                    <p className="text-blue-600 text-xs mt-1 font-semibold">{lastMedicalReviewDate}</p>
+                    <p className="text-blue-700/70 text-xs mt-1 leading-relaxed">
+                      Контент проверен практикующим врачом
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Верификация */}
+            <div className="bg-green-50 rounded-3xl p-5 border border-green-100">
+            
             {/* Верификация */}
             <div className="bg-green-50 rounded-3xl p-5 border border-green-100">
               <div className="flex items-start gap-3">
