@@ -37,6 +37,7 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
         bio:        data.bio,
         workplace:  data.workplace,
         education:  data.education,
+        sameAs:     data.sameAs,
       }).filter(([_, v]) => v !== undefined && v !== null)
     );
 
