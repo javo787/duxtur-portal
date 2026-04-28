@@ -15,14 +15,29 @@ import { buildAlternates } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: Locale }> };
 
+export const revalidate = 3600; // ISR — обновление главной каждый час
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const dict = await getDictionary(lang);
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
   return {
     title: dict.meta_title,
     description: dict.meta_desc,
     keywords: ['врач', 'медицина', 'здоровье', 'статьи врачей', 'Узбекистан', 'Таджикистан', 'Казахстан'],
-    openGraph: { title: dict.meta_title, description: dict.meta_desc, type: 'website', siteName: 'Duxtur.com' },
+    openGraph: {
+      title: dict.meta_title,
+      description: dict.meta_desc,
+      type: 'website',
+      siteName: 'Duxtur.com',
+      images: [`${baseUrl}/og-default.png`],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: dict.meta_title,
+      description: dict.meta_desc,
+      images: [`${baseUrl}/og-default.png`],
+    },
     alternates: buildAlternates(''),
   };
 }
@@ -30,6 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Home(props: Props) {
   const { lang } = await props.params;
   const dict = await getDictionary(lang);
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
 
   await dbConnect();
 
@@ -39,7 +55,11 @@ export default async function Home(props: Props) {
         { [`title.${lang}`]: { $exists: true, $ne: '' } },
         { [`title.ru`]: { $exists: true, $ne: '' } },
       ],
-    }).sort({ createdAt: -1 }).limit(9).populate('authorId').lean(),
+    })
+      .sort({ createdAt: -1 })
+      .limit(9)
+      .populate('authorId')
+      .lean(),
     Doctor.find({ status: 'approved' }).limit(6).lean(),
   ]).catch(() => [[], []]);
 
@@ -48,15 +68,29 @@ export default async function Home(props: Props) {
     return field[lang] || field['ru'] || '';
   };
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  // ── WebSite + Organization + SearchAction JSON-LD ─────────────────────────
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': ['MedicalOrganization', 'WebSite'],
+    '@id': `${baseUrl}/#organization`,
     name: 'Duxtur.com',
     url: baseUrl,
     description: dict.meta_desc,
-    areaServed: ['Tajikistan', 'Uzbekistan', 'Kazakhstan', 'Kyrgyzstan'],
+    logo: {
+      '@type': 'ImageObject',
+      url: `${baseUrl}/logo.png`,
+      width: 180,
+      height: 60,
+    },
+    image: `${baseUrl}/og-default.png`,
+    areaServed: [
+      { '@type': 'Country', name: 'Tajikistan' },
+      { '@type': 'Country', name: 'Uzbekistan' },
+      { '@type': 'Country', name: 'Kazakhstan' },
+      { '@type': 'Country', name: 'Kyrgyzstan' },
+    ],
     inLanguage: ['ru', 'uz', 'tg', 'kk', 'ky'],
+    sameAs: ['https://t.me/duxturcom'],
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -65,31 +99,20 @@ export default async function Home(props: Props) {
       },
       'query-input': 'required name=search_term_string',
     },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Duxtur.com',
-      url: baseUrl,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${baseUrl}/logo.png`,
-      },
-    },
-   breadcrumb: {
+    breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Duxtur.com',
-          item: baseUrl,
-        },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: baseUrl },
       ],
-    }, 
+    },
   };
 
   return (
     <main className="min-h-screen bg-white text-gray-900 font-sans">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <HomeHeader lang={lang} />
       <HomeHero lang={lang} dict={dict} />
       <HomeCategories lang={lang} dict={dict} />
