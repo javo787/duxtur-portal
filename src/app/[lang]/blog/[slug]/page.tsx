@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ShareButtons from '@/components/ShareButtons';
+import { buildAlternates } from '@/lib/seo';
 
 const uiLabels: Record<string, Record<string, string>> = {
   verified:        { ru: 'Проверено врачом', uz: 'Tekshirilgan',       tg: 'Тасдиқшуда',          kk: 'Тексерілген',     ky: 'Текшерилген' },
@@ -45,15 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description,
     openGraph: { title, description, images: article.image ? [article.image] : [], type: 'article' },
     twitter: { card: 'summary_large_image', title, description, images: article.image ? [article.image] : [] },
-    alternates: {
-      languages: {
-        'ru': `https://duxtur.com/ru/blog/${slug}`,
-        'uz': `https://duxtur.com/uz/blog/${slug}`,
-        'tg': `https://duxtur.com/tg/blog/${slug}`,
-        'kk': `https://duxtur.com/kk/blog/${slug}`,
-        'ky': `https://duxtur.com/ky/blog/${slug}`,
-      },
-    },
+    alternates: buildAlternates(`blog/${slug}`),
   };
 }
 
@@ -122,53 +115,58 @@ export default async function BlogPage({ params }: { params: Promise<{ slug: str
   // Используем динамические если есть, иначе legacy
   const sections = dynamicSections.length > 0 ? dynamicSections : legacySections;
 
-  const articleUrl = `https://duxtur.com/${lang}/blog/${article.slug}`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const articleUrl = `${baseUrl}/${lang}/blog/${article.slug}`;
   const authorSlug = article.authorId?.slug || article.authorId?._id;
-  const authorUrl = `https://duxtur.com/${lang}/doctor/${authorSlug}`;
+  const authorUrl = `${baseUrl}/${lang}/doctor/${authorSlug}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'MedicalWebPage',
-    name: t(article.title),
+    '@type': ['Article', 'MedicalWebPage'],
+    headline: t(article.title),
     description: t(article.overview).substring(0, 160),
     url: articleUrl,
     image: article.image,
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
-    lastReviewed: article.lastMedicalReview || article.updatedAt,
-    reviewedBy: {
-        '@type': 'Person',
-        '@id': `https://duxtur.com/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
-        name: article.reviewedById?.name,
-        url: `https://duxtur.com/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
-      },
+    dateReviewed: article.lastMedicalReview || article.updatedAt,
+    reviewedBy: article.reviewedById ? {
+      '@type': 'Person',
+      '@id': `${baseUrl}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+      name: article.reviewedById?.name,
+      url: `${baseUrl}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+    } : undefined,
     author: {
       '@type': 'Person',
       '@id': authorUrl,
       name: article.authorId?.name,
       jobTitle: t(article.authorId?.specialty),
       url: authorUrl,
-      worksFor: {
-        '@type': 'Organization',
-        name: 'Duxtur.com',
-        url: 'https://duxtur.com',
-      },
     },
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.com',
-      url: 'https://duxtur.com',
+      url: baseUrl,
     },
+    ...(avgRating > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgRating,
+        ratingCount: article.ratings?.length,
+        bestRating: 5,
+      },
+    }),
     medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: `https://duxtur.com/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: `https://duxtur.com/${lang}/blog` },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: `${baseUrl}/${lang}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${baseUrl}/${lang}/blog` },
         { '@type': 'ListItem', position: 3, name: t(article.title), item: articleUrl },
       ],
     },
   };
+
   
 
   return (
