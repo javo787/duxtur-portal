@@ -4,6 +4,7 @@ import Article from '@/models/Article';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { buildAlternates } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.com`,
     description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.com`,
+    alternates: buildAlternates(`doctor/${id}`),
   };
 }
 
@@ -42,7 +44,8 @@ export default async function DoctorProfilePage({ params }: Props) {
   };
 
   const specialtyLabel = t(doctor.specialty);
-  const doctorUrl = `https://duxtur.com/${lang}/doctor/${doctor.slug || doctor._id}`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const doctorUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
   // Дата последней медицинской проверки — берём из самой свежей статьи
   const lastReviewedArticle = articles.find(a => a.lastMedicalReview);
   const lastMedicalReviewDate = lastReviewedArticle?.lastMedicalReview
@@ -53,7 +56,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   
   const jsonLd: any = {
     '@context': 'https://schema.org',
-    '@type': 'Person',
+    '@type': ['Person', 'MedicalBusiness'],
     '@id': doctorUrl,
     name: doctor.name,
     jobTitle: specialtyLabel,
@@ -61,14 +64,14 @@ export default async function DoctorProfilePage({ params }: Props) {
     image: doctor.image || undefined,
     worksFor: doctor.workplace
       ? { '@type': 'Organization', name: doctor.workplace }
-      : { '@type': 'Organization', name: 'Duxtur.com', url: 'https://duxtur.com' },
+      : { '@type': 'Organization', name: 'Duxtur.com', url: baseUrl },
     alumniOf: doctor.education
       ? { '@type': 'EducationalOrganization', name: doctor.education }
       : undefined,
     description: doctor.bio || undefined,
-  sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
-  // lastReviewed — дата последней медпроверки для Google
-  lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
+    sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
+    lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
+    knowsAbout: specialtyLabel || undefined,
   };
   Object.keys(jsonLd).forEach((k) => jsonLd[k] === undefined && delete jsonLd[k]);
 
