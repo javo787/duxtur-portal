@@ -74,6 +74,17 @@ export default async function Home(props: Props) {
         url: `${baseUrl}/logo.png`,
       },
     },
+   breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Duxtur.com',
+          item: baseUrl,
+        },
+      ],
+    }, 
   };
 
   return (
