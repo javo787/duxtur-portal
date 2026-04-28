@@ -3,6 +3,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -10,23 +11,25 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     title: 'Редакционная политика — Duxtur.com',
     description: 'Редакционные стандарты Duxtur.com: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
     robots: { index: true, follow: true },
+    alternates: buildAlternates('editorial'),
   };
 }
 
 export default async function EditorialPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: 'Редакционная политика Duxtur.com',
-    url: `https://duxtur.com/${lang}/editorial`,
+    url: `${baseUrl}/${lang}/editorial`,
     description: 'Стандарты создания и верификации медицинского контента',
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.com',
-      url: 'https://duxtur.com',
-    }
+      url: baseUrl,
+    },
   };
 
   return (
