@@ -3,6 +3,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -20,31 +21,33 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     kk: 'Duxtur.com — Орталық Азияның алғашқы верификацияланған медициналық порталы.',
     ky: 'Duxtur.com — Борбордук Азиянын биринчи верификацияланган медициналык порталы.',
   };
-  return {
+ return {
     title: titles[lang] || titles.ru,
     description: descs[lang] || descs.ru,
+    alternates: buildAlternates('about'),
   };
 }
 
 export default async function AboutPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
     name: 'О Duxtur.com',
-    url: `https://duxtur.com/${lang}/about`,
+    url: `${baseUrl}/${lang}/about`,
     description: 'Первый верифицированный медицинский портал Центральной Азии',
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.com',
-      url: 'https://duxtur.com',
+      url: baseUrl,
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'editorial',
         url: 'https://t.me/duxturcom',
-      }
-    }
+      },
+    },
   };
 
   return (
