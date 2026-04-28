@@ -11,6 +11,7 @@ import HomeArticles from '@/components/home/HomeArticles';
 import HomeAuthors from '@/components/home/HomeAuthors';
 import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
+import { buildAlternates } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: Locale }> };
 
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: dict.meta_desc,
     keywords: ['врач', 'медицина', 'здоровье', 'статьи врачей', 'Узбекистан', 'Таджикистан', 'Казахстан'],
     openGraph: { title: dict.meta_title, description: dict.meta_desc, type: 'website', siteName: 'Duxtur.com' },
+    alternates: buildAlternates(''),
   };
 }
 
