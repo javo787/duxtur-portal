@@ -48,13 +48,32 @@ export default async function Home(props: Props) {
     return field[lang] || field['ru'] || '';
   };
 
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'MedicalOrganization',
+    '@type': ['MedicalOrganization', 'WebSite'],
     name: 'Duxtur.com',
-    url: 'https://duxtur.com',
+    url: baseUrl,
     description: dict.meta_desc,
     areaServed: ['Tajikistan', 'Uzbekistan', 'Kazakhstan', 'Kyrgyzstan'],
+    inLanguage: ['ru', 'uz', 'tg', 'kk', 'ky'],
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/${lang}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Duxtur.com',
+      url: baseUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/logo.png`,
+      },
+    },
   };
 
   return (
