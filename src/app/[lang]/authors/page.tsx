@@ -3,6 +3,7 @@ import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { buildAlternates } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -15,7 +16,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     kk: 'Біздің дәрігер-авторлар — Duxtur.com',
     ky: 'Биздин автор-дарыгерлер — Duxtur.com',
   };
-  return { title: titles[lang] || titles.ru };
+ return {
+    title: titles[lang] || titles.ru,
+    description:
+      lang === 'ru'
+        ? 'Практикующие врачи Центральной Азии, пишущие для Duxtur.com.'
+        : undefined,
+    alternates: buildAlternates('authors'),
+  }; 
 }
 
 const ui: Record<string, Record<string, string>> = {
