@@ -48,6 +48,23 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         url: 'https://t.me/duxturcom',
       },
     },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Duxtur.com',
+          item: `${baseUrl}/${lang}`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: lang === 'ru' ? 'О нас' : lang === 'uz' ? 'Biz haqimizda' : lang === 'tg' ? 'Дар бораи мо' : lang === 'kk' ? 'Біз туралы' : 'Биз жөнүндө',
+          item: `${baseUrl}/${lang}/about`,
+        },
+      ],
+    },
   };
 
   return (
