@@ -3,6 +3,7 @@ import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { buildAlternates } from '@/lib/seo';
 import FadeIn from '@/components/FadeIn';
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<{ category?: string }> };
