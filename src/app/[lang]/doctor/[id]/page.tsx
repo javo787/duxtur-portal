@@ -72,6 +72,29 @@ export default async function DoctorProfilePage({ params }: Props) {
     sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
     lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
     knowsAbout: specialtyLabel || undefined,
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Duxtur.com',
+          item: `${baseUrl}/${lang}`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: lang === 'ru' ? 'Врачи' : lang === 'uz' ? 'Shifokorlar' : lang === 'tg' ? 'Духтурон' : lang === 'kk' ? 'Дәрігерлер' : 'Дарыгерлер',
+          item: `${baseUrl}/${lang}/authors`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: doctor.name,
+          item: doctorUrl,
+        },
+      ],
+    },
   };
   Object.keys(jsonLd).forEach((k) => jsonLd[k] === undefined && delete jsonLd[k]);
 
