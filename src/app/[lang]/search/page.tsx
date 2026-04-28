@@ -8,8 +8,17 @@ type Props = { params: Promise<{ lang: string }>; searchParams: Promise<{ q?: st
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang } = await params;
   const { q } = await searchParams;
+  const titles: Record<string, string> = {
+    ru: 'Поиск',
+    uz: 'Qidiruv',
+    tg: 'Ҷустуҷӯ',
+    kk: 'Іздеу',
+    ky: 'Издөө',
+  };
+  const label = titles[lang] || titles.ru;
   return {
-    title: q ? `"${q}" — Поиск | Duxtur.com` : 'Поиск — Duxtur.com',
+    title: q ? `"${q}" — ${label} | Duxtur.com` : `${label} — Duxtur.com`,
+    robots: { index: false, follow: true },
   };
 }
 
