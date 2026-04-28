@@ -48,6 +48,13 @@ const ArticleSchema = new mongoose.Schema({
   section4_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
   section5_title:   { ru: String, uz: String, tg: String, ky: String, kk: String },
   section5_content: { ru: String, uz: String, tg: String, ky: String, kk: String },
+
+  category: {
+    type: String,
+    enum: ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'general'],
+    default: 'general',
+    index: true,
+  },
   
   references: [String],
   views:      { type: Number, default: 0 },
