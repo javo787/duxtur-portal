@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: dict.meta_desc,
       images: [`${baseUrl}/og-default.png`],
     },
-    alternates: buildAlternates(''),
+    alternates: buildAlternates('', lang),
   };
 }
 
