@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: titles[lang] || titles.ru,
     description: descs[lang] || descs.ru,
-    alternates: buildAlternates('authors'),
+    alternates: buildAlternates('authors', lang),
   };
 }
 
