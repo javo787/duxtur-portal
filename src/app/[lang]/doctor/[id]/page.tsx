@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.com`,
     description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.com`,
-    alternates: buildAlternates(`doctor/${id}`),
+    alternates: buildAlternates(`doctor/${id}`, lang),
   };
 }
 
