@@ -80,7 +80,7 @@ export async function generateMetadata({
       description,
       images: article.image ? [article.image] : [],
     },
-    alternates: buildAlternates(`blog/${slug}`),
+    alternates: buildAlternates(`blog/${slug}`, lang),
   };
 }
 
