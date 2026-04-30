@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
  return {
     title: titles[lang] || titles.ru,
     description: descs[lang] || descs.ru,
-    alternates: buildAlternates('about'),
+    alternates: buildAlternates('about', lang),
   };
 }
 
