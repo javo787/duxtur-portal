@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     title: 'Редакционная политика — Duxtur.com',
     description: 'Редакционные стандарты Duxtur.com: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
     robots: { index: true, follow: true },
-    alternates: buildAlternates('editorial'),
+    alternates: buildAlternates('editorial', lang),
   };
 }
 
