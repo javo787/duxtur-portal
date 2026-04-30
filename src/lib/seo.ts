@@ -3,9 +3,9 @@ const BASE_URL =
 
 const LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
 
-export function buildAlternates(path: string) {
+export function buildAlternates(path: string, currentLang = "ru") {
   return {
-    canonical: `${BASE_URL}/ru/${path}`,
+    canonical: `${BASE_URL}/${currentLang}/${path}`,
     languages: Object.fromEntries(
       LANGS.map((l) => [l, `${BASE_URL}/${l}/${path}`])
     ),
