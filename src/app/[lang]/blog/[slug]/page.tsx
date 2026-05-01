@@ -92,7 +92,8 @@ return {
     images: [ogImage],
   },
   alternates: buildAlternates(`blog/${slug}`, lang),
-};
+  };
+} 
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default async function BlogPage({
