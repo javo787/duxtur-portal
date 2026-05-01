@@ -55,6 +55,11 @@ const nextConfig: NextConfig = {
         destination: '/ru/authors',
         permanent: false,
       },
+{
+  source: '/',
+  destination: '/ru',
+  permanent: false, 
+},
     ];
   },
 };
