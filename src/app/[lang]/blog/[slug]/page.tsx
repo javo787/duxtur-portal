@@ -62,27 +62,37 @@ export async function generateMetadata({
   if (!article) return { title: 'Not Found' };
   const t = (f: any) => (f && (f[lang] || f['ru'])) || '';
   const title = `${t(article.title)} | Duxtur.com`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur-portal.vercel.app";
   const description = t(article.overview).substring(0, 160);
-  return {
+const ogImage = article.image
+  ? article.image.startsWith('http')
+    ? article.image
+    : `${baseUrl}${article.image}`
+  : `${baseUrl}/og-default.png`;
+
+return {
+  title,
+  description,
+  openGraph: {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: article.image ? [article.image] : [],
-      type: 'article',
-      publishedTime: article.createdAt,
-      modifiedTime: article.updatedAt,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: article.image ? [article.image] : [],
-    },
-    alternates: buildAlternates(`blog/${slug}`, lang),
-  };
-}
+    images: [ogImage],
+    type: 'article',
+    publishedTime: article.createdAt
+      ? new Date(article.createdAt).toISOString()
+      : undefined,
+    modifiedTime: article.updatedAt
+      ? new Date(article.updatedAt).toISOString()
+      : undefined,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: [ogImage],
+  },
+  alternates: buildAlternates(`blog/${slug}`, lang),
+};
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default async function BlogPage({
