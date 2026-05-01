@@ -14,12 +14,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     Doctor.find({ status: "approved" }).select("slug _id updatedAt").lean(),
   ]);
 
-  // Главные страницы
+  // Главные страницы (ru — priority 1.0, остальные 0.9)
   const mainPages = languages.map((lang) => ({
     url: `${baseUrl}/${lang}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
-    priority: 1.0,
+    priority: lang === "ru" ? 1.0 : 0.9,
   }));
 
   // Страницы блога
@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${baseUrl}/${lang}/blog`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
-    priority: 0.9,
+    priority: lang === "ru" ? 0.9 : 0.8,
   }));
 
   // Статические страницы
@@ -39,15 +39,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/${lang}/about`,
-      lastModified: new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.5,
-    },
-    {
       url: `${baseUrl}/${lang}/editorial`,
       lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
+      changeFrequency: "monthly" as const,
       priority: 0.6,
     },
   ]);
@@ -77,12 +71,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1.0,
-    },
     ...mainPages,
     ...blogPages,
     ...staticPages,
