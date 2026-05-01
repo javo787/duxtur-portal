@@ -7,9 +7,26 @@ import { buildAlternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
+
+  const titles: Record<string, string> = {
+    ru: 'Редакционная политика — Duxtur.com',
+    uz: 'Tahririyat siyosati — Duxtur.com',
+    tg: 'Сиёсати таҳририявӣ — Duxtur.com',
+    kk: 'Редакциялық саясат — Duxtur.com',
+    ky: 'Редакциялык саясат — Duxtur.com',
+  };
+
+  const descs: Record<string, string> = {
+    ru: 'Редакционные стандарты Duxtur.com: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
+    uz: 'Duxtur.com tahririyat standartlari: tibbiy kontentni qanday yaratamiz, tekshiramiz va chop etamiz. Shifokorlarni tasdiqlash jarayoni.',
+    tg: 'Стандартҳои таҳририявии Duxtur.com: чӣ тавр мо мӯҳтавои тиббӣ эҷод, тафтиш ва нашр мекунем. Раванди тасдиқи духтурон.',
+    kk: 'Duxtur.com редакциялық стандарттары: медициналық контентті қалай жасаймыз, тексереміз және жариялаймыз. Дәрігерлерді верификациялау процесі.',
+    ky: 'Duxtur.com редакциялык стандарттары: медициналык контентти кантип түзөбүз, текшеребиз жана жарыялайбыз. Дарыгерлерди верификациялоо процесси.',
+  };
+
   return {
-    title: 'Редакционная политика — Duxtur.com',
-    description: 'Редакционные стандарты Duxtur.com: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
+    title: titles[lang] ?? titles.ru,
+    description: descs[lang] ?? descs.ru,
     robots: { index: true, follow: true },
     alternates: buildAlternates('editorial', lang),
   };
