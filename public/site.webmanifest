@@ -16,6 +16,6 @@
   "theme_color": "#2563EB",
   "background_color": "#F0F7FF",
   "display": "standalone",
-  "start_url": "/",
+  "start_url": "/ru",
   "lang": "ru"
 }
