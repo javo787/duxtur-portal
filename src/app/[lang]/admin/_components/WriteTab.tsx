@@ -188,7 +188,7 @@ export function WriteTab({ lang }: { lang: string }) {
       </div>
 
       {/* AI INPUT FORM */}
-      {mode !== 'manual' && (
+      {(mode as string) !== 'manual' && (
         <>
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
