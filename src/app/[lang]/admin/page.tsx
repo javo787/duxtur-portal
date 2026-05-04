@@ -4,10 +4,35 @@ import { useState, use } from 'react';
 import Link from 'next/link';
 import { WriteTab } from './_components/WriteTab';
 import { ProfileTab } from './_components/ProfileTab';
+import { MyArticlesTab } from './_components/MyArticlesTab';
+import { ArticleEditModal } from './_components/ArticleEditModal';
+
+type Tab = 'write' | 'articles' | 'profile';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'write',    label: '✍️ Написать статью' },
+  { id: 'articles', label: '📋 Мои статьи' },
+  { id: 'profile',  label: '👤 Мой профиль' },
+];
 
 export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
-  const [tab, setTab] = useState<'write' | 'profile'>('write');
+  const [tab, setTab] = useState<Tab>('write');
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [articlesKey, setArticlesKey] = useState(0); // force refetch after save
+
+  const handleEdit = (slug: string) => {
+    setEditingSlug(slug);
+  };
+
+  const handleEditClose = () => {
+    setEditingSlug(null);
+  };
+
+  const handleEditSaved = () => {
+    setArticlesKey((k) => k + 1); // refresh list
+    setEditingSlug(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -27,15 +52,12 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 flex gap-1 border-t border-gray-100">
-          {([
-            { id: 'write', label: '✍️ Написать статью' },
-            { id: 'profile', label: '👤 Мой профиль' },
-          ] as const).map((t) => (
+        <div className="max-w-5xl mx-auto px-6 flex gap-1 border-t border-gray-100 overflow-x-auto">
+          {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-5 py-3 text-sm font-bold border-b-2 transition ${
+              className={`px-5 py-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${
                 tab === t.id
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-400 hover:text-gray-700'
@@ -48,9 +70,26 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
       </header>
 
       <div className="max-w-5xl mx-auto p-6 md:p-10">
-        {tab === 'write' && <WriteTab lang={lang} />}
-        {tab === 'profile' && <ProfileTab lang={lang} />}
+        {tab === 'write'    && <WriteTab lang={lang} />}
+        {tab === 'articles' && (
+          <MyArticlesTab
+            key={articlesKey}
+            lang={lang}
+            onEdit={handleEdit}
+          />
+        )}
+        {tab === 'profile'  && <ProfileTab lang={lang} />}
       </div>
+
+      {/* Article edit modal */}
+      {editingSlug && (
+        <ArticleEditModal
+          slug={editingSlug}
+          lang={lang}
+          onClose={handleEditClose}
+          onSaved={handleEditSaved}
+        />
+      )}
     </div>
   );
 }
