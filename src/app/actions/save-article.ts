@@ -19,9 +19,8 @@ export async function saveArticle(articleData: any, language: string) {
 
     await dbConnect();
 
-    if (!articleData.references || articleData.references.length < 2) {
-      return { success: false, error: 'Минимум 2 источника (WHO, CDC, PubMed и т.д.)' };
-    }
+    // Источники необязательны — врач может добавить позже
+const references = Array.isArray(articleData.references) ? articleData.references : [];
 
     // Находим профиль текущего врача
     const { User } = await import('@/models/User').then(m => ({ User: m.default }));
@@ -72,8 +71,9 @@ const slug = transliterate(rawTitle)
   section4_content: { [language]: articleData.section4_content || '' },
   section5_title: { [language]: articleData.section5_title || '' },
   section5_content: { [language]: articleData.section5_content || '' },
-  references: articleData.references,
-  isVerified: true,
+  references: references,
+isVerified: false,
+aiGenerated: articleData.aiGenerated ?? true,
 });
 
     return { success: true, slug: newArticle.slug };
