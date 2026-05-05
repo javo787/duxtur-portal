@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
-import { ActionBtn } from './_components/ActionBtn'; 
+import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn'; 
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();
