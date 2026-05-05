@@ -9,16 +9,19 @@ interface TagsInputProps {
   onChange: (tags: string[]) => void;
   placeholder?: string;
   color?: 'blue' | 'orange' | 'green';
+  description?: string;
+  example?: string;
 }
 
 const COLORS = {
-  blue:   { tag: 'bg-blue-50 text-blue-700 border-blue-200',   input: 'focus:border-blue-400 focus:ring-blue-50' },
+  blue:   { tag: 'bg-blue-50 text-blue-700 border-blue-200',     input: 'focus:border-blue-400 focus:ring-blue-50' },
   orange: { tag: 'bg-orange-50 text-orange-700 border-orange-200', input: 'focus:border-orange-400 focus:ring-orange-50' },
-  green:  { tag: 'bg-green-50 text-green-700 border-green-200',  input: 'focus:border-green-400 focus:ring-green-50' },
+  green:  { tag: 'bg-green-50 text-green-700 border-green-200',   input: 'focus:border-green-400 focus:ring-green-50' },
 };
 
-export function TagsInput({ label, icon, tags, onChange, placeholder, color = 'blue' }: TagsInputProps) {
+export function TagsInput({ label, icon, tags, onChange, placeholder, color = 'blue', description, example }: TagsInputProps) {
   const [input, setInput] = useState('');
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const c = COLORS[color];
 
@@ -29,9 +32,7 @@ export function TagsInput({ label, icon, tags, onChange, placeholder, color = 'b
     setInput('');
   };
 
-  const removeTag = (index: number) => {
-    onChange(tags.filter((_, i) => i !== index));
-  };
+  const removeTag = (index: number) => onChange(tags.filter((_, i) => i !== index));
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -44,26 +45,28 @@ export function TagsInput({ label, icon, tags, onChange, placeholder, color = 'b
 
   return (
     <div>
-      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-        <span>{icon}</span> {label}
-      </label>
+      {/* Label + description */}
+      <div className="mb-2">
+        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+          <span>{icon}</span> {label}
+        </label>
+        {description && (
+          <p className="text-xs text-gray-400 mt-1 leading-relaxed">{description}</p>
+        )}
+      </div>
+
+      {/* Input area */}
       <div
         onClick={() => inputRef.current?.focus()}
-        className={`min-h-[48px] w-full p-2 border-2 border-gray-200 rounded-xl focus-within:ring-2 ${c.input} transition cursor-text flex flex-wrap gap-1.5 items-center`}
+        className={`min-h-[48px] w-full p-2 border-2 rounded-xl focus-within:ring-2 transition cursor-text flex flex-wrap gap-1.5 items-center ${
+          focused ? `border-gray-300 ring-2 ${c.input}` : 'border-gray-200'
+        }`}
       >
         {tags.map((tag, i) => (
-          <span
-            key={i}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${c.tag}`}
-          >
+          <span key={i} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${c.tag}`}>
             {tag}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); removeTag(i); }}
-              className="ml-0.5 opacity-60 hover:opacity-100 transition"
-            >
-              ×
-            </button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); removeTag(i); }}
+              className="ml-0.5 opacity-60 hover:opacity-100 transition">×</button>
           </span>
         ))}
         <input
@@ -71,12 +74,20 @@ export function TagsInput({ label, icon, tags, onChange, placeholder, color = 'b
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={() => { if (input.trim()) addTag(input); }}
-          placeholder={tags.length === 0 ? (placeholder || 'Добавить тег...') : '+'}
+          onFocus={() => setFocused(true)}
+          onBlur={() => { setFocused(false); if (input.trim()) addTag(input); }}
+          placeholder={tags.length === 0 ? (placeholder || 'Добавить...') : '+'}
           className="flex-1 min-w-[80px] text-sm text-gray-700 bg-transparent outline-none placeholder-gray-300 py-0.5 px-1"
         />
       </div>
-      <p className="text-xs text-gray-400 mt-1">Enter или запятая для добавления</p>
+
+      {/* Helper */}
+      <div className="flex items-center justify-between mt-1">
+        <p className="text-xs text-gray-400">Enter или запятая для добавления</p>
+        {example && focused && (
+          <p className="text-xs text-gray-400 italic">Пример: {example}</p>
+        )}
+      </div>
     </div>
   );
 }
