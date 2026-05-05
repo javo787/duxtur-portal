@@ -38,3 +38,12 @@ export async function toggleDoctorBan(id: string, banned: boolean) {
   });
   revalidatePath('/admin/portal');
 }
+
+
+export async function approveArticle(articleId: string) {
+  const session = await auth();
+  if ((session?.user as any)?.role !== 'portal_admin') return;
+  await dbConnect();
+  await Article.findByIdAndUpdate(articleId, { isVerified: true });
+  revalidatePath('/');
+}
