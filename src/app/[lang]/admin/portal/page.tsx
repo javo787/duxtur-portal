@@ -2,12 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import User from '@/models/User';
-import {
-  updateDoctorStatus,
-  deleteDoctor,
-  deleteArticle,
-  toggleDoctorBan,
-} from '@/app/actions/admin';
+import { updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle } from '@/app/actions/admin';
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
@@ -41,15 +36,16 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
 
   await dbConnect();
 
-  const [pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors, recentArticles, totalArticles, totalUsers] = await Promise.all([
-    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
-    Article.find({}).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
-    Article.countDocuments(),
-    User.countDocuments(),
-  ]);
+  const [pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors, pendingArticles, publishedArticles, totalArticles, totalUsers] = await Promise.all([
+  Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
+  Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
+  Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
+  Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
+  Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean(),
+  Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
+  Article.countDocuments(),
+  User.countDocuments(),
+]);
 
   return (
     <div className="min-h-screen bg-gray-950 font-sans text-white">
@@ -74,6 +70,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
           <StatCard label="Заявки" value={pendingDoctors.length} color="bg-yellow-900/40 border-yellow-700 text-yellow-400" icon="⏳" urgent={pendingDoctors.length > 0} />
           <StatCard label="Авторов" value={approvedDoctors.length} color="bg-green-900/40 border-green-700 text-green-400" icon="✅" />
           <StatCard label="Статей" value={totalArticles} color="bg-blue-900/40 border-blue-700 text-blue-400" icon="📄" />
+<StatCard label="На модерации" value={pendingArticles.length} color="bg-amber-900/40 border-amber-700 text-amber-400" icon="📝" urgent={pendingArticles.length > 0} />
           <StatCard label="Забанено" value={bannedDoctors.length} color="bg-red-900/40 border-red-700 text-red-400" icon="🚫" />
           <StatCard label="Пользователей" value={totalUsers} color="bg-purple-900/40 border-purple-700 text-purple-400" icon="👥" />
         </div>
@@ -145,58 +142,90 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
           )}
         </Section>
 
-        {/* ВСЕ СТАТЬИ */}
-        <Section title="Все статьи" badge={totalArticles} badgeColor="bg-blue-600">
-          {recentArticles.length === 0 ? (
-            <Empty icon="📄" text="Нет статей" />
-          ) : (
-            <div className="space-y-3">
-              {recentArticles.map((article: any) => (
-                <div key={article._id} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
-                    <img
-                      src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white text-sm truncate">
-                      {article.title?.ru || article.title?.uz || 'Без названия'}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                      <span className="text-xs text-gray-400">
-                        👤 {(article.authorId as any)?.name || 'Неизвестен'}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        📅 {new Date(article.createdAt).toLocaleDateString('ru')}
-                      </span>
-                      {article.ratings?.length > 0 && (
-                        <span className="text-xs text-yellow-400">
-                          ★ {(article.ratings.reduce((a: number, b: number) => a + b, 0) / article.ratings.length).toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link
-                      href={`/${lang}/blog/${article.slug}`}
-                      target="_blank"
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition"
-                    >
-                      👁 Просмотр
-                    </Link>
-                    <ActionBtn
-                      action={deleteArticle.bind(null, article._id.toString())}
-                      label="🗑 Удалить"
-                      color="bg-red-800 hover:bg-red-700"
-                    />
-                  </div>
-                </div>
-              ))}
+        {/* СТАТЬИ НА МОДЕРАЦИИ */}
+<Section title="Статьи на модерации" badge={pendingArticles.length} badgeColor="bg-amber-500">
+  {pendingArticles.length === 0 ? (
+    <Empty icon="🎉" text="Нет статей на модерации" />
+  ) : (
+    <div className="space-y-3">
+      {pendingArticles.map((article: any) => (
+        <div key={article._id} className="bg-gray-900 p-4 rounded-2xl border border-amber-900/40 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
+            <img src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold bg-amber-900/50 text-amber-400 border border-amber-700 px-2 py-0.5 rounded-full">⏳ На модерации</span>
+              {article.aiGenerated === false && (
+                <span className="text-xs font-bold bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">✍️ Вручную</span>
+              )}
             </div>
-          )}
-        </Section>
+            <p className="font-bold text-white text-sm truncate">
+              {article.title?.ru || article.title?.uz || article.title?.tg || 'Без названия'}
+            </p>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <span className="text-xs text-gray-400">👤 {(article.authorId as any)?.name || 'Неизвестен'}</span>
+              <span className="text-xs text-gray-500">📅 {new Date(article.createdAt).toLocaleDateString('ru')}</span>
+              {article.category && <span className="text-xs text-gray-500">{article.category}</span>}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 shrink-0">
+            <ActionBtn
+              action={approveArticle.bind(null, article._id.toString())}
+              label="✅ Одобрить"
+              color="bg-green-600 hover:bg-green-700"
+            />
+            <ActionBtn
+              action={deleteArticle.bind(null, article._id.toString())}
+              label="🗑 Удалить"
+              color="bg-red-800 hover:bg-red-700"
+              confirm="Удалить статью безвозвратно?"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</Section>
+
+{/* ОПУБЛИКОВАННЫЕ СТАТЬИ */}
+<Section title="Опубликованные статьи" badge={totalArticles} badgeColor="bg-blue-600">
+  {publishedArticles.length === 0 ? (
+    <Empty icon="📄" text="Нет статей" />
+  ) : (
+    <div className="space-y-3">
+      {publishedArticles.map((article: any) => (
+        <div key={article._id} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
+            <img src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-sm truncate">
+              {article.title?.ru || article.title?.uz || article.title?.tg || 'Без названия'}
+            </p>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <span className="text-xs text-gray-400">👤 {(article.authorId as any)?.name || 'Неизвестен'}</span>
+              <span className="text-xs text-gray-500">📅 {new Date(article.createdAt).toLocaleDateString('ru')}</span>
+              <span className="text-xs text-green-500">👁 {article.views || 0}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href={`/${lang}/blog/${article.slug}`} target="_blank"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition">
+              👁 Просмотр
+            </Link>
+            <ActionBtn
+              action={deleteArticle.bind(null, article._id.toString())}
+              label="🗑 Удалить"
+              color="bg-red-800 hover:bg-red-700"
+              confirm="Удалить статью?"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</Section>
 
         {/* ЗАБАНЕННЫЕ */}
         {bannedDoctors.length > 0 && (
