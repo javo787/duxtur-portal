@@ -6,6 +6,7 @@ import { updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, appro
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
 
 // ─── Server Action кнопка ───
 function ActionBtn({ action, label, color, confirm }: {
@@ -290,6 +291,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         )}
 
       </div>
+      <AdminAIAssistantWrapper />
     </div>
   );
 }
