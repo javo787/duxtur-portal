@@ -7,25 +7,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
-
-// ─── Server Action кнопка ───
-function ActionBtn({ action, label, color, confirm }: {
-  action: () => Promise<void>;
-  label: string;
-  color: string;
-  confirm?: string;
-}) {
-  return (
-    <form action={action}>
-      <button
-        className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white transition active:scale-95 ${color}`}
-        onClick={confirm ? (e) => { if (!window.confirm(confirm)) e.preventDefault(); } : undefined}
-      >
-        {label}
-      </button>
-    </form>
-  );
-}
+import { ActionBtn } from './_components/ActionBtn'; 
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();
