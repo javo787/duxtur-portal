@@ -317,9 +317,18 @@ export function ArticleEditModal({ slug, lang, onClose, onSaved }: ArticleEditMo
           {/* TAGS */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Теги</h3>
-            <TagsInput label="Симптомы" icon="🔴" tags={symptoms} onChange={setSymptoms} color="orange" />
-            <TagsInput label="Причины" icon="⚡" tags={causes} onChange={setCauses} color="blue" />
-            <TagsInput label="Лечение" icon="💊" tags={treatment} onChange={setTreatment} color="green" />
+            <TagsInput label="Симптомы" icon="🔴" tags={symptoms} onChange={setSymptoms}
+  placeholder="головная боль..." color="orange"
+  description="На что жалуется пациент? Эти теги помогают читателям найти статью по своим симптомам."
+  example="головная боль, тошнота, головокружение" />
+<TagsInput label="Причины" icon="⚡" tags={causes} onChange={setCauses}
+  placeholder="стресс..." color="blue"
+  description="Почему возникает это заболевание? Google использует эти данные для поисковых подсказок."
+  example="стресс, генетика, вирусная инфекция" />
+<TagsInput label="Лечение" icon="💊" tags={treatment} onChange={setTreatment}
+  placeholder="ибупрофен..." color="green"
+  description="Основные методы лечения — препараты, процедуры, образ жизни. Кратко, без дозировок."
+  example="ибупрофен, постельный режим, физиотерапия" />
           </div>
 
           {/* SOURCES */}
