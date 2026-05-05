@@ -414,15 +414,15 @@ export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
       {/* TAGS */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Теги</h3>
-         <TagsInput label="Симптомы" icon="🔴" tags={draft.symptoms} onChange={setSymptoms}
+         <TagsInput label="Симптомы" icon="🔴" tags={draft.symptoms} onChange={(v) => updateDraft({ symptoms: v })}
   placeholder="головная боль..." color="orange"
   description="На что жалуется пациент? Эти теги помогают читателям найти статью по своим симптомам."
   example="головная боль, тошнота, головокружение" />
-<TagsInput label="Причины" icon="⚡" tags={draft.causes} onChange={setCauses}
+<TagsInput label="Причины" icon="⚡" tags={draft.causes} onChange={(v) => updateDraft({ causes: v })}
   placeholder="стресс..." color="blue"
   description="Почему возникает это заболевание? Google использует эти данные для поисковых подсказок."
   example="стресс, генетика, вирусная инфекция" />
-<TagsInput label="Лечение" icon="💊" tags={draft.treatment} onChange={setTreatment}
+<TagsInput label="Лечение" icon="💊" tags={draft.treatment} onChange={(v) => updateDraft({ treatment: v })}
   placeholder="ибупрофен..." color="green"
   description="Основные методы лечения — препараты, процедуры, образ жизни. Кратко, без дозировок."
   example="ибупрофен, постельный режим, физиотерапия" />
