@@ -426,8 +426,6 @@ export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
   placeholder="ибупрофен..." color="green"
   description="Основные методы лечения — препараты, процедуры, образ жизни. Кратко, без дозировок."
   example="ибупрофен, постельный режим, физиотерапия" />
-          
-        />
       </div>
 
       {/* SOURCES */}
