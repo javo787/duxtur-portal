@@ -1,88 +1,143 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function HomeHeader({ lang }: { lang: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 12);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
 
   const navLinks = [
     { href: `/${lang}/blog`, label: 'Статьи' },
-    { href: `/${lang}/authors`, label: 'Авторы' },
+    { href: `/${lang}/authors`, label: 'Авторы-врачи' },
     { href: `/${lang}/search`, label: 'Поиск' },
   ];
 
   return (
-    <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-white/95 backdrop-blur-xl shadow-md shadow-slate-200/20'
+          : 'bg-white/90 backdrop-blur-md'
+      } border-b border-slate-100`}
+    >
+      {/* accent line */}
+      <div className="h-[2px] brand-line" />
 
-        {/* Логотип */}
-        <Link href={`/${lang}`} className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-700 transition">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+      <div className="max-w-7xl mx-auto px-5 h-[64px] flex items-center justify-between">
+        {/* Logo */}
+        <Link href={`/${lang}`} className="flex items-center gap-3 group">
+          <div className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600">
+            <svg
+              className="w-[18px] h-[18px] text-white relative z-10"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
             </svg>
           </div>
-          <span className="text-xl font-extrabold text-gray-900 tracking-tight">
-            duxtur<span className="text-blue-600">.com</span>
-          </span>
+          <div className="leading-none">
+            <span className="font-display font-700 text-[20px] text-slate-900 tracking-[-0.03em] group-hover:opacity-80 transition-opacity">
+              duxtur
+            </span>
+            <span className="font-display font-300 text-[20px] tracking-[-0.03em] text-blue-600">
+              .com
+            </span>
+          </div>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}
-              className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition">
+            <Link
+              key={link.href}
+              href={link.href}
+              className="relative px-4 py-2 text-[13.5px] font-medium text-slate-500 hover:text-slate-900 transition-colors duration-200 group"
+            >
               {link.label}
+              <span className="absolute bottom-1 left-4 right-4 h-[1.5px] brand-line scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </Link>
           ))}
         </nav>
 
-        {/* Right side */}
+        {/* Right actions */}
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Link href={`/${lang}/register`}
-            className="hidden md:flex items-center gap-1.5 px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition shadow-md shadow-blue-200 active:scale-95">
-            Я врач
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          <Link
+            href={`/${lang}/login`}
+            className="hidden md:block text-[13.5px] font-medium text-slate-500 hover:text-slate-900 transition px-3 py-2"
+          >
+            Войти
+          </Link>
+          <Link
+            href={`/${lang}/register`}
+            className="hidden md:flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
+            Я врач
           </Link>
 
           {/* Mobile burger */}
-          <button onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition">
-            {menuOpen ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition"
+            aria-label="Меню"
+          >
+            <div className="w-5 flex flex-col gap-1.5 transition-all duration-200">
+              <span className={`h-[1.5px] bg-slate-700 rounded transition-all ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
+              <span className={`h-[1.5px] bg-slate-700 rounded transition-all ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`h-[1.5px] bg-slate-700 rounded transition-all ${menuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
+            </div>
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-1">
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-80' : 'max-h-0'}`}>
+        <div className="bg-white border-t border-slate-100 px-5 py-4 space-y-1">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}
+            <Link
+              key={link.href}
+              href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition">
+              className="flex items-center px-4 py-3 text-[14px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+            >
               {link.label}
             </Link>
           ))}
-          <Link href={`/${lang}/register`}
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center justify-center gap-2 mt-3 py-3 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-700 transition">
-            Я врач — Стать автором →
-          </Link>
+          <div className="pt-3 border-t border-slate-100 mt-3 flex flex-col gap-2">
+            <Link
+              href={`/${lang}/login`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center py-2.5 text-[14px] font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+            >
+              Войти
+            </Link>
+            <Link
+              href={`/${lang}/register`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition"
+            >
+              Стать автором-врачом
+            </Link>
+          </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }
