@@ -1,10 +1,19 @@
-import { Geist } from "next/font/google";
+import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin", "latin-ext"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "600", "700", "900"],
+  style: ["normal", "italic"],
 });
 
 export default async function LangLayout({
@@ -17,7 +26,9 @@ export default async function LangLayout({
   const { lang } = await params;
   return (
     <html lang={lang} dir="ltr">
-      <body className={`${geistSans.variable} antialiased`}>{children}</body>
+      <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
