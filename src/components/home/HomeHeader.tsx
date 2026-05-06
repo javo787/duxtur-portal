@@ -33,31 +33,18 @@ export default function HomeHeader({ lang }: { lang: string }) {
 
       <div className="max-w-7xl mx-auto px-5 h-[64px] flex items-center justify-between">
         {/* Logo */}
-        <Link href={`/${lang}`} className="flex items-center gap-3 group">
-          <div className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600">
-            <svg
-              className="w-[18px] h-[18px] text-white relative z-10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-          </div>
-          <div className="leading-none">
-            <span className="font-display font-700 text-[20px] text-slate-900 tracking-[-0.03em] group-hover:opacity-80 transition-opacity">
-              duxtur
-            </span>
-            <span className="font-display font-300 text-[20px] tracking-[-0.03em] text-blue-600">
-              .com
-            </span>
-          </div>
-        </Link>
+        <Link href={`/${lang}`} className="flex items-center gap-2.5 group">
+  <img
+    src="/logo.png"
+    alt="Duxtur logo"
+    width={36}
+    height={36}
+    className="rounded-xl object-contain group-hover:opacity-90 transition"
+  />
+  <span className="text-xl font-extrabold text-gray-900 tracking-tight">
+    duxtur<span className="text-blue-600">.com</span>
+  </span>
+</Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
