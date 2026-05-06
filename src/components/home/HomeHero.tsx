@@ -1,74 +1,65 @@
-'use client';
-
-import { useEffect, useRef } from 'react';
-
+// Компонент Hero в духе "Empathetic Premium Clinic"
 export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const children = el.querySelectorAll('[data-animate]');
-    children.forEach((child, i) => {
-      (child as HTMLElement).style.opacity = '0';
-      (child as HTMLElement).style.transform = 'translateY(24px)';
-      setTimeout(() => {
-        (child as HTMLElement).style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        (child as HTMLElement).style.opacity = '1';
-        (child as HTMLElement).style.transform = 'translateY(0)';
-      }, i * 120);
-    });
-  }, []);
-
   return (
-    <section className="relative overflow-hidden bg-white pt-10 pb-14">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-50 rounded-full -translate-y-1/2 translate-x-1/3 opacity-70" />
-        <div className="absolute bottom-0 left-0 w-52 h-52 bg-blue-50 rounded-full translate-y-1/2 -translate-x-1/3 opacity-50" />
-      </div>
+    <section className="relative overflow-hidden bg-white">
+      {/* Тонкий фоновый градиент для мягкости */}
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-50/30 via-white to-white pointer-events-none" />
 
-      <div ref={ref} className="relative max-w-4xl mx-auto px-4 text-center">
-        <div data-animate
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-bold uppercase tracking-widest mb-7">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-          Статьи проверены врачами
+      <div className="max-w-6xl mx-auto px-5 pt-20 pb-16 lg:pt-28 lg:pb-24">
+        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-14 items-center">
+          {/* Текстовый блок */}
+          <div className="text-center lg:text-left">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100/80 text-amber-800 text-xs font-semibold tracking-[0.1em] uppercase mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Только проверенные врачи
+            </span>
+
+            <h1 className="font-display text-[clamp(2.8rem,8vw,4.8rem)] leading-[1.05] font-bold text-slate-900 tracking-[-0.03em] mb-6">
+              Знания, <br/>
+              <span className="text-blue-600">которым доверяют</span>
+            </h1>
+
+            <p className="text-lg text-slate-500 leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+              {dict.hero_subtitle}
+            </p>
+
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+              <Link
+                href={`/${lang}/blog`}
+                className="inline-flex items-center gap-2.5 px-7 py-4 bg-slate-900 text-white font-semibold rounded-2xl hover:bg-slate-800 transition-colors active:scale-95"
+              >
+                Читать статьи
+                <ArrowRightIcon className="w-4 h-4" />
+              </Link>
+              <Link
+                href={`/${lang}/register`}
+                className="inline-flex items-center gap-2.5 px-7 py-4 border-2 border-slate-200 text-slate-700 font-semibold rounded-2xl hover:border-slate-400 hover:bg-slate-50 transition-colors active:scale-95"
+              >
+                Стать автором
+              </Link>
+            </div>
+          </div>
+
+          {/* Визуальный акцент (можно заменить на иллюстрацию) */}
+          <div className="hidden lg:block relative aspect-square max-w-md ml-auto">
+            <div className="w-full h-full rounded-[2.5rem] bg-gradient-to-br from-blue-100/60 via-amber-50/50 to-amber-100/40 shadow-xl shadow-slate-200/10 flex items-center justify-center">
+              <svg className="w-24 h-24 text-amber-400/60" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
 
-        <h1 data-animate
-          className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-5 leading-[1.05] tracking-tight">
-          {dict.hero_title}
-        </h1>
-
-        <p data-animate
-          className="text-base md:text-xl text-gray-500 mb-8 max-w-xl mx-auto leading-relaxed">
-          {dict.hero_subtitle}
-        </p>
-
-        <form data-animate action={`/${lang}/search`}
-          className="flex items-center gap-2 bg-white border-2 border-gray-200 rounded-2xl px-4 py-3 max-w-xl mx-auto shadow-lg shadow-gray-100 focus-within:border-blue-400 transition">
-          <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input type="text" name="q" placeholder={dict.search_placeholder}
-            className="flex-1 text-gray-700 placeholder-gray-400 bg-transparent outline-none text-sm md:text-base min-w-0" />
-          <button type="submit"
-            className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition active:scale-95 flex items-center gap-1.5">
-            <span className="hidden sm:inline">{dict.search_btn}</span>
-            <svg className="w-4 h-4 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </button>
-        </form>
-
-        <div data-animate className="flex items-center justify-center gap-6 mt-7 flex-wrap">
+        {/* Статистика — отдельно, тонкая полоса */}
+        <div className="flex justify-center gap-10 mt-14 pt-10 border-t border-slate-100 max-w-lg mx-auto text-center">
           {[
-            { num: '5', label: 'языков СНГ' },
-            { num: '100%', label: 'верифицированы' },
-            { num: '24ч', label: 'новые статьи' },
+            { num: '5', label: 'языков' },
+            { num: '100%', label: 'проверенных авторов' },
+            { num: '24ч', label: 'верификация' },
           ].map((stat, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-sm text-gray-500">
-              <span className="font-extrabold text-gray-900 text-base">{stat.num}</span>
-              <span>{stat.label}</span>
+            <div key={i}>
+              <span className="font-display text-2xl font-bold text-blue-600">{stat.num}</span>
+              <span className="block text-xs text-slate-400 mt-1">{stat.label}</span>
             </div>
           ))}
         </div>
