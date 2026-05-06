@@ -2,90 +2,80 @@
 
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import FadeIn from '@/components/FadeIn';
 
 const CATEGORIES = [
-  { icon: '❤️', color: 'from-red-500 to-rose-400',     bg: 'bg-red-50',    border: 'border-red-100',    text: 'text-red-600',    slug: 'cardiology' },
-  { icon: '🧠', color: 'from-purple-500 to-violet-400', bg: 'bg-purple-50', border: 'border-purple-100', text: 'text-purple-600', slug: 'neurology' },
-  { icon: '🦷', color: 'from-blue-500 to-cyan-400',     bg: 'bg-blue-50',   border: 'border-blue-100',   text: 'text-blue-600',   slug: 'dentistry' },
-  { icon: '👶', color: 'from-yellow-400 to-amber-400',  bg: 'bg-yellow-50', border: 'border-yellow-100', text: 'text-yellow-600', slug: 'pediatrics' },
-  { icon: '🩺', color: 'from-teal-500 to-emerald-400',  bg: 'bg-teal-50',   border: 'border-teal-100',   text: 'text-teal-600',   slug: 'dermatology' },
-  { icon: '👁️', color: 'from-indigo-500 to-blue-400',   bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-600', slug: 'ophthalmology' },
-  { icon: '⚕️', color: 'from-orange-500 to-amber-400',  bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-600', slug: 'surgery' },
-  { icon: '🌸', color: 'from-pink-500 to-rose-400',     bg: 'bg-pink-50',   border: 'border-pink-100',   text: 'text-pink-600',   slug: 'gynecology' },
+  { icon: '♥', slug: 'cardiology', hue: '15', label: 'Кардиология' },
+  { icon: '◎', slug: 'neurology', hue: '280', label: 'Неврология' },
+  { icon: '✦', slug: 'dentistry', hue: '200', label: 'Стоматология' },
+  { icon: '◇', slug: 'pediatrics', hue: '45', label: 'Педиатрия' },
+  { icon: '❋', slug: 'dermatology', hue: '170', label: 'Дерматология' },
+  { icon: '◉', slug: 'ophthalmology', hue: '230', label: 'Офтальмология' },
+  { icon: '⊕', slug: 'surgery', hue: '25', label: 'Хирургия' },
+  { icon: '✿', slug: 'gynecology', hue: '330', label: 'Гинекология' },
 ];
 
 export default function HomeCategories({ lang, dict }: { lang: string; dict: any }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const labels: Record<string, string> = {
-    cardiology:   dict.cat_cardio,
-    neurology:    dict.cat_neuro,
-    dentistry:    dict.cat_dentist,
-    pediatrics:   dict.cat_pediatr,
-    dermatology:  'Дерматология',
-    ophthalmology:'Офтальмология',
-    surgery:      'Хирургия',
-    gynecology:   'Гинекология',
+    cardiology: dict.cat_cardio || 'Кардиология',
+    neurology: dict.cat_neuro || 'Неврология',
+    dentistry: dict.cat_dentist || 'Стоматология',
+    pediatrics: dict.cat_pediatr || 'Педиатрия',
+    dermatology: 'Дерматология',
+    ophthalmology: 'Офтальмология',
+    surgery: 'Хирургия',
+    gynecology: 'Гинекология',
   };
 
-  // Авто-скролл туда-обратно на мобиле
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    let direction = 1;
-    let pos = 0;
-    const speed = 0.5;
 
-    const animate = () => {
-      pos += speed * direction;
-      if (pos >= el.scrollWidth - el.clientWidth) direction = -1;
-      if (pos <= 0) direction = 1;
+    let dir = 1,
+      pos = 0,
+      stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      pos += 0.4 * dir;
+      if (pos >= el.scrollWidth - el.clientWidth) dir = -1;
+      if (pos <= 0) dir = 1;
       el.scrollLeft = pos;
     };
-
-    const interval = setInterval(animate, 16);
-
-    // Стоп при касании
-    const stop = () => clearInterval(interval);
+    const id = setInterval(tick, 16);
+    const stop = () => { stopped = true; };
     el.addEventListener('touchstart', stop, { passive: true });
     el.addEventListener('mousedown', stop);
-
     return () => {
-      clearInterval(interval);
-      el.removeEventListener('touchstart', stop);
-      el.removeEventListener('mousedown', stop);
+      stopped = true;
+      clearInterval(id);
     };
   }, []);
 
   return (
-    <section className="py-8 bg-white border-y border-gray-100">
-      
-      <div className="max-w-7xl mx-auto px-4">
-      <FadeIn direction="up">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">
-          {dict.cat_title}
+    <section className="py-10 border-y border-slate-100 bg-slate-50/50">
+      <div className="max-w-7xl mx-auto px-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-5">
+          {dict.cat_title || 'Специализации'}
         </p>
-
-        {/* Скроллящийся ряд */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide"
-          style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+          className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide"
         >
           {CATEGORIES.map((cat) => (
             <Link
               key={cat.slug}
               href={`/${lang}/blog?category=${cat.slug}`}
-              className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl border ${cat.bg} ${cat.border} ${cat.text} shrink-0 font-bold text-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200 active:scale-95`}
+              className="group flex items-center gap-2.5 px-5 py-2.5 rounded-full border bg-white shrink-0 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md active:scale-95"
+              style={{ borderColor: 'oklch(0.9 0.01 260)' }}
             >
-              <span className="text-xl">{cat.icon}</span>
-              <span className="whitespace-nowrap">{labels[cat.slug]}</span>
-            </Link>
-          ))}
-        </div>
-       </FadeIn>
-      </div>
-    </section>
-  );
-}
+              <span
+                className="text-[15px] font-light transition-transform duration-300 group-hover:scale-110"
+                style={{ color: `oklch(0.45 0.15 ${cat.hue})` }}
+              >
+                {cat.icon}
+              </span>
+              <span className="whitespace-nowrap text-[13.5px] font-medium text-slate-600 group-hover:text-slate-900 transition-colors">
+                {labels[cat.slug]}
+              </span>
+            </
