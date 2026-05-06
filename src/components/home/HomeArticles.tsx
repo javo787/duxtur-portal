@@ -1,7 +1,13 @@
 import Link from 'next/link';
 import FadeIn from '@/components/FadeIn';
+import Image from 'next/image';
 
-export default function HomeArticles({ lang, articles, dict, t }: {
+export default function HomeArticles({
+  lang,
+  articles,
+  dict,
+  t,
+}: {
   lang: string;
   articles: any[];
   dict: any;
@@ -9,15 +15,21 @@ export default function HomeArticles({ lang, articles, dict, t }: {
 }) {
   if (articles.length === 0) {
     return (
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-5 text-center">
           <FadeIn>
-            <div className="text-6xl mb-5">📝</div>
-            <p className="text-2xl font-extrabold text-gray-800 mb-3">Статьи скоро появятся</p>
-            <p className="text-gray-400 mb-8">Первые врачи уже готовят материалы</p>
-            <Link href={`/${lang}/register`}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 active:scale-95">
-              Стать первым автором →
+            <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-blue-100">
+              <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+              </svg>
+            </div>
+            <p className="font-display text-2xl font-semibold text-slate-800 mb-2">Статьи скоро появятся</p>
+            <p className="text-slate-400 mb-8 text-[15px]">Первые врачи уже готовят материалы</p>
+            <Link
+              href={`/${lang}/register`}
+              className="inline-flex items-center gap-2 px-7 py-3.5 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition active:scale-95"
+            >
+              Стать первым автором
             </Link>
           </FadeIn>
         </div>
@@ -28,132 +40,130 @@ export default function HomeArticles({ lang, articles, dict, t }: {
   const [featured, ...rest] = articles;
 
   return (
-    <section className="py-14 bg-white">
-      <div className="max-w-7xl mx-auto px-4">
-
-        {/* Заголовок */}
+    <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-5">
         <FadeIn>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-end justify-between mb-10">
             <div>
-              <h2 className="text-2xl font-extrabold text-gray-900">{dict.blog_title}</h2>
-              <p className="text-sm text-gray-400 mt-1">{articles.length} материалов</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-2">
+                Последние материалы
+              </p>
+              <h2 className="font-display text-[28px] font-bold text-slate-900 tracking-tight leading-none">
+                {dict.blog_title}
+              </h2>
             </div>
-            <Link href={`/${lang}/blog`}
-              className="flex items-center gap-1.5 text-blue-600 text-sm font-bold hover:gap-3 transition-all group">
+            <Link
+              href={`/${lang}/blog`}
+              className="flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 border-b border-blue-300 hover:border-blue-600 transition-colors pb-0.5"
+            >
               Все статьи
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
           </div>
         </FadeIn>
 
-        {/* Главная статья */}
-        <FadeIn delay={100}>
-          <Link href={`/${lang}/blog/${featured.slug}`} className="group block mb-8">
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition duration-500 md:grid md:grid-cols-5">
-              {/* Фото */}
-              <div className="md:col-span-3 h-64 md:h-96 overflow-hidden relative">
-                <img
-                  src={featured.image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900'}
+        {/* Featured article */}
+        <FadeIn delay={80}>
+          <Link href={`/${lang}/blog/${featured.slug}`} className="group block mb-10">
+            <div className="rounded-2xl overflow-hidden border border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 md:grid md:grid-cols-[3fr_2fr] shadow-sm hover:shadow-lg">
+              <div className="h-64 md:h-[380px] overflow-hidden relative">
+                <Image
+                  src={featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900'}
                   alt={t(featured.title)}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                  fill
+                  className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent md:bg-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/10 via-transparent to-transparent" />
               </div>
-
-              {/* Контент */}
-              <div className="md:col-span-2 p-8 flex flex-col justify-between bg-white relative">
-                {/* Верхний акцент */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
+              <div className="p-9 flex flex-col justify-between bg-white">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-extrabold px-3 py-1.5 rounded-full mb-5">
+                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1.5 rounded-full mb-6 bg-amber-100 text-amber-800">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     {dict.blog_verified}
                   </span>
-
-                  <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 leading-tight line-clamp-3 mb-4">
+                  <h3 className="font-display text-[22px] md:text-[26px] font-semibold text-slate-900 group-hover:text-slate-800 transition leading-[1.25] line-clamp-3 mb-4" style={{ letterSpacing: '-0.025em' }}>
                     {t(featured.title)}
                   </h3>
                 </div>
-
-                <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
-                  <div className="relative shrink-0">
-                    <img
+                <div className="flex items-center gap-3.5 pt-6 border-t border-slate-100">
+                  <div className="relative shrink-0 w-10 h-10">
+                    <Image
                       src={featured.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                       alt={featured.authorId?.name}
-                      className="w-11 h-11 rounded-full object-cover border-2 border-gray-100"
+                      fill
+                      className="rounded-xl object-cover border-2 border-slate-100"
                     />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-amber-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">{featured.authorId?.name || 'Dr. Expert'}</p>
-                    <p className="text-xs text-blue-500 truncate">{t(featured.authorId?.specialty) || 'Врач'}</p>
+                    <p className="text-[13.5px] font-semibold text-slate-900 truncate">
+                      {featured.authorId?.name || 'Dr. Expert'}
+                    </p>
+                    <p className="text-[12px] font-normal truncate text-blue-600">
+                      {t(featured.authorId?.specialty) || 'Врач'}
+                    </p>
                   </div>
-                  <span className="text-blue-600 font-bold text-sm group-hover:translate-x-1.5 transition-transform shrink-0 flex items-center gap-1">
+                  <div className="shrink-0 flex items-center gap-1 text-[13px] font-medium text-blue-600 group-hover:gap-2 transition-all">
                     {dict.read_more}
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
           </Link>
         </FadeIn>
 
-        {/* Остальные статьи — сетка */}
+        {/* Grid of articles */}
         {rest.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
             {rest.slice(0, 8).map((article: any, i: number) => (
-              <FadeIn key={article._id} delay={i * 70} direction="up">
+              <FadeIn key={article._id} delay={i * 55} direction="up">
                 <Link href={`/${lang}/blog/${article.slug}`} className="group block h-full">
-                  <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 h-full flex flex-col">
-
-                    {/* Фото */}
-                    <div className="h-48 overflow-hidden relative">
-                      <img
+                  <div
+                    className="rounded-xl overflow-hidden border bg-white h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-slate-100"
+                  >
+                    <div className="h-44 overflow-hidden relative flex-shrink-0">
+                      <Image
                         src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                         alt={t(article.title)}
-                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
-                        loading="lazy"
+                        fill
+                        className="object-cover group-hover:scale-[1.06] transition-transform duration-600 ease-out"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
-                      {/* Верифицирован бейдж */}
                       <div className="absolute top-3 left-3">
-                        <span className="bg-white/95 backdrop-blur-sm text-green-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-amber-800">
+                          <svg className="w-2.5 h-2.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           {dict.blog_verified}
                         </span>
                       </div>
-                      {/* Overlay при hover */}
-                      <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors duration-300" />
                     </div>
-
-                    {/* Контент */}
                     <div className="p-5 flex flex-col flex-1">
-                      <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-snug line-clamp-2 flex-1 text-sm mb-3">
+                      <h3 className="font-display text-[14.5px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors leading-snug line-clamp-2 flex-1 mb-4" style={{ letterSpacing: '-0.015em' }}>
                         {t(article.title)}
                       </h3>
-                      <div className="pt-3 border-t border-gray-50 flex items-center gap-2">
-                        <div className="relative shrink-0">
-                          <img
+                      <div className="pt-3.5 border-t border-slate-50 flex items-center gap-2.5">
+                        <div className="relative w-6 h-6">
+                          <Image
                             src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                             alt={article.authorId?.name}
-                            className="w-7 h-7 rounded-full object-cover border border-gray-100"
+                            fill
+                            className="rounded-lg object-cover border border-slate-100"
                           />
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border border-white" />
                         </div>
-                        <span className="text-xs text-gray-500 truncate font-medium flex-1">
+                        <span className="text-[12px] text-slate-400 truncate font-normal flex-1">
                           {article.authorId?.name || 'Dr. Expert'}
                         </span>
-                        <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 group-hover:translate-x-0.5 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        <svg className="w-3 h-3 text-blue-300 group-hover:translate-x-0.5 transition-transform shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
                     </div>
@@ -164,19 +174,19 @@ export default function HomeArticles({ lang, articles, dict, t }: {
           </div>
         )}
 
-        {/* Кнопка все статьи */}
-        <FadeIn delay={200}>
+        <FadeIn delay={180}>
           <div className="text-center">
-            <Link href={`/${lang}/blog`}
-              className="inline-flex items-center gap-2 px-8 py-4 border-2 border-gray-200 text-gray-700 font-bold rounded-full hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 text-sm active:scale-95">
+            <Link
+              href={`/${lang}/blog`}
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl border border-slate-200 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 active:scale-95"
+            >
               Смотреть все статьи
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
           </div>
         </FadeIn>
-
       </div>
     </section>
   );
