@@ -43,7 +43,9 @@ export default function HomeCategories({ lang, dict }: { lang: string; dict: any
       el.scrollLeft = pos;
     };
     const id = setInterval(tick, 16);
-    const stop = () => { stopped = true; };
+    const stop = () => {
+      stopped = true;
+    };
     el.addEventListener('touchstart', stop, { passive: true });
     el.addEventListener('mousedown', stop);
     return () => {
@@ -78,4 +80,10 @@ export default function HomeCategories({ lang, dict }: { lang: string; dict: any
               <span className="whitespace-nowrap text-[13.5px] font-medium text-slate-600 group-hover:text-slate-900 transition-colors">
                 {labels[cat.slug]}
               </span>
-            </
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
