@@ -43,25 +43,24 @@ const nextConfig: NextConfig = {
   },
 
   // Редиректы — убираем trailing slash
-  async redirects() {
-    return [
-      {
-        source: '/blog',
-        destination: '/ru/blog',
-        permanent: false,
-      },
-      {
-        source: '/authors',
-        destination: '/ru/authors',
-        permanent: false,
-      },
-{
-  source: '/',
-  destination: '/ru',
-  permanent: false, 
+async redirects() {
+  return [
+    {
+      source: '/blog',
+      destination: '/ru/blog',
+      permanent: true,   // было false
+    },
+    {
+      source: '/authors',
+      destination: '/ru/authors',
+      permanent: true,   // было false
+    },
+    {
+      source: '/',
+      destination: '/ru',
+      permanent: true,   // было false
+    },
+  ];
 },
-    ];
-  },
-};
 
 export default nextConfig;
