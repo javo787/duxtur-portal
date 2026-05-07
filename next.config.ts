@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     },
   },
 
-  // Разрешаем внешние домены для <img>
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -19,21 +18,19 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
-  // Security + SEO HTTP headers
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Content-Type-Options',    value: 'nosniff'        },
-          { key: 'X-Frame-Options',           value: 'DENY'           },
-          { key: 'X-XSS-Protection',          value: '1; mode=block'  },
-          { key: 'Referrer-Policy',           value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy',        value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
       {
-        // Кешируем статику агрессивно
         source: '/(.*)\\.(ico|png|jpg|jpeg|webp|avif|svg|woff2)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
@@ -42,25 +39,25 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Редиректы — убираем trailing slash
-async redirects() {
-  return [
-    {
-      source: '/blog',
-      destination: '/ru/blog',
-      permanent: true,   // было false
-    },
-    {
-      source: '/authors',
-      destination: '/ru/authors',
-      permanent: true,   // было false
-    },
-    {
-      source: '/',
-      destination: '/ru',
-      permanent: true,   // было false
-    },
-  ];
-},
+  async redirects() {
+    return [
+      {
+        source: '/blog',
+        destination: '/ru/blog',
+        permanent: true,
+      },
+      {
+        source: '/authors',
+        destination: '/ru/authors',
+        permanent: true,
+      },
+      {
+        source: '/',
+        destination: '/ru',
+        permanent: true,
+      },
+    ];
+  },
+};
 
 export default nextConfig;
