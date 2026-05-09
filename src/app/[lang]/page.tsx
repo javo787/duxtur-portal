@@ -49,19 +49,37 @@ export default async function Home(props: Props) {
 
   await dbConnect();
 
-  const [articles, authors] = await Promise.all([
-    Article.find({
-      $or: [
-        { [`title.${lang}`]: { $exists: true, $ne: '' } },
-        { [`title.ru`]: { $exists: true, $ne: '' } },
-      ],
-    })
-      .sort({ createdAt: -1 })
-      .limit(9)
-      .populate('authorId')
-      .lean(),
-    Doctor.find({ status: 'approved' }).limit(6).lean(),
-  ]).catch(() => [[], []]);
+
+ 
+const CATEGORIES = ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'general'];
+ 
+const [articles, authors, categoryAgg] = await Promise.all([
+  Article.find({
+    $or: [
+      { [`title.${lang}`]: { $exists: true, $ne: '' } },
+      { [`title.ru`]: { $exists: true, $ne: '' } },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .limit(9)
+    .populate('authorId')
+    .lean(),
+ 
+  Doctor.find({ status: 'approved' }).limit(6).lean(),
+ 
+  // Считаем количество статей по каждой категории одним запросом
+  Article.aggregate([
+    { $match: { category: { $in: CATEGORIES } } },
+    { $group: { _id: '$category', count: { $sum: 1 } } },
+  ]),
+]).catch(() => [[], [], []]);
+ 
+// Превращаем массив [{ _id: 'cardiology', count: 5 }, ...] в объект
+const categoryCounts: Record<string, number> = {};
+for (const item of (categoryAgg as any[])) {
+  categoryCounts[item._id] = item.count;
+}
+ 
 
   const t = (field: any) => {
     if (!field) return '';
@@ -115,7 +133,7 @@ export default async function Home(props: Props) {
       />
       <HomeHeader lang={lang} />
       <HomeHero lang={lang} dict={dict} />
-      <HomeCategories lang={lang} dict={dict} />
+      <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
       <HomeArticles lang={lang} articles={articles as any[]} dict={dict} t={t} />
       <HomeAuthors lang={lang} authors={authors as any[]} t={t} />
       <HomeCTA lang={lang} dict={dict} />
