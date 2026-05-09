@@ -7,6 +7,7 @@ import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ShareButtons from '@/components/ShareButtons';
 import { buildAlternates } from '@/lib/seo';
+import TableOfContents from '@/components/TableOfContents';
 
 const uiLabels: Record<string, Record<string, string>> = {
   verified:        { ru: 'Проверено врачом',    uz: 'Tekshirilgan',          tg: 'Тасдиқшуда',          kk: 'Тексерілген',      ky: 'Текшерилген'        },
@@ -532,9 +533,20 @@ export default async function BlogPage({
             </div>
           </div>
 
-          {/* САЙДБАР */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-20 space-y-5">
+
+{/* САЙДБАР */}
+<div className="lg:col-span-4">
+  <div className="sticky top-20 space-y-5">
+
+    {/* ← ДОБАВЬ ЭТО */}
+    {sections.length > 1 && (
+      <TableOfContents
+        sections={sections}
+        label={L('contents', lang)}
+      />
+    )}
+
+    
 
               {/* Карточка автора */}
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
