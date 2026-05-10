@@ -51,7 +51,7 @@ const ArticleSchema = new mongoose.Schema({
 
   category: {
     type: String,
-    enum: ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'general'],
+    enum: ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'ophthalmology', 'surgery', 'gynecology', 'general']
     default: 'general',
     index: true,
   },
