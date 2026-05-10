@@ -51,7 +51,7 @@ export default async function Home(props: Props) {
 
 
  
-const CATEGORIES = ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'general'];
+const CATEGORIES = ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'ophthalmology', 'surgery', 'gynecology', 'general'];
  
 const [articles, authors, categoryAgg] = await Promise.all([
   Article.find({
