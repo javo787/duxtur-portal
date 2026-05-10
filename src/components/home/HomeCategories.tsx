@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
   HeartPulse,
   Brain,
@@ -52,7 +55,6 @@ function DermaIcon({ className }: { className?: string }) {
   );
 }
 
-// Все категории с указанием компонента иконки
 const CATEGORIES = [
   { slug: 'cardiology', color: 'rose', Icon: HeartPulse, labels: { ru: 'Кардиология', uz: 'Kardiologiya', tg: 'Кардиология', kk: 'Кардиология', ky: 'Кардиология' } },
   { slug: 'neurology', color: 'violet', Icon: Brain, labels: { ru: 'Неврология', uz: 'Nevrologiya', tg: 'Неврология', kk: 'Неврология', ky: 'Неврология' } },
@@ -65,7 +67,6 @@ const CATEGORIES = [
   { slug: 'general', color: 'slate', Icon: ClipboardList, labels: { ru: 'Общая медицина', uz: 'Umumiy tibbiyot', tg: 'Тибби умумӣ', kk: 'Жалпы медицина', ky: 'Жалпы медицина' } },
 ] as const;
 
-// Цвета только для бейджа со счётчиком
 const ACCENT_COLORS: Record<string, string> = {
   rose: 'text-rose-700 bg-rose-50 border-rose-200',
   violet: 'text-violet-700 bg-violet-50 border-violet-200',
@@ -124,34 +125,44 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {CATEGORIES.map(({ slug, color, Icon, labels }) => {
+          {CATEGORIES.map(({ slug, color, Icon, labels }, index) => {
             const label = labels[lang as keyof typeof labels] || labels.ru;
             const count = categoryCounts[slug] ?? 0;
 
             return (
-              <Link
+              <motion.div
                 key={slug}
-                href={`/${lang}/blog?category=${slug}`}
-                className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-white 
-                           border border-slate-100 
-                           shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.04)]
-                           hover:shadow-[0_8px_25px_rgba(0,0,0,0.08)]
-                           hover:-translate-y-1 transition-all duration-300 ease-out"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{
+                  duration: 0.4,
+                  delay: index * 0.05,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
               >
-                {/* Единый цвет для всех иконок */}
-                <Icon className="w-10 h-10 text-slate-600 group-hover:text-slate-800 transition-colors" />
-                <p className="text-[13px] font-medium text-slate-700 text-center leading-tight 
-                              group-hover:text-slate-900 transition-colors">
-                  {label}
-                </p>
-                {count > 0 ? (
-                  <span className={`text-[11px] font-semibold px-3 py-0.5 rounded-full border ${ACCENT_COLORS[color]}`}>
-                    {count} {articleWord}
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-slate-300">—</span>
-                )}
-              </Link>
+                <Link
+                  href={`/${lang}/blog?category=${slug}`}
+                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-white 
+                             border border-slate-100 
+                             shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.04)]
+                             hover:shadow-[0_12px_30px_rgba(0,0,0,0.07)]
+                             hover:-translate-y-1 transition-all duration-300 ease-out"
+                >
+                  <Icon className="w-10 h-10 text-slate-600 group-hover:text-slate-800 group-hover:scale-110 transition-all duration-300" />
+                  <p className="text-[13px] font-medium text-slate-700 text-center leading-tight 
+                                group-hover:text-slate-900 transition-colors">
+                    {label}
+                  </p>
+                  {count > 0 ? (
+                    <span className={`text-[11px] font-semibold px-3 py-0.5 rounded-full border ${ACCENT_COLORS[color]}`}>
+                      {count} {articleWord}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-300">—</span>
+                  )}
+                </Link>
+              </motion.div>
             );
           })}
         </div>
