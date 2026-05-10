@@ -62,8 +62,8 @@ export async function generateMetadata({
   const article = await Article.findOne({ slug }).lean() as any;
   if (!article) return { title: 'Not Found' };
   const t = (f: any) => (f && (f[lang] || f['ru'])) || '';
-  const title = `${t(article.title)} | Duxtur.com`;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur-portal.vercel.app";
+  const title = `${t(article.title)} | Duxtur.org`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur.org";
   const description = t(article.overview).substring(0, 160);
 const ogImage = article.image
   ? article.image.startsWith('http')
@@ -110,7 +110,7 @@ export default async function BlogPage({
     .lean();
   if (!article) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
 
   const t = (field: any) => {
     if (!field) return '';
@@ -240,7 +240,7 @@ export default async function BlogPage({
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Duxtur.com',
+      name: 'Duxtur.org',
       url: baseUrl,
       logo: { '@type': 'ImageObject', url: `${baseUrl}/logo.png` },
     },
@@ -257,7 +257,7 @@ export default async function BlogPage({
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: `${baseUrl}/${lang}` },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${baseUrl}/${lang}` },
         { '@type': 'ListItem', position: 2, name: 'Blog',       item: `${baseUrl}/${lang}/blog` },
         { '@type': 'ListItem', position: 3, name: t(article.title), item: articleUrl },
       ],
@@ -413,7 +413,7 @@ export default async function BlogPage({
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-8">
               <ol className="flex items-center gap-1.5 flex-wrap text-xs text-gray-400">
-                <li><Link href={`/${lang}`} className="hover:text-blue-600 transition font-medium">Duxtur.com</Link></li>
+                <li><Link href={`/${lang}`} className="hover:text-blue-600 transition font-medium">Duxtur.org</Link></li>
                 <li className="select-none">/</li>
                 <li><Link href={`/${lang}/blog`} className="hover:text-blue-600 transition font-medium">Blog</Link></li>
                 <li className="select-none">/</li>

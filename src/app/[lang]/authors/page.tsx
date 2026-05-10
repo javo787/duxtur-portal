@@ -10,18 +10,18 @@ type Props = { params: Promise<{ lang: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const titles: Record<string, string> = {
-    ru: 'Наши авторы-врачи — Duxtur.com',
-    uz: 'Bizning shifokor-mualliflar — Duxtur.com',
-    tg: 'Муаллифони мо — Duxtur.com',
-    kk: 'Біздің дәрігер-авторлар — Duxtur.com',
-    ky: 'Биздин автор-дарыгерлер — Duxtur.com',
+    ru: 'Наши авторы-врачи — Duxtur.org',
+    uz: 'Bizning shifokor-mualliflar — Duxtur.org',
+    tg: 'Муаллифони мо — Duxtur.org',
+    kk: 'Біздің дәрігер-авторлар — Duxtur.org',
+    ky: 'Биздин автор-дарыгерлер — Duxtur.org',
   };
   const descs: Record<string, string> = {
-    ru: 'Практикующие врачи Центральной Азии, пишущие для Duxtur.com. Верифицированные специалисты — кардиологи, неврологи, педиатры.',
-    uz: 'Markaziy Osiyo amaliyotchi shifokorlari Duxtur.com uchun yozadi.',
-    tg: 'Духтурони амалкунандаи Осиёи Марказӣ барои Duxtur.com менависанд.',
-    kk: 'Орта Азияның тәжірибелі дәрігерлері Duxtur.com үшін жазады.',
-    ky: 'Борбордук Азиянын тажрыйбалуу дарыгерлери Duxtur.com үчүн жазат.',
+    ru: 'Практикующие врачи Центральной Азии, пишущие для Duxtur.org. Верифицированные специалисты — кардиологи, неврологи, педиатры.',
+    uz: 'Markaziy Osiyo amaliyotchi shifokorlari Duxtur.org uchun yozadi.',
+    tg: 'Духтурони амалкунандаи Осиёи Марказӣ барои Duxtur.org менависанд.',
+    kk: 'Орта Азияның тәжірибелі дәрігерлері Duxtur.org үшін жазады.',
+    ky: 'Борбордук Азиянын тажрыйбалуу дарыгерлери Duxtur.org үчүн жазат.',
   };
   return {
     title: titles[lang] || titles.ru,
@@ -65,17 +65,17 @@ export default async function AuthorsPage({ params }: Props) {
     return field[lang] || field['ru'] || '';
   };
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `${L('title', lang)} — Duxtur.com`,
+    name: `${L('title', lang)} — Duxtur.org`,
     url: `${baseUrl}/${lang}/authors`,
     description: L('subtitle', lang),
     publisher: {
       '@type': 'Organization',
-      name: 'Duxtur.com',
+      name: 'Duxtur.org',
       url: baseUrl,
     },
     breadcrumb: {
@@ -84,7 +84,7 @@ export default async function AuthorsPage({ params }: Props) {
         {
           '@type': 'ListItem',
           position: 1,
-          name: 'Duxtur.com',
+          name: 'Duxtur.org',
           item: `${baseUrl}/${lang}`,
         },
         {

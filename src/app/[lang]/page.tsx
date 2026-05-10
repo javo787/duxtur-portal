@@ -20,7 +20,7 @@ export const revalidate = 3600; // ISR — обновление главной �
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const dict = await getDictionary(lang);
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   return {
     title: dict.meta_title,
     description: dict.meta_desc,
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: dict.meta_title,
       description: dict.meta_desc,
       type: 'website',
-      siteName: 'Duxtur.com',
+      siteName: 'Duxtur.org',
       images: [`${baseUrl}/og-default.png`],
     },
     twitter: {
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Home(props: Props) {
   const { lang } = await props.params;
   const dict = await getDictionary(lang);
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
 
   await dbConnect();
 
@@ -91,7 +91,7 @@ for (const item of (categoryAgg as any[])) {
     '@context': 'https://schema.org',
     '@type': ['MedicalOrganization', 'WebSite'],
     '@id': `${baseUrl}/#organization`,
-    name: 'Duxtur.com',
+    name: 'Duxtur.org',
     url: baseUrl,
     description: dict.meta_desc,
     logo: {
@@ -120,7 +120,7 @@ for (const item of (categoryAgg as any[])) {
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: baseUrl },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: baseUrl },
       ],
     },
   };

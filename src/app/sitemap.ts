@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Article from "@/models/Article";
 import Doctor from "@/models/Doctor";
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur-portal.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur.org";
 const languages = ["ru", "uz", "tg", "kk", "ky"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

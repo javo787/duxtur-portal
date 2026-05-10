@@ -15,13 +15,13 @@ export const revalidate = 1800; // ISR — обновление каждые 30 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const titles: Record<string, string> = {
-    ru: 'Все статьи — Duxtur.com',
-    uz: 'Barcha maqolalar — Duxtur.com',
-    tg: 'Ҳамаи мақолаҳо — Duxtur.com',
-    kk: 'Барлық мақалалар — Duxtur.com',
-    ky: 'Бардык макалалар — Duxtur.com',
+    ru: 'Все статьи — Duxtur.org',
+    uz: 'Barcha maqolalar — Duxtur.org',
+    tg: 'Ҳамаи мақолаҳо — Duxtur.org',
+    kk: 'Барлық мақалалар — Duxtur.org',
+    ky: 'Бардык макалалар — Duxtur.org',
   };
   const descs: Record<string, string> = {
     ru: 'Медицинские статьи от практикующих врачей. Кардиология, неврология, педиатрия и другие специализации.',
@@ -80,7 +80,7 @@ function pluralRu(n: number, one: string, few: string, many: string) {
 export default async function BlogListPage({ params, searchParams }: Props) {
   const { lang } = await params;
   const { category } = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
 
   await dbConnect();
   void Doctor; // ensure Doctor model registered for populate
@@ -110,13 +110,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
     description: UI.heading[lang],
     publisher: {
       '@type': 'Organization',
-      name: 'Duxtur.com',
+      name: 'Duxtur.org',
       url: baseUrl,
     },
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.com', item: `${baseUrl}/${lang}` },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${baseUrl}/${lang}` },
         { '@type': 'ListItem', position: 2, name: 'Blog', item: `${baseUrl}/${lang}/blog` },
         ...(category ? [{ '@type': 'ListItem', position: 3, name: category, item: `${baseUrl}/${lang}/blog?category=${category}` }] : []),
       ],

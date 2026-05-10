@@ -88,7 +88,7 @@ export default async function NotFound() {
             </div>
 
             <p className="text-blue-300/40 text-xs mt-12">
-              © {new Date().getFullYear()} Duxtur.com
+              © {new Date().getFullYear()} Duxtur.org
             </p>
           </div>
         </div>

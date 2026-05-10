@@ -112,7 +112,7 @@ export default function LoginPage({ params }: { params: Promise<{ lang: string }
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          © {new Date().getFullYear()} Duxtur.com — Медицинский портал Центральной Азии
+          © {new Date().getFullYear()} Duxtur.org — Медицинский портал Центральной Азии
         </p>
       </div>
     </div>

@@ -17,7 +17,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
   const label = titles[lang] || titles.ru;
   return {
-    title: q ? `"${q}" — ${label} | Duxtur.com` : `${label} — Duxtur.com`,
+    title: q ? `"${q}" — ${label} | Duxtur.org` : `${label} — Duxtur.org`,
     robots: { index: false, follow: true },
   };
 }

@@ -8,18 +8,18 @@ import { buildAlternates } from '@/lib/seo';
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   const titles: Record<string, string> = {
-    ru: 'О нас — Duxtur.com | Медицинский портал Центральной Азии',
-    uz: 'Biz haqimizda — Duxtur.com',
-    tg: 'Дар бораи мо — Duxtur.com',
-    kk: 'Біз туралы — Duxtur.com',
-    ky: 'Биз жөнүндө — Duxtur.com',
+    ru: 'О нас — Duxtur.org | Медицинский портал Центральной Азии',
+    uz: 'Biz haqimizda — Duxtur.org',
+    tg: 'Дар бораи мо — Duxtur.org',
+    kk: 'Біз туралы — Duxtur.org',
+    ky: 'Биз жөнүндө — Duxtur.org',
   };
   const descs: Record<string, string> = {
-    ru: 'Duxtur.com — первый верифицированный медицинский портал Центральной Азии. Узнайте как мы проверяем врачей и обеспечиваем качество контента.',
-    uz: 'Duxtur.com — Markaziy Osiyoning birinchi tasdiqlangan tibbiy portali.',
-    tg: 'Duxtur.com — аввалин порталии тиббии тасдиқшудаи Осиёи Марказӣ.',
-    kk: 'Duxtur.com — Орталық Азияның алғашқы верификацияланған медициналық порталы.',
-    ky: 'Duxtur.com — Борбордук Азиянын биринчи верификацияланган медициналык порталы.',
+    ru: 'Duxtur.org — первый верифицированный медицинский портал Центральной Азии. Узнайте как мы проверяем врачей и обеспечиваем качество контента.',
+    uz: 'Duxtur.org — Markaziy Osiyoning birinchi tasdiqlangan tibbiy portali.',
+    tg: 'Duxtur.org — аввалин порталии тиббии тасдиқшудаи Осиёи Марказӣ.',
+    kk: 'Duxtur.org — Орталық Азияның алғашқы верификацияланған медициналық порталы.',
+    ky: 'Duxtur.org — Борбордук Азиянын биринчи верификацияланган медициналык порталы.',
   };
  return {
     title: titles[lang] || titles.ru,
@@ -31,16 +31,16 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function AboutPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
-    name: 'О Duxtur.com',
+    name: 'О Duxtur.org',
     url: `${baseUrl}/${lang}/about`,
     description: 'Первый верифицированный медицинский портал Центральной Азии',
     publisher: {
       '@type': 'Organization',
-      name: 'Duxtur.com',
+      name: 'Duxtur.org',
       url: baseUrl,
       contactPoint: {
         '@type': 'ContactPoint',
@@ -54,7 +54,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         {
           '@type': 'ListItem',
           position: 1,
-          name: 'Duxtur.com',
+          name: 'Duxtur.org',
           item: `${baseUrl}/${lang}`,
         },
         {
@@ -97,7 +97,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
             YMYL — Медицинский контент
           </span>
           <h1 className="text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
-            О Duxtur.com
+            О Duxtur.org
           </h1>
           <p className="text-lg text-gray-500 leading-relaxed">
             Первый верифицированный медицинский портал Центральной Азии на таджикском, узбекском, казахском, кыргызском и русском языках.
@@ -108,7 +108,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         <section className="mb-12">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Наша миссия</h2>
           <p className="text-gray-600 leading-relaxed mb-4">
-            80+ миллионов жителей Центральной Азии ищут медицинскую информацию в интернете — и находят её либо на английском, либо на сомнительных сайтах без верификации. <strong>Duxtur.com решает эту проблему:</strong> платформа где практикующие врачи пишут статьи, а читатели получают проверенную информацию на своём родном языке.
+            80+ миллионов жителей Центральной Азии ищут медицинскую информацию в интернете — и находят её либо на английском, либо на сомнительных сайтах без верификации. <strong>Duxtur.org решает эту проблему:</strong> платформа где практикующие врачи пишут статьи, а читатели получают проверенную информацию на своём родном языке.
           </p>
           <p className="text-gray-600 leading-relaxed">
             Мы убеждены: доступ к достоверной медицинской информации на родном языке — это не роскошь, а базовое право каждого человека.
@@ -119,7 +119,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         <section className="mb-12">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-6">Как мы проверяем врачей</h2>
           <p className="text-gray-600 leading-relaxed mb-8">
-            Все авторы Duxtur.com — практикующие врачи с подтверждённым медицинским образованием. Мы применяем многоступенчатую верификацию перед допуском к публикации.
+            Все авторы Duxtur.org — практикующие врачи с подтверждённым медицинским образованием. Мы применяем многоступенчатую верификацию перед допуском к публикации.
           </p>
 
           <div className="space-y-4">
@@ -134,7 +134,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               {
                 step: '02',
                 title: 'Ручная проверка администратором',
-                text: 'Редакция Duxtur.com вручную проверяет каждую заявку: подлинность документа, специализацию врача, контактные данные. Автоматического одобрения не существует.',
+                text: 'Редакция Duxtur.org вручную проверяет каждую заявку: подлинность документа, специализацию врача, контактные данные. Автоматического одобрения не существует.',
                 color: 'bg-green-50 border-green-200',
                 num: 'text-green-600',
               },
@@ -171,7 +171,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
             <h2 className="text-xl font-extrabold text-gray-900">Использование ИИ в создании контента</h2>
           </div>
           <p className="text-gray-700 leading-relaxed mb-4">
-            Часть статей на Duxtur.com создаётся с помощью технологий искусственного интеллекта (Google Gemini) — это помогает врачам структурировать материал и адаптировать сложные медицинские тексты для широкой аудитории.
+            Часть статей на Duxtur.org создаётся с помощью технологий искусственного интеллекта (Google Gemini) — это помогает врачам структурировать материал и адаптировать сложные медицинские тексты для широкой аудитории.
           </p>
           <p className="text-gray-700 leading-relaxed mb-4">
             <strong>Важно:</strong> каждая статья, созданная с помощью ИИ, написана или проверена практикующим врачом с верифицированным медицинским образованием. ИИ является инструментом оформления, но медицинская точность информации — ответственность автора-врача.

@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!doctor) return { title: 'Врач не найден' };
   const specialty = doctor.specialty?.[lang] || doctor.specialty?.ru || '';
   return {
-    title: `${doctor.name} — ${specialty} | Duxtur.com`,
-    description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.com`,
+    title: `${doctor.name} — ${specialty} | Duxtur.org`,
+    description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.org`,
     alternates: buildAlternates(`doctor/${id}`, lang),
   };
 }
@@ -44,7 +44,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   };
 
   const specialtyLabel = t(doctor.specialty);
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const doctorUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
   // Дата последней медицинской проверки — берём из самой свежей статьи
   const lastReviewedArticle = articles.find(a => a.lastMedicalReview);
@@ -64,7 +64,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     image: doctor.image || undefined,
     worksFor: doctor.workplace
       ? { '@type': 'Organization', name: doctor.workplace }
-      : { '@type': 'Organization', name: 'Duxtur.com', url: baseUrl },
+      : { '@type': 'Organization', name: 'Duxtur.org', url: baseUrl },
     alumniOf: doctor.education
       ? { '@type': 'EducationalOrganization', name: doctor.education }
       : undefined,
@@ -78,7 +78,7 @@ export default async function DoctorProfilePage({ params }: Props) {
         {
           '@type': 'ListItem',
           position: 1,
-          name: 'Duxtur.com',
+          name: 'Duxtur.org',
           item: `${baseUrl}/${lang}`,
         },
         {
@@ -313,7 +313,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                 <div>
                   <p className="font-bold text-green-800 text-sm">Верифицированный автор</p>
                   <p className="text-green-700 text-xs mt-1 leading-relaxed">
-                    Диплом и квалификация подтверждены командой Duxtur.com
+                    Диплом и квалификация подтверждены командой Duxtur.org
                   </p>
                 </div>
               </div>

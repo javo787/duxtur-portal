@@ -9,19 +9,19 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const { lang } = await params;
 
   const titles: Record<string, string> = {
-    ru: 'Редакционная политика — Duxtur.com',
-    uz: 'Tahririyat siyosati — Duxtur.com',
-    tg: 'Сиёсати таҳририявӣ — Duxtur.com',
-    kk: 'Редакциялық саясат — Duxtur.com',
-    ky: 'Редакциялык саясат — Duxtur.com',
+    ru: 'Редакционная политика — Duxtur.org',
+    uz: 'Tahririyat siyosati — Duxtur.org',
+    tg: 'Сиёсати таҳририявӣ — Duxtur.org',
+    kk: 'Редакциялық саясат — Duxtur.org',
+    ky: 'Редакциялык саясат — Duxtur.org',
   };
 
   const descs: Record<string, string> = {
-    ru: 'Редакционные стандарты Duxtur.com: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
-    uz: 'Duxtur.com tahririyat standartlari: tibbiy kontentni qanday yaratamiz, tekshiramiz va chop etamiz. Shifokorlarni tasdiqlash jarayoni.',
-    tg: 'Стандартҳои таҳририявии Duxtur.com: чӣ тавр мо мӯҳтавои тиббӣ эҷод, тафтиш ва нашр мекунем. Раванди тасдиқи духтурон.',
-    kk: 'Duxtur.com редакциялық стандарттары: медициналық контентті қалай жасаймыз, тексереміз және жариялаймыз. Дәрігерлерді верификациялау процесі.',
-    ky: 'Duxtur.com редакциялык стандарттары: медициналык контентти кантип түзөбүз, текшеребиз жана жарыялайбыз. Дарыгерлерди верификациялоо процесси.',
+    ru: 'Редакционные стандарты Duxtur.org: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
+    uz: 'Duxtur.org tahririyat standartlari: tibbiy kontentni qanday yaratamiz, tekshiramiz va chop etamiz. Shifokorlarni tasdiqlash jarayoni.',
+    tg: 'Стандартҳои таҳририявии Duxtur.org: чӣ тавр мо мӯҳтавои тиббӣ эҷод, тафтиш ва нашр мекунем. Раванди тасдиқи духтурон.',
+    kk: 'Duxtur.org редакциялық стандарттары: медициналық контентті қалай жасаймыз, тексереміз және жариялаймыз. Дәрігерлерді верификациялау процесі.',
+    ky: 'Duxtur.org редакциялык стандарттары: медициналык контентти кантип түзөбүз, текшеребиз жана жарыялайбыз. Дарыгерлерди верификациялоо процесси.',
   };
 
   return {
@@ -35,16 +35,16 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function EditorialPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur-portal.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Редакционная политика Duxtur.com',
+    name: 'Редакционная политика Duxtur.org',
     url: `${baseUrl}/${lang}/editorial`,
     description: 'Стандарты создания и верификации медицинского контента',
     publisher: {
       '@type': 'Organization',
-      name: 'Duxtur.com',
+      name: 'Duxtur.org',
       url: baseUrl,
     },
   };
@@ -80,7 +80,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
         {/* Intro */}
         <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl mb-10">
           <p className="text-gray-700 leading-relaxed text-sm">
-            Медицинская информация относится к категории <strong>YMYL (Your Money or Your Life)</strong> — контент с высоким влиянием на жизнь пользователей. Duxtur.com применяет строгие редакционные стандарты чтобы гарантировать точность, актуальность и безопасность публикуемых материалов.
+            Медицинская информация относится к категории <strong>YMYL (Your Money or Your Life)</strong> — контент с высоким влиянием на жизнь пользователей. Duxtur.org применяет строгие редакционные стандарты чтобы гарантировать точность, актуальность и безопасность публикуемых материалов.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">01.</span> Кто может публиковать на Duxtur.com
+              <span className="text-blue-600">01.</span> Кто может публиковать на Duxtur.org
             </h2>
             <p className="text-gray-600 leading-relaxed mb-3">К публикации допускаются исключительно:</p>
             <ul className="space-y-2 text-gray-600 text-sm">
@@ -113,7 +113,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
             <ol className="space-y-3 text-sm text-gray-600">
               {[
                 { n: '1', t: 'Подача заявки', d: 'Врач заполняет форму регистрации и загружает фото диплома или лицензии.' },
-                { n: '2', t: 'Ручная проверка', d: 'Редактор Duxtur.com проверяет подлинность документа, соответствие специализации, контактные данные. Срок: 1-3 рабочих дня.' },
+                { n: '2', t: 'Ручная проверка', d: 'Редактор Duxtur.org проверяет подлинность документа, соответствие специализации, контактные данные. Срок: 1-3 рабочих дня.' },
                 { n: '3', t: 'Решение', d: 'Заявка одобряется или отклоняется. При отклонении врач получает пояснение.' },
                 { n: '4', t: 'Пробный период', d: 'После одобрения первые 3 статьи проходят дополнительную редакционную проверку.' },
               ].map((item) => (
@@ -146,7 +146,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
               <span className="text-blue-600">04.</span> Использование искусственного интеллекта
             </h2>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-gray-700 leading-relaxed">
-              <p className="mb-3">Duxtur.com использует инструменты на базе ИИ (Google Gemini) для помощи врачам в структурировании и оформлении статей. ИИ помогает:</p>
+              <p className="mb-3">Duxtur.org использует инструменты на базе ИИ (Google Gemini) для помощи врачам в структурировании и оформлении статей. ИИ помогает:</p>
               <ul className="space-y-1 mb-3">
                 <li className="flex gap-2"><span>•</span>Структурировать черновик врача в профессиональную статью</li>
                 <li className="flex gap-2"><span>•</span>Адаптировать научные тексты для широкой аудитории</li>

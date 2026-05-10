@@ -101,7 +101,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
         </div>
 
         <div className="pt-7 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-[12.5px] text-slate-400">© {year} Duxtur.com</p>
+          <p className="text-[12.5px] text-slate-400">© {year} Duxtur.org</p>
           <p className="text-[12px] text-slate-300 text-center max-w-md">
             Информация на сайте носит ознакомительный характер. Всегда консультируйтесь с врачом.
           </p>

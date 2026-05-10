@@ -211,7 +211,7 @@ export function ProfileTab({ lang }: { lang: string }) {
         <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex items-center justify-between gap-4">
           <div>
             <p className="font-bold text-blue-900 text-sm">Ваш публичный профиль</p>
-            <p className="text-blue-600 text-xs mt-0.5">duxtur.com/{lang}/doctor/{profile.slug}</p>
+            <p className="text-blue-600 text-xs mt-0.5">Duxtur.org/{lang}/doctor/{profile.slug}</p>
           </div>
           <Link href={`/${lang}/doctor/${profile.slug}`} target="_blank"
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shrink-0">

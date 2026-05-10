@@ -1,5 +1,5 @@
 const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur-portal.vercel.app";
+  process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur.org";
 
 const LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
 
