@@ -42,7 +42,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
     className="rounded-xl object-contain group-hover:opacity-90 transition"
   />
   <span className="text-xl font-extrabold text-gray-900 tracking-tight">
-    duxtur<span className="text-blue-600">.com</span>
+    duxtur<span className="text-blue-600">.org</span>
   </span>
 </Link>
 
