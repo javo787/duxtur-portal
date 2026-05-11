@@ -48,13 +48,13 @@
   --card-foreground: oklch(0.16 0.015 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.16 0.015 260);
-  --primary: oklch(0.40 0.08 255); /* глубокий синий */
+  --primary: oklch(0.40 0.08 255);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.96 0.012 260);
   --secondary-foreground: oklch(0.25 0.02 260);
   --muted: oklch(0.96 0.006 260);
   --muted-foreground: oklch(0.54 0.025 255);
-  --accent: oklch(0.94 0.03 80); /* тёплый янтарный */
+  --accent: oklch(0.94 0.03 80);
   --accent-foreground: oklch(0.35 0.1 80);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.9 0.01 260);
@@ -126,15 +126,6 @@
   scrollbar-width: none;
 }
 
-/* предпочитает меньше анимаций */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -146,4 +137,53 @@
 /* brand accent line */
 .brand-line {
   background: linear-gradient(90deg, var(--blue-600), var(--amber-500));
+}
+
+/* Hero illustration keyframes */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.04); opacity: 1; }
+}
+
+@keyframes breatheRing {
+  0%, 100% { transform: scale(1); opacity: 0.12; }
+  50%      { transform: scale(1.15); opacity: 0.22; }
+}
+
+@keyframes ping {
+  0%   { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes orbit1 {
+  from { transform: rotate(0deg) translateX(88px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(88px) rotate(-360deg); }
+}
+
+@keyframes orbit2 {
+  from { transform: rotate(120deg) translateX(88px) rotate(-120deg); }
+  to   { transform: rotate(480deg) translateX(88px) rotate(-480deg); }
+}
+
+@keyframes orbit3 {
+  from { transform: rotate(240deg) translateX(88px) rotate(-240deg); }
+  to   { transform: rotate(600deg) translateX(88px) rotate(-600deg); }
+}
+
+@keyframes ecgDraw {
+  0%   { stroke-dashoffset: 600; opacity: 0; }
+  15%  { opacity: 0.9; }
+  45%  { stroke-dashoffset: 0; opacity: 1; }
+  85%  { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* Уважаем пользовательские настройки – единственный блок */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
