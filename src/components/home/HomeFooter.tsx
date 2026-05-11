@@ -17,7 +17,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
                 </svg>
               </div>
               <span className="font-display font-bold text-[18px] text-slate-900 tracking-[-0.03em]">
-                duxtur<span className="text-blue-600">.com</span>
+                duxtur<span className="text-blue-600">.org</span>
               </span>
             </Link>
             <p className="text-[13.5px] text-slate-500 leading-relaxed max-w-[220px]">
