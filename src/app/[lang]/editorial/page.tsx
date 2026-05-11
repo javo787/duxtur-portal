@@ -146,7 +146,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
               <span className="text-blue-600">04.</span> Использование искусственного интеллекта
             </h2>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-gray-700 leading-relaxed">
-              <p className="mb-3">Duxtur.org использует инструменты на базе ИИ (Google Gemini) для помощи врачам в структурировании и оформлении статей. ИИ помогает:</p>
+              <p className="mb-3">Duxtur.org использует инструменты на базе ИИ   для помощи врачам в структурировании и оформлении статей. ИИ помогает:</p>
               <ul className="space-y-1 mb-3">
                 <li className="flex gap-2"><span>•</span>Структурировать черновик врача в профессиональную статью</li>
                 <li className="flex gap-2"><span>•</span>Адаптировать научные тексты для широкой аудитории</li>
