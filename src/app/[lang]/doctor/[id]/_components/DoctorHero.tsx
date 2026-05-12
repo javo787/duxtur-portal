@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Avatar3D from './Avatar3D';
-import { CATEGORY_GRADIENTS } from '../../page'; // импорт из родительской папки
+import { CATEGORY_GRADIENTS } from '../../page';
+import { CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 
 interface DoctorHeroProps {
   doctor: any;
