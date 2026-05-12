@@ -6,7 +6,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { buildAlternates } from '@/lib/seo';
-import ShareButtons from '@/components/ShareButtons';
+import DoctorHero from './_components/DoctorHero';
+import TrustBadges from './_components/TrustBadges';
+import ShareButton from './_components/ShareButton';
+import PrintButton from '@/components/PrintButton';
+import MobileStickyShare from '@/components/MobileStickyShare';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -23,8 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// Конфигурация категорий и цветов (оставлена от Клода)
-const CATEGORY_LABELS: Record<string, Record<string, string>> = {
+// Категории и цвета
+export const CATEGORY_LABELS: Record<string, Record<string, string>> = {
   cardiology:     { ru: 'Кардиология',    uz: 'Kardiologiya' },
   neurology:      { ru: 'Неврология',     uz: 'Nevrologiya' },
   dentistry:      { ru: 'Стоматология',   uz: 'Stomatologiya' },
@@ -36,7 +40,7 @@ const CATEGORY_LABELS: Record<string, Record<string, string>> = {
   general:        { ru: 'Общая медицина', uz: 'Umumiy tibbiyot' },
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   cardiology:    'bg-rose-50 text-rose-700 border-rose-200',
   neurology:     'bg-violet-50 text-violet-700 border-violet-200',
   dentistry:     'bg-sky-50 text-sky-700 border-sky-200',
@@ -48,24 +52,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   general:       'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
-// Функция для генерации миссии врача, если поля нет в БД
-function getMission(specialty: string): string {
-  const missions: Record<string, string> = {
-    'кардиология': 'Помогаю пациентам обрести здоровое сердце и уверенность в завтрашнем дне',
-    'неврология': 'Помогаю восстановить ясность ума и свободу движений',
-    'стоматология': 'Возвращаю красоту и здоровье вашей улыбки',
-    'педиатрия': 'Забочусь о самом ценном — здоровье ваших детей',
-    'дерматология': 'Помогаю обрести уверенность через здоровую кожу',
-    'офтальмология': 'Открываю мир ярких красок для ваших глаз',
-    'хирургия': 'Возвращаю качество жизни через точность и заботу',
-    'гинекология': 'С заботой о женском здоровье на каждом этапе жизни',
-  };
-  const key = specialty.toLowerCase();
-  return missions[key] || `Помогаю пациентам достичь лучшего здоровья и качества жизни`;
-}
-
 function getReadingTime(article: any): number {
-  const text = Object.values(article.overview || {}).join(' ') + Object.values(article.symptoms || {}).join(' ');
+  const text = Object.values(article.overview || {}).join(' ') +
+               Object.values(article.symptoms || {}).join(' ');
   const words = text.split(/\s+/).length;
   return Math.max(2, Math.ceil(words / 200));
 }
@@ -95,25 +84,26 @@ export default async function DoctorProfilePage({ params }: Props) {
   const specialtyLabel = t(doctor.specialty);
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const doctorUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
-  
-  // Используем отдельное поле mission, если есть, иначе — генерируем
-  const mission = t(doctor.mission) || getMission(specialtyLabel);
 
   const lastReviewedArticle = articles.find(a => a.lastMedicalReview);
   const lastMedicalReviewDate = lastReviewedArticle?.lastMedicalReview
-    ? new Date(lastReviewedArticle.lastMedicalReview).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(lastReviewedArticle.lastMedicalReview).toLocaleDateString('ru', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
     : null;
 
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
-  
-  // JSON-LD с расширенными полями
+
+  // Генерация миссии, если нет в БД
+  const mission = t(doctor.mission) || getMission(specialtyLabel);
+
   const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': ['Person', 'MedicalBusiness'],
     '@id': doctorUrl,
     name: doctor.name,
     jobTitle: specialtyLabel,
-    description: mission, // Используем миссию как описание
+    description: mission,
     url: doctorUrl,
     image: doctor.image || undefined,
     worksFor: doctor.workplace ? { '@type': 'Organization', name: doctor.workplace } : undefined,
@@ -134,10 +124,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans">
-      {/* JSON-LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      
-      {/* Стили для печати (скрываем навигацию, делаем белый фон) */}
       <style>{`
         @media print {
           header, .share-area, .no-print { display: none !important; }
@@ -147,16 +134,13 @@ export default async function DoctorProfilePage({ params }: Props) {
         .print-only { display: none; }
       `}</style>
 
-      {/* HEADER (скрыт при печати) */}
+      {/* HEADER */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 no-print">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={`/${lang}`} className="text-lg font-black tracking-tight text-blue-600">
             duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
-          <Link
-            href={`/${lang}/authors`}
-            className="text-sm text-gray-400 hover:text-gray-700 transition font-medium flex items-center gap-1.5"
-          >
+          <Link href={`/${lang}/authors`} className="text-sm text-gray-400 hover:text-gray-700 transition font-medium flex items-center gap-1.5">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -165,73 +149,35 @@ export default async function DoctorProfilePage({ params }: Props) {
         </div>
       </header>
 
-      {/* HERO — Улучшенный: миссия, акцентный цвет */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0a1628] via-[#0f2a52] to-[#0a1628]">
-        {/* Декорации оставлены */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative max-w-6xl mx-auto px-6 py-12 md:py-20">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-8 md:gap-10">
-            {/* Аватар */}
-            <div className="relative shrink-0 mx-auto md:mx-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-2 ring-white/10 shadow-2xl">
-                <img
-                  src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                  alt={doctor.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-wide">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="..." clipRule="evenodd" /></svg>
-                Верифицирован
-              </div>
-            </div>
-
-            {/* Инфо */}
-            <div className="flex-1 min-w-0 text-center md:text-left">
-              {/* Пилюля специализации — теперь с динамическим цветом */}
-              <span className="inline-flex items-center gap-1.5 bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="..." /></svg>
-                {specialtyLabel}
-              </span>
-
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none mb-3">
-                {doctor.name}
-              </h1>
-
-              {/* Эмоциональный крючок — Миссия */}
-              <p className="text-blue-200/90 text-sm md:text-base leading-relaxed max-w-xl mb-6 italic">
-                {mission}
-              </p>
-
-              {/* Метрики */}
-              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                <HeroStat icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>} value={articles.length.toString()} label={articles.length === 1 ? 'статья' : articles.length < 5 ? 'статьи' : 'статей'} />
-                {doctor.experience > 0 && <HeroStat icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} value={`${doctor.experience}`} label="лет опыта" />}
-                {totalViews > 0 && <HeroStat icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>} value={totalViews > 999 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString()} label="прочтений" />}
-                {doctor.languages?.length > 0 && <HeroStat icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>} value={doctor.languages.length.toString()} label={doctor.languages.length === 1 ? 'язык' : 'языка'} />}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* HERO */}
+      <DoctorHero
+        doctor={doctor}
+        specialtyLabel={specialtyLabel}
+        mission={mission}
+        totalViews={totalViews}
+        articlesCount={articles.length}
+      />
 
       {/* ОСНОВНОЙ КОНТЕНТ */}
       <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Левая часть — Статьи (без изменений, код Клода идеален) */}
+        {/* Статьи */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-gray-900 tracking-tight">
               Публикации
-              {articles.length > 0 && <span className="ml-2.5 bg-gray-100 text-gray-500 text-sm font-bold px-2.5 py-0.5 rounded-full">{articles.length}</span>}
+              {articles.length > 0 && (
+                <span className="ml-2.5 bg-gray-100 text-gray-500 text-sm font-bold px-2.5 py-0.5 rounded-full">
+                  {articles.length}
+                </span>
+              )}
             </h2>
           </div>
           {articles.length === 0 ? (
             <div className="bg-white rounded-2xl p-16 text-center border border-gray-100 shadow-sm">
               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
               <p className="font-bold text-gray-700 mb-1 text-lg">Материалы готовятся</p>
               <p className="text-sm text-gray-400">Врач скоро опубликует первую статью</p>
@@ -277,10 +223,10 @@ export default async function DoctorProfilePage({ params }: Props) {
           )}
         </div>
 
-        {/* ПРАВАЯ ЧАСТЬ — Сайдбар с улучшенной структурой */}
+        {/* Сайдбар */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-4">
-            {/* Досье врача (код Клода оставлен) */}
+            {/* Профиль врача */}
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="bg-gradient-to-r from-[#0a1628] to-[#0f2a52] px-5 py-4">
                 <p className="text-blue-300/70 text-[10px] font-black uppercase tracking-[0.15em] mb-0.5">Профиль врача</p>
@@ -301,91 +247,63 @@ export default async function DoctorProfilePage({ params }: Props) {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Блок доверия + Кнопка "Поделиться" */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-50">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Доверие и верификация</p>
-              </div>
-              <div className="p-5 space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></div>
-                  <div>
-                    <p className="font-bold text-gray-800 text-sm">Верифицированный автор</p>
-                    <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">Диплом и квалификация подтверждены</p>
-                  </div>
-                </div>
-                {lastMedicalReviewDate && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
-                    <div>
-                      <p className="font-bold text-gray-800 text-sm">Медицинская проверка</p>
-                      <p className="text-blue-600 text-xs font-semibold mt-0.5">{lastMedicalReviewDate}</p>
-                      <p className="text-gray-400 text-xs mt-0.5">Контент проверен практикующим врачом</p>
+              {doctor.sameAs?.length > 0 && (
+                <div className="px-5 pb-5">
+                  <div className="border-t border-gray-50 pt-4">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">Профили</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {doctor.sameAs.map((link: string, i: number) => (
+                        <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition px-3 py-1.5 rounded-lg font-medium truncate max-w-full">
+                          {new URL(link).hostname.replace('www.', '')}
+                        </a>
+                      ))}
                     </div>
                   </div>
-                )}
-                {articles.length > 0 && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
-                    <div>
-                      <p className="font-bold text-gray-800 text-sm">Активный автор</p>
-                      <p className="text-gray-400 text-xs mt-0.5">Последняя публикация: {new Date(articles[0].createdAt).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* CTA перенесен сюда */}
-              <div className="px-5 pb-5">
-                <div className="border-t border-gray-50 pt-4">
-                  <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} lang={lang} />
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Кнопка "Сохранить как PDF" (новая!) */}
-            <button onClick={() => window.print()} className="no-print w-full bg-white border border-gray-200 rounded-2xl p-4 flex items-center justify-center gap-2 text-sm font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition shadow-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              Сохранить как PDF
-            </button>
+            {/* Блок доверия */}
+            <TrustBadges
+              lastMedicalReviewDate={lastMedicalReviewDate}
+              lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
+            />
+
+            {/* Шаринг и PDF */}
+            <div className="space-y-3">
+              <ShareButton url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} />
+              <PrintButton />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Мобильная Sticky-панель "Поделиться" (новая!) */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-gray-200 p-4 flex items-center justify-between gap-4 share-area z-50">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-gray-900 truncate">{doctor.name}</p>
-          <p className="text-xs text-gray-500 truncate">{specialtyLabel}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => navigator.clipboard.writeText(doctorUrl)} className="bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 hover:bg-gray-200 transition">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-            Копировать
-          </button>
-          <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} lang={lang} />
-        </div>
-      </div>
+      {/* Мобильная панель */}
+      <MobileStickyShare
+        doctorUrl={doctorUrl}
+        doctorName={doctor.name}
+        specialtyLabel={specialtyLabel}
+      />
     </div>
   );
 }
 
-/* Вспомогательные компоненты (код Клода) */
-function HeroStat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
-  return (
-    <div className="flex items-center gap-2.5 bg-white/8 border border-white/10 backdrop-blur-sm px-4 py-2.5 rounded-xl">
-      <span className="text-blue-300/80">{icon}</span>
-      <div>
-        <p className="font-black text-white text-sm leading-none">{value}</p>
-        <p className="text-blue-200/60 text-[11px] mt-0.5">{label}</p>
-      </div>
-    </div>
-  );
+// Вспомогательная функция миссии остаётся
+function getMission(specialty: string): string {
+  const missions: Record<string, string> = {
+    'кардиология': 'Помогаю пациентам обрести здоровое сердце и уверенность в завтрашнем дне',
+    'неврология': 'Помогаю восстановить ясность ума и свободу движений',
+    'стоматология': 'Возвращаю красоту и здоровье вашей улыбки',
+    'педиатрия': 'Забочусь о самом ценном — здоровье ваших детей',
+    'дерматология': 'Помогаю обрести уверенность через здоровую кожу',
+    'офтальмология': 'Открываю мир ярких красок для ваших глаз',
+    'хирургия': 'Возвращаю качество жизни через точность и заботу',
+    'гинекология': 'С заботой о женском здоровье на каждом этапе жизни',
+  };
+  return missions[specialty.toLowerCase()] || 'Помогаю пациентам достичь лучшего здоровья и качества жизни';
 }
 
+// Локальные UI компоненты
 function SidebarRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">
