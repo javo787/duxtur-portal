@@ -1,4 +1,7 @@
 // src/app/[lang]/doctor/[id]/_components/TrustBadges.tsx
+'use client';
+
+import { useEffect, useRef } from 'react';
 
 interface TrustBadgesProps {
   lastMedicalReviewDate: string | null;
@@ -6,9 +9,31 @@ interface TrustBadgesProps {
 }
 
 export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: TrustBadgesProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50">
+    <div ref={containerRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden opacity-0 translate-y-4 transition-all duration-700 ease-out [&.animate-fade-in]:opacity-100 [&.animate-fade-in]:translate-y-0">
+      <div className="px-5 py-4 border-b border-gray-50 bg-gradient-to-r from-gray-50 to-white">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Доверие и верификация</p>
       </div>
       <div className="p-5 space-y-4">
@@ -46,9 +71,7 @@ export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: 
             </div>
             <div>
               <p className="font-bold text-gray-800 text-sm">Активный автор</p>
-              <p className="text-gray-400 text-xs mt-0.5">
-                Последняя публикация: {new Date(lastArticleDate).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
+              <p className="text-gray-400 text-xs mt-0.5">Последняя публикация: {new Date(lastArticleDate).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
           </div>
         )}
