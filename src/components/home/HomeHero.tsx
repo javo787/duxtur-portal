@@ -33,20 +33,36 @@ function HeroIllustration() {
         border: '1px solid rgba(255,255,255,0.7)',
       }}
     >
-      {/* Фоновые цветные пятна для глубины (едва заметные) */}
+      {/* Фоновые пятна глубины */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200 rounded-full blur-2xl" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-200 rounded-full blur-2xl" />
       </div>
 
-      {/* Дышащие кольца — теперь хорошо заметны */}
+      {/* Дышащие круги – теперь большие и стеклянные */}
       <div
-        className="absolute w-[200px] h-[200px] rounded-full border-2 border-white/70"
-        style={{ animation: 'breatheRing 3s ease-in-out infinite' }}
+        className="absolute rounded-full flex items-center justify-center"
+        style={{
+          width: '280px',
+          height: '280px',
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          border: '2px solid rgba(255,255,255,0.8)',
+          animation: 'breatheRing 3s ease-in-out infinite',
+        }}
       />
       <div
-        className="absolute w-[230px] h-[230px] rounded-full border-2 border-white/50"
-        style={{ animation: 'breatheRing 3s ease-in-out infinite 0.5s' }}
+        className="absolute rounded-full flex items-center justify-center"
+        style={{
+          width: '320px',
+          height: '320px',
+          background: 'rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          border: '2px solid rgba(255,255,255,0.6)',
+          animation: 'breatheRing 3s ease-in-out infinite 0.5s',
+        }}
       />
 
       {/* Орбитальные точки */}
@@ -70,11 +86,11 @@ function HeroIllustration() {
         }}
       />
 
-      {/* SVG: крест + ECG */}
+      {/* Крест – увеличен до 180px */}
       <svg
         viewBox="0 0 120 120"
-        width="120"
-        height="120"
+        width="180"
+        height="180"
         fill="none"
         className="drop-shadow-lg"
         style={{ animation: 'breathe 3s ease-in-out infinite', willChange: 'transform, opacity' }}
