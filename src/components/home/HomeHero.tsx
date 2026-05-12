@@ -25,18 +25,27 @@ function HeroIllustration() {
 
   return (
     <div
-      className="aspect-square w-full max-w-sm rounded-[2.5rem] flex items-center justify-center relative overflow-hidden"
+      className="aspect-square w-full max-w-sm rounded-[2.5rem] flex items-center justify-center relative overflow-hidden shadow-xl shadow-slate-200/30"
       style={{
-        background: 'linear-gradient(135deg, #EBF3FC 0%, #F5F0FF 50%, #FDF5E6 100%)',
+        background: 'rgba(255,255,255,0.45)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid rgba(255,255,255,0.7)',
       }}
     >
-      {/* Дышащие кольца */}
+      {/* Фоновые цветные пятна для глубины (едва заметные) */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200 rounded-full blur-2xl" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-200 rounded-full blur-2xl" />
+      </div>
+
+      {/* Дышащие кольца — теперь хорошо заметны */}
       <div
-        className="absolute w-[200px] h-[200px] rounded-full border border-blue-400/20"
+        className="absolute w-[200px] h-[200px] rounded-full border-2 border-white/70"
         style={{ animation: 'breatheRing 3s ease-in-out infinite' }}
       />
       <div
-        className="absolute w-[230px] h-[230px] rounded-full border border-blue-400/10"
+        className="absolute w-[230px] h-[230px] rounded-full border-2 border-white/50"
         style={{ animation: 'breatheRing 3s ease-in-out infinite 0.5s' }}
       />
 
@@ -52,7 +61,7 @@ function HeroIllustration() {
 
       {/* Пульсирующий сигнал */}
       <div
-        className="absolute w-11 h-11 rounded-full bg-blue-400/10"
+        className="absolute w-11 h-11 rounded-full bg-blue-400/20"
         style={{
           top: '50%',
           left: '50%',
@@ -67,6 +76,7 @@ function HeroIllustration() {
         width="120"
         height="120"
         fill="none"
+        className="drop-shadow-lg"
         style={{ animation: 'breathe 3s ease-in-out infinite', willChange: 'transform, opacity' }}
       >
         <defs>
@@ -96,7 +106,6 @@ function HeroIllustration() {
           />
         ))}
 
-        {/* ECG-линия с pathLength для стабильного dashoffset */}
         <polyline
           points="22,60 34,60 40,44 48,76 54,52 60,68 66,60 98,60"
           stroke="white"
