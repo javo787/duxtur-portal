@@ -156,18 +156,18 @@
 }
 
 @keyframes orbit1 {
-  from { transform: rotate(0deg) translateX(88px) rotate(0deg); }
-  to   { transform: rotate(360deg) translateX(88px) rotate(-360deg); }
+  from { transform: rotate(0deg) translateX(140px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(140px) rotate(-360deg); }
 }
 
 @keyframes orbit2 {
-  from { transform: rotate(120deg) translateX(88px) rotate(-120deg); }
-  to   { transform: rotate(480deg) translateX(88px) rotate(-480deg); }
+  from { transform: rotate(120deg) translateX(140px) rotate(-120deg); }
+  to   { transform: rotate(480deg) translateX(140px) rotate(-480deg); }
 }
 
 @keyframes orbit3 {
-  from { transform: rotate(240deg) translateX(88px) rotate(-240deg); }
-  to   { transform: rotate(600deg) translateX(88px) rotate(-600deg); }
+  from { transform: rotate(240deg) translateX(140px) rotate(-240deg); }
+  to   { transform: rotate(600deg) translateX(140px) rotate(-600deg); }
 }
 
 @keyframes ecgDraw {
