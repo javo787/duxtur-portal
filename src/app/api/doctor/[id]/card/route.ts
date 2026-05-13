@@ -239,7 +239,7 @@ export async function GET(
       });
       const page = await browser.newPage();
       await page.setViewport({ width: 340, height: 189 });
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
       const pdf = await page.pdf({
         width: '90mm',
         height: '50mm',
