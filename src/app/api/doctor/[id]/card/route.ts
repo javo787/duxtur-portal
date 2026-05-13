@@ -1,7 +1,10 @@
+// src/app/api/doctor/[id]/card/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import connectToDatabase from '@/lib/mongodb'; // default import
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
 
 export async function GET(
   req: NextRequest,
@@ -21,6 +24,7 @@ export async function GET(
     .lean() as any[];
 
   const lang = req.nextUrl.searchParams.get('lang') || 'ru';
+  const format = req.nextUrl.searchParams.get('format') || 'html';
 
   const t = (field: any) => {
     if (!field) return '';
@@ -28,636 +32,298 @@ export async function GET(
     return field[lang] || field['ru'] || '';
   };
 
+  // Мультиязычный словарь
+  const dict: Record<string, { articles: string; years: string; languages: string; verified: string }> = {
+    ru: { articles: 'статей', years: 'лет', languages: 'языков', verified: 'Проверенный врач' },
+    uz: { articles: 'maqola', years: 'yil', languages: 'til', verified: 'Tasdiqlangan shifokor' },
+    tg: { articles: 'мақола', years: 'сол', languages: 'забон', verified: 'Духтури тасдиқшуда' },
+    kk: { articles: 'мақала', years: 'жыл', languages: 'тіл', verified: 'Тексерілген дәрігер' },
+    ky: { articles: 'макала', years: 'жыл', languages: 'тил', verified: 'Текшерилген дарыгер' },
+  };
+  const __ = (key: 'articles' | 'years' | 'languages' | 'verified') =>
+    dict[lang]?.[key] || dict.ru[key];
+
   const doctorUrl = `https://duxtur.org/${lang}/doctor/${doctor.slug}`;
   const specialtyLabel = t(doctor.specialty) || t(doctor.specialization) || 'Врач';
-  const mission = t(doctor.bio) || t(doctor.mission) || 'Помогаю пациентам достичь лучшего здоровья';
 
-  // QR как SVG inline — не нужен внешний сервис
-  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(doctorUrl)}&bgcolor=060d1a&color=ffffff&margin=8`;
-  const qrLightUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(doctorUrl)}&bgcolor=0f172a&color=ffffff&margin=8`;
+  // Социальные ссылки
+  const getSocial = (url: string, type: 'instagram' | 'telegram' | 'whatsapp') => {
+    if (!url) return null;
+    let username = '';
+    if (type === 'instagram') {
+      const match = url.match(/instagram\.com\/([^/?]+)/);
+      username = match ? match[1] : url;
+    } else if (type === 'telegram') {
+      const match = url.match(/t(?:elegram)?\.me\/([^/?]+)/);
+      username = match ? match[1] : url;
+    } else if (type === 'whatsapp') {
+      username = url.replace('https://wa.me/', '').replace(/[^0-9]/g, '');
+    }
+    return { url, username };
+  };
 
-  const topArticles = articles.slice(0, 4);
+  const instagram = getSocial(doctor.instagram, 'instagram');
+  const telegram = getSocial(doctor.telegram, 'telegram');
+  const whatsapp = getSocial(doctor.whatsapp, 'whatsapp');
+
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(doctorUrl)}&bgcolor=060d1a&color=ffffff&margin=4`;
 
   const html = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${doctor.name} — duxtur.org</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: #f1f5f9;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    /* ── Общий контейнер страницы ── */
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 90mm;
+    height: 50mm;
+    margin: 0 auto;
+    background: #060d1a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 3mm;
+    position: relative;
+  }
+  .accent-bar {
+    height: 2px;
+    background: linear-gradient(90deg, #2563eb 0%, #10b981 50%, #2563eb 100%);
+    flex-shrink: 0;
+  }
+  .content {
+    display: flex;
+    flex: 1;
+    padding: 3mm 4mm;
+    gap: 3mm;
+  }
+  .left {
+    display: flex;
+    align-items: center;
+    gap: 2.5mm;
+    flex: 1;
+    min-width: 0;
+  }
+  .photo {
+    width: 16mm;
+    height: 16mm;
+    border-radius: 2mm;
+    object-fit: cover;
+    border: 0.5mm solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+    background: #1e293b;
+  }
+  .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .name {
+    font-size: 11pt;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.3px;
+  }
+  .specialty {
+    font-size: 6pt;
+    color: #60a5fa;
+    font-weight: 600;
+    margin: 1mm 0;
+  }
+  .workplace {
+    font-size: 5pt;
+    color: rgba(148,163,184,0.8);
+    line-height: 1.3;
+  }
+  .right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .verified-icon {
+    background: rgba(16,185,129,0.15);
+    border: 0.5px solid rgba(16,185,129,0.4);
+    border-radius: 50%;
+    width: 5mm;
+    height: 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3mm;
+    color: #10b981;
+    font-weight: bold;
+  }
+  .socials {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5mm;
+    align-items: flex-end;
+  }
+  .social-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+    font-size: 4.5pt;
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+  }
+  .social-item svg {
+    width: 3mm;
+    height: 3mm;
+    flex-shrink: 0;
+  }
+  .qr-code {
+    width: 14mm;
+    height: 14mm;
+    background: #fff;
+    border-radius: 1.5mm;
+    padding: 1mm;
+  }
+  .qr-code img {
+    width: 100%;
+    height: 100%;
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 1.5mm 4mm 3mm;
+    font-size: 4.5pt;
+    color: #475569;
+  }
+  .stats {
+    display: flex;
+    gap: 3mm;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 7pt;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-lbl {
+    color: #64748b;
+    margin-top: 0.5mm;
+  }
+  .profile-url {
+    text-align: right;
+    color: #3b82f6;
+    word-break: break-all;
+    max-width: 30mm;
+  }
+  @media print {
+    body { background: none; }
     .page {
-      width: 90mm;
-      min-height: 54mm;
-      margin: 0 auto;
-      position: relative;
-      overflow: hidden;
+      margin: 0;
+      page-break-after: avoid;
     }
-
-    /* ── Страница 1 — тёмная ── */
-    .page-1 {
-      background: #060d1a;
-      color: white;
-      page-break-after: always;
-      display: flex;
-      flex-direction: column;
+    @page {
+      size: 90mm 50mm;
+      margin: 0;
     }
-
-    /* ── Страница 2 — светлая ── */
-    .page-2 {
-      background: #f8fafc;
-      color: #0f172a;
-    }
-
-    .accent-bar {
-      height: 3px;
-      background: linear-gradient(90deg, #2563eb 0%, #10b981 50%, #2563eb 100%);
-      flex-shrink: 0;
-    }
-
-    /* ══ СТРАНИЦА 1 ══ */
-    .p1-header {
-      padding: 6mm 8mm 4mm;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .logo-text {
-      font-size: 13pt;
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: -0.3px;
-    }
-    .logo-text span { color: #334155; font-weight: 300; }
-
-    .logo-sub {
-      font-size: 5pt;
-      color: #475569;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-top: 1mm;
-    }
-
-    .logo-img {
-      width: 10mm;
-      height: 10mm;
-      object-fit: contain;
-      opacity: 0.9;
-    }
-
-    .verified-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      background: rgba(16,185,129,0.15);
-      border: 0.5px solid rgba(16,185,129,0.4);
-      border-radius: 20px;
-      padding: 2px 7px;
-      font-size: 5.5pt;
-      color: #10b981;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-
-    .p1-photo-section {
-      padding: 0 8mm;
-      display: flex;
-      align-items: center;
-      gap: 5mm;
-      margin-bottom: 4mm;
-    }
-
-    .doctor-photo {
-      width: 22mm;
-      height: 22mm;
-      border-radius: 4mm;
-      object-fit: cover;
-      border: 0.5mm solid rgba(255,255,255,0.12);
-      box-shadow: 0 4mm 12mm rgba(37,99,235,0.3);
-      flex-shrink: 0;
-      background: #0f2a52;
-    }
-
-    .doctor-info { flex: 1; min-width: 0; }
-
-    .specialty-pill {
-      display: inline-block;
-      background: rgba(59,130,246,0.2);
-      border: 0.3px solid rgba(59,130,246,0.4);
-      color: #60a5fa;
-      font-size: 5.5pt;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 1.5px 6px;
-      border-radius: 20px;
-      margin-bottom: 2mm;
-    }
-
-    .doctor-name {
-      font-size: 16pt;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1.1;
-      letter-spacing: -0.5px;
-    }
-
-    .doctor-workplace {
-      font-size: 6pt;
-      color: rgba(148,163,184,0.7);
-      margin-top: 1.5mm;
-      line-height: 1.4;
-    }
-
-    .divider-line {
-      width: 15mm;
-      height: 0.5mm;
-      background: linear-gradient(90deg, transparent, #3b82f6, transparent);
-      margin: 2mm 8mm;
-    }
-
-    .mission-text {
-      font-size: 7pt;
-      color: rgba(148,163,184,0.85);
-      font-style: italic;
-      line-height: 1.6;
-      padding: 0 8mm;
-      margin-bottom: 4mm;
-    }
-
-    .stats-row {
-      display: flex;
-      gap: 2mm;
-      padding: 0 8mm;
-      margin-bottom: 5mm;
-    }
-
-    .stat-card {
-      background: rgba(255,255,255,0.05);
-      border: 0.3px solid rgba(255,255,255,0.1);
-      border-radius: 3mm;
-      padding: 2.5mm 4mm;
-      text-align: center;
-      flex: 1;
-    }
-
-    .stat-val {
-      font-size: 13pt;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1;
-    }
-
-    .stat-lbl {
-      font-size: 5pt;
-      color: #64748b;
-      margin-top: 1mm;
-      letter-spacing: 0.05em;
-    }
-
-    .p1-footer {
-      margin-top: auto;
-      padding: 3mm 8mm 5mm;
-      border-top: 0.3px solid rgba(255,255,255,0.07);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-
-    .contact-block {}
-
-    .phone-number {
-      font-size: 11pt;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 1mm;
-    }
-
-    .profile-url {
-      font-size: 5.5pt;
-      color: #3b82f6;
-      font-weight: 600;
-      margin-bottom: 1mm;
-      word-break: break-all;
-    }
-
-    .scan-hint {
-      font-size: 5pt;
-      color: #475569;
-    }
-
-    .qr-block {
-      background: #fff;
-      border-radius: 2mm;
-      padding: 1.5mm;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1mm;
-    }
-
-    .qr-block img { width: 14mm; height: 14mm; display: block; }
-
-    .qr-label {
-      font-size: 4pt;
-      color: #64748b;
-      letter-spacing: 0.08em;
-      font-weight: 700;
-    }
-
-    /* ══ СТРАНИЦА 2 ══ */
-    .p2-header {
-      padding: 5mm 8mm 4mm;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 0.3px solid #e2e8f0;
-    }
-
-    .p2-tagline {
-      font-size: 5pt;
-      color: #94a3b8;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-weight: 600;
-      margin-bottom: 1.5mm;
-    }
-
-    .p2-name {
-      font-size: 14pt;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
-    }
-
-    .p2-specialty {
-      font-size: 7pt;
-      color: #3b82f6;
-      font-weight: 600;
-      margin-top: 1mm;
-    }
-
-    .p2-logo {
-      text-align: right;
-    }
-
-    .p2-logo-img {
-      width: 8mm;
-      height: 8mm;
-      object-fit: contain;
-      margin-bottom: 1mm;
-      display: block;
-      margin-left: auto;
-    }
-
-    .p2-logo-text {
-      font-size: 9pt;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.3px;
-    }
-    .p2-logo-text span { color: #cbd5e1; font-weight: 300; }
-
-    .p2-logo-sub {
-      font-size: 4.5pt;
-      color: #94a3b8;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-top: 0.5mm;
-    }
-
-    .mission-block {
-      margin: 4mm 8mm;
-      background: linear-gradient(135deg, #0f2a52 0%, #1e3a6e 100%);
-      border-radius: 3mm;
-      padding: 4mm 5mm;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .mission-block::before {
-      content: '"';
-      position: absolute;
-      top: -2mm;
-      right: 2mm;
-      font-size: 36pt;
-      color: rgba(255,255,255,0.04);
-      line-height: 1;
-      font-family: Georgia, serif;
-    }
-
-    .mission-block-label {
-      font-size: 5pt;
-      color: #3b82f6;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 2mm;
-    }
-
-    .mission-block-text {
-      font-size: 7.5pt;
-      color: #fff;
-      font-style: italic;
-      line-height: 1.6;
-    }
-
-    .articles-section {
-      padding: 0 8mm;
-      margin-bottom: 4mm;
-    }
-
-    .articles-label {
-      font-size: 5pt;
-      color: #94a3b8;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 2mm;
-    }
-
-    .article-item {
-      display: flex;
-      align-items: center;
-      gap: 3mm;
-      background: #fff;
-      border: 0.3px solid #e2e8f0;
-      border-radius: 2mm;
-      padding: 2.5mm 3mm;
-      margin-bottom: 1.5mm;
-    }
-
-    .article-num {
-      width: 5mm;
-      height: 5mm;
-      background: #eff6ff;
-      border: 0.3px solid #bfdbfe;
-      border-radius: 1.5mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 6pt;
-      font-weight: 700;
-      color: #2563eb;
-      flex-shrink: 0;
-    }
-
-    .article-title {
-      font-size: 6.5pt;
-      font-weight: 600;
-      color: #0f172a;
-      line-height: 1.3;
-      flex: 1;
-    }
-
-    .article-read {
-      font-size: 5pt;
-      color: #3b82f6;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .p2-footer {
-      margin-top: auto;
-      padding: 3mm 8mm 5mm;
-      border-top: 0.3px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-
-    .p2-footer-left { flex: 1; margin-right: 4mm; }
-
-    .p2-footer-title {
-      font-size: 7.5pt;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 1.5mm;
-    }
-
-    .p2-footer-desc {
-      font-size: 5.5pt;
-      color: #64748b;
-      line-height: 1.5;
-      margin-bottom: 2.5mm;
-    }
-
-    .lang-pills { display: flex; gap: 1mm; flex-wrap: wrap; }
-
-    .lang-pill {
-      font-size: 4.5pt;
-      background: #eff6ff;
-      color: #2563eb;
-      border: 0.3px solid #bfdbfe;
-      border-radius: 1mm;
-      padding: 1px 3px;
-      font-weight: 700;
-    }
-
-    .qr2-block {
-      background: #0f172a;
-      border-radius: 2mm;
-      padding: 1.5mm;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1mm;
-      flex-shrink: 0;
-    }
-
-    .qr2-block img { width: 14mm; height: 14mm; display: block; }
-
-    .qr2-label {
-      font-size: 4pt;
-      color: #64748b;
-      letter-spacing: 0.08em;
-      font-weight: 700;
-    }
-
-    /* ── Print styles ── */
-    @media print {
-      body { background: none; }
-      .page { margin: 0; }
-      .print-hint { display: none; }
-      @page {
-        size: 90mm 148mm;
-        margin: 0;
-      }
-    }
-
-    /* ── Подсказка для браузера (не печатается) ── */
-    .print-hint {
-      text-align: center;
-      padding: 8mm 0 4mm;
-      font-size: 8pt;
-      color: #94a3b8;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-
-<div class="print-hint">
-  Нажмите <strong>Ctrl+P</strong> (или ⌘+P на Mac) → «Сохранить как PDF» → Размер: A6 или Custom 90×148mm
-</div>
-
-<!-- ══════════ СТРАНИЦА 1 — ЛИЦЕВАЯ ══════════ -->
-<div class="page page-1">
+<div class="page">
   <div class="accent-bar"></div>
-
-  <!-- Шапка: лого + бейдж -->
-  <div class="p1-header">
-    <div>
-      <div style="display:flex;align-items:center;gap:2.5mm;">
-        <img src="https://duxtur.org/logo.png" class="logo-img" alt="duxtur" onerror="this.style.display='none'">
-        <div>
-          <div class="logo-text">duxtur<span>.org</span></div>
-          <div class="logo-sub">Медицинский портал</div>
-        </div>
+  <div class="content">
+    <div class="left">
+      ${doctor.image
+        ? `<img src="${doctor.image}" class="photo" alt="${doctor.name}" crossorigin="anonymous">`
+        : `<div class="photo" style="display:flex;align-items:center;justify-content:center;font-size:6mm;color:rgba(255,255,255,0.2);">👤</div>`
+      }
+      <div class="info">
+        <div class="name">${doctor.name}</div>
+        <div class="specialty">${specialtyLabel}</div>
+        ${doctor.workplace ? `<div class="workplace">${doctor.workplace}</div>` : ''}
       </div>
     </div>
-    <div>
-      <div class="verified-badge">✓ Верифицированный врач</div>
-    </div>
-  </div>
-
-  <!-- Фото + имя -->
-  <div class="p1-photo-section">
-    ${doctor.image
-      ? `<img src="${doctor.image}" class="doctor-photo" alt="${doctor.name}" crossorigin="anonymous">`
-      : `<div class="doctor-photo" style="display:flex;align-items:center;justify-content:center;">
-           <svg width="30" height="30" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)">
-             <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-           </svg>
-         </div>`
-    }
-    <div class="doctor-info">
-      <div class="specialty-pill">${specialtyLabel}</div>
-      <div class="doctor-name">${doctor.name}</div>
-      ${doctor.workplace ? `<div class="doctor-workplace">${doctor.workplace}</div>` : ''}
-    </div>
-  </div>
-
-  <div class="divider-line"></div>
-
-  <!-- Миссия -->
-  <div class="mission-text">«${mission}»</div>
-
-  <!-- Статистика -->
-  <div class="stats-row">
-    ${articles.length > 0 ? `
-    <div class="stat-card">
-      <div class="stat-val">${articles.length}</div>
-      <div class="stat-lbl">публикаций</div>
-    </div>` : ''}
-    ${doctor.experience > 0 ? `
-    <div class="stat-card">
-      <div class="stat-val">${doctor.experience}</div>
-      <div class="stat-lbl">лет опыта</div>
-    </div>` : ''}
-    ${doctor.languages?.length > 0 ? `
-    <div class="stat-card">
-      <div class="stat-val">${doctor.languages.length}</div>
-      <div class="stat-lbl">${doctor.languages.length === 1 ? 'язык' : 'языка'}</div>
-    </div>` : ''}
-  </div>
-
-  <!-- Футер: контакт + QR -->
-  <div class="p1-footer">
-    <div class="contact-block">
-      ${doctor.phone ? `<div class="phone-number">${doctor.phone}</div>` : ''}
-      <div class="profile-url">${doctorUrl.replace('https://', '')}</div>
-      <div class="scan-hint">Сканируйте QR для полного профиля →</div>
-    </div>
-    <div class="qr-block">
-      <img src="${qrApiUrl}" alt="QR">
-      <div class="qr-label">МОЙ ПРОФИЛЬ</div>
-    </div>
-  </div>
-
-  <div class="accent-bar"></div>
-</div>
-
-<!-- ══════════ СТРАНИЦА 2 — ОБОРОТ ══════════ -->
-<div class="page page-2" style="margin-top: 8mm;">
-  <div class="accent-bar"></div>
-
-  <!-- Шапка -->
-  <div class="p2-header">
-    <div>
-      <div class="p2-tagline">Советы от эксперта</div>
-      <div class="p2-name">${doctor.name}</div>
-      <div class="p2-specialty">${specialtyLabel}</div>
-    </div>
-    <div class="p2-logo">
-      <img src="https://duxtur.org/logo.png" class="p2-logo-img" alt="duxtur" onerror="this.style.display='none'">
-      <div class="p2-logo-text">duxtur<span>.org</span></div>
-      <div class="p2-logo-sub">Медицинский портал</div>
-    </div>
-  </div>
-
-  <!-- Блок миссии -->
-  <div class="mission-block">
-    <div class="mission-block-label">Моя миссия</div>
-    <div class="mission-block-text">${mission}</div>
-  </div>
-
-  <!-- Статьи -->
-  ${topArticles.length > 0 ? `
-  <div class="articles-section">
-    <div class="articles-label">Мои публикации на duxtur.org</div>
-    ${topArticles.map((a: any, i: number) => `
-    <div class="article-item">
-      <div class="article-num">${i + 1}</div>
-      <div class="article-title">${t(a.title)}</div>
-      <div class="article-read">ЧИТАТЬ →</div>
-    </div>`).join('')}
-  </div>` : `
-  <div class="articles-section">
-    <div class="articles-label">Мои публикации на duxtur.org</div>
-    <div class="article-item">
-      <div class="article-num">→</div>
-      <div class="article-title">Все материалы доступны по QR-коду</div>
-    </div>
-  </div>`}
-
-  <!-- Футер -->
-  <div class="p2-footer">
-    <div class="p2-footer-left">
-      <div class="p2-footer-title">Читайте проверенные медицинские статьи</div>
-      <div class="p2-footer-desc">Все материалы написаны и проверены практикующими врачами. Только достоверная информация о здоровье на вашем языке.</div>
-      <div class="lang-pills">
-        <span class="lang-pill">Тадж</span>
-        <span class="lang-pill">Узб</span>
-        <span class="lang-pill">Рус</span>
-        <span class="lang-pill">Каз</span>
-        <span class="lang-pill">Кырг</span>
+    <div class="right">
+      <div class="verified-icon" title="${__('verified')}">✓</div>
+      ${instagram || telegram || whatsapp ? `
+      <div class="socials">
+        ${instagram ? `
+        <div class="social-item">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <span>@${instagram.username}</span>
+        </div>` : ''}
+        ${telegram ? `
+        <div class="social-item">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm4.295 6.484l-1.555 7.789c-.116.572-.414.711-.832.438l-2.291-1.698-1.103 1.066c-.122.122-.224.224-.462.224l.165-2.35 4.273-3.845c.186-.165-.041-.258-.288-.092l-5.284 3.32-2.278-.714c-.494-.155-.505-.494.104-.732l8.912-3.438c.413-.155.775.092.641.732z"/></svg>
+          <span>@${telegram.username}</span>
+        </div>` : ''}
+        ${whatsapp ? `
+        <div class="social-item">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004c-1.466 0-2.81-.403-3.983-1.103l-.286-.169-2.983.78.798-2.911-.188-.299c-.765-1.218-1.169-2.625-1.169-4.083 0-4.185 3.413-7.593 7.605-7.593 2.033 0 3.945.792 5.381 2.227 1.435 1.435 2.225 3.347 2.225 5.375-.001 4.187-3.414 7.596-7.596 7.596zm6.78-14.268c-1.808-1.809-4.214-2.806-6.774-2.806-5.284 0-9.584 4.296-9.588 9.577-.001 1.688.44 3.337 1.278 4.792l-1.359 4.957 5.077-1.332c1.401.765 2.98 1.168 4.592 1.168h.004c5.283 0 9.583-4.296 9.587-9.577 0-2.559-.996-4.967-2.807-6.779"/></svg>
+          <span>WhatsApp</span>
+        </div>` : ''}
+      </div>` : ''}
+      <div class="qr-code">
+        <img src="${qrApiUrl}" alt="QR">
       </div>
     </div>
-    <div class="qr2-block">
-      <img src="${qrLightUrl}" alt="QR">
-      <div class="qr2-label" style="color:#475569;">МОИ СТАТЬИ</div>
-    </div>
   </div>
-
+  <div class="footer">
+    <div class="stats">
+      ${articles.length > 0 ? `<div class="stat"><div class="stat-val">${articles.length}</div><div class="stat-lbl">${__('articles')}</div></div>` : ''}
+      ${doctor.experience > 0 ? `<div class="stat"><div class="stat-val">${doctor.experience}</div><div class="stat-lbl">${__('years')}</div></div>` : ''}
+      ${doctor.languages?.length > 0 ? `<div class="stat"><div class="stat-val">${doctor.languages.length}</div><div class="stat-lbl">${__('languages')}</div></div>` : ''}
+    </div>
+    <div class="profile-url">${doctorUrl.replace('https://', '')}</div>
+  </div>
   <div class="accent-bar"></div>
 </div>
-
 </body>
 </html>`;
 
+  // PDF generation
+  if (format === 'pdf') {
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+      });
+
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdf = await page.pdf({
+        width: '90mm',
+        height: '50mm',
+        printBackground: true,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      });
+
+      return new NextResponse(pdf, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="vizitka-${doctor.slug}.pdf"`,
+        },
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      return new NextResponse('PDF generation failed', { status: 500 });
+    } finally {
+      if (browser) await browser.close();
+    }
+  }
+
+  // Fallback: return HTML for debugging
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
