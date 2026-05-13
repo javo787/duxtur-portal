@@ -12,6 +12,8 @@ import ShareButtons from '@/components/ShareButtons';
 import PrintButton from '@/components/PrintButton';
 import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
+import DoctorBusinessCard from '@/components/DoctorBusinessCard';
+import DownloadCardButton from '@/components/DownloadCardButton';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -482,21 +484,37 @@ export default async function DoctorProfilePage({ params }: Props) {
               lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
             />
 
-            {/* Единый блок «Поделиться» + PDF */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-0">
-                Поделиться профилем
-              </h3>
-              <ShareButtons
-                url={doctorUrl}
-                title={`${doctor.name} — ${specialtyLabel}`}
-                lang={lang}
-              />
-              <PrintButton />
-            </div>
-          </div>
-        </div>
-      </div>
+            ```tsx
+{/* Единый блок «Поделиться» + PDF */}
+<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-0">
+    Поделиться профилем
+  </h3>
+  <ShareButtons
+    url={doctorUrl}
+    title={`${doctor.name} — ${specialtyLabel}`}
+    lang={lang}
+  />
+  <PrintButton />
+  <DownloadCardButton
+    doctorName={doctor.name}
+    lang={lang}
+  />
+</div>
+</div>
+</div>
+</div>
+
+{/* Скрытая визитка для PDF-рендера */}
+<DoctorBusinessCard
+  doctor={doctor}
+  specialtyLabel={specialtyLabel}
+  mission={mission}
+  articles={articles}
+  lang={lang}
+  doctorUrl={doctorUrl}
+/>
+```
 
       {/* Мобильная sticky-панель */}
       <MobileStickyShare
