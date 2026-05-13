@@ -1,4 +1,3 @@
-// src/app/api/doctor/[id]/card/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
