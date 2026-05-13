@@ -229,7 +229,39 @@ export function ProfileTab({ lang }: { lang: string }) {
   </div>
 </section>
 
-        
+    {/* Блок 5: Настройка визитки */}
+<section>
+  <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+    <span className="w-4 h-px bg-gray-200 block" /> Дизайн визитки
+  </h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div>
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
+        🎨 Акцентный цвет
+      </label>
+      <input
+        type="color"
+        value={profile.accentColor || '#2563eb'}
+        onChange={(e) => setProfile((p: any) => ({ ...p, accentColor: e.target.value }))}
+        className="w-16 h-10 border-2 border-gray-200 rounded-lg cursor-pointer"
+      />
+      <p className="text-xs text-gray-400 mt-1.5">Цвет полос и кнопок визитки</p>
+    </div>
+    <div>
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
+        🌓 Тема визитки
+      </label>
+      <select
+        value={profile.cardTheme || 'dark'}
+        onChange={(e) => setProfile((p: any) => ({ ...p, cardTheme: e.target.value }))}
+        className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none transition text-gray-700"
+      >
+        <option value="dark">Тёмная (рекомендуется)</option>
+        <option value="light">Светлая (экономит чернила)</option>
+      </select>
+    </div>
+  </div>
+</section>    
 
         {/* КНОПКА СОХРАНИТЬ */}
         <div className="mt-8 pt-6 border-t border-gray-100 flex items-center gap-4">
