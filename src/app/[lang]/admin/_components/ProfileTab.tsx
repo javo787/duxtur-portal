@@ -189,6 +189,48 @@ export function ProfileTab({ lang }: { lang: string }) {
           </section>
         </div>
 
+        {/* Блок 4: Социальные сети и график работы */}
+<section>
+  <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+    <span className="w-4 h-px bg-gray-200 block" /> Соцсети и часы приёма
+  </h3>
+  <p className="text-xs text-gray-400 mb-4">
+    Эти данные появятся на вашей визитке и помогут пациентам быстрее с вами связаться.
+  </p>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <Field
+      label="Instagram (ссылка)"
+      value={profile.instagram || ''}
+      onChange={(v) => setProfile((p: any) => ({ ...p, instagram: v }))}
+      placeholder="https://www.instagram.com/your.profile"
+      hint="Полная ссылка на ваш профиль"
+    />
+    <Field
+      label="Telegram (ссылка)"
+      value={profile.telegram || ''}
+      onChange={(v) => setProfile((p: any) => ({ ...p, telegram: v }))}
+      placeholder="https://t.me/yourprofile"
+      hint="Полная ссылка (t.me/username)"
+    />
+    <Field
+      label="WhatsApp (ссылка)"
+      value={profile.whatsapp || ''}
+      onChange={(v) => setProfile((p: any) => ({ ...p, whatsapp: v }))}
+      placeholder="https://wa.me/1234567890"
+      hint="Ссылка вида https://wa.me/номер"
+    />
+    <Field
+      label="Часы приёма"
+      value={profile.workingHours || ''}
+      onChange={(v) => setProfile((p: any) => ({ ...p, workingHours: v }))}
+      placeholder="Пн–Пт 9:00–16:00"
+      hint="Коротко и понятно для пациентов"
+    />
+  </div>
+</section>
+
+        
+
         {/* КНОПКА СОХРАНИТЬ */}
         <div className="mt-8 pt-6 border-t border-gray-100 flex items-center gap-4">
           <button onClick={handleSave} disabled={isSaving}
