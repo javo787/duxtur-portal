@@ -2,18 +2,17 @@
 
 interface DownloadCardButtonProps {
   doctorSlug: string;
-  doctorName: string;
   lang: string;
 }
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
-  const btnText = {
+  const btnText: Record<string, string> = {
     ru: 'Скачать визитку',
     uz: 'Vizitka yuklab olish',
-    tg: 'Зеркардани корт',
+    tg: 'Боргирии визитка',
     kk: 'Визитка жүктеу',
     ky: 'Визитка жүктөө',
-  }[lang] || 'Скачать визитку';
+  };
 
   const pdfUrl = `/api/doctor/${doctorSlug}/card?lang=${lang}&format=pdf`;
 
@@ -26,7 +25,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 9a3 3 0 11-6 0 3 3 0 016 0zM3 17c0-3.2 6.4-4.8 9.6-4.8 3.2 0 9.6 1.6 9.6 4.8M4.5 21h15M12 15v6" />
       </svg>
-      {btnText}
+      {btnText[lang] || btnText.ru}
     </a>
   );
 }
