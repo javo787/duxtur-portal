@@ -9,7 +9,6 @@ import { buildAlternates } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
-import PrintButton from '@/components/PrintButton';
 import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
@@ -505,11 +504,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     title={`${doctor.name} — ${specialtyLabel}`}
     lang={lang}
   />
-<DownloadCardButton
-  doctorSlug={doctor.slug}
-  doctorName={doctor.name}
-  lang={lang}
-/>
+<DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
 </div>
 </div>
 </div>
