@@ -236,7 +236,6 @@ export async function GET(
         args: chromium.args,
         executablePath: await chromium.executablePath(),
         headless: true,
-        ignoreHTTPSErrors: true,
       });
       const page = await browser.newPage();
       await page.setViewport({ width: 340, height: 189 });
