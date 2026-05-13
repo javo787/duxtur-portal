@@ -35,22 +35,22 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
       // Регистрируем шрифт с поддержкой кириллицы
       Font.register({
-        family: 'NotoSans',
-        fonts: [
-          {
-            src: 'https://fonts.gstatic.com/s/notosans/v36/o-0bIpQlx3QUlC5A4PNjThZVZNyoSQ.woff2',
-            fontWeight: 400,
-          },
-          {
-            src: 'https://fonts.gstatic.com/s/notosans/v36/o-0NIpQlx3QUlC5A4PNjKhVVZNyoSQ.woff2',
-            fontWeight: 700,
-          },
-          {
-            src: 'https://fonts.gstatic.com/s/notosans/v36/o-0TIpQlx3QUlC5A4PNjFhV9ZQ.woff2',
-            fontWeight: 900,
-          },
-        ],
-      });
+  family: 'NotoSans',
+  fonts: [
+    {
+      src: '/fonts/NotoSans-Regular.ttf',
+      fontWeight: 400,
+    },
+    {
+      src: '/fonts/NotoSans-Bold.ttf',
+      fontWeight: 700,
+    },
+    {
+      src: '/fonts/NotoSans-Black.ttf',
+      fontWeight: 900,
+    },
+  ],
+});
 
       // Фетчим данные врача
       const res = await fetch(`/api/doctor/${doctorSlug}/card?lang=${lang}&format=data`);
