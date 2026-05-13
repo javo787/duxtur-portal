@@ -199,9 +199,20 @@ export default async function DoctorProfilePage({ params }: Props) {
       />
 
       {/* ===== ОСНОВНОЙ КОНТЕНТ ===== */}
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 pb-28 lg:pb-10">
+        {/* ─── НА МОБИЛЕ: профиль врача ПЕРВЫЙ ─── */}
+        <div className="lg:hidden col-span-1">
+          <MobileProfileCard
+            doctor={doctor}
+            specialtyLabel={specialtyLabel}
+            lastMedicalReviewDate={lastMedicalReviewDate}
+            articles={articles}
+            lang={lang}
+            doctorUrl={doctorUrl}
+          />
+        </div>
         {/* Статьи */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-gray-900 tracking-tight">
               Публикации
@@ -366,8 +377,8 @@ export default async function DoctorProfilePage({ params }: Props) {
         </div>
 
         {/* ===== САЙДБАР ===== */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-4">
+        <div className="hidden lg:block lg:col-span-1">
+          <div className="sticky top-24 space-y-4 pb-6">
             {/* Профиль врача */}
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="bg-gradient-to-r from-[#0a1628] to-[#0f2a52] px-5 py-4">
@@ -484,7 +495,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
             />
 
-            ```tsx
+          
 {/* Единый блок «Поделиться» + PDF */}
 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-0">
@@ -531,6 +542,106 @@ export default async function DoctorProfilePage({ params }: Props) {
         specialtyLabel={specialtyLabel}
         lang={lang}
       />
+    </div>
+  );
+}
+
+// ── Мобильная карточка профиля (компактная, выше статей) ──
+function MobileProfileCard({
+  doctor,
+  specialtyLabel,
+  lastMedicalReviewDate,
+  articles,
+  lang,
+  doctorUrl,
+}: {
+  doctor: any;
+  specialtyLabel: string;
+  lastMedicalReviewDate: string | null;
+  articles: any[];
+  lang: string;
+  doctorUrl: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+      {/* Шапка */}
+      <div className="bg-gradient-to-r from-[#0a1628] to-[#0f2a52] px-4 py-3.5 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
+          <img
+            src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+            alt={doctor.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-white font-black text-sm truncate leading-tight">{doctor.name}</p>
+          <p className="text-blue-300/70 text-[11px] truncate">{specialtyLabel}</p>
+        </div>
+        {/* Верификация */}
+        <div className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/25 rounded-full px-2 py-1 shrink-0">
+          <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="text-emerald-400 text-[10px] font-bold">Верифицирован</span>
+        </div>
+      </div>
+
+      {/* Детали в одну строку через скролл */}
+      <div className="px-4 py-3 flex gap-4 overflow-x-auto scrollbar-none border-b border-gray-50">
+        {doctor.experience > 0 && (
+          <div className="shrink-0 text-center">
+            <p className="text-base font-black text-gray-900 leading-none">{doctor.experience}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">лет опыта</p>
+          </div>
+        )}
+        {doctor.experience > 0 && <div className="w-px bg-gray-100 shrink-0" />}
+        {articles.length > 0 && (
+          <div className="shrink-0 text-center">
+            <p className="text-base font-black text-gray-900 leading-none">{articles.length}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">публикаций</p>
+          </div>
+        )}
+        {articles.length > 0 && doctor.workplace && <div className="w-px bg-gray-100 shrink-0" />}
+        {doctor.workplace && (
+          <div className="shrink-0 max-w-[140px]">
+            <p className="text-[11px] font-bold text-gray-800 leading-tight line-clamp-2">{doctor.workplace}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">место работы</p>
+          </div>
+        )}
+        {doctor.languages?.length > 0 && (
+          <>
+            <div className="w-px bg-gray-100 shrink-0" />
+            <div className="shrink-0">
+              <p className="text-[11px] font-bold text-gray-800">{doctor.languages.join(' · ')}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">языки приёма</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Верификационные бейджи */}
+      <div className="px-4 py-3 flex gap-2">
+        <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 flex-1">
+          <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <div>
+            <p className="text-[10px] font-black text-emerald-700 leading-none">Верифицированный автор</p>
+            <p className="text-[9px] text-emerald-500 mt-0.5">Диплом подтверждён</p>
+          </div>
+        </div>
+        {lastMedicalReviewDate && (
+          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex-1">
+            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <div>
+              <p className="text-[10px] font-black text-blue-700 leading-none">Последняя проверка</p>
+              <p className="text-[9px] text-blue-500 mt-0.5">{lastMedicalReviewDate}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
