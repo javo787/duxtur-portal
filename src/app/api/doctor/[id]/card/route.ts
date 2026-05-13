@@ -5,9 +5,10 @@ import Article from '@/models/Article';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await connectToDatabase();
+  const { id } = await params;
 
   const doctor = await Doctor.findOne({ slug: params.id }).lean() as any;
   if (!doctor) {
