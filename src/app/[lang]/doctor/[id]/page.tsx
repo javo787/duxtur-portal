@@ -523,17 +523,6 @@ export default async function DoctorProfilePage({ params }: Props) {
 </div>
 </div>
 
-{/* Скрытая визитка для PDF-рендера */}
-<DoctorBusinessCard
-  doctor={doctor}
-  specialtyLabel={specialtyLabel}
-  mission={mission}
-  articles={articles}
-  lang={lang}
-  doctorUrl={doctorUrl}
-/>
-```
-
       {/* Мобильная sticky-панель */}
       <MobileStickyShare
         doctorUrl={doctorUrl}
