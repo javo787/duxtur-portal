@@ -10,7 +10,7 @@ export async function GET(
   await connectToDatabase();
   const { id } = await params;
 
-  const doctor = await Doctor.findOne({ slug: params.id }).lean() as any;
+  const doctor = await Doctor.findOne({ slug: id }).lean() as any;
   if (!doctor) {
     return new NextResponse('Not found', { status: 404 });
   }
