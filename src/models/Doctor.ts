@@ -25,6 +25,10 @@ const DoctorSchema = new mongoose.Schema({
   licenseNumber: { type: String, default: '' }, // номер лицензии (не показываем публично)
   bio: { type: String, default: '' },           // биография
   sameAs: { type: [String], default: [] }, // LinkedIn, ResearchGate, и др.
+  instagram:    { type: String, default: '' },
+  telegram:     { type: String, default: '' },
+  whatsapp:     { type: String, default: '' },
+  workingHours: { type: String, default: '' },
 
   image: { type: String },
   documentImage: { type: String, required: true },
