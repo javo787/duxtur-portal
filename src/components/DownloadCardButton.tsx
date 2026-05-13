@@ -15,12 +15,9 @@ const btnText: Record<string, string> = {
   ky: 'Визитка жүктөө',
 };
 
-// Размеры с вылетами под обрез (2мм с каждой стороны)
-// 90x50мм → 94x54мм → в поинтах
-const W = 266.46; // 94мм
-const H = 153.07; // 54мм
-const BLEED = 5.67; // 2мм в поинтах
-const SAFE = BLEED + 4; // безопасная зона = bleed + внутренний отступ
+// 90x50мм 
+const W = 255.12; 
+const H = 141.73;
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -116,21 +113,18 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       const s = StyleSheet.create({
         // ─── ОБЩЕЕ ───────────────────────────────────────
         page: {
-          width: W, height: H,
-          backgroundColor: bg,
-          fontFamily: 'NotoSans',
-          flexDirection: 'column',
-          paddingTop: BLEED,
-          paddingBottom: BLEED,
-          paddingLeft: BLEED,
-          paddingRight: BLEED,
-        },
-        inner: {
-          flex: 1,
-          flexDirection: 'column',
-          paddingHorizontal: 10,
-          paddingVertical: 7,
-        },
+  width: W,
+  height: H,
+  backgroundColor: bg,
+  fontFamily: 'NotoSans',
+  overflow: 'hidden',
+},
+inner: {
+  flex: 1,
+  flexDirection: 'column',
+  paddingHorizontal: 10,
+  paddingVertical: 7,
+},
 
         // ─── ПОЛОСКИ ─────────────────────────────────────
         accentBar: { height: 2, backgroundColor: accent },
@@ -229,21 +223,19 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
         // ─── ЗАДНЯЯ СТОРОНА ───────────────────────────────
         backPage: {
-          width: W, height: H,
-          backgroundColor: bg2,
-          fontFamily: 'NotoSans',
-          flexDirection: 'column',
-          paddingTop: BLEED,
-          paddingBottom: BLEED,
-          paddingLeft: BLEED,
-          paddingRight: BLEED,
-        },
-        backInner: {
-          flex: 1,
-          flexDirection: 'column',
-          paddingHorizontal: 10,
-          paddingVertical: 7,
-        },
+  width: W,
+  height: H,
+  backgroundColor: bg2,
+  fontFamily: 'NotoSans',
+  overflow: 'hidden',
+},
+backInner: {
+  flex: 1,
+  flexDirection: 'column',
+  paddingHorizontal: 10,
+  paddingVertical: 7,
+},
+        
         backHeader: {
           flexDirection: 'row',
           justifyContent: 'space-between',
