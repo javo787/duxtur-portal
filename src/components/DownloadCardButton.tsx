@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface DownloadCardButtonProps {
   doctorSlug: string;
@@ -15,6 +15,13 @@ const btnText: Record<string, string> = {
   ky: 'Визитка жүктөө',
 };
 
+// Размеры с вылетами под обрез (2мм с каждой стороны)
+// 90x50мм → 94x54мм → в поинтах
+const W = 266.46; // 94мм
+const H = 153.07; // 54мм
+const BLEED = 5.67; // 2мм в поинтах
+const SAFE = BLEED + 4; // безопасная зона = bleed + внутренний отступ
+
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -24,197 +31,45 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
     setError(false);
 
     try {
-      // Динамически импортируем @react-pdf/renderer только при нажатии
-      const [
-        { pdf },
-        { Document, Page, View, Text, Image, StyleSheet, Font, Link },
-      ] = await Promise.all([
-        import('@react-pdf/renderer'),
-        import('@react-pdf/renderer'),
-      ]);
+      const { pdf, Document, Page, View, Text, Image, StyleSheet, Font } =
+        await import('@react-pdf/renderer');
 
-      // Регистрируем шрифт с поддержкой кириллицы
       Font.register({
-  family: 'NotoSans',
-  fonts: [
-    {
-      src: '/fonts/NotoSans-Regular.ttf',
-      fontWeight: 400,
-    },
-    {
-      src: '/fonts/NotoSans-Bold.ttf',
-      fontWeight: 700,
-    },
-    {
-      src: '/fonts/NotoSans-Black.ttf',
-      fontWeight: 900,
-    },
-  ],
-});
-
-      // Фетчим данные врача
-      const res = await fetch(`/api/doctor/${doctorSlug}/card?lang=${lang}&format=data`);
-      if (!res.ok) throw new Error('Failed to fetch doctor data');
-      const doctor = await res.json();
-
-      const accentColor = doctor.accentColor || '#2563eb';
-      const theme = doctor.cardTheme || 'dark';
-      const bgColor = theme === 'dark' ? '#060d1a' : '#ffffff';
-      const textColor = theme === 'dark' ? '#ffffff' : '#1e293b';
-      const secondaryText = theme === 'dark' ? '#94a3b8' : '#64748b';
-      const statLabelColor = theme === 'dark' ? '#64748b' : '#94a3b8';
-
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '060d1a' : 'ffffff'}&color=${theme === 'dark' ? 'ffffff' : '000000'}&margin=4`;
-
-      const styles = StyleSheet.create({
-        page: {
-          width: '90mm',
-          height: '50mm',
-          backgroundColor: bgColor,
-          fontFamily: 'NotoSans',
-          flexDirection: 'column',
-        },
-        accentBar: {
-          height: 2,
-          backgroundColor: accentColor,
-        },
-        content: {
-          flexDirection: 'row',
-          flex: 1,
-          paddingHorizontal: 11,
-          paddingVertical: 8,
-          gap: 8,
-        },
-        left: {
-          flexDirection: 'row',
-          flex: 1,
-          gap: 7,
-          alignItems: 'flex-start',
-        },
-        photo: {
-          width: 45,
-          height: 45,
-          borderRadius: 5,
-          objectFit: 'cover',
-        },
-        photoPlaceholder: {
-          width: 45,
-          height: 45,
-          borderRadius: 5,
-          backgroundColor: theme === 'dark' ? '#1e293b' : '#e2e8f0',
-        },
-        info: {
-          flex: 1,
-        },
-        name: {
-          fontSize: 11,
-          fontWeight: 900,
-          color: textColor,
-          lineHeight: 1.1,
-          fontFamily: 'NotoSans',
-        },
-        specialty: {
-          fontSize: 7,
-          color: accentColor,
-          fontWeight: 700,
-          marginTop: 2,
-          fontFamily: 'NotoSans',
-        },
-        workplace: {
-          fontSize: 6,
-          color: secondaryText,
-          marginTop: 2,
-          lineHeight: 1.3,
-          fontFamily: 'NotoSans',
-        },
-        right: {
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          flexShrink: 0,
-          width: 42,
-        },
-        verifiedBadge: {
-          backgroundColor: 'rgba(16,185,129,0.15)',
-          borderRadius: 8,
-          paddingHorizontal: 4,
-          paddingVertical: 2,
-        },
-        verifiedText: {
-          fontSize: 6,
-          color: '#10b981',
-          fontWeight: 700,
-          fontFamily: 'NotoSans',
-        },
-        qr: {
-          width: 38,
-          height: 38,
-          backgroundColor: '#ffffff',
-          borderRadius: 3,
-          padding: 1,
-        },
-        footer: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          paddingHorizontal: 11,
-          paddingBottom: 6,
-        },
-        stats: {
-          flexDirection: 'row',
-          gap: 8,
-        },
-        stat: {
-          alignItems: 'center',
-        },
-        statVal: {
-          fontSize: 8,
-          fontWeight: 700,
-          color: textColor,
-          fontFamily: 'NotoSans',
-        },
-        statLbl: {
-          fontSize: 5,
-          color: statLabelColor,
-          fontFamily: 'NotoSans',
-        },
-        profileUrl: {
-          fontSize: 5,
-          color: accentColor,
-          fontFamily: 'NotoSans',
-        },
-        socialRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 3,
-          marginBottom: 2,
-        },
-        socialText: {
-          fontSize: 5,
-          color: secondaryText,
-          fontFamily: 'NotoSans',
-        },
+        family: 'NotoSans',
+        fonts: [
+          { src: '/fonts/NotoSans-Regular.ttf', fontWeight: 400 },
+          { src: '/fonts/NotoSans-Bold.ttf', fontWeight: 700 },
+          { src: '/fonts/NotoSans-Black.ttf', fontWeight: 900 },
+        ],
       });
 
-      const dict: Record<string, any> = {
-        ru: { articles: 'статей', years: 'лет', languages: 'языков', verified: '✓ Проверен', hours: 'Часы' },
-        uz: { articles: 'maqola', years: 'yil', languages: 'til', verified: '✓ Tasdiqlangan', hours: 'Vaqt' },
-        tg: { articles: 'мақола', years: 'сол', languages: 'забон', verified: '✓ Тасдиқшуда', hours: 'Соат' },
-        kk: { articles: 'мақала', years: 'жыл', languages: 'тіл', verified: '✓ Тексерілген', hours: 'Уақыт' },
-        ky: { articles: 'макала', years: 'жыл', languages: 'тил', verified: '✓ Текшерилген', hours: 'Убакыт' },
-      };
-      const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
+      const res = await fetch(`/api/doctor/${doctorSlug}/card?lang=${lang}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const doctor = await res.json();
 
+      const accent = doctor.accentColor || '#2563eb';
+      const theme = doctor.cardTheme || 'dark';
+
+      // Цвета — Apple/Vercel стиль
+      const bg        = theme === 'dark' ? '#000000' : '#ffffff';
+      const bg2       = theme === 'dark' ? '#0a0a0a' : '#fafafa';
+      const surface   = theme === 'dark' ? '#111111' : '#f5f5f7';
+      const border    = theme === 'dark' ? '#1d1d1f' : '#e8e8ed';
+      const textPrimary    = theme === 'dark' ? '#f5f5f7' : '#1d1d1f';
+      const textSecondary  = theme === 'dark' ? '#86868b' : '#6e6e73';
+      const textTertiary   = theme === 'dark' ? '#48484a' : '#aeaeb2';
+
+      // Утилиты
       const t = (field: any) => {
         if (!field) return '';
         if (typeof field === 'string') return field;
         return field[lang] || field['ru'] || '';
       };
 
-      const specialtyLabel = t(doctor.specialty) || t(doctor.specialization) || '';
-      const profileUrl = `duxtur.org/${lang}/doctor/${doctorSlug}`;
+      const truncate = (str: string, max: number) =>
+        str && str.length > max ? str.slice(0, max) + '…' : str || '';
 
-      const getSocialUsername = (url: string, type: 'instagram' | 'telegram' | 'whatsapp') => {
+      const getSocialHandle = (url: string, type: 'instagram' | 'telegram' | 'whatsapp') => {
         if (!url) return null;
         if (type === 'instagram') {
           const m = url.match(/instagram\.com\/([^/?]+)/);
@@ -224,98 +79,440 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           const m = url.match(/t(?:elegram)?\.me\/([^/?]+)/);
           return m ? `@${m[1]}` : url;
         }
-        return url.replace('https://wa.me/', '');
+        return url.replace('https://wa.me/', '+');
       };
 
-      const instagramHandle = doctor.instagram ? getSocialUsername(doctor.instagram, 'instagram') : null;
-      const telegramHandle = doctor.telegram ? getSocialUsername(doctor.telegram, 'telegram') : null;
-      const whatsappHandle = doctor.whatsapp ? getSocialUsername(doctor.whatsapp, 'whatsapp') : null;
+      const specialtyLabel = truncate(t(doctor.specialty) || t(doctor.specialization) || '', 40);
+      const displayName    = truncate(doctor.name || '', 30);
+      const displayWork    = truncate(doctor.workplace || '', 50);
+      const rawBio         = typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.[lang] || doctor.bio?.ru || '');
+      const bioText        = truncate(rawBio, 140);
+      const showExperience = (doctor.experience || 0) >= 3;
+
+      const ig = doctor.instagram ? getSocialHandle(doctor.instagram, 'instagram') : null;
+      const tg = doctor.telegram  ? getSocialHandle(doctor.telegram,  'telegram')  : null;
+      const wa = doctor.whatsapp  ? getSocialHandle(doctor.whatsapp,  'whatsapp')  : null;
+
+      const phoneDisplay = doctor.phone
+        ? (doctor.phone.startsWith('+') ? doctor.phone : `+${doctor.phone}`)
+        : null;
+
+      const profileUrl = `duxtur.org/${lang}/doctor/${doctorSlug}`;
+
+      const qrBgColor   = theme === 'dark' ? '000000' : 'ffffff';
+      const qrFgColor   = theme === 'dark' ? 'f5f5f7' : '1d1d1f';
+      const qrUrlFront  = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBgColor}&color=${qrFgColor}&margin=6`;
+      const qrUrlBack   = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0a0a0a' : 'fafafa'}&color=${qrFgColor}&margin=8`;
+
+      const dict: Record<string, any> = {
+        ru: { verified: 'Верифицированный врач', years: 'лет практики', articles: 'статей', languages: 'языков', mission: 'МОЯ МИССИЯ', scan: 'Сканируйте для\nполного профиля', myProfile: 'МОЙ ПРОФИЛЬ', reception: 'ЧАСЫ ПРИЁМА', langLabel: 'ЯЗЫКИ ПРИЁМА', articlesLabel: 'МОИ СТАТЬИ', allByQr: 'Все материалы доступны по QR' },
+        uz: { verified: 'Tasdiqlangan shifokor', years: 'yil tajriba', articles: 'maqola', languages: 'til', mission: 'MENING MAQSADIM', scan: 'To\'liq profil uchun\nskanlang', myProfile: 'MENING PROFILIM', reception: 'QABUL VAQTI', langLabel: 'TILLAR', articlesLabel: 'MAQOLALARIM', allByQr: 'Barcha materiallar QR orqali' },
+        tg: { verified: 'Шифокори тасдикшуда', years: 'соли таҷриба', articles: 'мақола', languages: 'забон', mission: 'МАҚСАДИ МАН', scan: 'Барои профил\nQR скан кунед', myProfile: 'ПРОФИЛИ МАН', reception: 'СОАТҲОИ ҚАБУЛ', langLabel: 'ЗАБОНҲО', articlesLabel: 'МАҚОЛАҲОЯМ', allByQr: 'Ҳама маводҳо тавассути QR' },
+        kk: { verified: 'Тексерілген дәрігер', years: 'жыл тәжірибе', articles: 'мақала', languages: 'тіл', mission: 'МЕНІҢ МАҚСАТЫМ', scan: 'Толық профиль үшін\nQR сканерлеңіз', myProfile: 'МЕНІҢ ПРОФИЛІМ', reception: 'ҚАБЫЛДАУ УАҚЫТЫ', langLabel: 'ТІЛДЕР', articlesLabel: 'МАҚАЛАЛАРЫМ', allByQr: 'Барлық материалдар QR арқылы' },
+        ky: { verified: 'Текшерилген дарыгер', years: 'жыл тажрыйба', articles: 'макала', languages: 'тил', mission: 'МЕНИН МАКСАТЫМ', scan: 'Толук профиль үчүн\nQR сканерлеңиз', myProfile: 'МЕНИН ПРОФИЛИМ', reception: 'КАБЫЛ АЛУУ', langLabel: 'ТИЛДЕР', articlesLabel: 'МАКАЛАЛАРЫМ', allByQr: 'Бардык материалдар QR аркылуу' },
+      };
+      const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
+
+      const s = StyleSheet.create({
+        // ─── ОБЩЕЕ ───────────────────────────────────────
+        page: {
+          width: W, height: H,
+          backgroundColor: bg,
+          fontFamily: 'NotoSans',
+          flexDirection: 'column',
+          paddingTop: BLEED,
+          paddingBottom: BLEED,
+          paddingLeft: BLEED,
+          paddingRight: BLEED,
+        },
+        inner: {
+          flex: 1,
+          flexDirection: 'column',
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+        },
+
+        // ─── ПОЛОСКИ ─────────────────────────────────────
+        accentBar: { height: 2, backgroundColor: accent },
+
+        // ─── ШАПКА ───────────────────────────────────────
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        },
+        logoRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+        logoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
+        logoText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans', letterSpacing: 0.3 },
+        logoSub: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans' },
+        verifiedPill: {
+          flexDirection: 'row', alignItems: 'center', gap: 3,
+          backgroundColor: 'rgba(52,199,89,0.1)',
+          borderRadius: 20, paddingHorizontal: 6, paddingVertical: 2,
+        },
+        verifiedDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#34c759' },
+        verifiedText: { fontSize: 6, fontWeight: 700, color: '#34c759', fontFamily: 'NotoSans' },
+
+        // ─── ТЕЛО ────────────────────────────────────────
+        body: { flexDirection: 'row', flex: 1, gap: 9 },
+
+        // Фото
+        photoWrap: { flexDirection: 'column', alignItems: 'center', paddingTop: 1 },
+        photo: { width: 46, height: 46, borderRadius: 10, objectFit: 'cover' },
+        photoPlaceholder: {
+          width: 46, height: 46, borderRadius: 10,
+          backgroundColor: surface,
+        },
+
+        // Инфо
+        infoCol: { flex: 1, flexDirection: 'column' },
+        specialtyPill: {
+          alignSelf: 'flex-start',
+          backgroundColor: `${accent}18`,
+          borderRadius: 20,
+          paddingHorizontal: 6, paddingVertical: 2,
+          marginBottom: 3,
+        },
+        specialtyText: {
+          fontSize: 6, fontWeight: 700, color: accent,
+          fontFamily: 'NotoSans', textTransform: 'uppercase', letterSpacing: 0.5,
+        },
+        name: {
+          fontSize: 13.5, fontWeight: 900, color: textPrimary,
+          fontFamily: 'NotoSans', lineHeight: 1.1, marginBottom: 2,
+        },
+        workplace: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans', marginBottom: 4 },
+
+        // Стаж
+        expRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+        expLine: { width: 2, height: 12, borderRadius: 1, backgroundColor: accent },
+        expText: { fontSize: 7, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+
+        // Телефон
+        phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
+        phonePulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
+        phoneText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+
+        // Соцсети
+        socialsCol: { flexDirection: 'column', gap: 3 },
+        socialRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+        socialChip: {
+          width: 16, height: 16, borderRadius: 4,
+          alignItems: 'center', justifyContent: 'center',
+        },
+        socialChipText: { fontSize: 6, fontWeight: 700, color: '#ffffff', fontFamily: 'NotoSans' },
+        socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
+
+        // QR правая колонка
+        qrCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, width: 50 },
+        qrWrap: {
+          width: 46, height: 46,
+          borderRadius: 8,
+          backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
+          padding: 3,
+          alignItems: 'center', justifyContent: 'center',
+        },
+        qrImg: { width: 40, height: 40 },
+        qrLabel: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans', textAlign: 'center' },
+
+        // Разделитель
+        divider: { height: 0.5, backgroundColor: border, marginVertical: 5 },
+
+        // Footer
+        footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+        statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+        statItem: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+        statNum: { fontSize: 9, fontWeight: 900, color: textPrimary, fontFamily: 'NotoSans' },
+        statLabel: { fontSize: 6, color: textSecondary, fontFamily: 'NotoSans' },
+        footerUrl: { fontSize: 6, color: accent, fontFamily: 'NotoSans' },
+
+        // ─── ЗАДНЯЯ СТОРОНА ───────────────────────────────
+        backPage: {
+          width: W, height: H,
+          backgroundColor: bg2,
+          fontFamily: 'NotoSans',
+          flexDirection: 'column',
+          paddingTop: BLEED,
+          paddingBottom: BLEED,
+          paddingLeft: BLEED,
+          paddingRight: BLEED,
+        },
+        backInner: {
+          flex: 1,
+          flexDirection: 'column',
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+        },
+        backHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 6,
+        },
+        backNameCol: { flexDirection: 'column', gap: 1 },
+        backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+        backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
+        backLogo: { fontSize: 8, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
+        backBody: { flexDirection: 'row', flex: 1, gap: 10 },
+        backLeft: { flex: 1, flexDirection: 'column', gap: 7 },
+
+        // Блок миссии
+        missionBox: {
+          backgroundColor: surface,
+          borderRadius: 8,
+          padding: 8,
+          borderLeftWidth: 2,
+          borderLeftColor: accent,
+        },
+        missionLabel: {
+          fontSize: 6, fontWeight: 700, color: accent,
+          fontFamily: 'NotoSans', letterSpacing: 0.6, marginBottom: 4,
+        },
+        missionText: {
+          fontSize: 7.5, color: textPrimary,
+          fontFamily: 'NotoSans', lineHeight: 1.5,
+          fontStyle: 'italic',
+        },
+
+        // Часы
+        infoBlock: { flexDirection: 'column', gap: 2 },
+        infoBlockLabel: {
+          fontSize: 6, fontWeight: 700, color: textTertiary,
+          fontFamily: 'NotoSans', letterSpacing: 0.6,
+        },
+        infoBlockText: {
+          fontSize: 7.5, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
+        },
+
+        // Языки
+        langTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
+        langTag: {
+          backgroundColor: `${accent}15`,
+          borderRadius: 4,
+          paddingHorizontal: 5, paddingVertical: 2,
+        },
+        langTagText: { fontSize: 6, color: accent, fontWeight: 700, fontFamily: 'NotoSans' },
+
+        // Правый блок задней стороны
+        backRight: {
+          flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 5, width: 72,
+        },
+        bigQrWrap: {
+          width: 64, height: 64,
+          borderRadius: 10,
+          backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
+          padding: 4,
+          alignItems: 'center', justifyContent: 'center',
+        },
+        bigQrImg: { width: 56, height: 56 },
+        bigQrLabel: {
+          fontSize: 6, color: textSecondary,
+          fontFamily: 'NotoSans', textAlign: 'center', lineHeight: 1.5,
+        },
+
+        // Back footer
+        backFooter: {
+          flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        },
+        backFooterLeft: { flexDirection: 'column', gap: 1 },
+        backFooterLabel: {
+          fontSize: 6, color: textTertiary,
+          fontFamily: 'NotoSans', letterSpacing: 0.4,
+        },
+        backFooterText: {
+          fontSize: 7, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
+        },
+      });
 
       const MyDoc = (
         <Document>
-          <Page size={[255.12, 141.73]} style={styles.page}>
-            {/* Верхняя полоска */}
-            <View style={styles.accentBar} />
 
-            {/* Основной контент */}
-            <View style={styles.content}>
-              <View style={styles.left}>
+          {/* ══════════════ ПЕРЕДНЯЯ СТОРОНА ══════════════ */}
+          <Page size={[W, H]} style={s.page}>
+            <View style={s.accentBar} />
+            <View style={s.inner}>
+
+              {/* Шапка */}
+              <View style={s.header}>
+                <View style={s.logoRow}>
+                  <View style={s.logoDot} />
+                  <Text style={s.logoText}>duxtur.org</Text>
+                  <Text style={s.logoSub}> · МЕДИЦИНСКИЙ ПОРТАЛ</Text>
+                </View>
+                <View style={s.verifiedPill}>
+                  <View style={s.verifiedDot} />
+                  <Text style={s.verifiedText}>{__('verified')}</Text>
+                </View>
+              </View>
+
+              <View style={s.divider} />
+
+              {/* Тело */}
+              <View style={s.body}>
+
                 {/* Фото */}
-                {doctor.image ? (
-                  <Image src={doctor.image} style={styles.photo} />
-                ) : (
-                  <View style={styles.photoPlaceholder} />
-                )}
-
-                {/* Имя, специальность, место работы */}
-                <View style={styles.info}>
-                  <Text style={styles.name}>{doctor.name}</Text>
-                  {specialtyLabel ? <Text style={styles.specialty}>{specialtyLabel}</Text> : null}
-                  {doctor.workplace ? <Text style={styles.workplace}>{doctor.workplace}</Text> : null}
-
-                  {/* Соцсети */}
-                  {(instagramHandle || telegramHandle || whatsappHandle) ? (
-                    <View style={{ marginTop: 5 }}>
-                      {instagramHandle ? (
-                        <View style={styles.socialRow}>
-                          <Text style={{ ...styles.socialText, color: '#e1306c' }}>IG</Text>
-                          <Text style={styles.socialText}>{instagramHandle}</Text>
-                        </View>
-                      ) : null}
-                      {telegramHandle ? (
-                        <View style={styles.socialRow}>
-                          <Text style={{ ...styles.socialText, color: '#0088cc' }}>TG</Text>
-                          <Text style={styles.socialText}>{telegramHandle}</Text>
-                        </View>
-                      ) : null}
-                      {whatsappHandle ? (
-                        <View style={styles.socialRow}>
-                          <Text style={{ ...styles.socialText, color: '#25d366' }}>WA</Text>
-                          <Text style={styles.socialText}>{whatsappHandle}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
+                <View style={s.photoWrap}>
+                  {doctor.image
+                    ? <Image src={doctor.image} style={s.photo} />
+                    : <View style={s.photoPlaceholder} />}
                 </View>
-              </View>
 
-              {/* Правая колонка */}
-              <View style={styles.right}>
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}>{__('verified')}</Text>
+                {/* Инфо */}
+                <View style={s.infoCol}>
+                  {specialtyLabel
+                    ? <View style={s.specialtyPill}><Text style={s.specialtyText}>{specialtyLabel}</Text></View>
+                    : null}
+                  <Text style={s.name}>{displayName}</Text>
+                  {displayWork ? <Text style={s.workplace}>{displayWork}</Text> : null}
+
+                  {showExperience
+                    ? <View style={s.expRow}>
+                        <View style={s.expLine} />
+                        <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
+                      </View>
+                    : null}
+
+                  {phoneDisplay
+                    ? <View style={s.phoneRow}>
+                        <View style={s.phonePulse} />
+                        <Text style={s.phoneText}>{phoneDisplay}</Text>
+                      </View>
+                    : null}
+
+                  {(ig || tg || wa)
+                    ? <View style={s.socialsCol}>
+                        {ig ? <View style={s.socialRow}>
+                          <View style={[s.socialChip, { backgroundColor: '#e1306c' }]}>
+                            <Text style={s.socialChipText}>IG</Text>
+                          </View>
+                          <Text style={s.socialHandle}>{ig}</Text>
+                        </View> : null}
+                        {tg ? <View style={s.socialRow}>
+                          <View style={[s.socialChip, { backgroundColor: '#0088cc' }]}>
+                            <Text style={s.socialChipText}>TG</Text>
+                          </View>
+                          <Text style={s.socialHandle}>{tg}</Text>
+                        </View> : null}
+                        {wa ? <View style={s.socialRow}>
+                          <View style={[s.socialChip, { backgroundColor: '#25d366' }]}>
+                            <Text style={s.socialChipText}>WA</Text>
+                          </View>
+                          <Text style={s.socialHandle}>{wa}</Text>
+                        </View> : null}
+                      </View>
+                    : null}
                 </View>
-                <Image src={qrUrl} style={styles.qr} />
-              </View>
-            </View>
 
-            {/* Футер */}
-            <View style={styles.footer}>
-              <View style={styles.stats}>
-                {doctor.articlesCount > 0 ? (
-                  <View style={styles.stat}>
-                    <Text style={styles.statVal}>{doctor.articlesCount}</Text>
-                    <Text style={styles.statLbl}>{__('articles')}</Text>
+                {/* QR */}
+                <View style={s.qrCol}>
+                  <View style={s.qrWrap}>
+                    <Image src={qrUrlFront} style={s.qrImg} />
                   </View>
-                ) : null}
-                {doctor.experience > 0 ? (
-                  <View style={styles.stat}>
-                    <Text style={styles.statVal}>{doctor.experience}</Text>
-                    <Text style={styles.statLbl}>{__('years')}</Text>
-                  </View>
-                ) : null}
-                {doctor.languages?.length > 0 ? (
-                  <View style={styles.stat}>
-                    <Text style={styles.statVal}>{doctor.languages.length}</Text>
-                    <Text style={styles.statLbl}>{__('languages')}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={styles.profileUrl}>{profileUrl}</Text>
-            </View>
+                  <Text style={s.qrLabel}>{__('myProfile')}</Text>
+                </View>
 
-            {/* Нижняя полоска */}
-            <View style={styles.accentBar} />
+              </View>
+
+              <View style={s.divider} />
+
+              {/* Footer */}
+              <View style={s.footer}>
+                <View style={s.statsRow}>
+                  {(doctor.articlesCount || 0) > 0
+                    ? <View style={s.statItem}>
+                        <Text style={s.statNum}>{doctor.articlesCount}</Text>
+                        <Text style={s.statLabel}> {__('articles')}</Text>
+                      </View>
+                    : null}
+                  {(doctor.languages?.length || 0) > 0
+                    ? <View style={s.statItem}>
+                        <Text style={s.statNum}>{doctor.languages.length}</Text>
+                        <Text style={s.statLabel}> {__('languages')}</Text>
+                      </View>
+                    : null}
+                </View>
+                <Text style={s.footerUrl}>{profileUrl}</Text>
+              </View>
+
+            </View>
+            <View style={s.accentBar} />
           </Page>
+
+          {/* ══════════════ ЗАДНЯЯ СТОРОНА ══════════════ */}
+          <Page size={[W, H]} style={s.backPage}>
+            <View style={s.accentBar} />
+            <View style={s.backInner}>
+
+              <View style={s.backHeader}>
+                <View style={s.backNameCol}>
+                  <Text style={s.backName}>{displayName}</Text>
+                  {specialtyLabel ? <Text style={s.backSpecialty}>{specialtyLabel}</Text> : null}
+                </View>
+                <Text style={s.backLogo}>duxtur.org</Text>
+              </View>
+
+              <View style={s.divider} />
+
+              <View style={[s.backBody, { marginTop: 6 }]}>
+
+                {/* Левая часть */}
+                <View style={s.backLeft}>
+
+                  {bioText
+                    ? <View style={s.missionBox}>
+                        <Text style={s.missionLabel}>{__('mission')}</Text>
+                        <Text style={s.missionText}>«{bioText}»</Text>
+                      </View>
+                    : null}
+
+                  {doctor.workingHours
+                    ? <View style={s.infoBlock}>
+                        <Text style={s.infoBlockLabel}>{__('reception')}</Text>
+                        <Text style={s.infoBlockText}>{doctor.workingHours}</Text>
+                      </View>
+                    : null}
+
+                  {(doctor.languages?.length || 0) > 0
+                    ? <View style={s.infoBlock}>
+                        <Text style={s.infoBlockLabel}>{__('langLabel')}</Text>
+                        <View style={s.langTags}>
+                          {doctor.languages.map((l: string, i: number) => (
+                            <View key={i} style={s.langTag}>
+                              <Text style={s.langTagText}>{l}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    : null}
+
+                </View>
+
+                {/* Правая часть — большой QR */}
+                <View style={s.backRight}>
+                  <View style={s.bigQrWrap}>
+                    <Image src={qrUrlBack} style={s.bigQrImg} />
+                  </View>
+                  <Text style={s.bigQrLabel}>{__('scan')}</Text>
+                </View>
+
+              </View>
+
+              <View style={s.divider} />
+
+              <View style={s.backFooter}>
+                <View style={s.backFooterLeft}>
+                  <Text style={s.backFooterLabel}>{__('articlesLabel')}</Text>
+                  <Text style={s.backFooterText}>{__('allByQr')}</Text>
+                </View>
+                <Text style={s.footerUrl}>{profileUrl}</Text>
+              </View>
+
+            </View>
+            <View style={s.accentBar} />
+          </Page>
+
         </Document>
       );
 
@@ -327,8 +524,14 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       a.click();
       URL.revokeObjectURL(url);
 
-      // Инкрементируем счётчик скачиваний
-      fetch(`/api/doctor/${doctorSlug}/card?format=count`, { method: 'POST' }).catch(() => {});
+      // Счётчик скачиваний — sendBeacon надёжнее при закрытии страницы
+      const beaconUrl = `/api/doctor/${doctorSlug}/card`;
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(beaconUrl);
+      } else {
+        fetch(beaconUrl, { method: 'POST' }).catch(() => {});
+      }
+
     } catch (err) {
       console.error('PDF error:', err);
       setError(true);
@@ -338,34 +541,39 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
   };
 
   return (
-    <button
-      onClick={handleDownload}
-      disabled={loading}
-      className="no-print w-full bg-gradient-to-r from-[#0a1628] to-[#0f2a52] border border-blue-900/40 rounded-2xl p-4 flex items-center justify-center gap-2.5 text-sm font-bold text-white hover:from-[#0f2a52] hover:to-[#1a3a6e] transition-all duration-300 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-    >
-      {loading ? (
-        <>
-          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <span>Генерируем PDF...</span>
-        </>
-      ) : error ? (
-        <>
-          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="text-red-300">Ошибка. Попробуйте ещё раз</span>
-        </>
-      ) : (
-        <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>{btnText[lang] || btnText.ru}</span>
-        </>
-      )}
-    </button>
+    <div className="no-print flex flex-col gap-2">
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        className="w-full bg-gradient-to-r from-[#0a1628] to-[#0f2a52] border border-blue-900/40 rounded-2xl p-4 flex items-center justify-center gap-2.5 text-sm font-bold text-white hover:from-[#0f2a52] hover:to-[#1a3a6e] transition-all duration-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <>
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span>Генерируем PDF…</span>
+          </>
+        ) : error ? (
+          <>
+            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-red-300">Ошибка. Попробуйте ещё раз</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>{btnText[lang] || btnText.ru}</span>
+          </>
+        )}
+      </button>
+      <p className="text-xs text-center text-gray-500">
+        PDF · 2 стороны · для печати и мессенджеров
+      </p>
+    </div>
   );
 }
