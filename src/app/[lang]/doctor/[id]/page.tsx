@@ -12,7 +12,6 @@ import ShareButtons from '@/components/ShareButtons';
 import PrintButton from '@/components/PrintButton';
 import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
-import DoctorBusinessCard from '@/components/DoctorBusinessCard';
 import DownloadCardButton from '@/components/DownloadCardButton';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
