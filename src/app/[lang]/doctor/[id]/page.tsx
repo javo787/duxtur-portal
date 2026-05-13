@@ -1,4 +1,4 @@
-// src/app/[lang]/doctor/[id]/page.tsx
+
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -505,17 +505,9 @@ export default async function DoctorProfilePage({ params }: Props) {
     title={`${doctor.name} — ${specialtyLabel}`}
     lang={lang}
   />
-  <PrintButton />
-  <DownloadCardButton
+<DownloadCardButton
+  doctorSlug={doctor.slug}
   doctorName={doctor.name}
-  specialtyLabel={specialtyLabel}
-  mission={mission}
-  experience={doctor.experience}
-  workplace={doctor.workplace}
-  languages={doctor.languages}
-  phone={doctor.phone}
-  doctorUrl={doctorUrl}
-  articlesCount={articles.length}
   lang={lang}
 />
 </div>
