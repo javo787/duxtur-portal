@@ -16,6 +16,12 @@ interface DoctorProfileData {
   workplace?: string;
   education?: string;
   sameAs?: string[];
+  instagram?: string;
+  telegram?: string;
+  whatsapp?: string;
+  workingHours?: string;
+  accentColor?: string;
+  cardTheme?: string;
 }
 
 export async function updateDoctorProfile(data: DoctorProfileData) {
@@ -29,16 +35,22 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
 
     const updateFields = Object.fromEntries(
       Object.entries({
-        name:       data.name,
-        phone:      data.phone,
-        image:      data.image,
-        specialty:  data.specialty,
-        experience: data.experience,
-        languages:  data.languages,
-        bio:        data.bio,
-        workplace:  data.workplace,
-        education:  data.education,
-        sameAs:     data.sameAs,
+        name:         data.name,
+        phone:        data.phone,
+        image:        data.image,
+        specialty:    data.specialty,
+        experience:   data.experience,
+        languages:    data.languages,
+        bio:          data.bio,
+        workplace:    data.workplace,
+        education:    data.education,
+        sameAs:       data.sameAs,
+        instagram:    data.instagram,
+        telegram:     data.telegram,
+        whatsapp:     data.whatsapp,
+        workingHours: data.workingHours,
+        accentColor:  data.accentColor,
+        cardTheme:    data.cardTheme,
       }).filter(([_, v]) => v !== undefined && v !== null)
     );
 
