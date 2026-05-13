@@ -497,9 +497,17 @@ export default async function DoctorProfilePage({ params }: Props) {
   />
   <PrintButton />
   <DownloadCardButton
-    doctorName={doctor.name}
-    lang={lang}
-  />
+  doctorName={doctor.name}
+  specialtyLabel={specialtyLabel}
+  mission={mission}
+  experience={doctor.experience}
+  workplace={doctor.workplace}
+  languages={doctor.languages}
+  phone={doctor.phone}
+  doctorUrl={doctorUrl}
+  articlesCount={articles.length}
+  lang={lang}
+/>
 </div>
 </div>
 </div>
