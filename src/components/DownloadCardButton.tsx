@@ -15,9 +15,11 @@ const btnText: Record<string, string> = {
   ky: 'Визитка жүктөө',
 };
 
-// 90x50мм 
-const W = 255.12; 
+// 90x50 мм (в пунктах)
+const W = 255.12;
 const H = 141.73;
+const BAR_H = 2; // высота акцентной полосы
+const PADDING_V = 7; // вертикальный внутренний отступ
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -47,14 +49,13 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       const accent = doctor.accentColor || '#2563eb';
       const theme = doctor.cardTheme || 'dark';
 
-      // Цвета — Apple/Vercel стиль
-      const bg        = theme === 'dark' ? '#000000' : '#ffffff';
-      const bg2       = theme === 'dark' ? '#0a0a0a' : '#fafafa';
-      const surface   = theme === 'dark' ? '#111111' : '#f5f5f7';
-      const border    = theme === 'dark' ? '#1d1d1f' : '#e8e8ed';
-      const textPrimary    = theme === 'dark' ? '#f5f5f7' : '#1d1d1f';
-      const textSecondary  = theme === 'dark' ? '#86868b' : '#6e6e73';
-      const textTertiary   = theme === 'dark' ? '#48484a' : '#aeaeb2';
+      const bg = theme === 'dark' ? '#000000' : '#ffffff';
+      const bg2 = theme === 'dark' ? '#0a0a0a' : '#fafafa';
+      const surface = theme === 'dark' ? '#111111' : '#f5f5f7';
+      const border = theme === 'dark' ? '#1d1d1f' : '#e8e8ed';
+      const textPrimary = theme === 'dark' ? '#f5f5f7' : '#1d1d1f';
+      const textSecondary = theme === 'dark' ? '#86868b' : '#6e6e73';
+      const textTertiary = theme === 'dark' ? '#48484a' : '#aeaeb2';
 
       // Утилиты
       const t = (field: any) => {
@@ -80,15 +81,15 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       };
 
       const specialtyLabel = truncate(t(doctor.specialty) || t(doctor.specialization) || '', 40);
-      const displayName    = truncate(doctor.name || '', 30);
-      const displayWork    = truncate(doctor.workplace || '', 50);
-      const rawBio         = typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.[lang] || doctor.bio?.ru || '');
-      const bioText        = truncate(rawBio, 140);
+      const displayName = truncate(doctor.name || '', 30);
+      const displayWork = truncate(doctor.workplace || '', 50);
+      const rawBio = typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.[lang] || doctor.bio?.ru || '');
+      const bioText = truncate(rawBio, 140);
       const showExperience = (doctor.experience || 0) >= 3;
 
       const ig = doctor.instagram ? getSocialHandle(doctor.instagram, 'instagram') : null;
-      const tg = doctor.telegram  ? getSocialHandle(doctor.telegram,  'telegram')  : null;
-      const wa = doctor.whatsapp  ? getSocialHandle(doctor.whatsapp,  'whatsapp')  : null;
+      const tg = doctor.telegram ? getSocialHandle(doctor.telegram, 'telegram') : null;
+      const wa = doctor.whatsapp ? getSocialHandle(doctor.whatsapp, 'whatsapp') : null;
 
       const phoneDisplay = doctor.phone
         ? (doctor.phone.startsWith('+') ? doctor.phone : `+${doctor.phone}`)
@@ -96,10 +97,10 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
       const profileUrl = `duxtur.org/${lang}/doctor/${doctorSlug}`;
 
-      const qrBgColor   = theme === 'dark' ? '000000' : 'ffffff';
-      const qrFgColor   = theme === 'dark' ? 'f5f5f7' : '1d1d1f';
-      const qrUrlFront  = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBgColor}&color=${qrFgColor}&margin=6`;
-      const qrUrlBack   = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0a0a0a' : 'fafafa'}&color=${qrFgColor}&margin=8`;
+      const qrBgColor = theme === 'dark' ? '000000' : 'ffffff';
+      const qrFgColor = theme === 'dark' ? 'f5f5f7' : '1d1d1f';
+      const qrUrlFront = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBgColor}&color=${qrFgColor}&margin=6`;
+      const qrUrlBack = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0a0a0a' : 'fafafa'}&color=${qrFgColor}&margin=8`;
 
       const dict: Record<string, any> = {
         ru: { verified: 'Верифицированный врач', years: 'лет практики', articles: 'статей', languages: 'языков', mission: 'МОЯ МИССИЯ', scan: 'Сканируйте для\nполного профиля', myProfile: 'МОЙ ПРОФИЛЬ', reception: 'ЧАСЫ ПРИЁМА', langLabel: 'ЯЗЫКИ ПРИЁМА', articlesLabel: 'МОИ СТАТЬИ', allByQr: 'Все материалы доступны по QR' },
@@ -110,24 +111,25 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       };
       const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
 
+      // Основные стили
       const s = StyleSheet.create({
         // ─── ОБЩЕЕ ───────────────────────────────────────
         page: {
-  width: W,
-  height: H,
-  backgroundColor: bg,
-  fontFamily: 'NotoSans',
-  overflow: 'hidden',
-},
-inner: {
-  flex: 1,
-  flexDirection: 'column',
-  paddingHorizontal: 10,
-  paddingVertical: 7,
-},
+          width: W,
+          height: H,
+          backgroundColor: bg,
+          fontFamily: 'NotoSans',
+          overflow: 'hidden',
+        },
+        inner: {
+          height: H - BAR_H * 2 - PADDING_V * 2, // точная высота, чтобы не выходить за границы
+          paddingHorizontal: 10,
+          paddingVertical: PADDING_V,
+          flexDirection: 'column',
+        },
 
         // ─── ПОЛОСКИ ─────────────────────────────────────
-        accentBar: { height: 2, backgroundColor: accent },
+        accentBar: { height: BAR_H, backgroundColor: accent },
 
         // ─── ШАПКА ───────────────────────────────────────
         header: {
@@ -173,7 +175,7 @@ inner: {
           fontFamily: 'NotoSans', textTransform: 'uppercase', letterSpacing: 0.5,
         },
         name: {
-          fontSize: 13.5, fontWeight: 900, color: textPrimary,
+          fontSize: 10.5, fontWeight: 900, color: textPrimary, // уменьшено с 13.5
           fontFamily: 'NotoSans', lineHeight: 1.1, marginBottom: 2,
         },
         workplace: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans', marginBottom: 4 },
@@ -193,7 +195,9 @@ inner: {
         socialRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
         socialChip: {
           width: 16, height: 16, borderRadius: 4,
-          alignItems: 'center', justifyContent: 'center',
+          // убраны alignItems/justifyContent, позиционирование паддингами
+          paddingTop: 5,
+          paddingLeft: 2,
         },
         socialChipText: { fontSize: 6, fontWeight: 700, color: '#ffffff', fontFamily: 'NotoSans' },
         socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
@@ -223,19 +227,18 @@ inner: {
 
         // ─── ЗАДНЯЯ СТОРОНА ───────────────────────────────
         backPage: {
-  width: W,
-  height: H,
-  backgroundColor: bg2,
-  fontFamily: 'NotoSans',
-  overflow: 'hidden',
-},
-backInner: {
-  flex: 1,
-  flexDirection: 'column',
-  paddingHorizontal: 10,
-  paddingVertical: 7,
-},
-        
+          width: W,
+          height: H,
+          backgroundColor: bg2,
+          fontFamily: 'NotoSans',
+          overflow: 'hidden',
+        },
+        backInner: {
+          height: H - BAR_H * 2 - PADDING_V * 2, // точная высота
+          paddingHorizontal: 10,
+          paddingVertical: PADDING_V,
+          flexDirection: 'column',
+        },
         backHeader: {
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -246,7 +249,7 @@ backInner: {
         backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
         backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
         backLogo: { fontSize: 8, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
-        backBody: { flexDirection: 'row', flex: 1, gap: 10 },
+        backBody: { flexDirection: 'row', flex: 1, gap: 10 }, // убран marginTop
         backLeft: { flex: 1, flexDirection: 'column', gap: 7 },
 
         // Блок миссии
@@ -320,13 +323,10 @@ backInner: {
 
       const MyDoc = (
         <Document>
-
-          {/* ══════════════ ПЕРЕДНЯЯ СТОРОНА ══════════════ */}
+          {/* Передняя сторона */}
           <Page size={[W, H]} style={s.page}>
             <View style={s.accentBar} />
             <View style={s.inner}>
-
-              {/* Шапка */}
               <View style={s.header}>
                 <View style={s.logoRow}>
                   <View style={s.logoDot} />
@@ -341,102 +341,103 @@ backInner: {
 
               <View style={s.divider} />
 
-              {/* Тело */}
               <View style={s.body}>
-
-                {/* Фото */}
                 <View style={s.photoWrap}>
-                  {doctor.image
-                    ? <Image src={doctor.image} style={s.photo} />
-                    : <View style={s.photoPlaceholder} />}
+                  {doctor.image ? (
+                    <Image src={doctor.image} style={s.photo} />
+                  ) : (
+                    <View style={s.photoPlaceholder} />
+                  )}
                 </View>
 
-                {/* Инфо */}
                 <View style={s.infoCol}>
-                  {specialtyLabel
-                    ? <View style={s.specialtyPill}><Text style={s.specialtyText}>{specialtyLabel}</Text></View>
-                    : null}
+                  {specialtyLabel ? (
+                    <View style={s.specialtyPill}>
+                      <Text style={s.specialtyText}>{specialtyLabel}</Text>
+                    </View>
+                  ) : null}
                   <Text style={s.name}>{displayName}</Text>
                   {displayWork ? <Text style={s.workplace}>{displayWork}</Text> : null}
 
-                  {showExperience
-                    ? <View style={s.expRow}>
-                        <View style={s.expLine} />
-                        <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
-                      </View>
-                    : null}
+                  {showExperience ? (
+                    <View style={s.expRow}>
+                      <View style={s.expLine} />
+                      <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
+                    </View>
+                  ) : null}
 
-                  {phoneDisplay
-                    ? <View style={s.phoneRow}>
-                        <View style={s.phonePulse} />
-                        <Text style={s.phoneText}>{phoneDisplay}</Text>
-                      </View>
-                    : null}
+                  {phoneDisplay ? (
+                    <View style={s.phoneRow}>
+                      <View style={s.phonePulse} />
+                      <Text style={s.phoneText}>{phoneDisplay}</Text>
+                    </View>
+                  ) : null}
 
-                  {(ig || tg || wa)
-                    ? <View style={s.socialsCol}>
-                        {ig ? <View style={s.socialRow}>
+                  {(ig || tg || wa) ? (
+                    <View style={s.socialsCol}>
+                      {ig ? (
+                        <View style={s.socialRow}>
                           <View style={[s.socialChip, { backgroundColor: '#e1306c' }]}>
                             <Text style={s.socialChipText}>IG</Text>
                           </View>
                           <Text style={s.socialHandle}>{ig}</Text>
-                        </View> : null}
-                        {tg ? <View style={s.socialRow}>
+                        </View>
+                      ) : null}
+                      {tg ? (
+                        <View style={s.socialRow}>
                           <View style={[s.socialChip, { backgroundColor: '#0088cc' }]}>
                             <Text style={s.socialChipText}>TG</Text>
                           </View>
                           <Text style={s.socialHandle}>{tg}</Text>
-                        </View> : null}
-                        {wa ? <View style={s.socialRow}>
+                        </View>
+                      ) : null}
+                      {wa ? (
+                        <View style={s.socialRow}>
                           <View style={[s.socialChip, { backgroundColor: '#25d366' }]}>
                             <Text style={s.socialChipText}>WA</Text>
                           </View>
                           <Text style={s.socialHandle}>{wa}</Text>
-                        </View> : null}
-                      </View>
-                    : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
                 </View>
 
-                {/* QR */}
                 <View style={s.qrCol}>
                   <View style={s.qrWrap}>
                     <Image src={qrUrlFront} style={s.qrImg} />
                   </View>
                   <Text style={s.qrLabel}>{__('myProfile')}</Text>
                 </View>
-
               </View>
 
               <View style={s.divider} />
 
-              {/* Footer */}
               <View style={s.footer}>
                 <View style={s.statsRow}>
-                  {(doctor.articlesCount || 0) > 0
-                    ? <View style={s.statItem}>
-                        <Text style={s.statNum}>{doctor.articlesCount}</Text>
-                        <Text style={s.statLabel}> {__('articles')}</Text>
-                      </View>
-                    : null}
-                  {(doctor.languages?.length || 0) > 0
-                    ? <View style={s.statItem}>
-                        <Text style={s.statNum}>{doctor.languages.length}</Text>
-                        <Text style={s.statLabel}> {__('languages')}</Text>
-                      </View>
-                    : null}
+                  {(doctor.articlesCount || 0) > 0 ? (
+                    <View style={s.statItem}>
+                      <Text style={s.statNum}>{doctor.articlesCount}</Text>
+                      <Text style={s.statLabel}> {__('articles')}</Text>
+                    </View>
+                  ) : null}
+                  {(doctor.languages?.length || 0) > 0 ? (
+                    <View style={s.statItem}>
+                      <Text style={s.statNum}>{doctor.languages.length}</Text>
+                      <Text style={s.statLabel}> {__('languages')}</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <Text style={s.footerUrl}>{profileUrl}</Text>
               </View>
-
             </View>
             <View style={s.accentBar} />
           </Page>
 
-          {/* ══════════════ ЗАДНЯЯ СТОРОНА ══════════════ */}
+          {/* Задняя сторона */}
           <Page size={[W, H]} style={s.backPage}>
             <View style={s.accentBar} />
             <View style={s.backInner}>
-
               <View style={s.backHeader}>
                 <View style={s.backNameCol}>
                   <Text style={s.backName}>{displayName}</Text>
@@ -447,48 +448,42 @@ backInner: {
 
               <View style={s.divider} />
 
-              <View style={[s.backBody, { marginTop: 6 }]}>
-
-                {/* Левая часть */}
+              <View style={s.backBody}>
                 <View style={s.backLeft}>
+                  {bioText ? (
+                    <View style={s.missionBox}>
+                      <Text style={s.missionLabel}>{__('mission')}</Text>
+                      <Text style={s.missionText}>«{bioText}»</Text>
+                    </View>
+                  ) : null}
 
-                  {bioText
-                    ? <View style={s.missionBox}>
-                        <Text style={s.missionLabel}>{__('mission')}</Text>
-                        <Text style={s.missionText}>«{bioText}»</Text>
+                  {doctor.workingHours ? (
+                    <View style={s.infoBlock}>
+                      <Text style={s.infoBlockLabel}>{__('reception')}</Text>
+                      <Text style={s.infoBlockText}>{doctor.workingHours}</Text>
+                    </View>
+                  ) : null}
+
+                  {(doctor.languages?.length || 0) > 0 ? (
+                    <View style={s.infoBlock}>
+                      <Text style={s.infoBlockLabel}>{__('langLabel')}</Text>
+                      <View style={s.langTags}>
+                        {doctor.languages.map((l: string, i: number) => (
+                          <View key={i} style={s.langTag}>
+                            <Text style={s.langTagText}>{l}</Text>
+                          </View>
+                        ))}
                       </View>
-                    : null}
-
-                  {doctor.workingHours
-                    ? <View style={s.infoBlock}>
-                        <Text style={s.infoBlockLabel}>{__('reception')}</Text>
-                        <Text style={s.infoBlockText}>{doctor.workingHours}</Text>
-                      </View>
-                    : null}
-
-                  {(doctor.languages?.length || 0) > 0
-                    ? <View style={s.infoBlock}>
-                        <Text style={s.infoBlockLabel}>{__('langLabel')}</Text>
-                        <View style={s.langTags}>
-                          {doctor.languages.map((l: string, i: number) => (
-                            <View key={i} style={s.langTag}>
-                              <Text style={s.langTagText}>{l}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    : null}
-
+                    </View>
+                  ) : null}
                 </View>
 
-                {/* Правая часть — большой QR */}
                 <View style={s.backRight}>
                   <View style={s.bigQrWrap}>
                     <Image src={qrUrlBack} style={s.bigQrImg} />
                   </View>
                   <Text style={s.bigQrLabel}>{__('scan')}</Text>
                 </View>
-
               </View>
 
               <View style={s.divider} />
@@ -500,11 +495,9 @@ backInner: {
                 </View>
                 <Text style={s.footerUrl}>{profileUrl}</Text>
               </View>
-
             </View>
             <View style={s.accentBar} />
           </Page>
-
         </Document>
       );
 
@@ -516,14 +509,12 @@ backInner: {
       a.click();
       URL.revokeObjectURL(url);
 
-      // Счётчик скачиваний — sendBeacon надёжнее при закрытии страницы
       const beaconUrl = `/api/doctor/${doctorSlug}/card`;
       if (navigator.sendBeacon) {
         navigator.sendBeacon(beaconUrl);
       } else {
         fetch(beaconUrl, { method: 'POST' }).catch(() => {});
       }
-
     } catch (err) {
       console.error('PDF error:', err);
       setError(true);
