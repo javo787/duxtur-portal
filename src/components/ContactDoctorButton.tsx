@@ -227,7 +227,7 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
                     <div className="space-y-2.5">
                       {doctor.phone && (
                         
-                          href={`tel:${doctor.phone}`}
+                         <a href={`tel:${doctor.phone}`}
                           className="flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition group"
                         >
                           <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
