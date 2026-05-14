@@ -4,7 +4,7 @@ import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   await connectToDatabase();
@@ -16,30 +16,29 @@ export async function GET(
 
   const articlesCount = await Article.countDocuments({ author: doctor._id, published: true });
 
-  // Возвращаем JSON с нужными данными для клиентской генерации PDF
-return NextResponse.json({
-  name: doctor.name,
-  image: doctor.image || null,
-  specialty: doctor.specialty,
-  specialization: doctor.specialization,
-  workplace: doctor.workplace || '',
-  experience: doctor.experience || 0,
-  languages: doctor.languages || [],
-  phone: doctor.phone || '',
-  bio: doctor.bio || '',
-  instagram: doctor.instagram || '',
-  telegram: doctor.telegram || '',
-  whatsapp: doctor.whatsapp || '',
-  workingHours: doctor.workingHours || '',
-  accentColor: doctor.accentColor || '#2563eb',
-  cardTheme: doctor.cardTheme || 'dark',
-  articlesCount,
-  slug: doctor.slug,
-});
+  return NextResponse.json({
+    name: doctor.name,
+    image: doctor.image || null,
+    specialty: doctor.specialty,
+    specialization: doctor.specialization,
+    workplace: doctor.workplace || '',
+    experience: doctor.experience || 0,
+    languages: doctor.languages || [],
+    phone: doctor.phone || '',
+    bio: doctor.bio || '',
+    instagram: doctor.instagram || '',
+    telegram: doctor.telegram || '',
+    whatsapp: doctor.whatsapp || '',
+    workingHours: doctor.workingHours || '',
+    accentColor: doctor.accentColor || '#2563eb',
+    cardTheme: doctor.cardTheme || 'dark',
+    articlesCount,
+    slug: doctor.slug,
+  });
+}
 
-// POST — обновляем счётчик скачиваний
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   await connectToDatabase();
