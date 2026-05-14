@@ -91,7 +91,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     : null;
 
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
-  const mission = t(doctor.mission) || getMission(specialtyLabel);
+  const mission = bioLabel || getMission(doctor.specialty?.ru || specialtyLabel);
 
   let categoryKey = 'general';
   for (const [key, labels] of Object.entries(CATEGORY_LABELS)) {
