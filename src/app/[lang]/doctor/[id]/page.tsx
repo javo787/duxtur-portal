@@ -12,7 +12,7 @@ import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
-import PremiumMobileProfile from './_components/PremiumMobileProfile';
+import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
