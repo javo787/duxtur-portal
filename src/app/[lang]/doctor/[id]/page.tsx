@@ -12,6 +12,7 @@ import ShareButtons from '@/components/ShareButtons';
 import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
+import ContactDoctorButton from '@/components/ContactDoctorButton';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -495,6 +496,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
           
 {/* Единый блок «Поделиться» + PDF */}
+            <ContactDoctorButton doctor={doctor} lang={lang} />
 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-0">
     Поделиться профилем
