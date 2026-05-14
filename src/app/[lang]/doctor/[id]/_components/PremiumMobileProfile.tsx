@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import DownloadCardButton from '@/components/DownloadCardButton';
 
@@ -20,14 +19,18 @@ export function PremiumMobileProfile({
   lastMedicalReviewDate,
   articles,
   lang,
-  doctorUrl,
 }: PremiumMobileProfileProps) {
   const [bioExpanded, setBioExpanded] = useState(false);
 
-  const rawBio =
-    typeof doctor.bio === 'string'
-      ? doctor.bio
-      : doctor.bio?.ru || doctor.bio?.[lang] || '';
+  const t = (field: any) => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[lang] || field['ru'] || '';
+  };
+
+  const rawBio = t(doctor.bio);
+  const workplaceLabel = t(doctor.workplace);
+  const educationLabel = t(doctor.education);
 
   const shortBio = rawBio.length > 120 ? rawBio.slice(0, 120) + '…' : rawBio;
   const hasBio = rawBio.length > 0;
@@ -119,9 +122,9 @@ export function PremiumMobileProfile({
               <h1 className="text-[18px] font-black text-white leading-tight">
                 {doctor.name}
               </h1>
-              {doctor.workplace && (
+              {workplaceLabel && (
                 <p className="text-[11.5px] text-blue-300/70 mt-1 leading-tight">
-                  {doctor.workplace}
+                  {workplaceLabel}
                 </p>
               )}
             </div>
@@ -176,9 +179,9 @@ export function PremiumMobileProfile({
                 accent={doctor.accentColor}
               />
             )}
-            {doctor.education && (
+            {educationLabel && (
               <MetricChip
-                value={doctor.education.split(',')[0]}
+                value={educationLabel.split(',')[0]}
                 label="образование"
                 icon="🎓"
                 accent={doctor.accentColor}
@@ -234,9 +237,9 @@ export function PremiumMobileProfile({
       </div>
 
       {/* ── ДОП. ИНФОРМАЦИЯ ───────────────────────────────────── */}
-      {(doctor.workingHours || doctor.workplace || doctor.sameAs?.length > 0) && (
+      {(doctor.workingHours || workplaceLabel || doctor.sameAs?.length > 0) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {doctor.workplace && (
+          {workplaceLabel && (
             <InfoRow
               icon={
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +247,7 @@ export function PremiumMobileProfile({
                 </svg>
               }
               label="Место работы"
-              value={doctor.workplace}
+              value={workplaceLabel}
             />
           )}
           {doctor.workingHours && (

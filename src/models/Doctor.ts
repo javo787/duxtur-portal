@@ -1,16 +1,24 @@
 import mongoose from 'mongoose';
 
+const MultilingualString = {
+  ru: String,
+  uz: String,
+  kk: String,
+  ky: String,
+  tg: String,
+};
+
 const DoctorSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
   slug: { type: String, unique: true },
   phone: { type: String, required: true },
-  specialty: { ru: String, uz: String, kk: String, ky: String, tg: String },
+  specialty: MultilingualString,
   experience: { type: Number, default: 0 },
-  workplace: { type: String, default: '' },
-  education: { type: String, default: '' },
+  workplace: MultilingualString,
+  education: MultilingualString,
   licenseNumber: { type: String, default: '' },
-  bio: { type: String, default: '' },
+  bio: MultilingualString,
   sameAs: { type: [String], default: [] },
   image: { type: String },
   documentImage: { type: String, required: true },

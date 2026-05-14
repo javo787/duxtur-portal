@@ -2,19 +2,20 @@
 
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
-import Doctor from '@/models/Doctor';
 import User from '@/models/User';
+import { updateDoctorProfileByUserId, findDoctorByEmail } from '@/lib/db-doctor';
+import { translateFields } from '@/lib/translation-service';
 
 interface DoctorProfileData {
   name?: string;
   phone?: string;
   image?: string;
-  specialty?: { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string };
+  specialty?: { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string } | string;
   experience?: number;
   languages?: string[];
-  bio?: string;
-  workplace?: string;
-  education?: string;
+  bio?: string | { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string };
+  workplace?: string | { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string };
+  education?: string | { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string };
   sameAs?: string[];
   instagram?: string;
   telegram?: string;
@@ -27,23 +28,32 @@ interface DoctorProfileData {
 export async function updateDoctorProfile(data: DoctorProfileData) {
   try {
     const session = await auth();
-    if (!session?.user) return { success: false, error: 'Не авторизован' };
+    if (!session?.user?.email) return { success: false, error: 'Не авторизован' };
 
     await dbConnect();
     const user = await User.findOne({ email: session.user.email }).lean();
     if (!user) return { success: false, error: 'Пользователь не найден' };
 
-    const updateFields = Object.fromEntries(
+    const doctor = await findDoctorByEmail(session.user.email);
+    if (!doctor) return { success: false, error: 'Доктор не найден' };
+
+    // Собираем поля для перевода
+    const fieldsToTranslate: Record<string, string> = {};
+    if (typeof data.bio === 'string' && data.bio !== doctor.bio?.ru) fieldsToTranslate.bio = data.bio;
+    if (typeof data.workplace === 'string' && data.workplace !== doctor.workplace?.ru) fieldsToTranslate.workplace = data.workplace;
+    if (typeof data.education === 'string' && data.education !== doctor.education?.ru) fieldsToTranslate.education = data.education;
+    if (typeof data.specialty === 'string' && data.specialty !== doctor.specialty?.ru) fieldsToTranslate.specialty = data.specialty;
+
+    // Выполняем перевод, если есть новые текстовые данные
+    const translations = await translateFields(fieldsToTranslate);
+
+    const updateFields: Record<string, unknown> = Object.fromEntries(
       Object.entries({
         name:         data.name,
         phone:        data.phone,
         image:        data.image,
-        specialty:    data.specialty,
         experience:   data.experience,
         languages:    data.languages,
-        bio:          data.bio,
-        workplace:    data.workplace,
-        education:    data.education,
         sameAs:       data.sameAs,
         instagram:    data.instagram,
         telegram:     data.telegram,
@@ -54,14 +64,25 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
       }).filter(([_, v]) => v !== undefined && v !== null)
     );
 
-    await Doctor.findOneAndUpdate(
-      { userId: (user as any)._id },
-      { $set: updateFields },
-      { new: true, upsert: true, runValidators: true }
-    );
+    // Только если есть новый перевод или передан объект, обновляем поля.
+    // Иначе не трогаем, чтобы не перетереть существующие переводы строкой.
+    if (translations.specialty) updateFields.specialty = translations.specialty;
+    else if (data.specialty && typeof data.specialty !== 'string') updateFields.specialty = data.specialty;
+
+    if (translations.bio) updateFields.bio = translations.bio;
+    else if (data.bio && typeof data.bio !== 'string') updateFields.bio = data.bio;
+
+    if (translations.workplace) updateFields.workplace = translations.workplace;
+    else if (data.workplace && typeof data.workplace !== 'string') updateFields.workplace = data.workplace;
+
+    if (translations.education) updateFields.education = translations.education;
+    else if (data.education && typeof data.education !== 'string') updateFields.education = data.education;
+
+    await updateDoctorProfileByUserId((user as any)._id.toString(), updateFields);
 
     return { success: true };
   } catch (error: any) {
+    console.error('Update Profile Error:', error);
     return { success: false, error: error.message };
   }
 }

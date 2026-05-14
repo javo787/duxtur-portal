@@ -2,9 +2,10 @@
 
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import Doctor from '@/models/Doctor';
 import bcrypt from 'bcryptjs';
 import { notifyAdminNewDoctor } from '@/lib/telegram';
+import { createDoctor } from '@/lib/db-doctor';
+import { translateText } from '@/lib/translation-service';
 
 export async function registerDoctor(formData: FormData) {
   try {
@@ -35,12 +36,15 @@ export async function registerDoctor(formData: FormData) {
       role: 'doctor',
     });
 
-    await Doctor.create({
+    // Автоматический перевод специальности
+    const translatedSpecialty = await translateText(specialty);
+
+    await createDoctor({
       userId: newUser._id,
       name,
       slug: name.toLowerCase().replace(/ /g, '-') + '-' + Date.now().toString().slice(-4),
       phone,
-      specialty: { ru: specialty },
+      specialty: translatedSpecialty,
       documentImage: documentImageUrl,
       status: 'pending',
       image: 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png',
