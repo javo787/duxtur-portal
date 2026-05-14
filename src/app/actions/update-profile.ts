@@ -42,7 +42,11 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
     if (typeof data.bio === 'string' && data.bio !== doctor.bio?.ru) fieldsToTranslate.bio = data.bio;
     if (typeof data.workplace === 'string' && data.workplace !== doctor.workplace?.ru) fieldsToTranslate.workplace = data.workplace;
     if (typeof data.education === 'string' && data.education !== doctor.education?.ru) fieldsToTranslate.education = data.education;
-    if (typeof data.specialty === 'string' && data.specialty !== doctor.specialty?.ru) fieldsToTranslate.specialty = data.specialty;
+
+    const incomingSpecialtyRu = typeof data.specialty === 'string' ? data.specialty : (data.specialty as any)?.ru;
+    if (incomingSpecialtyRu && incomingSpecialtyRu !== doctor.specialty?.ru) {
+        fieldsToTranslate.specialty = incomingSpecialtyRu;
+    }
 
     // Выполняем перевод, если есть новые текстовые данные
     const translations = await translateFields(fieldsToTranslate);
