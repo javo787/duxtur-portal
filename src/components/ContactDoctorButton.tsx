@@ -247,7 +247,7 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
 
                       {doctor.whatsapp && (
                         
-                          href={doctor.whatsapp}
+                        <a  href={doctor.whatsapp}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-4 p-4 bg-green-50 hover:bg-green-100 rounded-2xl transition group"
@@ -269,7 +269,7 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
 
                       {doctor.telegram && (
                         
-                          href={doctor.telegram}
+                        <a  href={doctor.telegram}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-4 p-4 bg-sky-50 hover:bg-sky-100 rounded-2xl transition group"
@@ -291,7 +291,7 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
 
                       {doctor.instagram && (
                         
-                          href={doctor.instagram}
+                        <a  href={doctor.instagram}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-4 p-4 bg-pink-50 hover:bg-pink-100 rounded-2xl transition group"
