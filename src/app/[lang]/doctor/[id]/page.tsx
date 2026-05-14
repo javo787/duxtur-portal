@@ -177,7 +177,7 @@ export default async function DoctorProfilePage({ params }: Props) {
       {/* HERO — только на десктопе */}
       <div className="hidden md:block">
         <DoctorHero
-          doctor={{...doctor, specialty: specialtyLabel}}
+          doctor={{...doctor, specialty: specialtyLabel, workplace: workplaceLabel, education: educationLabel}}
           specialtyLabel={specialtyLabel}
           mission={mission}
           totalViews={totalViews}
