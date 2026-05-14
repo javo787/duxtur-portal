@@ -20,10 +20,14 @@ const ICON_IG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/i
 const ICON_TG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719654/telegram_gtzapm.png';
 const ICON_WA = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/whatsapp_x8ilnv.png';
 
-// 90x50мм
+// 90x50 мм (в поинтах)
 const W = 255.12;
 const H = 141.73;
-const BAR_H = 2;
+const BAR_H = 2;          // высота акцентных полос
+const HEADER_H = 22;      // высота шапки
+const DIVIDER_H = 10;     // разделитель с отступами (5 + 0.5 + 4.5)
+const FOOTER_H = 16;      // высота нижнего колонтитула
+const BODY_H = H - BAR_H * 2 - HEADER_H - DIVIDER_H * 2 - FOOTER_H; // ~79.73
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -115,6 +119,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       };
       const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
 
+      // Стили с фиксированными высотами
       const s = StyleSheet.create({
         // ─── ОБЩИЕ СТРАНИЦЫ ────────────────────────────────
         page: {
@@ -122,25 +127,43 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           height: H,
           backgroundColor: bg,
           fontFamily: 'NotoSans',
-          display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          position: 'relative',
         },
-        inner: {
-          flex: 1,
-          paddingHorizontal: 10,
-          paddingVertical: 7,
+        accentBar: {
+          height: BAR_H,
+          backgroundColor: accent,
         },
-        // полоски
-        accentBar: { height: BAR_H, backgroundColor: accent },
-
-        // ─── ПЕРЕДНЯЯ СТОРОНА ─────────────────────────────
+        // Передняя сторона
         header: {
+          height: HEADER_H,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 6,
+          paddingHorizontal: 10,
         },
+        body: {
+          height: BODY_H,
+          flexDirection: 'row',
+          gap: 9,
+          paddingHorizontal: 10,
+          overflow: 'hidden',
+        },
+        footer: {
+          height: FOOTER_H,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+        },
+        divider: {
+          height: 0.5,
+          backgroundColor: border,
+          marginVertical: 5,
+        },
+
+        // ─── ЭЛЕМЕНТЫ ПЕРЕДНЕЙ СТОРОНЫ ────────────────────
         logoRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
         logoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
         logoText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans', letterSpacing: 0.3 },
@@ -153,9 +176,12 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         verifiedDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#34c759' },
         verifiedText: { fontSize: 6, fontWeight: 700, color: '#34c759', fontFamily: 'NotoSans' },
 
-        body: { flexDirection: 'row', flex: 1, gap: 9 },
-
-        photoWrap: { flexDirection: 'column', alignItems: 'center', paddingTop: 0, marginTop: -2 },
+        photoWrap: {
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingTop: 0,
+          marginTop: -2,
+        },
         photo: { width: 46, height: 46, borderRadius: 10, objectFit: 'cover' },
         photoPlaceholder: { width: 46, height: 46, borderRadius: 10, backgroundColor: surface },
 
@@ -190,14 +216,14 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         socialIcon: { width: 14, height: 14, borderRadius: 3 },
         socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
 
-        // Абсолютное позиционирование QR
+        // Абсолютное позиционирование QR (над footer)
         qrAbs: {
           position: 'absolute',
           right: 8,
-          bottom: 14,
+          bottom: BAR_H + FOOTER_H + 4,
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 3,
+          gap: 2,
         },
         qrWrap: {
           width: 44, height: 44,
@@ -210,9 +236,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         qrImg: { width: 38, height: 38 },
         qrLabel: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans', textAlign: 'center' },
 
-        divider: { height: 0.5, backgroundColor: border, marginVertical: 5 },
-
-        footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
         statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
         statItem: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
         statNum: { fontSize: 9, fontWeight: 900, color: textPrimary, fontFamily: 'NotoSans' },
@@ -225,14 +248,15 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           height: H,
           backgroundColor: bg2,
           fontFamily: 'NotoSans',
-          display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          position: 'relative',
         },
         backInner: {
-          flex: 1,
+          height: H - BAR_H * 2 - FOOTER_H,
           paddingHorizontal: 10,
-          paddingVertical: 7,
+          paddingTop: 7,
+          overflow: 'hidden',
         },
         backHeader: {
           flexDirection: 'row',
@@ -298,10 +322,10 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontFamily: 'NotoSans', textAlign: 'center', lineHeight: 1.5,
         },
 
-        // Нижний колонтитул задней стороны (вынесен из backInner)
+        // Footer задней стороны (фиксированная высота)
         backFooterContainer: {
+          height: FOOTER_H,
           paddingHorizontal: 10,
-          paddingVertical: 4,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -321,100 +345,102 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           {/* ── Передняя сторона ── */}
           <Page size={[W, H]} style={s.page}>
             <View style={s.accentBar} />
-            <View style={s.inner}>
-              <View style={s.header}>
-                <View style={s.logoRow}>
-                  <View style={s.logoDot} />
-                  <Text style={s.logoText}>duxtur.org</Text>
-                  <Text style={s.logoSub}> · МЕДИЦИНСКИЙ ПОРТАЛ</Text>
-                </View>
-                <View style={s.verifiedPill}>
-                  <View style={s.verifiedDot} />
-                  <Text style={s.verifiedText}>{__('verified')}</Text>
-                </View>
+
+            {/* Шапка */}
+            <View style={s.header}>
+              <View style={s.logoRow}>
+                <View style={s.logoDot} />
+                <Text style={s.logoText}>duxtur.org</Text>
+                <Text style={s.logoSub}> · МЕДИЦИНСКИЙ ПОРТАЛ</Text>
               </View>
-
-              <View style={s.divider} />
-
-              <View style={s.body}>
-                <View style={s.photoWrap}>
-                  {doctor.image ? (
-                    <Image src={doctor.image} style={s.photo} />
-                  ) : (
-                    <View style={s.photoPlaceholder} />
-                  )}
-                </View>
-
-                <View style={s.infoCol}>
-                  {specialtyLabel ? (
-                    <View style={s.specialtyPill}>
-                      <Text style={s.specialtyText}>{specialtyLabel}</Text>
-                    </View>
-                  ) : null}
-                  <Text style={s.name}>{displayName}</Text>
-                  {displayWork ? <Text style={s.workplace}>{displayWork}</Text> : null}
-
-                  {showExperience ? (
-                    <View style={s.expRow}>
-                      <View style={s.expLine} />
-                      <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
-                    </View>
-                  ) : null}
-
-                  {phoneDisplay ? (
-                    <View style={s.phoneRow}>
-                      <View style={s.phonePulse} />
-                      <Text style={s.phoneText}>{phoneDisplay}</Text>
-                    </View>
-                  ) : null}
-
-                  {(ig || tg || wa) ? (
-                    <View style={s.socialsCol}>
-                      {ig ? (
-                        <View style={s.socialRow}>
-                          <Image src={ICON_IG} style={s.socialIcon} />
-                          <Text style={s.socialHandle}>{ig}</Text>
-                        </View>
-                      ) : null}
-                      {tg ? (
-                        <View style={s.socialRow}>
-                          <Image src={ICON_TG} style={s.socialIcon} />
-                          <Text style={s.socialHandle}>{tg}</Text>
-                        </View>
-                      ) : null}
-                      {wa ? (
-                        <View style={s.socialRow}>
-                          <Image src={ICON_WA} style={s.socialIcon} />
-                          <Text style={s.socialHandle}>{wa}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={s.divider} />
-
-              <View style={s.footer}>
-                <View style={s.statsRow}>
-                  {(doctor.articlesCount || 0) > 0 ? (
-                    <View style={s.statItem}>
-                      <Text style={s.statNum}>{doctor.articlesCount}</Text>
-                      <Text style={s.statLabel}> {__('articles')}</Text>
-                    </View>
-                  ) : null}
-                  {(doctor.languages?.length || 0) > 0 ? (
-                    <View style={s.statItem}>
-                      <Text style={s.statNum}>{doctor.languages.length}</Text>
-                      <Text style={s.statLabel}> {__('languages')}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                <Text style={s.footerUrl}>{profileUrl}</Text>
+              <View style={s.verifiedPill}>
+                <View style={s.verifiedDot} />
+                <Text style={s.verifiedText}>{__('verified')}</Text>
               </View>
             </View>
 
-            {/* QR абсолютно в правом нижнем углу */}
+            <View style={s.divider} />
+
+            {/* Тело */}
+            <View style={s.body}>
+              <View style={s.photoWrap}>
+                {doctor.image ? (
+                  <Image src={doctor.image} style={s.photo} />
+                ) : (
+                  <View style={s.photoPlaceholder} />
+                )}
+              </View>
+
+              <View style={s.infoCol}>
+                {specialtyLabel ? (
+                  <View style={s.specialtyPill}>
+                    <Text style={s.specialtyText}>{specialtyLabel}</Text>
+                  </View>
+                ) : null}
+                <Text style={s.name}>{displayName}</Text>
+                {displayWork ? <Text style={s.workplace}>{displayWork}</Text> : null}
+
+                {showExperience ? (
+                  <View style={s.expRow}>
+                    <View style={s.expLine} />
+                    <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
+                  </View>
+                ) : null}
+
+                {phoneDisplay ? (
+                  <View style={s.phoneRow}>
+                    <View style={s.phonePulse} />
+                    <Text style={s.phoneText}>{phoneDisplay}</Text>
+                  </View>
+                ) : null}
+
+                {(ig || tg || wa) ? (
+                  <View style={s.socialsCol}>
+                    {ig ? (
+                      <View style={s.socialRow}>
+                        <Image src={ICON_IG} style={s.socialIcon} />
+                        <Text style={s.socialHandle}>{ig}</Text>
+                      </View>
+                    ) : null}
+                    {tg ? (
+                      <View style={s.socialRow}>
+                        <Image src={ICON_TG} style={s.socialIcon} />
+                        <Text style={s.socialHandle}>{tg}</Text>
+                      </View>
+                    ) : null}
+                    {wa ? (
+                      <View style={s.socialRow}>
+                        <Image src={ICON_WA} style={s.socialIcon} />
+                        <Text style={s.socialHandle}>{wa}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={s.divider} />
+
+            {/* Footer */}
+            <View style={s.footer}>
+              <View style={s.statsRow}>
+                {(doctor.articlesCount || 0) > 0 ? (
+                  <View style={s.statItem}>
+                    <Text style={s.statNum}>{doctor.articlesCount}</Text>
+                    <Text style={s.statLabel}> {__('articles')}</Text>
+                  </View>
+                ) : null}
+                {(doctor.languages?.length || 0) > 0 ? (
+                  <View style={s.statItem}>
+                    <Text style={s.statNum}>{doctor.languages.length}</Text>
+                    <Text style={s.statLabel}> {__('languages')}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={s.footerUrl}>{profileUrl}</Text>
+            </View>
+
+            {/* QR абсолютно */}
             <View style={s.qrAbs}>
               <View style={s.qrWrap}>
                 <Image src={qrUrlFront} style={s.qrImg} />
@@ -428,6 +454,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           {/* ── Задняя сторона ── */}
           <Page size={[W, H]} style={s.backPage}>
             <View style={s.accentBar} />
+
             <View style={s.backInner}>
               <View style={s.backHeader}>
                 <View style={s.backNameCol}>
@@ -478,7 +505,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
               </View>
             </View>
 
-            {/* Footer задней стороны вынесен наружу */}
+            {/* Footer задней стороны (вне backInner) */}
             <View style={s.backFooterContainer}>
               <View style={s.backFooterLeft}>
                 <Text style={s.backFooterLabel}>{__('articlesLabel')}</Text>
