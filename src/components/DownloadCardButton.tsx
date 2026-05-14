@@ -15,11 +15,15 @@ const btnText: Record<string, string> = {
   ky: 'Визитка жүктөө',
 };
 
-// 90x50 мм (в пунктах)
+// иконки соцсетей (Cloudinary)
+const ICON_IG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/instagram_1_iqjqbu.png';
+const ICON_TG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719654/telegram_gtzapm.png';
+const ICON_WA = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/whatsapp_x8ilnv.png';
+
+// 90x50мм
 const W = 255.12;
 const H = 141.73;
-const BAR_H = 2; // высота акцентной полосы
-const PADDING_V = 7; // вертикальный внутренний отступ
+const BAR_H = 2;
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -57,7 +61,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       const textSecondary = theme === 'dark' ? '#86868b' : '#6e6e73';
       const textTertiary = theme === 'dark' ? '#48484a' : '#aeaeb2';
 
-      // Утилиты
       const t = (field: any) => {
         if (!field) return '';
         if (typeof field === 'string') return field;
@@ -77,7 +80,8 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           const m = url.match(/t(?:elegram)?\.me\/([^/?]+)/);
           return m ? `@${m[1]}` : url;
         }
-        return url.replace('https://wa.me/', '+');
+        // Исправляем двойной плюс
+        return url.replace('https://wa.me/', '+').replace(/^\++/, '+');
       };
 
       const specialtyLabel = truncate(t(doctor.specialty) || t(doctor.specialization) || '', 40);
@@ -111,27 +115,26 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       };
       const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
 
-      // Основные стили
       const s = StyleSheet.create({
-        // ─── ОБЩЕЕ ───────────────────────────────────────
+        // ─── ОБЩИЕ СТРАНИЦЫ ────────────────────────────────
         page: {
           width: W,
           height: H,
           backgroundColor: bg,
           fontFamily: 'NotoSans',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
         },
         inner: {
-          height: H - BAR_H * 2 - PADDING_V * 2, // точная высота, чтобы не выходить за границы
+          flex: 1,
           paddingHorizontal: 10,
-          paddingVertical: PADDING_V,
-          flexDirection: 'column',
+          paddingVertical: 7,
         },
-
-        // ─── ПОЛОСКИ ─────────────────────────────────────
+        // полоски
         accentBar: { height: BAR_H, backgroundColor: accent },
 
-        // ─── ШАПКА ───────────────────────────────────────
+        // ─── ПЕРЕДНЯЯ СТОРОНА ─────────────────────────────
         header: {
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -150,18 +153,12 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         verifiedDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#34c759' },
         verifiedText: { fontSize: 6, fontWeight: 700, color: '#34c759', fontFamily: 'NotoSans' },
 
-        // ─── ТЕЛО ────────────────────────────────────────
         body: { flexDirection: 'row', flex: 1, gap: 9 },
 
-        // Фото
-        photoWrap: { flexDirection: 'column', alignItems: 'center', paddingTop: 1 },
+        photoWrap: { flexDirection: 'column', alignItems: 'center', paddingTop: 0, marginTop: -2 },
         photo: { width: 46, height: 46, borderRadius: 10, objectFit: 'cover' },
-        photoPlaceholder: {
-          width: 46, height: 46, borderRadius: 10,
-          backgroundColor: surface,
-        },
+        photoPlaceholder: { width: 46, height: 46, borderRadius: 10, backgroundColor: surface },
 
-        // Инфо
         infoCol: { flex: 1, flexDirection: 'column' },
         specialtyPill: {
           alignSelf: 'flex-start',
@@ -175,49 +172,46 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontFamily: 'NotoSans', textTransform: 'uppercase', letterSpacing: 0.5,
         },
         name: {
-          fontSize: 10.5, fontWeight: 900, color: textPrimary, // уменьшено с 13.5
+          fontSize: 10.5, fontWeight: 900, color: textPrimary,
           fontFamily: 'NotoSans', lineHeight: 1.1, marginBottom: 2,
         },
         workplace: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans', marginBottom: 4 },
 
-        // Стаж
         expRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
         expLine: { width: 2, height: 12, borderRadius: 1, backgroundColor: accent },
         expText: { fontSize: 7, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
 
-        // Телефон
         phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
         phonePulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
         phoneText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
 
-        // Соцсети
         socialsCol: { flexDirection: 'column', gap: 3 },
         socialRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-        socialChip: {
-          width: 16, height: 16, borderRadius: 4,
-          // убраны alignItems/justifyContent, позиционирование паддингами
-          paddingTop: 5,
-          paddingLeft: 2,
-        },
-        socialChipText: { fontSize: 6, fontWeight: 700, color: '#ffffff', fontFamily: 'NotoSans' },
+        socialIcon: { width: 14, height: 14, borderRadius: 3 },
         socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
 
-        // QR правая колонка
-        qrCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, width: 50 },
+        // Абсолютное позиционирование QR
+        qrAbs: {
+          position: 'absolute',
+          right: 8,
+          bottom: 14,
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 3,
+        },
         qrWrap: {
-          width: 46, height: 46,
+          width: 44, height: 44,
           borderRadius: 8,
           backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
           padding: 3,
-          alignItems: 'center', justifyContent: 'center',
+          alignItems: 'center',
+          justifyContent: 'center',
         },
-        qrImg: { width: 40, height: 40 },
+        qrImg: { width: 38, height: 38 },
         qrLabel: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans', textAlign: 'center' },
 
-        // Разделитель
         divider: { height: 0.5, backgroundColor: border, marginVertical: 5 },
 
-        // Footer
         footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
         statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
         statItem: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
@@ -231,13 +225,14 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           height: H,
           backgroundColor: bg2,
           fontFamily: 'NotoSans',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
         },
         backInner: {
-          height: H - BAR_H * 2 - PADDING_V * 2, // точная высота
+          flex: 1,
           paddingHorizontal: 10,
-          paddingVertical: PADDING_V,
-          flexDirection: 'column',
+          paddingVertical: 7,
         },
         backHeader: {
           flexDirection: 'row',
@@ -249,10 +244,9 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
         backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
         backLogo: { fontSize: 8, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
-        backBody: { flexDirection: 'row', flex: 1, gap: 10 }, // убран marginTop
+        backBody: { flexDirection: 'row', flex: 1, gap: 10 },
         backLeft: { flex: 1, flexDirection: 'column', gap: 7 },
 
-        // Блок миссии
         missionBox: {
           backgroundColor: surface,
           borderRadius: 8,
@@ -270,7 +264,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontStyle: 'italic',
         },
 
-        // Часы
         infoBlock: { flexDirection: 'column', gap: 2 },
         infoBlockLabel: {
           fontSize: 6, fontWeight: 700, color: textTertiary,
@@ -280,7 +273,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontSize: 7.5, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
         },
 
-        // Языки
         langTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
         langTag: {
           backgroundColor: `${accent}15`,
@@ -289,7 +281,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         },
         langTagText: { fontSize: 6, color: accent, fontWeight: 700, fontFamily: 'NotoSans' },
 
-        // Правый блок задней стороны
         backRight: {
           flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: 5, width: 72,
@@ -307,9 +298,13 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontFamily: 'NotoSans', textAlign: 'center', lineHeight: 1.5,
         },
 
-        // Back footer
-        backFooter: {
-          flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        // Нижний колонтитул задней стороны (вынесен из backInner)
+        backFooterContainer: {
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         },
         backFooterLeft: { flexDirection: 'column', gap: 1 },
         backFooterLabel: {
@@ -323,7 +318,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
       const MyDoc = (
         <Document>
-          {/* Передняя сторона */}
+          {/* ── Передняя сторона ── */}
           <Page size={[W, H]} style={s.page}>
             <View style={s.accentBar} />
             <View style={s.inner}>
@@ -377,37 +372,24 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
                     <View style={s.socialsCol}>
                       {ig ? (
                         <View style={s.socialRow}>
-                          <View style={[s.socialChip, { backgroundColor: '#e1306c' }]}>
-                            <Text style={s.socialChipText}>IG</Text>
-                          </View>
+                          <Image src={ICON_IG} style={s.socialIcon} />
                           <Text style={s.socialHandle}>{ig}</Text>
                         </View>
                       ) : null}
                       {tg ? (
                         <View style={s.socialRow}>
-                          <View style={[s.socialChip, { backgroundColor: '#0088cc' }]}>
-                            <Text style={s.socialChipText}>TG</Text>
-                          </View>
+                          <Image src={ICON_TG} style={s.socialIcon} />
                           <Text style={s.socialHandle}>{tg}</Text>
                         </View>
                       ) : null}
                       {wa ? (
                         <View style={s.socialRow}>
-                          <View style={[s.socialChip, { backgroundColor: '#25d366' }]}>
-                            <Text style={s.socialChipText}>WA</Text>
-                          </View>
+                          <Image src={ICON_WA} style={s.socialIcon} />
                           <Text style={s.socialHandle}>{wa}</Text>
                         </View>
                       ) : null}
                     </View>
                   ) : null}
-                </View>
-
-                <View style={s.qrCol}>
-                  <View style={s.qrWrap}>
-                    <Image src={qrUrlFront} style={s.qrImg} />
-                  </View>
-                  <Text style={s.qrLabel}>{__('myProfile')}</Text>
                 </View>
               </View>
 
@@ -431,10 +413,19 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
                 <Text style={s.footerUrl}>{profileUrl}</Text>
               </View>
             </View>
+
+            {/* QR абсолютно в правом нижнем углу */}
+            <View style={s.qrAbs}>
+              <View style={s.qrWrap}>
+                <Image src={qrUrlFront} style={s.qrImg} />
+              </View>
+              <Text style={s.qrLabel}>{__('myProfile')}</Text>
+            </View>
+
             <View style={s.accentBar} />
           </Page>
 
-          {/* Задняя сторона */}
+          {/* ── Задняя сторона ── */}
           <Page size={[W, H]} style={s.backPage}>
             <View style={s.accentBar} />
             <View style={s.backInner}>
@@ -485,17 +476,17 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
                   <Text style={s.bigQrLabel}>{__('scan')}</Text>
                 </View>
               </View>
-
-              <View style={s.divider} />
-
-              <View style={s.backFooter}>
-                <View style={s.backFooterLeft}>
-                  <Text style={s.backFooterLabel}>{__('articlesLabel')}</Text>
-                  <Text style={s.backFooterText}>{__('allByQr')}</Text>
-                </View>
-                <Text style={s.footerUrl}>{profileUrl}</Text>
-              </View>
             </View>
+
+            {/* Footer задней стороны вынесен наружу */}
+            <View style={s.backFooterContainer}>
+              <View style={s.backFooterLeft}>
+                <Text style={s.backFooterLabel}>{__('articlesLabel')}</Text>
+                <Text style={s.backFooterText}>{__('allByQr')}</Text>
+              </View>
+              <Text style={s.footerUrl}>{profileUrl}</Text>
+            </View>
+
             <View style={s.accentBar} />
           </Page>
         </Document>
