@@ -1,4 +1,3 @@
-
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -13,6 +12,7 @@ import MobileStickyShare from '@/components/MobileStickyShare';
 import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
+import PremiumMobileProfile from './_components/PremiumMobileProfile';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -31,9 +31,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-
-
-// ── Вспомогательные функции ──
 function getReadingTime(article: any): number {
   const text =
     Object.values(article.overview || {}).join(' ') +
@@ -56,7 +53,6 @@ function getMission(specialty: string): string {
   return missions[specialty.toLowerCase()] || 'Помогаю пациентам достичь лучшего здоровья и качества жизни';
 }
 
-// ── Страница ──
 export default async function DoctorProfilePage({ params }: Props) {
   await dbConnect();
   const { lang, id } = await params;
@@ -92,7 +88,6 @@ export default async function DoctorProfilePage({ params }: Props) {
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
   const mission = t(doctor.mission) || getMission(specialtyLabel);
 
-  // Определяем ключ категории для градиента
   let categoryKey = 'general';
   for (const [key, labels] of Object.entries(CATEGORY_LABELS)) {
     if (labels[lang] === specialtyLabel || labels.ru === specialtyLabel) {
@@ -101,7 +96,6 @@ export default async function DoctorProfilePage({ params }: Props) {
     }
   }
 
-  // JSON‑LD
   const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': ['Person', 'MedicalBusiness'],
@@ -133,48 +127,36 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans">
-      {/* JSON‑LD */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {/* Стили печати */}
       <style>{`
         @media print {
           header, .share-area, .no-print { display: none !important; }
           body { background: white !important; }
-          .print-only { display: block !important; }
         }
-        .print-only { display: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { scrollbar-width: none; }
       `}</style>
 
-      {/* ===== HEADER С ХЛЕБНЫМИ КРОШКАМИ ===== */}
+      {/* HEADER */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 no-print">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Логотип */}
-          <Link
-            href={`/${lang}`}
-            className="text-lg font-black tracking-tight text-blue-600 shrink-0"
-          >
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
+          <Link href={`/${lang}`} className="text-base md:text-lg font-black tracking-tight text-blue-600 shrink-0">
             duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
 
-          {/* Хлебные крошки */}
           <nav className="hidden sm:flex items-center text-xs text-gray-400 gap-1.5 overflow-hidden">
-            <Link href={`/${lang}`} className="hover:text-gray-600 transition">
-              Главная
-            </Link>
+            <Link href={`/${lang}`} className="hover:text-gray-600 transition">Главная</Link>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
-            <Link href={`/${lang}/authors`} className="hover:text-gray-600 transition">
-              Врачи
-            </Link>
+            <Link href={`/${lang}/authors`} className="hover:text-gray-600 transition">Врачи</Link>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
             <span className="text-gray-600 font-medium truncate">{doctor.name}</span>
           </nav>
 
-          {/* Кнопка "Все врачи" */}
           <Link
             href={`/${lang}/authors`}
             className="text-sm text-gray-400 hover:text-gray-700 transition font-medium flex items-center gap-1.5 shrink-0"
@@ -187,21 +169,24 @@ export default async function DoctorProfilePage({ params }: Props) {
         </div>
       </header>
 
-      {/* ===== HERO ===== */}
-      <DoctorHero
-        doctor={doctor}
-        specialtyLabel={specialtyLabel}
-        mission={mission}
-        totalViews={totalViews}
-        articlesCount={articles.length}
-        categoryKey={categoryKey}
-      />
+      {/* HERO — только на десктопе */}
+      <div className="hidden md:block">
+        <DoctorHero
+          doctor={doctor}
+          specialtyLabel={specialtyLabel}
+          mission={mission}
+          totalViews={totalViews}
+          articlesCount={articles.length}
+          categoryKey={categoryKey}
+        />
+      </div>
 
-      {/* ===== ОСНОВНОЙ КОНТЕНТ ===== */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 pb-28 lg:pb-10">
-        {/* ─── НА МОБИЛЕ: профиль врача ПЕРВЫЙ ─── */}
+      {/* ОСНОВНОЙ КОНТЕНТ */}
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-10 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 pb-32 lg:pb-10">
+
+        {/* ─── МОБИЛЬ: Премиум профиль ПЕРВЫМ ─── */}
         <div className="lg:hidden col-span-1">
-          <MobileProfileCard
+          <PremiumMobileProfile
             doctor={doctor}
             specialtyLabel={specialtyLabel}
             lastMedicalReviewDate={lastMedicalReviewDate}
@@ -210,6 +195,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             doctorUrl={doctorUrl}
           />
         </div>
+
         {/* Статьи */}
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <div className="flex items-center justify-between">
@@ -227,12 +213,8 @@ export default async function DoctorProfilePage({ params }: Props) {
             <div className="bg-white rounded-2xl p-16 text-center border border-gray-100 shadow-sm">
               <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"
+                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <p className="font-bold text-gray-700 mb-1 text-lg">Материалы готовятся</p>
@@ -243,8 +225,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               {articles.map((article, idx) => {
                 const catLabel =
                   CATEGORY_LABELS[article.category]?.[lang] ||
-                  CATEGORY_LABELS[article.category]?.ru ||
-                  '';
+                  CATEGORY_LABELS[article.category]?.ru || '';
                 const catColor = CATEGORY_COLORS[article.category] || CATEGORY_COLORS.general;
                 const readingTime = getReadingTime(article);
                 return (
@@ -254,116 +235,58 @@ export default async function DoctorProfilePage({ params }: Props) {
                     className="group flex bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                   >
                     {/* Картинка */}
-                    <div className="w-32 md:w-44 shrink-0 overflow-hidden relative">
+                    <div className="w-28 md:w-44 shrink-0 overflow-hidden relative">
                       <img
-                        src={
-                          article.image ||
-                          'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'
-                        }
+                        src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                         alt={t(article.title)}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
                       />
-                      <div className="absolute top-3 left-3 w-7 h-7 bg-black/40 backdrop-blur-sm text-white text-xs font-black rounded-lg flex items-center justify-center">
+                      <div className="absolute top-2 left-2 w-6 h-6 bg-black/40 backdrop-blur-sm text-white text-xs font-black rounded-lg flex items-center justify-center">
                         {idx + 1}
                       </div>
                     </div>
                     {/* Текст */}
-                    <div className="p-5 flex flex-col justify-between flex-1 min-w-0">
+                    <div className="p-4 flex flex-col justify-between flex-1 min-w-0">
                       <div>
-                        <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {catLabel && (
-                            <span
-                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${catColor}`}
-                            >
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${catColor}`}>
                               {catLabel}
                             </span>
                           )}
                           <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path
-                                fillRule="evenodd"
-                                d="M6.267 3.455..."
-                                clipRule="evenodd"
-                              />
+                              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            Проверено врачом
+                            Проверено
                           </span>
                         </div>
-                        <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 text-[15px]">
+                        <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 text-[14px]">
                           {t(article.title)}
                         </h3>
-                        <p className="text-sm text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
+                        <p className="text-sm text-gray-400 mt-1 line-clamp-1 leading-relaxed hidden md:block">
                           {t(article.overview)}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-50">
+                        <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400">
                             {new Date(article.createdAt).toLocaleDateString('ru', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
+                              day: 'numeric', month: 'short', year: 'numeric',
                             })}
                           </span>
-                          <span className="text-gray-200">·</span>
-                          <span className="text-xs text-gray-400 flex items-center gap-1">
-                            <svg
-                              className="w-3.5 h-3.5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
+                          <span className="text-gray-200 hidden md:inline">·</span>
+                          <span className="text-xs text-gray-400 hidden md:flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             {readingTime} мин
                           </span>
-                          {article.views > 0 && (
-                            <>
-                              <span className="text-gray-200">·</span>
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <svg
-                                  className="w-3.5 h-3.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                  />
-                                </svg>
-                                {article.views}
-                              </span>
-                            </>
-                          )}
                         </div>
                         <span className="text-blue-500 text-xs font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
                           Читать
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2.5"
-                              d="M9 5l7 7-7 7"
-                            />
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                           </svg>
                         </span>
                       </div>
@@ -375,7 +298,7 @@ export default async function DoctorProfilePage({ params }: Props) {
           )}
         </div>
 
-        {/* ===== САЙДБАР ===== */}
+        {/* ===== ДЕСКТОП САЙДБАР ===== */}
         <div className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24 space-y-4 pb-6">
             {/* Профиль врача */}
@@ -393,62 +316,26 @@ export default async function DoctorProfilePage({ params }: Props) {
               <div className="p-5 space-y-4">
                 {doctor.experience > 0 && (
                   <SidebarRow
-                    icon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    }
-                    label="Стаж"
-                    value={`${doctor.experience} лет`}
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                    label="Стаж" value={`${doctor.experience} лет`}
                   />
                 )}
                 {doctor.workplace && (
                   <SidebarRow
-                    icon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                        />
-                      </svg>
-                    }
-                    label="Место работы"
-                    value={doctor.workplace}
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
+                    label="Место работы" value={doctor.workplace}
                   />
                 )}
                 {doctor.education && (
                   <SidebarRow
-                    icon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                      </svg>
-                    }
-                    label="Образование"
-                    value={doctor.education}
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>}
+                    label="Образование" value={doctor.education}
                   />
                 )}
                 {doctor.languages?.length > 0 && (
                   <SidebarRow
-                    icon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-                        />
-                      </svg>
-                    }
-                    label="Языки"
-                    value={doctor.languages.join(', ')}
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>}
+                    label="Языки" value={doctor.languages.join(', ')}
                   />
                 )}
               </div>
@@ -456,10 +343,8 @@ export default async function DoctorProfilePage({ params }: Props) {
               {doctor.bio && (
                 <div className="px-5 pb-5 pt-0">
                   <div className="border-t border-gray-50 pt-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-2">
-                      О враче
-                    </p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{doctor.bio}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-2">О враче</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.ru || doctor.bio?.[lang] || '')}</p>
                   </div>
                 </div>
               )}
@@ -467,18 +352,11 @@ export default async function DoctorProfilePage({ params }: Props) {
               {doctor.sameAs?.length > 0 && (
                 <div className="px-5 pb-5">
                   <div className="border-t border-gray-50 pt-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">
-                      Профили
-                    </p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">Профили</p>
                     <div className="flex gap-2 flex-wrap">
                       {doctor.sameAs.map((link: string, i: number) => (
-                        <a
-                          key={i}
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition px-3 py-1.5 rounded-lg font-medium truncate max-w-full"
-                        >
+                        <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition px-3 py-1.5 rounded-lg font-medium truncate max-w-full">
                           {new URL(link).hostname.replace('www.', '')}
                         </a>
                       ))}
@@ -488,29 +366,23 @@ export default async function DoctorProfilePage({ params }: Props) {
               )}
             </div>
 
-            {/* Блок доверия */}
             <TrustBadges
               lastMedicalReviewDate={lastMedicalReviewDate}
               lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
             />
 
-          
-{/* Единый блок «Поделиться» + PDF */}
             <ContactDoctorButton doctor={doctor} lang={lang} />
-<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-0">
-    Поделиться профилем
-  </h3>
-  <ShareButtons
-    url={doctorUrl}
-    title={`${doctor.name} — ${specialtyLabel}`}
-    lang={lang}
-  />
-<DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
-</div>
-</div>
-</div>
-</div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
+                Поделиться профилем
+              </h3>
+              <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} lang={lang} />
+              <DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Мобильная sticky-панель */}
       <MobileStickyShare
@@ -523,116 +395,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   );
 }
 
-// ── Мобильная карточка профиля (компактная, выше статей) ──
-function MobileProfileCard({
-  doctor,
-  specialtyLabel,
-  lastMedicalReviewDate,
-  articles,
-  lang,
-  doctorUrl,
-}: {
-  doctor: any;
-  specialtyLabel: string;
-  lastMedicalReviewDate: string | null;
-  articles: any[];
-  lang: string;
-  doctorUrl: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-      {/* Шапка */}
-      <div className="bg-gradient-to-r from-[#0a1628] to-[#0f2a52] px-4 py-3.5 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
-          <img
-            src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-            alt={doctor.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-white font-black text-sm truncate leading-tight">{doctor.name}</p>
-          <p className="text-blue-300/70 text-[11px] truncate">{specialtyLabel}</p>
-        </div>
-        {/* Верификация */}
-        <div className="flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/25 rounded-full px-2 py-1 shrink-0">
-          <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span className="text-emerald-400 text-[10px] font-bold">Верифицирован</span>
-        </div>
-      </div>
-
-      {/* Детали в одну строку через скролл */}
-      <div className="px-4 py-3 flex gap-4 overflow-x-auto scrollbar-none border-b border-gray-50">
-        {doctor.experience > 0 && (
-          <div className="shrink-0 text-center">
-            <p className="text-base font-black text-gray-900 leading-none">{doctor.experience}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">лет опыта</p>
-          </div>
-        )}
-        {doctor.experience > 0 && <div className="w-px bg-gray-100 shrink-0" />}
-        {articles.length > 0 && (
-          <div className="shrink-0 text-center">
-            <p className="text-base font-black text-gray-900 leading-none">{articles.length}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">публикаций</p>
-          </div>
-        )}
-        {articles.length > 0 && doctor.workplace && <div className="w-px bg-gray-100 shrink-0" />}
-        {doctor.workplace && (
-          <div className="shrink-0 max-w-[140px]">
-            <p className="text-[11px] font-bold text-gray-800 leading-tight line-clamp-2">{doctor.workplace}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">место работы</p>
-          </div>
-        )}
-        {doctor.languages?.length > 0 && (
-          <>
-            <div className="w-px bg-gray-100 shrink-0" />
-            <div className="shrink-0">
-              <p className="text-[11px] font-bold text-gray-800">{doctor.languages.join(' · ')}</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">языки приёма</p>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Верификационные бейджи */}
-      <div className="px-4 py-3 flex gap-2">
-        <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 flex-1">
-          <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-          <div>
-            <p className="text-[10px] font-black text-emerald-700 leading-none">Верифицированный автор</p>
-            <p className="text-[9px] text-emerald-500 mt-0.5">Диплом подтверждён</p>
-          </div>
-        </div>
-        {lastMedicalReviewDate && (
-          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex-1">
-            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <div>
-              <p className="text-[10px] font-black text-blue-700 leading-none">Последняя проверка</p>
-              <p className="text-[9px] text-blue-500 mt-0.5">{lastMedicalReviewDate}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Вспомогательный компонент строки сайдбара ──
-function SidebarRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function SidebarRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-3">
       <span className="text-gray-400 shrink-0 mt-0.5">{icon}</span>
