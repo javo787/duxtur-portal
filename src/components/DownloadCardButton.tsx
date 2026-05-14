@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,23 +15,12 @@ const btnText: Record<string, string> = {
   ky: 'Визитка жүктөө',
 };
 
-// иконки соцсетей (Cloudinary)
 const ICON_IG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/instagram_1_iqjqbu.png';
 const ICON_TG = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719654/telegram_gtzapm.png';
 const ICON_WA = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/whatsapp_x8ilnv.png';
 
-// 90x50 мм (в поинтах)
 const W = 255.12;
 const H = 141.73;
-const BAR_H = 2;          // высота акцентных полос
-const HEADER_H = 22;      // высота шапки передней стороны
-const DIVIDER_H = 10.5;   // разделитель с marginVertical 5 + высота 0.5
-const FOOTER_H = 16;      // высота нижнего колонтитула
-const BODY_H = H - BAR_H * 2 - HEADER_H - DIVIDER_H * 2 - FOOTER_H; // ≈78.73
-
-// Задняя сторона
-const BACK_HEADER_H = 36;
-const BACK_BODY_H = H - BAR_H * 2 - BACK_HEADER_H - DIVIDER_H - FOOTER_H; // ≈75.23
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -61,25 +49,23 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
       const accent = doctor.accentColor || '#2563eb';
       const theme = doctor.cardTheme || 'dark';
-
-      const bg = theme === 'dark' ? '#000000' : '#ffffff';
-      const bg2 = theme === 'dark' ? '#0a0a0a' : '#fafafa';
-      const surface = theme === 'dark' ? '#111111' : '#f5f5f7';
-      const border = theme === 'dark' ? '#1d1d1f' : '#e8e8ed';
-      const textPrimary = theme === 'dark' ? '#f5f5f7' : '#1d1d1f';
-      const textSecondary = theme === 'dark' ? '#86868b' : '#6e6e73';
-      const textTertiary = theme === 'dark' ? '#48484a' : '#aeaeb2';
+      const bg          = theme === 'dark' ? '#000000' : '#ffffff';
+      const bg2         = theme === 'dark' ? '#0c0c0c' : '#f9f9f9';
+      const surface     = theme === 'dark' ? '#141414' : '#f0f0f0';
+      const border      = theme === 'dark' ? '#222222' : '#e5e5e5';
+      const textPrimary    = theme === 'dark' ? '#f0f0f0' : '#111111';
+      const textSecondary  = theme === 'dark' ? '#888888' : '#666666';
+      const textTertiary   = theme === 'dark' ? '#444444' : '#bbbbbb';
 
       const t = (field: any) => {
         if (!field) return '';
         if (typeof field === 'string') return field;
         return field[lang] || field['ru'] || '';
       };
-
       const truncate = (str: string, max: number) =>
         str && str.length > max ? str.slice(0, max) + '…' : str || '';
 
-      const getSocialHandle = (url: string, type: 'instagram' | 'telegram' | 'whatsapp') => {
+      const getSocial = (url: string, type: 'instagram' | 'telegram' | 'whatsapp') => {
         if (!url) return null;
         if (type === 'instagram') {
           const m = url.match(/instagram\.com\/([^/?]+)/);
@@ -89,449 +75,436 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           const m = url.match(/t(?:elegram)?\.me\/([^/?]+)/);
           return m ? `@${m[1]}` : url;
         }
-        // Исправляем двойной плюс
-        return url.replace('https://wa.me/', '+').replace(/^\++/, '+');
+        return url.replace('https://wa.me/', '').replace(/^\+?/, '+');
       };
 
-      const specialtyLabel = truncate(t(doctor.specialty) || t(doctor.specialization) || '', 40);
-      const displayName = truncate(doctor.name || '', 30);
-      const displayWork = truncate(doctor.workplace || '', 50);
-      const rawBio = typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.[lang] || doctor.bio?.ru || '');
-      const bioText = truncate(rawBio, 140);
-      const showExperience = (doctor.experience || 0) >= 3;
-
-      const ig = doctor.instagram ? getSocialHandle(doctor.instagram, 'instagram') : null;
-      const tg = doctor.telegram ? getSocialHandle(doctor.telegram, 'telegram') : null;
-      const wa = doctor.whatsapp ? getSocialHandle(doctor.whatsapp, 'whatsapp') : null;
-
-      const phoneDisplay = doctor.phone
-        ? (doctor.phone.startsWith('+') ? doctor.phone : `+${doctor.phone}`)
-        : null;
-
+      const displayName    = truncate(t(doctor.name) || doctor.name || '', 28);
+      const specialty      = truncate(t(doctor.specialty) || t(doctor.specialization) || '', 36);
+      const rawBio         = typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.[lang] || doctor.bio?.ru || '');
+      const missionShort   = truncate(rawBio, 65);
+      const missionFull    = truncate(rawBio, 160);
+      const phoneDisplay   = doctor.phone ? (doctor.phone.startsWith('+') ? doctor.phone : `+${doctor.phone}`) : null;
+      const ig = doctor.instagram ? getSocial(doctor.instagram, 'instagram') : null;
+      const tg = doctor.telegram  ? getSocial(doctor.telegram,  'telegram')  : null;
+      const wa = doctor.whatsapp  ? getSocial(doctor.whatsapp,  'whatsapp')  : null;
       const profileUrl = `duxtur.org/${lang}/doctor/${doctorSlug}`;
 
-      const qrBgColor = theme === 'dark' ? '000000' : 'ffffff';
-      const qrFgColor = theme === 'dark' ? 'f5f5f7' : '1d1d1f';
-      const qrUrlFront = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBgColor}&color=${qrFgColor}&margin=6`;
-      const qrUrlBack = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0a0a0a' : 'fafafa'}&color=${qrFgColor}&margin=8`;
+      const qrColor = theme === 'dark' ? 'f0f0f0' : '111111';
+      const qrBg    = theme === 'dark' ? '000000' : 'ffffff';
+      const qrFront = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBg}&color=${qrColor}&margin=4`;
+      const qrBack  = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0c0c0c' : 'f9f9f9'}&color=${qrColor}&margin=6`;
 
       const dict: Record<string, any> = {
-        ru: { verified: 'Верифицированный врач', years: 'лет практики', articles: 'статей', languages: 'языков', mission: 'МОЯ МИССИЯ', scan: 'Сканируйте для\nполного профиля', myProfile: 'МОЙ ПРОФИЛЬ', reception: 'ЧАСЫ ПРИЁМА', langLabel: 'ЯЗЫКИ ПРИЁМА', articlesLabel: 'МОИ СТАТЬИ', allByQr: 'Все материалы доступны по QR' },
-        uz: { verified: 'Tasdiqlangan shifokor', years: 'yil tajriba', articles: 'maqola', languages: 'til', mission: 'MENING MAQSADIM', scan: 'To\'liq profil uchun\nskanlang', myProfile: 'MENING PROFILIM', reception: 'QABUL VAQTI', langLabel: 'TILLAR', articlesLabel: 'MAQOLALARIM', allByQr: 'Barcha materiallar QR orqali' },
-        tg: { verified: 'Шифокори тасдикшуда', years: 'соли таҷриба', articles: 'мақола', languages: 'забон', mission: 'МАҚСАДИ МАН', scan: 'Барои профил\nQR скан кунед', myProfile: 'ПРОФИЛИ МАН', reception: 'СОАТҲОИ ҚАБУЛ', langLabel: 'ЗАБОНҲО', articlesLabel: 'МАҚОЛАҲОЯМ', allByQr: 'Ҳама маводҳо тавассути QR' },
-        kk: { verified: 'Тексерілген дәрігер', years: 'жыл тәжірибе', articles: 'мақала', languages: 'тіл', mission: 'МЕНІҢ МАҚСАТЫМ', scan: 'Толық профиль үшін\nQR сканерлеңіз', myProfile: 'МЕНІҢ ПРОФИЛІМ', reception: 'ҚАБЫЛДАУ УАҚЫТЫ', langLabel: 'ТІЛДЕР', articlesLabel: 'МАҚАЛАЛАРЫМ', allByQr: 'Барлық материалдар QR арқылы' },
-        ky: { verified: 'Текшерилген дарыгер', years: 'жыл тажрыйба', articles: 'макала', languages: 'тил', mission: 'МЕНИН МАКСАТЫМ', scan: 'Толук профиль үчүн\nQR сканерлеңиз', myProfile: 'МЕНИН ПРОФИЛИМ', reception: 'КАБЫЛ АЛУУ', langLabel: 'ТИЛДЕР', articlesLabel: 'МАКАЛАЛАРЫМ', allByQr: 'Бардык материалдар QR аркылуу' },
+        ru: { verified: 'Верифицирован', years: 'лет', scan: 'МОЙ ПРОФИЛЬ', reception: 'ЧАСЫ ПРИЁМА', langLabel: 'ЯЗЫКИ', mission: 'МОЯ МИССИЯ', contacts: 'КОНТАКТЫ', allByQr: 'Все статьи по QR-коду' },
+        uz: { verified: 'Tasdiqlangan', years: 'yil', scan: 'MENING PROFILIM', reception: 'QABUL VAQTI', langLabel: 'TILLAR', mission: 'MAQSADIM', contacts: 'KONTAKTLAR', allByQr: 'Barcha maqolalar QR orqali' },
+        tg: { verified: 'Тасдикшуда', years: 'сол', scan: 'ПРОФИЛИ МАН', reception: 'СОАТҲОИ ҚАБУЛ', langLabel: 'ЗАБОНҲО', mission: 'МАҚСАДИ МАН', contacts: 'ТАМОС', allByQr: 'Ҳама мақолаҳо тавассути QR' },
+        kk: { verified: 'Тексерілген', years: 'жыл', scan: 'МЕНІҢ ПРОФИЛІМ', reception: 'ҚАБЫЛДАУ', langLabel: 'ТІЛДЕР', mission: 'МЕНІҢ МАҚСАТЫМ', contacts: 'БАЙЛАНЫС', allByQr: 'Барлық мақалалар QR арқылы' },
+        ky: { verified: 'Текшерилген', years: 'жыл', scan: 'МЕНИН ПРОФИЛИМ', reception: 'КАБЫЛ АЛУУ', langLabel: 'ТИЛДЕР', mission: 'МЕНИН МАКСАТЫМ', contacts: 'БАЙЛАНЫШ', allByQr: 'Бардык макалалар QR аркылуу' },
       };
-      const __ = (key: string) => dict[lang]?.[key] || dict.ru[key];
+      const __ = (k: string) => dict[lang]?.[k] || dict.ru[k];
 
-      // Стили с фиксированными высотами
       const s = StyleSheet.create({
-        // ─── ОБЩИЕ СТРАНИЦЫ ────────────────────────────────
+        // ══ ПЕРЕДНЯЯ ══════════════════════════════════════
         page: {
-          width: W,
-          height: H,
+          width: W, height: H,
           backgroundColor: bg,
           fontFamily: 'NotoSans',
           flexDirection: 'column',
-          overflow: 'hidden',
         },
-        accentBar: { height: BAR_H, backgroundColor: accent },
+        bar: { height: 2.5, backgroundColor: accent },
 
-        // Передняя сторона
-        header: {
-          height: HEADER_H,
+        // Шапка — 1 строка
+        topRow: {
+          height: 20,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingHorizontal: 10,
+          paddingHorizontal: 12,
         },
-        body: {
-          height: BODY_H,
-          flexDirection: 'row',
-          gap: 9,
-          paddingHorizontal: 10,
-          overflow: 'hidden',
-        },
-        footer: {
-          height: FOOTER_H,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingHorizontal: 10,
-        },
-        divider: {
-          height: 0.5,
-          backgroundColor: border,
-          marginVertical: 5,
-        },
-
-        // ─── ЭЛЕМЕНТЫ ПЕРЕДНЕЙ СТОРОНЫ ────────────────────
-        logoRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-        logoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
-        logoText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans', letterSpacing: 0.3 },
+        logoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+        logoDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: accent },
+        logoText: { fontSize: 8.5, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
         logoSub: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans' },
-        verifiedPill: {
+        verBadge: {
           flexDirection: 'row', alignItems: 'center', gap: 3,
-          backgroundColor: 'rgba(52,199,89,0.1)',
-          borderRadius: 20, paddingHorizontal: 6, paddingVertical: 2,
+          backgroundColor: 'rgba(52,199,89,0.12)',
+          borderRadius: 20, paddingHorizontal: 7, paddingVertical: 2.5,
         },
-        verifiedDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#34c759' },
-        verifiedText: { fontSize: 6, fontWeight: 700, color: '#34c759', fontFamily: 'NotoSans' },
+        verDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#34c759' },
+        verText: { fontSize: 6, fontWeight: 700, color: '#34c759', fontFamily: 'NotoSans' },
 
-        photoWrap: {
+        divLine: { height: 0.5, backgroundColor: border, marginHorizontal: 12 },
+
+        // Центральный блок
+        centerRow: {
+          flex: 1,
+          flexDirection: 'row',
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          gap: 12,
+        },
+
+        // Фото
+        photo: {
+          width: 52, height: 52,
+          borderRadius: 10,
+          objectFit: 'cover',
+        },
+        photoPlaceholder: {
+          width: 52, height: 52,
+          borderRadius: 10,
+          backgroundColor: surface,
+        },
+
+        // Инфо — середина
+        infoCol: {
+          flex: 1,
           flexDirection: 'column',
-          alignItems: 'center',
-          paddingTop: 0,
-          marginTop: -2,
+          justifyContent: 'center',
+          gap: 3,
         },
-        photo: { width: 46, height: 46, borderRadius: 10, objectFit: 'cover' },
-        photoPlaceholder: { width: 46, height: 46, borderRadius: 10, backgroundColor: surface },
-
-        infoCol: { flex: 1, flexDirection: 'column' },
-        specialtyPill: {
+        specialtyBadge: {
           alignSelf: 'flex-start',
-          backgroundColor: `${accent}18`,
+          backgroundColor: `${accent}20`,
           borderRadius: 20,
-          paddingHorizontal: 6, paddingVertical: 2,
-          marginBottom: 3,
+          paddingHorizontal: 7, paddingVertical: 2,
         },
         specialtyText: {
           fontSize: 6, fontWeight: 700, color: accent,
-          fontFamily: 'NotoSans', textTransform: 'uppercase', letterSpacing: 0.5,
+          fontFamily: 'NotoSans', textTransform: 'uppercase', letterSpacing: 0.6,
         },
-        name: {
-          fontSize: 10.5, fontWeight: 900, color: textPrimary,
-          fontFamily: 'NotoSans', lineHeight: 1.1, marginBottom: 2,
+        nameText: {
+          fontSize: 12, fontWeight: 900, color: textPrimary,
+          fontFamily: 'NotoSans', lineHeight: 1.15,
         },
-        workplace: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans', marginBottom: 4 },
+        phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+        phoneDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: accent },
+        phoneText: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+        missionRow: { marginTop: 3 },
+        missionShortText: {
+          fontSize: 6.5, color: textSecondary,
+          fontFamily: 'NotoSans', fontStyle: 'italic', lineHeight: 1.4,
+        },
 
-        expRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
-        expLine: { width: 2, height: 12, borderRadius: 1, backgroundColor: accent },
-        expText: { fontSize: 7, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
-
-        phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
-        phonePulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: accent },
-        phoneText: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
-
-        socialsCol: { flexDirection: 'column', gap: 3 },
-        socialRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-        socialIcon: { width: 14, height: 14, borderRadius: 3 },
-        socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
-
-        // QR как колонка в body
+        // QR — правая колонка
         qrCol: {
-          width: 52,
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingBottom: 4,
-          gap: 3,
-        },
-        qrWrap: {
-          width: 46, height: 46,
-          borderRadius: 8,
-          backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
-          padding: 3,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        qrImg: { width: 40, height: 40 },
-        qrLabel: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans', textAlign: 'center' },
-
-        statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-        statItem: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-        statNum: { fontSize: 9, fontWeight: 900, color: textPrimary, fontFamily: 'NotoSans' },
-        statLabel: { fontSize: 6, color: textSecondary, fontFamily: 'NotoSans' },
-        footerUrl: { fontSize: 6, color: accent, fontFamily: 'NotoSans' },
-
-        // ─── ЗАДНЯЯ СТОРОНА ───────────────────────────────
-        backPage: {
-          width: W,
-          height: H,
-          backgroundColor: bg2,
-          fontFamily: 'NotoSans',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        },
-        backInner: {
-          height: H - BAR_H * 2 - FOOTER_H,
-          paddingHorizontal: 10,
-          paddingTop: 7,
-          overflow: 'hidden',
-        },
-        backHeader: {
-          height: BACK_HEADER_H,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-        },
-        backNameCol: { flexDirection: 'column', gap: 1 },
-        backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
-        backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
-        backLogo: { fontSize: 8, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
-        backBody: {
-          height: BACK_BODY_H,
-          flexDirection: 'row',
-          gap: 10,
-          overflow: 'hidden',
-        },
-        backLeft: {
-          flex: 1,
-          flexDirection: 'column',
-          gap: 6,
-          overflow: 'hidden',
-        },
-
-        missionBox: {
-          backgroundColor: surface,
-          borderRadius: 8,
-          padding: 8,
-          borderLeftWidth: 2,
-          borderLeftColor: accent,
-        },
-        missionLabel: {
-          fontSize: 6, fontWeight: 700, color: accent,
-          fontFamily: 'NotoSans', letterSpacing: 0.6, marginBottom: 4,
-        },
-        missionText: {
-          fontSize: 7.5, color: textPrimary,
-          fontFamily: 'NotoSans', lineHeight: 1.5,
-          fontStyle: 'italic',
-        },
-
-        infoBlock: { flexDirection: 'column', gap: 2 },
-        infoBlockLabel: {
-          fontSize: 6, fontWeight: 700, color: textTertiary,
-          fontFamily: 'NotoSans', letterSpacing: 0.6,
-        },
-        infoBlockText: {
-          fontSize: 7.5, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
-        },
-
-        langTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
-        langTag: {
-          backgroundColor: `${accent}15`,
-          borderRadius: 4,
-          paddingHorizontal: 5, paddingVertical: 2,
-        },
-        langTagText: { fontSize: 6, color: accent, fontWeight: 700, fontFamily: 'NotoSans' },
-
-        backRight: {
-          width: 72,
+          width: 54,
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 4,
         },
-        bigQrWrap: {
-          width: 64, height: 64,
-          borderRadius: 10,
-          backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
-          padding: 4,
-          alignItems: 'center', justifyContent: 'center',
+        qrBox: {
+          width: 50, height: 50,
+          borderRadius: 8,
+          backgroundColor: theme === 'dark' ? '#141414' : '#f0f0f0',
+          padding: 3,
         },
-        bigQrImg: { width: 56, height: 56 },
-        bigQrLabel: {
+        qrImg: { width: 44, height: 44 },
+        qrText: {
+          fontSize: 5.5, color: textTertiary,
+          fontFamily: 'NotoSans', textAlign: 'center', letterSpacing: 0.4,
+        },
+
+        // Footer
+        bottomRow: {
+          height: 18,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+        },
+        footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+        statItem: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+        statNum: { fontSize: 9, fontWeight: 900, color: textPrimary, fontFamily: 'NotoSans' },
+        statLabel: { fontSize: 6, color: textSecondary, fontFamily: 'NotoSans' },
+        footerUrl: { fontSize: 6, color: accent, fontFamily: 'NotoSans' },
+
+        // ══ ЗАДНЯЯ ════════════════════════════════════════
+        backPage: {
+          width: W, height: H,
+          backgroundColor: bg2,
+          fontFamily: 'NotoSans',
+          flexDirection: 'column',
+        },
+
+        // Шапка задней
+        backTop: {
+          height: 26,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+        },
+        backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+        backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
+        backLogoText: { fontSize: 7.5, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
+
+        // Тело задней — 2 колонки
+        backBody: {
+          flex: 1,
+          flexDirection: 'row',
+          paddingHorizontal: 12,
+          paddingBottom: 6,
+          gap: 14,
+        },
+
+        // Левая колонка задней
+        backLeft: {
+          flex: 1,
+          flexDirection: 'column',
+          gap: 8,
+        },
+
+        // Соцсети
+        contactsLabel: {
+          fontSize: 6, fontWeight: 700, color: textTertiary,
+          fontFamily: 'NotoSans', letterSpacing: 0.7, marginBottom: 2,
+        },
+        socialsCol: { flexDirection: 'column', gap: 6 },
+        socialRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+        socialIcon: { width: 18, height: 18, borderRadius: 4 },
+        socialHandle: { fontSize: 8, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
+
+        // Часы
+        blockLabel: {
+          fontSize: 6, fontWeight: 700, color: textTertiary,
+          fontFamily: 'NotoSans', letterSpacing: 0.7, marginBottom: 2,
+        },
+        blockValue: {
+          fontSize: 8.5, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
+        },
+
+        // Языки
+        langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 3 },
+        langTag: {
+          backgroundColor: `${accent}18`,
+          borderRadius: 4,
+          paddingHorizontal: 6, paddingVertical: 2,
+        },
+        langText: { fontSize: 6.5, color: accent, fontWeight: 700, fontFamily: 'NotoSans' },
+
+        // Правая колонка задней — QR + миссия
+        backRight: {
+          width: 80,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+        },
+        bigQrBox: {
+          width: 70, height: 70,
+          borderRadius: 10,
+          backgroundColor: theme === 'dark' ? '#141414' : '#f0f0f0',
+          padding: 4,
+        },
+        bigQrImg: { width: 62, height: 62 },
+        scanText: {
           fontSize: 6, color: textSecondary,
           fontFamily: 'NotoSans', textAlign: 'center', lineHeight: 1.5,
         },
 
-        // Footer задней стороны (фиксированная высота)
-        backFooterContainer: {
-          height: FOOTER_H,
-          paddingHorizontal: 10,
+        // Миссия задней
+        missionBox: {
+          backgroundColor: surface,
+          borderRadius: 6,
+          padding: 7,
+          borderLeftWidth: 2,
+          borderLeftColor: accent,
+        },
+        missionLabel: {
+          fontSize: 6, fontWeight: 700, color: accent,
+          fontFamily: 'NotoSans', letterSpacing: 0.6, marginBottom: 3,
+        },
+        missionText: {
+          fontSize: 7, color: textPrimary,
+          fontFamily: 'NotoSans', fontStyle: 'italic', lineHeight: 1.45,
+        },
+
+        // Footer задней
+        backBottom: {
+          height: 18,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-        },
-        backFooterLeft: { flexDirection: 'column', gap: 1 },
-        backFooterLabel: {
-          fontSize: 6, color: textTertiary,
-          fontFamily: 'NotoSans', letterSpacing: 0.4,
+          paddingHorizontal: 12,
         },
         backFooterText: {
-          fontSize: 7, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans',
+          fontSize: 6.5, fontWeight: 700, color: textSecondary, fontFamily: 'NotoSans',
         },
       });
 
       const MyDoc = (
         <Document>
-          {/* ── Передняя сторона ── */}
-          <Page size={[W, H]} style={s.page}>
-            <View style={s.accentBar} />
 
-            {/* Шапка */}
-            <View style={s.header}>
+          {/* ══════ ПЕРЕДНЯЯ СТОРОНА ══════ */}
+          <Page size={[W, H]} style={s.page}>
+            <View style={s.bar} />
+
+            <View style={s.topRow}>
               <View style={s.logoRow}>
                 <View style={s.logoDot} />
                 <Text style={s.logoText}>duxtur.org</Text>
                 <Text style={s.logoSub}> · МЕДИЦИНСКИЙ ПОРТАЛ</Text>
               </View>
-              <View style={s.verifiedPill}>
-                <View style={s.verifiedDot} />
-                <Text style={s.verifiedText}>{__('verified')}</Text>
+              <View style={s.verBadge}>
+                <View style={s.verDot} />
+                <Text style={s.verText}>{__('verified')}</Text>
               </View>
             </View>
 
-            <View style={s.divider} />
+            <View style={s.divLine} />
 
-            {/* Тело — фото, инфо, QR */}
-            <View style={s.body}>
-              <View style={s.photoWrap}>
-                {doctor.image ? (
-                  <Image src={doctor.image} style={s.photo} />
-                ) : (
-                  <View style={s.photoPlaceholder} />
-                )}
-              </View>
+            <View style={s.centerRow}>
+              {/* Фото */}
+              {doctor.image
+                ? <Image src={doctor.image} style={s.photo} />
+                : <View style={s.photoPlaceholder} />}
 
+              {/* Инфо */}
               <View style={s.infoCol}>
-                {specialtyLabel ? (
-                  <View style={s.specialtyPill}>
-                    <Text style={s.specialtyText}>{specialtyLabel}</Text>
-                  </View>
-                ) : null}
-                <Text style={s.name}>{displayName}</Text>
-                {displayWork ? <Text style={s.workplace}>{displayWork}</Text> : null}
-
-                {showExperience ? (
-                  <View style={s.expRow}>
-                    <View style={s.expLine} />
-                    <Text style={s.expText}>{doctor.experience} {__('years')}</Text>
-                  </View>
-                ) : null}
-
-                {phoneDisplay ? (
-                  <View style={s.phoneRow}>
-                    <View style={s.phonePulse} />
-                    <Text style={s.phoneText}>{phoneDisplay}</Text>
-                  </View>
-                ) : null}
-
-                {(ig || tg || wa) ? (
-                  <View style={s.socialsCol}>
-                    {ig ? (
-                      <View style={s.socialRow}>
-                        <Image src={ICON_IG} style={s.socialIcon} />
-                        <Text style={s.socialHandle}>{ig}</Text>
-                      </View>
-                    ) : null}
-                    {tg ? (
-                      <View style={s.socialRow}>
-                        <Image src={ICON_TG} style={s.socialIcon} />
-                        <Text style={s.socialHandle}>{tg}</Text>
-                      </View>
-                    ) : null}
-                    {wa ? (
-                      <View style={s.socialRow}>
-                        <Image src={ICON_WA} style={s.socialIcon} />
-                        <Text style={s.socialHandle}>{wa}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
+                {specialty
+                  ? <View style={s.specialtyBadge}>
+                      <Text style={s.specialtyText}>{specialty}</Text>
+                    </View>
+                  : null}
+                <Text style={s.nameText}>{displayName}</Text>
+                {phoneDisplay
+                  ? <View style={s.phoneRow}>
+                      <View style={s.phoneDot} />
+                      <Text style={s.phoneText}>{phoneDisplay}</Text>
+                    </View>
+                  : null}
+                {missionShort
+                  ? <View style={s.missionRow}>
+                      <Text style={s.missionShortText}>«{missionShort}»</Text>
+                    </View>
+                  : null}
               </View>
 
-              {/* QR колонка */}
+              {/* QR */}
               <View style={s.qrCol}>
-                <View style={s.qrWrap}>
-                  <Image src={qrUrlFront} style={s.qrImg} />
+                <View style={s.qrBox}>
+                  <Image src={qrFront} style={s.qrImg} />
                 </View>
-                <Text style={s.qrLabel}>{__('myProfile')}</Text>
+                <Text style={s.qrText}>{__('scan')}</Text>
               </View>
             </View>
 
-            <View style={s.divider} />
+            <View style={s.divLine} />
 
-            {/* Footer */}
-            <View style={s.footer}>
-              <View style={s.statsRow}>
-                {(doctor.articlesCount || 0) > 0 ? (
-                  <View style={s.statItem}>
-                    <Text style={s.statNum}>{doctor.articlesCount}</Text>
-                    <Text style={s.statLabel}> {__('articles')}</Text>
-                  </View>
-                ) : null}
-                {(doctor.languages?.length || 0) > 0 ? (
-                  <View style={s.statItem}>
-                    <Text style={s.statNum}>{doctor.languages.length}</Text>
-                    <Text style={s.statLabel}> {__('languages')}</Text>
-                  </View>
-                ) : null}
+            <View style={s.bottomRow}>
+              <View style={s.footerLeft}>
+                {(doctor.articlesCount || 0) > 0
+                  ? <View style={s.statItem}>
+                      <Text style={s.statNum}>{doctor.articlesCount}</Text>
+                      <Text style={s.statLabel}> статей</Text>
+                    </View>
+                  : null}
+                {(doctor.languages?.length || 0) > 0
+                  ? <View style={s.statItem}>
+                      <Text style={s.statNum}>{doctor.languages.length}</Text>
+                      <Text style={s.statLabel}> языков</Text>
+                    </View>
+                  : null}
               </View>
               <Text style={s.footerUrl}>{profileUrl}</Text>
             </View>
 
-            <View style={s.accentBar} />
+            <View style={s.bar} />
           </Page>
 
-          {/* ── Задняя сторона ── */}
+          {/* ══════ ЗАДНЯЯ СТОРОНА ══════ */}
           <Page size={[W, H]} style={s.backPage}>
-            <View style={s.accentBar} />
+            <View style={s.bar} />
 
-            <View style={s.backInner}>
-              {/* Шапка задней стороны */}
-              <View style={s.backHeader}>
-                <View style={s.backNameCol}>
-                  <Text style={s.backName}>{displayName}</Text>
-                  {specialtyLabel ? <Text style={s.backSpecialty}>{specialtyLabel}</Text> : null}
-                </View>
-                <Text style={s.backLogo}>duxtur.org</Text>
+            <View style={s.backTop}>
+              <View>
+                <Text style={s.backName}>{displayName}</Text>
+                {specialty ? <Text style={s.backSpecialty}>{specialty}</Text> : null}
               </View>
+              <Text style={s.backLogoText}>duxtur.org</Text>
+            </View>
 
-              <View style={s.divider} />
+            <View style={s.divLine} />
 
-              {/* Тело задней стороны */}
-              <View style={s.backBody}>
-                <View style={s.backLeft}>
-                  {bioText ? (
-                    <View style={s.missionBox}>
-                      <Text style={s.missionLabel}>{__('mission')}</Text>
-                      <Text style={s.missionText}>«{bioText}»</Text>
+            <View style={s.backBody}>
+
+              {/* Левая колонка */}
+              <View style={s.backLeft}>
+
+                {/* Соцсети */}
+                {(ig || tg || wa)
+                  ? <View>
+                      <Text style={s.contactsLabel}>{__('contacts')}</Text>
+                      <View style={s.socialsCol}>
+                        {ig ? <View style={s.socialRow}>
+                          <Image src={ICON_IG} style={s.socialIcon} />
+                          <Text style={s.socialHandle}>{ig}</Text>
+                        </View> : null}
+                        {tg ? <View style={s.socialRow}>
+                          <Image src={ICON_TG} style={s.socialIcon} />
+                          <Text style={s.socialHandle}>{tg}</Text>
+                        </View> : null}
+                        {wa ? <View style={s.socialRow}>
+                          <Image src={ICON_WA} style={s.socialIcon} />
+                          <Text style={s.socialHandle}>{wa}</Text>
+                        </View> : null}
+                      </View>
                     </View>
-                  ) : null}
+                  : null}
 
-                  {doctor.workingHours ? (
-                    <View style={s.infoBlock}>
-                      <Text style={s.infoBlockLabel}>{__('reception')}</Text>
-                      <Text style={s.infoBlockText}>{doctor.workingHours}</Text>
+                {/* Часы */}
+                {doctor.workingHours
+                  ? <View>
+                      <Text style={s.blockLabel}>{__('reception')}</Text>
+                      <Text style={s.blockValue}>{doctor.workingHours}</Text>
                     </View>
-                  ) : null}
+                  : null}
 
-                  {(doctor.languages?.length || 0) > 0 ? (
-                    <View style={s.infoBlock}>
-                      <Text style={s.infoBlockLabel}>{__('langLabel')}</Text>
-                      <View style={s.langTags}>
+                {/* Языки */}
+                {(doctor.languages?.length || 0) > 0
+                  ? <View>
+                      <Text style={s.blockLabel}>{__('langLabel')}</Text>
+                      <View style={s.langRow}>
                         {doctor.languages.map((l: string, i: number) => (
                           <View key={i} style={s.langTag}>
-                            <Text style={s.langTagText}>{l}</Text>
+                            <Text style={s.langText}>{l}</Text>
                           </View>
                         ))}
                       </View>
                     </View>
-                  ) : null}
-                </View>
+                  : null}
 
-                <View style={s.backRight}>
-                  <View style={s.bigQrWrap}>
-                    <Image src={qrUrlBack} style={s.bigQrImg} />
-                  </View>
-                  <Text style={s.bigQrLabel}>{__('scan')}</Text>
-                </View>
               </View>
+
+              {/* Правая колонка */}
+              <View style={s.backRight}>
+                <View style={s.bigQrBox}>
+                  <Image src={qrBack} style={s.bigQrImg} />
+                </View>
+                <Text style={s.scanText}>Сканируйте для{'\n'}полного профиля</Text>
+
+                {missionFull
+                  ? <View style={s.missionBox}>
+                      <Text style={s.missionLabel}>{__('mission')}</Text>
+                      <Text style={s.missionText}>«{missionFull}»</Text>
+                    </View>
+                  : null}
+              </View>
+
             </View>
 
-            {/* Footer задней стороны (вне backInner) */}
-            <View style={s.backFooterContainer}>
-              <View style={s.backFooterLeft}>
-                <Text style={s.backFooterLabel}>{__('articlesLabel')}</Text>
-                <Text style={s.backFooterText}>{__('allByQr')}</Text>
-              </View>
+            <View style={s.divLine} />
+
+            <View style={s.backBottom}>
+              <Text style={s.backFooterText}>{__('allByQr')}</Text>
               <Text style={s.footerUrl}>{profileUrl}</Text>
             </View>
 
-            <View style={s.accentBar} />
+            <View style={s.bar} />
           </Page>
+
         </Document>
       );
 
@@ -543,11 +516,10 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       a.click();
       URL.revokeObjectURL(url);
 
-      const beaconUrl = `/api/doctor/${doctorSlug}/card`;
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(beaconUrl);
+        navigator.sendBeacon(`/api/doctor/${doctorSlug}/card`);
       } else {
-        fetch(beaconUrl, { method: 'POST' }).catch(() => {});
+        fetch(`/api/doctor/${doctorSlug}/card`, { method: 'POST' }).catch(() => {});
       }
     } catch (err) {
       console.error('PDF error:', err);
