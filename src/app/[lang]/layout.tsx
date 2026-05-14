@@ -1,5 +1,22 @@
 import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
+import { SessionProvider } from 'next-auth/react';
+import { auth } from '@/auth';
+
+export default async function LangLayout({ children, params }) {
+  const { lang } = await params;
+  const session = await auth();
+
+  return (
+    <html lang={lang} dir="ltr">
+      <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
+        <SessionProvider session={session}>
+          {children}
+        </SessionProvider>
+      </body>
+    </html>
+  );
+}
 
 const inter = Inter({
   variable: "--font-inter",
