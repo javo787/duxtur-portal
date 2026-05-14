@@ -4,7 +4,7 @@ import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   await connectToDatabase();
