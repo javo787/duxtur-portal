@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,10 +25,14 @@ const ICON_WA = 'https://res.cloudinary.com/dprydst2c/image/upload/v1778719653/w
 const W = 255.12;
 const H = 141.73;
 const BAR_H = 2;          // высота акцентных полос
-const HEADER_H = 22;      // высота шапки
-const DIVIDER_H = 10;     // разделитель с отступами (5 + 0.5 + 4.5)
+const HEADER_H = 22;      // высота шапки передней стороны
+const DIVIDER_H = 10.5;   // разделитель с marginVertical 5 + высота 0.5
 const FOOTER_H = 16;      // высота нижнего колонтитула
-const BODY_H = H - BAR_H * 2 - HEADER_H - DIVIDER_H * 2 - FOOTER_H; // ~79.73
+const BODY_H = H - BAR_H * 2 - HEADER_H - DIVIDER_H * 2 - FOOTER_H; // ≈78.73
+
+// Задняя сторона
+const BACK_HEADER_H = 36;
+const BACK_BODY_H = H - BAR_H * 2 - BACK_HEADER_H - DIVIDER_H - FOOTER_H; // ≈75.23
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -129,12 +134,9 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontFamily: 'NotoSans',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
         },
-        accentBar: {
-          height: BAR_H,
-          backgroundColor: accent,
-        },
+        accentBar: { height: BAR_H, backgroundColor: accent },
+
         // Передняя сторона
         header: {
           height: HEADER_H,
@@ -216,24 +218,24 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         socialIcon: { width: 14, height: 14, borderRadius: 3 },
         socialHandle: { fontSize: 6.5, color: textSecondary, fontFamily: 'NotoSans' },
 
-        // Абсолютное позиционирование QR (над footer)
-        qrAbs: {
-          position: 'absolute',
-          right: 8,
-          bottom: BAR_H + FOOTER_H + 4,
+        // QR как колонка в body
+        qrCol: {
+          width: 52,
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 2,
+          justifyContent: 'flex-end',
+          paddingBottom: 4,
+          gap: 3,
         },
         qrWrap: {
-          width: 44, height: 44,
+          width: 46, height: 46,
           borderRadius: 8,
           backgroundColor: theme === 'dark' ? '#111111' : '#f5f5f7',
           padding: 3,
           alignItems: 'center',
           justifyContent: 'center',
         },
-        qrImg: { width: 38, height: 38 },
+        qrImg: { width: 40, height: 40 },
         qrLabel: { fontSize: 6, color: textTertiary, fontFamily: 'NotoSans', textAlign: 'center' },
 
         statsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
@@ -250,7 +252,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           fontFamily: 'NotoSans',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'relative',
         },
         backInner: {
           height: H - BAR_H * 2 - FOOTER_H,
@@ -259,17 +260,27 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
           overflow: 'hidden',
         },
         backHeader: {
+          height: BACK_HEADER_H,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: 6,
         },
         backNameCol: { flexDirection: 'column', gap: 1 },
         backName: { fontSize: 9, fontWeight: 700, color: textPrimary, fontFamily: 'NotoSans' },
         backSpecialty: { fontSize: 6.5, color: accent, fontFamily: 'NotoSans', fontWeight: 700 },
         backLogo: { fontSize: 8, fontWeight: 700, color: textTertiary, fontFamily: 'NotoSans' },
-        backBody: { flexDirection: 'row', flex: 1, gap: 10 },
-        backLeft: { flex: 1, flexDirection: 'column', gap: 7 },
+        backBody: {
+          height: BACK_BODY_H,
+          flexDirection: 'row',
+          gap: 10,
+          overflow: 'hidden',
+        },
+        backLeft: {
+          flex: 1,
+          flexDirection: 'column',
+          gap: 6,
+          overflow: 'hidden',
+        },
 
         missionBox: {
           backgroundColor: surface,
@@ -306,8 +317,11 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         langTagText: { fontSize: 6, color: accent, fontWeight: 700, fontFamily: 'NotoSans' },
 
         backRight: {
-          flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 5, width: 72,
+          width: 72,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
         },
         bigQrWrap: {
           width: 64, height: 64,
@@ -361,7 +375,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
             <View style={s.divider} />
 
-            {/* Тело */}
+            {/* Тело — фото, инфо, QR */}
             <View style={s.body}>
               <View style={s.photoWrap}>
                 {doctor.image ? (
@@ -417,6 +431,14 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
                   </View>
                 ) : null}
               </View>
+
+              {/* QR колонка */}
+              <View style={s.qrCol}>
+                <View style={s.qrWrap}>
+                  <Image src={qrUrlFront} style={s.qrImg} />
+                </View>
+                <Text style={s.qrLabel}>{__('myProfile')}</Text>
+              </View>
             </View>
 
             <View style={s.divider} />
@@ -440,14 +462,6 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
               <Text style={s.footerUrl}>{profileUrl}</Text>
             </View>
 
-            {/* QR абсолютно */}
-            <View style={s.qrAbs}>
-              <View style={s.qrWrap}>
-                <Image src={qrUrlFront} style={s.qrImg} />
-              </View>
-              <Text style={s.qrLabel}>{__('myProfile')}</Text>
-            </View>
-
             <View style={s.accentBar} />
           </Page>
 
@@ -456,6 +470,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
             <View style={s.accentBar} />
 
             <View style={s.backInner}>
+              {/* Шапка задней стороны */}
               <View style={s.backHeader}>
                 <View style={s.backNameCol}>
                   <Text style={s.backName}>{displayName}</Text>
@@ -466,6 +481,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
               <View style={s.divider} />
 
+              {/* Тело задней стороны */}
               <View style={s.backBody}>
                 <View style={s.backLeft}>
                   {bioText ? (
