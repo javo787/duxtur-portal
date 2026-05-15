@@ -5,24 +5,86 @@ import Link from 'next/link';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { updateDoctorProfile } from '@/app/actions/update-profile';
 
-function Field({ label, value, onChange, placeholder, type = 'text', hint }: {
+// Helper to safely extract a string from a multilingual field
+function strField(field: any, lang = 'ru'): string {
+  if (!field) return '';
+  if (typeof field === 'string') return field;
+  return field[lang] || field.ru || '';
+}
+
+function Field({
+  label, value, onChange, placeholder, type = 'text', hint, icon,
+}: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string; hint?: string;
+  placeholder?: string; type?: string; hint?: string; icon?: string;
 }) {
   return (
-    <div>
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none transition text-gray-700 placeholder-gray-300" />
-      {hint && <p className="text-xs text-gray-400 mt-1.5">{hint}</p>}
+    <div className="group">
+      <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">
+        {icon && <span className="text-xs">{icon}</span>}
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl
+          focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8
+          outline-none transition-all duration-200 text-slate-800 text-sm
+          placeholder:text-slate-300 group-hover:border-slate-300"
+      />
+      {hint && <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{hint}</p>}
     </div>
   );
 }
 
-const Spinner = () => (
-  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+function Textarea({
+  label, value, onChange, placeholder, hint, icon, rows = 4,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; hint?: string; icon?: string; rows?: number;
+}) {
+  return (
+    <div className="group">
+      <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">
+        {icon && <span className="text-xs">{icon}</span>}
+        {label}
+      </label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl
+          focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8
+          outline-none transition-all duration-200 resize-none text-slate-800 text-sm
+          placeholder:text-slate-300 group-hover:border-slate-300"
+      />
+      {hint && <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{hint}</p>}
+    </div>
+  );
+}
+
+function SectionHeader({ title, subtitle, accent = false }: { title: string; subtitle?: string; accent?: boolean }) {
+  return (
+    <div className={`pb-4 mb-5 border-b ${accent ? 'border-blue-100' : 'border-slate-100'}`}>
+      <h3 className={`text-xs font-black uppercase tracking-[0.18em] ${accent ? 'text-blue-500' : 'text-slate-400'}`}>
+        {title}
+      </h3>
+      {subtitle && <p className="text-[11px] text-slate-400 mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+const Spinner = ({ size = 'sm' }: { size?: 'sm' | 'md' }) => (
+  <svg
+    className={`animate-spin ${size === 'sm' ? 'h-4 w-4' : 'h-6 w-6'} text-current`}
+    fill="none" viewBox="0 0 24 24"
+  >
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    <path className="opacity-75" fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
   </svg>
 );
 
@@ -32,7 +94,8 @@ export function ProfileTab({ lang }: { lang: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetch('/api/doctor/me')
@@ -54,245 +117,340 @@ export function ProfileTab({ lang }: { lang: string }) {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const result = await updateDoctorProfile(profile);
+    setSaveState('idle');
+
+    // Bio is always sent as a plain string — server will translate it
+    const result = await updateDoctorProfile({
+      ...profile,
+      bio: typeof profile.bio === 'string' ? profile.bio : strField(profile.bio),
+      workplace: typeof profile.workplace === 'string' ? profile.workplace : strField(profile.workplace),
+      education: typeof profile.education === 'string' ? profile.education : strField(profile.education),
+      specialty: typeof profile.specialty === 'string' ? profile.specialty : strField(profile.specialty),
+    });
+
     setIsSaving(false);
-    if (result.success) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
-    else alert('Ошибка: ' + result.error);
+    if (result.success) {
+      setSaveState('saved');
+      setTimeout(() => setSaveState('idle'), 3500);
+    } else {
+      setSaveState('error');
+      setErrorMsg(result.error || 'Неизвестная ошибка');
+      setTimeout(() => setSaveState('idle'), 5000);
+    }
   };
 
   if (isLoading) return (
-    <div className="flex justify-center py-20">
-      <div className="flex flex-col items-center gap-3 text-gray-400">
-        <Spinner />
-        <p className="font-medium">Загрузка профиля...</p>
+    <div className="flex flex-col items-center justify-center py-28 gap-4 text-slate-400">
+      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+        <Spinner size="md" />
       </div>
+      <p className="text-sm font-medium">Загрузка профиля...</p>
     </div>
   );
 
   if (!profile) return (
-    <div className="text-center py-20 text-gray-400">
-      <p className="text-lg font-bold">Профиль не найден</p>
+    <div className="flex flex-col items-center justify-center py-28 gap-3 text-slate-400">
+      <div className="text-4xl">🩺</div>
+      <p className="font-bold text-slate-600">Профиль не найден</p>
+      <p className="text-sm">Обратитесь к администратору</p>
     </div>
   );
 
-  const bioValue = typeof profile.bio === 'string' ? profile.bio : (profile.bio?.ru || '');
+  // Extract display values safely
+  const bioValue = strField(profile.bio);
+  const workplaceValue = strField(profile.workplace);
+  const educationValue = strField(profile.education);
+  const specialtyValue = strField(profile.specialty);
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-        <h2 className="text-2xl font-extrabold text-gray-900 mb-6">👤 Мой профиль</h2>
+    <div className="max-w-3xl mx-auto space-y-5 pb-20">
 
-        {/* АВАТАР */}
-        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-100">
-          <div className="relative">
-            <img
-              src={profile.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-              alt="Аватар"
-              className="w-24 h-24 rounded-2xl object-cover border-2 border-gray-100 shadow-sm"
-            />
-            {isUploading && (
-              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center">
-                <svg className="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              </div>
-            )}
-          </div>
-          <div>
-            <button onClick={() => avatarInputRef.current?.click()}
-              className="px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-sm transition border border-blue-200">
-              📷 Изменить фото
-            </button>
-            <p className="text-xs text-gray-400 mt-2">JPG, PNG до 5MB. Используется на публичной странице.</p>
-            <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
-          </div>
-        </div>
-
-        {/* ОСНОВНЫЕ ПОЛЯ */}
-        <div className="space-y-8">
-
-          {/* Блок 1: Личные данные */}
-          <section>
-            <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-4 h-px bg-gray-200 block" /> Личные данные
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Field label="Полное имя" value={profile.name || ''} onChange={(v) => setProfile((p: any) => ({ ...p, name: v }))} placeholder="Dr. Иванов Иван Иванович" />
-              <Field label="Телефон" value={profile.phone || ''} onChange={(v) => setProfile((p: any) => ({ ...p, phone: v }))} placeholder="+992 XXX XXX XXX" hint="Не отображается на сайте, только для администрации" />
-            </div>
-          </section>
-
-          {/* Блок 2: Специализация */}
-          <section>
-            <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-4 h-px bg-gray-200 block" /> Специализация
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Field label="Специализация (RU)" value={profile.specialty?.ru || ''} onChange={(v) => setProfile((p: any) => ({ ...p, specialty: { ...p.specialty, ru: v } }))} placeholder="Кардиолог" />
-              <Field label="Специализация (UZ)" value={profile.specialty?.uz || ''} onChange={(v) => setProfile((p: any) => ({ ...p, specialty: { ...p.specialty, uz: v } }))} placeholder="Kardiolog" />
-              <Field label="Стаж (лет)" value={profile.experience?.toString() || '0'} onChange={(v) => setProfile((p: any) => ({ ...p, experience: parseInt(v) || 0 }))} placeholder="10" type="number" />
-              <Field label="Языки (через запятую)" value={profile.languages?.join(', ') || ''} onChange={(v) => setProfile((p: any) => ({ ...p, languages: v.split(',').map((l: string) => l.trim()).filter(Boolean) }))} placeholder="Русский, Тоҷикӣ, English" />
-            </div>
-          </section>
-
-          {/* Блок 3: E-E-A-T поля — новые */}
-          <section>
-            <h3 className="text-xs font-extrabold text-blue-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-              <span className="w-4 h-px bg-blue-200 block" /> Для публичного профиля
-            </h3>
-            <p className="text-xs text-gray-400 mb-4">
-              Эти поля отображаются на вашей странице врача и повышают доверие пациентов.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Field
-                label="🏛️ Место работы"
-                value={typeof profile.workplace === 'string' ? profile.workplace : (profile.workplace?.ru || '')}
-                onChange={(v) => setProfile((p: any) => ({ ...p, workplace: v }))}
-                placeholder="Городская больница №1, Душанбе"
-                hint="Название клиники или больницы где вы работаете"
+      {/* ── AVATAR + NAME HERO ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-blue-400 to-indigo-400" />
+        <div className="p-7">
+          <div className="flex items-center gap-6">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <img
+                src={profile.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                alt="Аватар"
+                className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-sm"
               />
-              <Field
-                label="🎓 Образование"
-                value={typeof profile.education === 'string' ? profile.education : (profile.education?.ru || '')}
-                onChange={(v) => setProfile((p: any) => ({ ...p, education: v }))}
-                placeholder="ТГМУ, специальность «Лечебное дело», 2010"
-                hint="ВУЗ, специальность и год окончания"
-              />
-              <div className="md:col-span-2">
-                <Field
-                  label="🔗 Внешние профили (sameAs)"
-                  value={profile.sameAs?.join(', ') || ''}
-                  onChange={(v) => setProfile((p: any) => ({ ...p, sameAs: v.split(',').map((l: string) => l.trim()).filter(Boolean) }))}
-                  placeholder="https://linkedin.com/in/..., https://researchgate.net/profile/..."
-                  hint="Ссылки через запятую — LinkedIn, ResearchGate, профиль в медреестре. Повышают доверие Google."
-                />
-              </div>
+              {isUploading && (
+                <div className="absolute inset-0 bg-white/85 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <Spinner size="md" />
+                </div>
+              )}
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute -bottom-2 -right-2 w-7 h-7 bg-blue-600 hover:bg-blue-700
+                  text-white rounded-lg flex items-center justify-center text-sm shadow-md
+                  transition-colors duration-150"
+                title="Изменить фото"
+              >
+                ✎
+              </button>
+              <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
             </div>
 
-            {/* Биография */}
-            <div className="mt-5">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
-                📝 Биография
-              </label>
-              <textarea
-                value={bioValue}
-                onChange={(e) => setProfile((p: any) => ({ ...p, bio: e.target.value }))}
-                rows={4}
-                placeholder="Например: Кардиолог с 12-летним стажем. Специализируюсь на лечении аритмий и сердечной недостаточности. Работаю в Республиканском кардиологическом центре Душанбе."
-                className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none transition resize-none text-gray-700 placeholder-gray-300"
-              />
-              <p className="text-xs text-gray-400 mt-1.5">
-                Отображается на вашей публичной странице. Рекомендуется 2–3 предложения о вашем опыте и специализации.
+            {/* Name / meta */}
+            <div className="min-w-0">
+              <p className="font-black text-slate-900 text-lg leading-tight truncate">
+                {profile.name || 'Имя не указано'}
               </p>
+              <p className="text-sm text-slate-500 mt-0.5 truncate">
+                {specialtyValue || 'Специализация не указана'}
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold
+                  ${profile.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                    profile.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                    'bg-red-50 text-red-500 border border-red-100'}`}>
+                  {profile.status === 'approved' ? '✓ Верифицирован' :
+                    profile.status === 'pending' ? '⏳ На проверке' : '✗ Отклонён'}
+                </span>
+                {profile.slug && (
+                  <Link
+                    href={`/${lang}/doctor/${profile.slug}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold
+                      bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors"
+                  >
+                    ↗ Публичная страница
+                  </Link>
+                )}
+              </div>
             </div>
-          </section>
-        </div>
-
-        {/* Блок 4: Социальные сети и график работы */}
-<section>
-  <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-    <span className="w-4 h-px bg-gray-200 block" /> Соцсети и часы приёма
-  </h3>
-  <p className="text-xs text-gray-400 mb-4">
-    Эти данные появятся на вашей визитке и помогут пациентам быстрее с вами связаться.
-  </p>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-    <Field
-      label="Instagram (ссылка)"
-      value={profile.instagram || ''}
-      onChange={(v) => setProfile((p: any) => ({ ...p, instagram: v }))}
-      placeholder="https://www.instagram.com/your.profile"
-      hint="Полная ссылка на ваш профиль"
-    />
-    <Field
-      label="Telegram (ссылка)"
-      value={profile.telegram || ''}
-      onChange={(v) => setProfile((p: any) => ({ ...p, telegram: v }))}
-      placeholder="https://t.me/yourprofile"
-      hint="Полная ссылка (t.me/username)"
-    />
-    <Field
-      label="WhatsApp (ссылка)"
-      value={profile.whatsapp || ''}
-      onChange={(v) => setProfile((p: any) => ({ ...p, whatsapp: v }))}
-      placeholder="https://wa.me/1234567890"
-      hint="Ссылка вида https://wa.me/номер"
-    />
-    <Field
-      label="Часы приёма"
-      value={profile.workingHours || ''}
-      onChange={(v) => setProfile((p: any) => ({ ...p, workingHours: v }))}
-      placeholder="Пн–Пт 9:00–16:00"
-      hint="Коротко и понятно для пациентов"
-    />
-  </div>
-</section>
-
-    {/* Блок 5: Настройка визитки */}
-<section>
-  <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-    <span className="w-4 h-px bg-gray-200 block" /> Дизайн визитки
-  </h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-    <div>
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
-        🎨 Акцентный цвет
-      </label>
-      <input
-        type="color"
-        value={profile.accentColor || '#2563eb'}
-        onChange={(e) => setProfile((p: any) => ({ ...p, accentColor: e.target.value }))}
-        className="w-16 h-10 border-2 border-gray-200 rounded-lg cursor-pointer"
-      />
-      <p className="text-xs text-gray-400 mt-1.5">Цвет полос и кнопок визитки</p>
-    </div>
-    <div>
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
-        🌓 Тема визитки
-      </label>
-      <select
-        value={profile.cardTheme || 'dark'}
-        onChange={(e) => setProfile((p: any) => ({ ...p, cardTheme: e.target.value }))}
-        className="w-full p-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 outline-none transition text-gray-700"
-      >
-        <option value="dark">Тёмная (рекомендуется)</option>
-        <option value="light">Светлая (экономит чернила)</option>
-      </select>
-    </div>
-  </div>
-</section>    
-
-        {/* КНОПКА СОХРАНИТЬ */}
-        <div className="mt-8 pt-6 border-t border-gray-100 flex items-center gap-4">
-          <button onClick={handleSave} disabled={isSaving}
-            className="flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition disabled:opacity-70">
-            {isSaving ? <><Spinner /> Сохранение...</> : '💾 Сохранить профиль'}
-          </button>
-          {saved && (
-            <span className="flex items-center gap-2 text-green-600 font-bold text-sm">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Сохранено!
-            </span>
-          )}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-4">
+            JPG или PNG до 5MB. Отображается на вашей публичной странице врача.
+          </p>
         </div>
       </div>
 
-      {/* ПУБЛИЧНЫЙ ПРОФИЛЬ */}
-      {profile.slug && (
-        <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex items-center justify-between gap-4">
-          <div>
-            <p className="font-bold text-blue-900 text-sm">Ваш публичный профиль</p>
-            <p className="text-blue-600 text-xs mt-0.5">Duxtur.org/{lang}/doctor/{profile.slug}</p>
-          </div>
-          <Link href={`/${lang}/doctor/${profile.slug}`} target="_blank"
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shrink-0">
-            Открыть →
-          </Link>
+      {/* ── ЛИЧНЫЕ ДАННЫЕ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader title="Личные данные" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            icon="👤" label="Полное имя"
+            value={profile.name || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, name: v }))}
+            placeholder="Иванов Иван Иванович"
+          />
+          <Field
+            icon="📞" label="Телефон"
+            value={profile.phone || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, phone: v }))}
+            placeholder="+992 XXX XXX XXX"
+            hint="Не отображается на сайте — только для администрации"
+          />
         </div>
-      )}
+      </div>
+
+      {/* ── СПЕЦИАЛИЗАЦИЯ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader
+          title="Специализация"
+          subtitle="Введите специализацию — остальные языки переведутся автоматически при сохранении"
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            icon="🩺" label="Специализация (на русском)"
+            value={specialtyValue}
+            onChange={(v) => setProfile((p: any) => ({ ...p, specialty: v }))}
+            placeholder="Кардиолог"
+            hint="Будет автоматически переведена на uz, kk, ky, tg"
+          />
+          <Field
+            icon="⏱" label="Стаж (лет)"
+            value={profile.experience?.toString() || '0'}
+            onChange={(v) => setProfile((p: any) => ({ ...p, experience: parseInt(v) || 0 }))}
+            placeholder="10"
+            type="number"
+          />
+          <div className="md:col-span-2">
+            <Field
+              icon="🌐" label="Языки консультации (через запятую)"
+              value={profile.languages?.join(', ') || ''}
+              onChange={(v) => setProfile((p: any) => ({
+                ...p, languages: v.split(',').map((l: string) => l.trim()).filter(Boolean),
+              }))}
+              placeholder="Русский, Тоҷикӣ, O'zbek, English"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── ПУБЛИЧНЫЙ ПРОФИЛЬ (E-E-A-T) ── */}
+      <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-7">
+        <SectionHeader
+          title="Публичный профиль"
+          subtitle="Повышает доверие пациентов и рейтинг в поиске (Google E-E-A-T)"
+          accent
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            icon="🏛️" label="Место работы"
+            value={workplaceValue}
+            onChange={(v) => setProfile((p: any) => ({ ...p, workplace: v }))}
+            placeholder="Городская больница №1, Душанбе"
+            hint="Будет переведено на все языки автоматически"
+          />
+          <Field
+            icon="🎓" label="Образование"
+            value={educationValue}
+            onChange={(v) => setProfile((p: any) => ({ ...p, education: v }))}
+            placeholder="ТГМУ, Лечебное дело, 2010"
+            hint="Будет переведено на все языки автоматически"
+          />
+          <div className="md:col-span-2">
+            <Field
+              icon="🔗" label="Внешние профили — sameAs (через запятую)"
+              value={profile.sameAs?.join(', ') || ''}
+              onChange={(v) => setProfile((p: any) => ({
+                ...p, sameAs: v.split(',').map((l: string) => l.trim()).filter(Boolean),
+              }))}
+              placeholder="https://linkedin.com/in/..., https://researchgate.net/profile/..."
+              hint="LinkedIn, ResearchGate, медреестр — повышают доверие Google"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Textarea
+              icon="📝" label="Биография"
+              value={bioValue}
+              onChange={(v) => setProfile((p: any) => ({ ...p, bio: v }))}
+              placeholder="Кардиолог с 12-летним стажем. Специализируюсь на аритмиях и сердечной недостаточности. Работаю в Республиканском кардиологическом центре Душанбе."
+              hint="2–3 предложения об опыте и специализации. Переведётся автоматически."
+              rows={4}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── СОЦСЕТИ И ЧАСЫ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader
+          title="Соцсети и часы приёма"
+          subtitle="Отображаются на визитке и помогают пациентам связаться с вами"
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            icon="📸" label="Instagram"
+            value={profile.instagram || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, instagram: v }))}
+            placeholder="https://instagram.com/your.profile"
+            hint="Полная ссылка на профиль"
+          />
+          <Field
+            icon="✈️" label="Telegram"
+            value={profile.telegram || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, telegram: v }))}
+            placeholder="https://t.me/yourprofile"
+            hint="t.me/username"
+          />
+          <Field
+            icon="💬" label="WhatsApp"
+            value={profile.whatsapp || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, whatsapp: v }))}
+            placeholder="https://wa.me/992XXXXXXXXX"
+            hint="wa.me/номер без пробелов"
+          />
+          <Field
+            icon="🕐" label="Часы приёма"
+            value={profile.workingHours || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, workingHours: v }))}
+            placeholder="Пн–Пт, 9:00–16:00"
+            hint="Коротко и понятно для пациентов"
+          />
+        </div>
+      </div>
+
+      {/* ── ДИЗАЙН ВИЗИТКИ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader title="Дизайн визитки" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Color picker */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] block mb-3">
+              🎨 Акцентный цвет
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={profile.accentColor || '#2563eb'}
+                onChange={(e) => setProfile((p: any) => ({ ...p, accentColor: e.target.value }))}
+                className="w-12 h-12 rounded-xl border-2 border-slate-200 cursor-pointer p-0.5 bg-white"
+              />
+              <div>
+                <p className="text-sm font-mono text-slate-700">{profile.accentColor || '#2563eb'}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Цвет кнопок и полос визитки</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Theme select */}
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] block mb-3">
+              🌓 Тема визитки
+            </label>
+            <div className="flex gap-2">
+              {(['dark', 'light'] as const).map((theme) => (
+                <button
+                  key={theme}
+                  onClick={() => setProfile((p: any) => ({ ...p, cardTheme: theme }))}
+                  className={`flex-1 py-3 rounded-xl border-2 text-sm font-bold transition-all duration-150
+                    ${profile.cardTheme === theme || (!profile.cardTheme && theme === 'dark')
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                >
+                  {theme === 'dark' ? '🌑 Тёмная' : '☀️ Светлая'}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              {profile.cardTheme === 'light' ? 'Экономит чернила при печати' : 'Рекомендуется для экранов'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SAVE BAR ── */}
+      <div className="sticky bottom-4 z-10">
+        <div className="bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/60 px-6 py-4 flex items-center gap-4">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2.5 px-7 py-3.5 bg-blue-600 hover:bg-blue-700
+              disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl
+              font-bold text-sm shadow-md shadow-blue-200 transition-all duration-150 shrink-0"
+          >
+            {isSaving ? (
+              <><Spinner /> Сохранение<span className="animate-pulse">...</span></>
+            ) : (
+              <>💾 Сохранить профиль</>
+            )}
+          </button>
+
+          {saveState === 'saved' && (
+            <span className="flex items-center gap-2 text-emerald-600 font-bold text-sm animate-fade-in">
+              <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs">✓</span>
+              Профиль обновлён
+            </span>
+          )}
+          {saveState === 'error' && (
+            <span className="flex items-center gap-2 text-red-500 font-semibold text-sm">
+              <span className="text-xs">⚠️</span> {errorMsg}
+            </span>
+          )}
+
+          <p className="text-[11px] text-slate-400 ml-auto hidden md:block">
+            Текстовые поля переводятся автоматически на все языки
+          </p>
+        </div>
+      </div>
+
     </div>
   );
 }
