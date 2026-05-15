@@ -115,22 +115,32 @@ export function ProfileTab({ lang }: { lang: string }) {
     if (result.success) setProfile((p: any) => ({ ...p, image: result.url }));
   };
 
+  tab save patch · TS
+Copy
+
+  // Заменить handleSave в ProfileTab.tsx на эту версию:
+ 
   const handleSave = async () => {
     setIsSaving(true);
     setSaveState('idle');
-
-    // Bio is always sent as a plain string — server will translate it
+ 
     const result = await updateDoctorProfile({
       ...profile,
-      bio: typeof profile.bio === 'string' ? profile.bio : strField(profile.bio),
+      bio:       typeof profile.bio       === 'string' ? profile.bio       : strField(profile.bio),
       workplace: typeof profile.workplace === 'string' ? profile.workplace : strField(profile.workplace),
       education: typeof profile.education === 'string' ? profile.education : strField(profile.education),
       specialty: typeof profile.specialty === 'string' ? profile.specialty : strField(profile.specialty),
     });
-
+ 
     setIsSaving(false);
+ 
     if (result.success) {
       setSaveState('saved');
+      // Reload fresh data from server so translated fields are visible
+      try {
+        const fresh = await fetch('/api/doctor/me').then(r => r.json());
+        if (fresh) setProfile(fresh);
+      } catch {}
       setTimeout(() => setSaveState('idle'), 3500);
     } else {
       setSaveState('error');
@@ -427,10 +437,10 @@ export function ProfileTab({ lang }: { lang: string }) {
               font-bold text-sm shadow-md shadow-blue-200 transition-all duration-150 shrink-0"
           >
             {isSaving ? (
-              <><Spinner /> Сохранение<span className="animate-pulse">...</span></>
-            ) : (
-              <>💾 Сохранить профиль</>
-            )}
+  <><Spinner /> <span>Перевод на 5 языков<span className="animate-pulse">...</span></span></>
+) : (
+  <>💾 Сохранить профиль</>
+)}
           </button>
 
           {saveState === 'saved' && (
