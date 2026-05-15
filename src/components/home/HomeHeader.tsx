@@ -3,10 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function HomeHeader({ lang }: { lang: string }) {
+  const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const role = (session?.user as any)?.role;
+  const isDoctor = role === 'doctor' || role === 'portal_admin';
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 12);
@@ -63,21 +68,47 @@ export default function HomeHeader({ lang }: { lang: string }) {
         {/* Right actions */}
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Link
-            href={`/${lang}/login`}
-            className="hidden md:block text-[13.5px] font-medium text-slate-500 hover:text-slate-900 transition px-3 py-2"
-          >
-            Войти
-          </Link>
-          <Link
-            href={`/${lang}/register`}
-            className="hidden md:flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Я врач
-          </Link>
+
+          {session ? (
+            isDoctor ? (
+              <Link
+                href={`/${lang}/admin`}
+                className="hidden md:flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                Мой кабинет →
+              </Link>
+            ) : (
+              <div className="hidden md:flex items-center gap-3">
+                <span className="text-sm text-slate-500 font-medium">
+                  {session.user?.name || session.user?.email}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  className="text-[13.5px] font-medium text-slate-500 hover:text-red-600 transition px-3 py-2"
+                >
+                  Выйти
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              <Link
+                href={`/${lang}/login`}
+                className="hidden md:block text-[13.5px] font-medium text-slate-500 hover:text-slate-900 transition px-3 py-2"
+              >
+                Войти
+              </Link>
+              <Link
+                href={`/${lang}/register`}
+                className="hidden md:flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Я врач
+              </Link>
+            </>
+          )}
 
           {/* Mobile burger */}
           <button
@@ -108,20 +139,51 @@ export default function HomeHeader({ lang }: { lang: string }) {
             </Link>
           ))}
           <div className="pt-3 border-t border-slate-100 mt-3 flex flex-col gap-2">
-            <Link
-              href={`/${lang}/login`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-center py-2.5 text-[14px] font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
-            >
-              Войти
-            </Link>
-            <Link
-              href={`/${lang}/register`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition"
-            >
-              Стать автором-врачом
-            </Link>
+            {session ? (
+              isDoctor ? (
+                <Link
+                  href={`/${lang}/admin`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition"
+                >
+                  Мой кабинет →
+                </Link>
+              ) : (
+                <>
+                  <div className="px-4 py-2 text-center">
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {session.user?.name || session.user?.email}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center justify-center py-2.5 text-[14px] font-medium text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition"
+                  >
+                    Выйти
+                  </button>
+                </>
+              )
+            ) : (
+              <>
+                <Link
+                  href={`/${lang}/login`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center py-2.5 text-[14px] font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+                >
+                  Войти
+                </Link>
+                <Link
+                  href={`/${lang}/register`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition"
+                >
+                  Стать автором-врачом
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
