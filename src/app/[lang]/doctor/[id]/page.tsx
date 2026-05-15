@@ -69,10 +69,15 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   const t = (field: any) => {
     if (!field) return '';
+    if (typeof field === 'string') return field;
     return field[lang] || field['ru'] || '';
   };
 
   const specialtyLabel = t(doctor.specialty);
+  const workplaceLabel = t(doctor.workplace);
+  const educationLabel = t(doctor.education);
+  const bioLabel = t(doctor.bio);
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const doctorUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
 
@@ -86,7 +91,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     : null;
 
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
-  const mission = t(doctor.mission) || getMission(specialtyLabel);
+  const mission = bioLabel || getMission(doctor.specialty?.ru || specialtyLabel);
 
   let categoryKey = 'general';
   for (const [key, labels] of Object.entries(CATEGORY_LABELS)) {
@@ -105,11 +110,11 @@ export default async function DoctorProfilePage({ params }: Props) {
     description: mission,
     url: doctorUrl,
     image: doctor.image || undefined,
-    worksFor: doctor.workplace
-      ? { '@type': 'Organization', name: doctor.workplace }
+    worksFor: workplaceLabel
+      ? { '@type': 'Organization', name: workplaceLabel }
       : undefined,
-    alumniOf: doctor.education
-      ? { '@type': 'EducationalOrganization', name: doctor.education }
+    alumniOf: educationLabel
+      ? { '@type': 'EducationalOrganization', name: educationLabel }
       : undefined,
     sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
     lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
@@ -172,7 +177,7 @@ export default async function DoctorProfilePage({ params }: Props) {
       {/* HERO — только на десктопе */}
       <div className="hidden md:block">
         <DoctorHero
-          doctor={doctor}
+          doctor={{...doctor, specialty: specialtyLabel, workplace: workplaceLabel, education: educationLabel}}
           specialtyLabel={specialtyLabel}
           mission={mission}
           totalViews={totalViews}
@@ -187,7 +192,7 @@ export default async function DoctorProfilePage({ params }: Props) {
         {/* ─── МОБИЛЬ: Премиум профиль ПЕРВЫМ ─── */}
         <div className="lg:hidden col-span-1">
           <PremiumMobileProfile
-            doctor={doctor}
+            doctor={{...doctor, bio: bioLabel, specialty: specialtyLabel, workplace: workplaceLabel, education: educationLabel}}
             specialtyLabel={specialtyLabel}
             lastMedicalReviewDate={lastMedicalReviewDate}
             articles={articles}
@@ -320,16 +325,16 @@ export default async function DoctorProfilePage({ params }: Props) {
                     label="Стаж" value={`${doctor.experience} лет`}
                   />
                 )}
-                {doctor.workplace && (
+                {workplaceLabel && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-                    label="Место работы" value={doctor.workplace}
+                    label="Место работы" value={workplaceLabel}
                   />
                 )}
-                {doctor.education && (
+                {educationLabel && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>}
-                    label="Образование" value={doctor.education}
+                    label="Образование" value={educationLabel}
                   />
                 )}
                 {doctor.languages?.length > 0 && (
@@ -340,11 +345,11 @@ export default async function DoctorProfilePage({ params }: Props) {
                 )}
               </div>
 
-              {doctor.bio && (
+              {bioLabel && (
                 <div className="px-5 pb-5 pt-0">
                   <div className="border-t border-gray-50 pt-4">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-2">О враче</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{typeof doctor.bio === 'string' ? doctor.bio : (doctor.bio?.ru || doctor.bio?.[lang] || '')}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{bioLabel}</p>
                   </div>
                 </div>
               )}

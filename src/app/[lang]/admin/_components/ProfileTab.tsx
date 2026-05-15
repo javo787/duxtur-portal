@@ -147,14 +147,14 @@ export function ProfileTab({ lang }: { lang: string }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field
                 label="🏛️ Место работы"
-                value={profile.workplace || ''}
+                value={typeof profile.workplace === 'string' ? profile.workplace : (profile.workplace?.ru || '')}
                 onChange={(v) => setProfile((p: any) => ({ ...p, workplace: v }))}
                 placeholder="Городская больница №1, Душанбе"
                 hint="Название клиники или больницы где вы работаете"
               />
               <Field
                 label="🎓 Образование"
-                value={profile.education || ''}
+                value={typeof profile.education === 'string' ? profile.education : (profile.education?.ru || '')}
                 onChange={(v) => setProfile((p: any) => ({ ...p, education: v }))}
                 placeholder="ТГМУ, специальность «Лечебное дело», 2010"
                 hint="ВУЗ, специальность и год окончания"

@@ -11,10 +11,12 @@ export async function GET(
   const { id } = await params;
   const lang = req.nextUrl.searchParams.get('lang') || 'ru';
 
-  const doctor = await Doctor.findOne({ slug: id }).lean() as any;
+  const doctor = await Doctor.findOne({
+    $or: [{ slug: id }, ...(id.match(/^[a-f\d]{24}$/i) ? [{ _id: id }] : [])],
+  }).lean() as any;
   if (!doctor) return new NextResponse('Not found', { status: 404 });
 
-  const articlesCount = await Article.countDocuments({ author: doctor._id, published: true });
+  const articlesCount = await Article.countDocuments({ authorId: doctor._id });
 
   return NextResponse.json({
     name: doctor.name,
