@@ -5,10 +5,15 @@ import { AuthError } from 'next-auth';
 
 export async function authenticate(prevState: string | undefined, formData: FormData) {
   try {
-    await signIn('credentials', {
+    const result = await signIn('credentials', {
       ...Object.fromEntries(formData),
       redirect: false, // Мы сами обработаем редирект на клиенте
     });
+
+    if (result?.error) {
+      return 'Неверный Email или пароль.';
+    }
+
     return 'success';
   } catch (error) {
     if (error instanceof AuthError) {
