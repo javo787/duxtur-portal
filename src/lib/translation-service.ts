@@ -8,62 +8,79 @@ export interface MultilingualObject {
   tg: string;
 }
 
+/**
+ * Translates a single text into all 5 portal languages.
+ * Uses a strict JSON-only prompt and a robust extraction fallback.
+ */
 export async function translateText(text: string): Promise<MultilingualObject> {
-  if (!text) {
+  if (!text || !text.trim()) {
     return { ru: '', uz: '', kk: '', ky: '', tg: '' };
   }
 
-  const prompt = `
-    You are a professional translator specializing in medical terminology.
-    Translate the following text into 5 languages: Russian (ru), Uzbek (uz), Kazakh (kk), Kyrgyz (ky), and Tajik (tg).
-    The input text might be in Russian or Uzbek.
+  const prompt = `You are a professional medical translator for Central Asia.
+Translate the following text into these 5 languages:
+- ru: Russian
+- uz: Uzbek (Latin script)
+- kk: Kazakh (Cyrillic script)
+- ky: Kyrgyz (Cyrillic script)
+- tg: Tajik (Cyrillic script — NEVER use Arabic/Persian script)
 
-    Format the output as a valid JSON object with keys: "ru", "uz", "kk", "ky", "tg".
-    Do not include any other text, markdown formatting, or explanations in your response.
+Rules:
+- Return ONLY a valid JSON object. No markdown, no backticks, no explanation.
+- Keep translations concise and medically accurate.
+- If the input is already in Russian, translate correctly to the other 4.
+- JSON format: {"ru":"...","uz":"...","kk":"...","ky":"...","tg":"..."}
 
-    Text to translate:
-    "${text}"
-  `;
+Text to translate: "${text.replace(/"/g, "'")}"`;
 
   try {
     const response = await generateContent(prompt);
 
-    // Find the JSON part more robustly
     const start = response.indexOf('{');
-    const end = response.lastIndexOf('}');
-    if (start === -1 || end === -1) {
-        throw new Error("Could not find JSON in AI response");
+    const end   = response.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) {
+      throw new Error('No JSON object found in AI response');
     }
-    const cleanJson = response.substring(start, end + 1);
 
-    return JSON.parse(cleanJson);
+    const parsed: MultilingualObject = JSON.parse(response.substring(start, end + 1));
+
+    // Validate all 5 keys exist
+    const keys: (keyof MultilingualObject)[] = ['ru', 'uz', 'kk', 'ky', 'tg'];
+    for (const key of keys) {
+      if (!parsed[key] || typeof parsed[key] !== 'string') {
+        parsed[key] = text; // graceful fallback per key
+      }
+    }
+
+    console.log(`[TRANSLATION] "${text}" → ru:"${parsed.ru}" tg:"${parsed.tg}"`);
+    return parsed;
+
   } catch (error) {
-    console.error("--- [TRANSLATION SERVICE] Error:", error);
-    // Fallback: return the same text for all languages if translation fails
-    return {
-      ru: text,
-      uz: text,
-      kk: text,
-      ky: text,
-      tg: text,
-    };
+    console.error('[TRANSLATION SERVICE] Error translating:', text, error);
+    // Fallback: put original text in all languages
+    return { ru: text, uz: text, kk: text, ky: text, tg: text };
   }
 }
 
-export async function translateFields(fields: Record<string, string | undefined>) {
-    const fieldKeys = Object.keys(fields);
-    const fieldValues = Object.values(fields);
+/**
+ * Translates multiple fields in parallel.
+ * Only translates fields that have a string value (skips undefined/null).
+ */
+export async function translateFields(
+  fields: Record<string, string | undefined>,
+): Promise<Record<string, MultilingualObject | undefined>> {
+  const entries = Object.entries(fields).filter(
+    ([, v]) => v !== undefined && v !== null && String(v).trim() !== '',
+  );
 
-    const translationPromises = fieldValues.map(value =>
-        value && typeof value === 'string' ? translateText(value) : Promise.resolve(undefined)
-    );
+  const results = await Promise.all(
+    entries.map(([, v]) => translateText(v as string)),
+  );
 
-    const results = await Promise.all(translationPromises);
+  const out: Record<string, MultilingualObject | undefined> = {};
+  entries.forEach(([key], i) => {
+    out[key] = results[i];
+  });
 
-    const translatedFields: Record<string, MultilingualObject | undefined> = {};
-    fieldKeys.forEach((key, index) => {
-        translatedFields[key] = results[index];
-    });
-
-    return translatedFields;
+  return out;
 }
