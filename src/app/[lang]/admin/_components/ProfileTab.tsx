@@ -115,11 +115,7 @@ export function ProfileTab({ lang }: { lang: string }) {
     if (result.success) setProfile((p: any) => ({ ...p, image: result.url }));
   };
 
-  tab save patch · TS
-Copy
-
-  // Заменить handleSave в ProfileTab.tsx на эту версию:
- 
+  
   const handleSave = async () => {
     setIsSaving(true);
     setSaveState('idle');
