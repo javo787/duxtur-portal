@@ -3,6 +3,9 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
 
 // Фикс иконок Leaflet в Next.js
 if (typeof window !== 'undefined') {
@@ -29,10 +32,14 @@ interface MapPin {
 interface MapInnerProps {
   pins: MapPin[];
   onPinClick?: (slug: string) => void;
+  onMapBoundsChange?: (bounds: L.LatLngBounds) => void;
   userLocation?: { lat: number; lng: number };
   lang?: string;
   center?: [number, number];
   zoom?: number;
+  trackingMode?: boolean;
+  targetDoctor?: { lat: number; lng: number; name: string } | null;
+  onClearRoute?: () => void;
 }
 
 // Цвета по типу
@@ -72,14 +79,23 @@ function createColoredIcon(color: string, label?: string) {
 export default function MapInner({
   pins,
   onPinClick,
+  onMapBoundsChange,
   userLocation,
   lang = 'ru',
   center,
   zoom = 13,
+  trackingMode = false,
+  targetDoctor = null,
+  onClearRoute,
 }: MapInnerProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
+  const markersRef = useRef<L.MarkerClusterGroup | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const userAccuracyRef = useRef<L.Circle | null>(null);
+  const routeLayerRef = useRef<L.Polyline | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; time: number } | null>(null);
 
   const defaultCenter: [number, number] = center || [38.559, 68.773]; // Душанбе
 
@@ -91,7 +107,7 @@ export default function MapInner({
         ? [userLocation.lat, userLocation.lng]
         : defaultCenter,
       zoom,
-      zoomControl: true,
+      zoomControl: false, // We'll add custom zoom controls in Task 3, but let's keep it false here as requested
       preferCanvas: true,
     });
 
@@ -100,14 +116,147 @@ export default function MapInner({
       maxZoom: 19,
     }).addTo(map);
 
-    markersRef.current = L.layerGroup().addTo(map);
+    // @ts-ignore
+    markersRef.current = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let color = '#16a34a'; // green
+        if (count > 10) color = '#eab308'; // yellow
+        if (count > 50) color = '#dc2626'; // red
+
+        return L.divIcon({
+          html: `<div style="background:${color}; width:40px; height:40px; border-radius:50%; border:3px solid white; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.2);">${count}</div>`,
+          className: 'custom-cluster-icon',
+          iconSize: [40, 40]
+        });
+      }
+    }).addTo(map);
+
+    map.on('moveend', () => {
+      if (onMapBoundsChange) {
+        onMapBoundsChange(map.getBounds());
+      }
+    });
+
     mapRef.current = map;
 
     return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  // Real-time tracking
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (trackingMode) {
+      if (navigator.geolocation) {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            const latlng = L.latLng(latitude, longitude);
+
+            if (!userMarkerRef.current) {
+              const pulseIcon = L.divIcon({
+                className: 'user-location-pulse',
+                html: `<div class="pulse-dot"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+              });
+              userMarkerRef.current = L.marker(latlng, { icon: pulseIcon, zIndexOffset: 1000 }).addTo(map);
+            } else {
+              userMarkerRef.current.setLatLng(latlng);
+            }
+
+            if (!userAccuracyRef.current) {
+              userAccuracyRef.current = L.circle(latlng, {
+                radius: accuracy,
+                color: '#2563eb',
+                fillColor: '#2563eb',
+                fillOpacity: 0.15,
+                weight: 1
+              }).addTo(map);
+            } else {
+              userAccuracyRef.current.setLatLng(latlng).setRadius(accuracy);
+            }
+
+            // map.setView(latlng); // Optionally auto-center
+          },
+          (err) => console.error("Geolocation error:", err),
+          { enableHighAccuracy: true }
+        );
+      }
+    } else {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+      if (userAccuracyRef.current) {
+        userAccuracyRef.current.remove();
+        userAccuracyRef.current = null;
+      }
+    }
+  }, [trackingMode]);
+
+  // Sync zoom
+  useEffect(() => {
+    if (mapRef.current && mapRef.current.getZoom() !== zoom) {
+      mapRef.current.setZoom(zoom);
+    }
+  }, [zoom]);
+
+  // Route building
+  useEffect(() => {
+    if (!mapRef.current || !targetDoctor || !userLocation) {
+      if (routeLayerRef.current) {
+        routeLayerRef.current.remove();
+        routeLayerRef.current = null;
+      }
+      // Use setTimeout to avoid synchronous setState during render/effect if needed,
+      // though typically this is fine in useEffect.
+      // But let's follow standard React patterns.
+      if (routeInfo) setRouteInfo(null);
+      return;
+    }
+
+    async function fetchRoute() {
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation!.lng},${userLocation!.lat};${targetDoctor!.lng},${targetDoctor!.lat}?overview=full&geometries=geojson`);
+        const data = await res.json();
+        if (data.routes && data.routes[0]) {
+          const route = data.routes[0];
+          const coordinates = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
+
+          if (routeLayerRef.current) routeLayerRef.current.remove();
+
+          routeLayerRef.current = L.polyline(coordinates as L.LatLngExpression[], {
+            color: '#2563eb',
+            weight: 4,
+            opacity: 0.8
+          }).addTo(mapRef.current!);
+
+          mapRef.current!.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
+          setRouteInfo({
+            distance: route.distance / 1000,
+            time: Math.round(route.duration / 60)
+          });
+        }
+      } catch (err) {
+        console.error("Route building error:", err);
+      }
+    }
+
+    fetchRoute();
+  }, [targetDoctor, userLocation]);
 
   // Обновить маркеры при изменении pins
   useEffect(() => {
@@ -147,8 +296,8 @@ export default function MapInner({
       marker.addTo(markersRef.current!);
     });
 
-    // Маркер пользователя
-    if (userLocation) {
+    // Static user marker if not tracking
+    if (userLocation && !trackingMode) {
       const userIcon = L.divIcon({
         className: '',
         html: `<div style="width:16px;height:16px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(239,68,68,0.3)"></div>`,
@@ -159,13 +308,51 @@ export default function MapInner({
         .addTo(markersRef.current!)
         .bindPopup('Вы здесь');
     }
-  }, [pins, userLocation, lang, onPinClick]);
+  }, [pins, userLocation, lang, onPinClick, trackingMode]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-2xl overflow-hidden shadow-inner border border-slate-200"
-      style={{ height: '100%', minHeight: '350px' }}
-    />
+    <div className="relative w-full h-full">
+      <style>{`
+        .user-location-pulse { position: relative; }
+        .pulse-dot {
+          width: 14px; height: 14px;
+          background: #2563eb;
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 2px rgba(37,99,235,0.4);
+        }
+        .pulse-dot::after {
+          content: '';
+          position: absolute;
+          width: 100%; height: 100%;
+          background: #2563eb;
+          border-radius: 50%;
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(3.5); opacity: 0; }
+        }
+      `}</style>
+
+      <div
+        ref={containerRef}
+        className="w-full h-full rounded-2xl overflow-hidden shadow-inner border border-slate-200"
+        style={{ minHeight: '350px' }}
+      />
+
+      {routeInfo && (
+        <div className="absolute top-4 left-4 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 z-[1000] animate-in fade-in slide-in-from-top-4 duration-300">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Маршрут построен</p>
+          <p className="text-sm font-black text-slate-900">{routeInfo.distance.toFixed(1)} км · {routeInfo.time} мин</p>
+          <button
+            onClick={onClearRoute}
+            className="mt-2 text-[10px] font-bold text-blue-600 hover:text-blue-700"
+          >
+            Сбросить маршрут
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
