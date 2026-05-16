@@ -14,6 +14,8 @@ import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
 import Image from 'next/image';
+import DoctorViewTracker from '@/components/DoctorViewTracker';
+import ReviewModal from './_components/ReviewModal';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -73,9 +75,12 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   if (!doctor) notFound();
 
-  const articles: any[] = await Article.find({ authorId: doctor._id })
-    .sort({ createdAt: -1 })
-    .lean();
+  const Review = (await import('@/models/Review')).default;
+
+  const [articles, reviews]: [any[], any[]] = await Promise.all([
+    Article.find({ authorId: doctor._id }).sort({ createdAt: -1 }).lean(),
+    Review.find({ doctorId: doctor._id, isVerified: true }).sort({ createdAt: -1 }).limit(5).lean(),
+  ]);
 
   const t = (field: any) => {
     if (!field) return '';
@@ -142,6 +147,14 @@ export default async function DoctorProfilePage({ params }: Props) {
       ? { '@type': 'EducationalOrganization', name: educationLabel }
       : undefined,
     sameAs: doctor.sameAs?.length > 0 ? doctor.sameAs : undefined,
+    address: doctor.address ? {
+      '@type': 'PostalAddress',
+      addressLocality: doctor.city,
+      streetAddress: doctor.address,
+      addressCountry: 'TJ',
+    } : undefined,
+    openingHours: doctor.schedule ? buildOpeningHours(doctor.schedule) : undefined,
+    priceRange: doctor.priceRange?.min ? `${doctor.priceRange.min}–${doctor.priceRange.max} TJS` : undefined,
     lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
     knowsAbout: specialtyLabel || undefined,
     breadcrumb: {
@@ -158,6 +171,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <DoctorViewTracker slug={doctor.slug || doctor._id.toString()} />
 
       <style>{`
         @media print {
@@ -341,6 +355,57 @@ export default async function DoctorProfilePage({ params }: Props) {
             </div>
           )}
 
+          {/* Reviews Section */}
+          <div className="mt-12 pt-10 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Отзывы пациентов</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex text-amber-400 text-sm">
+                    {'★'.repeat(Math.round(doctor.reviewAvg || 0))}{'☆'.repeat(5 - Math.round(doctor.reviewAvg || 0))}
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">{doctor.reviewAvg || 0}</span>
+                  <span className="text-xs text-gray-400">({doctor.reviewCount || 0} отзывов)</span>
+                </div>
+              </div>
+              <ReviewModal doctorId={doctor._id.toString()} doctorName={doctor.name} lang={lang} />
+            </div>
+
+            {reviews.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
+                Пока отзывов нет. Будьте первым!
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((r) => (
+                  <div key={r._id.toString()} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">
+                          {r.isAnonymous ? '?' : 'П'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">
+                            {r.isAnonymous ? 'Анонимный пациент' : 'Пациент'}
+                          </p>
+                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                            {new Date(r.createdAt).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex text-amber-400 text-xs">
+                        {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed italic">
+                      "{r.text}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* "You may also like" section */}
           {articles.length > 0 && (
             <div className="mt-12 pt-10 border-t border-gray-100">
@@ -441,6 +506,84 @@ export default async function DoctorProfilePage({ params }: Props) {
 
             <ContactDoctorButton doctor={doctor} lang={lang} />
 
+            {/* Локация и клиника */}
+            {(doctor.clinicName || doctor.address) && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
+                  Место приёма
+                </h3>
+                <div className="space-y-3">
+                  {doctor.clinicName && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-blue-500 mt-1">🏥</span>
+                      <p className="text-sm font-bold text-gray-800">{doctor.clinicName}</p>
+                    </div>
+                  )}
+                  {doctor.address && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-gray-400 mt-1">📍</span>
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {doctor.address}{doctor.district ? `, ${doctor.district}` : ''}{doctor.city ? `, ${doctor.city}` : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* График работы */}
+            {doctor.schedule && Object.values(doctor.schedule).some((d: any) => d.isWorking) && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
+                  График работы
+                </h3>
+                <div className="space-y-2">
+                  {[
+                    { id: 'mon', label: 'Пн' },
+                    { id: 'tue', label: 'Вт' },
+                    { id: 'wed', label: 'Ср' },
+                    { id: 'thu', label: 'Чт' },
+                    { id: 'fri', label: 'Пт' },
+                    { id: 'sat', label: 'Сб' },
+                    { id: 'sun', label: 'Вс' },
+                  ].map((day) => {
+                    const d = doctor.schedule[day.id];
+                    const today = new Date().getDay();
+                    const isToday = [0, 1, 2, 3, 4, 5, 6].indexOf(today === 0 ? 6 : today - 1) === ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(day.id);
+
+                    return (
+                      <div key={day.id} className={`flex items-center justify-between text-xs ${isToday ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
+                        <span>{day.label}</span>
+                        <span>{d?.isWorking ? `${d.open} – ${d.close}` : 'Выходной'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Консультации и цены */}
+            {doctor.priceRange?.min > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
+                  Консультации
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Стоимость</span>
+                    <span className="text-sm font-black text-gray-900">от {doctor.priceRange.min} TJS</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {(doctor.consultationTypes || ['in_person']).map((type: string) => (
+                      <div key={type} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-sm border border-slate-100" title={type}>
+                        {type === 'in_person' ? '🏥' : type === 'online' ? '💻' : '🏠'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
                 Поделиться профилем
@@ -461,6 +604,13 @@ export default async function DoctorProfilePage({ params }: Props) {
       />
     </div>
   );
+}
+
+function buildOpeningHours(schedule: any) {
+  const days = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
+  return Object.entries(schedule)
+    .filter(([_, v]: any) => v.isWorking)
+    .map(([k, v]: any) => `${days[k as keyof typeof days]} ${v.open}-${v.close}`);
 }
 
 function SidebarRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {

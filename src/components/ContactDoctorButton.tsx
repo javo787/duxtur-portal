@@ -6,6 +6,8 @@ import { signIn, useSession } from 'next-auth/react';
 interface Props {
   doctor: {
     name: string;
+    slug?: string;
+    _id?: any;
     phone?: string;
     instagram?: string;
     telegram?: string;
@@ -13,6 +15,7 @@ interface Props {
     workingHours?: string;
   };
   lang: string;
+  className?: string;
 }
 
 const labels: Record<string, Record<string, string>> = {
@@ -46,7 +49,7 @@ function BlurredContact({ icon, color }: { icon: React.ReactNode; color: string 
   );
 }
 
-export default function ContactDoctorButton({ doctor, lang }: Props) {
+export default function ContactDoctorButton({ doctor, lang, className }: Props) {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -56,7 +59,13 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
   const isLoggedIn = !!session?.user;
   const hasContacts = doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram;
 
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => {
+    setOpen(true);
+    const id = doctor.slug || doctor._id?.toString();
+    if (id) {
+      fetch(`/api/doctor/${id}/contact`, { method: 'POST' }).catch(() => {});
+    }
+  };
 
   const handleGoogle = async () => {
     setLoading('google');
@@ -82,7 +91,7 @@ export default function ContactDoctorButton({ doctor, lang }: Props) {
       {/* Кнопка */}
       <button
         onClick={handleOpen}
-        className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all duration-200 shadow-lg shadow-blue-200 active:scale-95 text-sm"
+        className={className || "w-full flex items-center justify-center gap-2.5 py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all duration-200 shadow-lg shadow-blue-200 active:scale-95 text-sm"}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 8V5z" />

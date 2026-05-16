@@ -38,6 +38,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
             <ul className="space-y-3">
               {[
                 { href: `/${lang}/blog`, label: 'Все статьи' },
+                { href: `/${lang}/doctors`, label: 'Найти врача' },
                 { href: `/${lang}/authors`, label: 'Авторы-врачи' },
                 { href: `/${lang}/search`, label: 'Поиск' },
               ].map((link) => (

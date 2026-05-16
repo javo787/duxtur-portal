@@ -32,6 +32,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
+  // Поиск врачей (priority 0.9, daily)
+  const doctorSearchPages = languages.map((lang) => ({
+    url: `${BASE_URL}/${lang}/doctors`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.9,
+  }));
+
   // Авторы (priority 0.8, weekly)
   const authorListPages = languages.map((lang) => ({
     url: `${BASE_URL}/${lang}/authors`,
@@ -86,6 +94,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...mainPages,
     ...blogPages,
+    ...doctorSearchPages,
     ...authorListPages,
     ...staticPages,
     ...articlePages,

@@ -21,7 +21,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
 
   const navLinks = [
     { href: `/${lang}/blog`, label: 'Статьи' },
-    { href: `/${lang}/authors`, label: 'Авторы-врачи' },
+    { href: `/${lang}/doctors`, label: 'Найти врача' },
     { href: `/${lang}/search`, label: 'Поиск' },
   ];
 
@@ -180,7 +180,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition"
                 >
-                  Стать автором-врачом
+                  Я врач — стать автором
                 </Link>
               </>
             )}

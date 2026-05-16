@@ -335,10 +335,184 @@ export function ProfileTab({ lang }: { lang: string }) {
         </div>
       </div>
 
+      {/* ── ЛОКАЦИЯ И КЛИНИКА ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader title="Локация и клиника" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field
+            icon="🏙️" label="Город"
+            value={profile.city || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, city: v }))}
+            placeholder="Душанбе"
+          />
+          <Field
+            icon="📍" label="Район"
+            value={profile.district || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, district: v }))}
+            placeholder="Исмоили Сомони"
+          />
+          <Field
+            icon="🏠" label="Адрес"
+            value={profile.address || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, address: v }))}
+            placeholder="ул. Рудаки, 10"
+          />
+          <Field
+            icon="🏥" label="Название клиники"
+            value={profile.clinicName || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, clinicName: v }))}
+            placeholder="Медицинский центр 'Сино'"
+          />
+        </div>
+      </div>
+
+      {/* ── ПРИЕМ И ЦЕНЫ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader title="Прием и цены" />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-800">Принимает новых пациентов</p>
+              <p className="text-xs text-slate-400">Отображается в поиске</p>
+            </div>
+            <button
+              onClick={() => setProfile((p: any) => ({ ...p, acceptsNewPatients: !p.acceptsNewPatients }))}
+              className={`w-12 h-6 rounded-full transition-colors relative ${profile.acceptsNewPatients !== false ? 'bg-blue-600' : 'bg-slate-200'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${profile.acceptsNewPatients !== false ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+              Типы консультаций
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { id: 'in_person', label: '🏥 Очно', icon: '🏥' },
+                { id: 'online', label: '💻 Онлайн', icon: '💻' },
+                { id: 'home_visit', label: '🏠 На дому', icon: '🏠' },
+              ].map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => {
+                    const current = profile.consultationTypes || ['in_person'];
+                    const next = current.includes(type.id)
+                      ? current.filter((t: string) => t !== type.id)
+                      : [...current, type.id];
+                    setProfile((p: any) => ({ ...p, consultationTypes: next }));
+                  }}
+                  className={`px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all
+                    ${(profile.consultationTypes || ['in_person']).includes(type.id)
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-100 text-slate-500 hover:border-slate-200'}`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field
+              icon="💰" label="Цена от (TJS)"
+              value={profile.priceRange?.min?.toString() || '0'}
+              onChange={(v) => setProfile((p: any) => ({ ...p, priceRange: { ...p.priceRange, min: parseInt(v) || 0 } }))}
+              type="number"
+            />
+            <Field
+              icon="💰" label="Цена до (TJS)"
+              value={profile.priceRange?.max?.toString() || '0'}
+              onChange={(v) => setProfile((p: any) => ({ ...p, priceRange: { ...p.priceRange, max: parseInt(v) || 0 } }))}
+              type="number"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── ГРАФИК РАБОТЫ ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
+        <SectionHeader title="График работы" />
+        <div className="space-y-4">
+          {[
+            { id: 'mon', label: 'Понедельник' },
+            { id: 'tue', label: 'Вторник' },
+            { id: 'wed', label: 'Среда' },
+            { id: 'thu', label: 'Четверг' },
+            { id: 'fri', label: 'Пятница' },
+            { id: 'sat', label: 'Суббота' },
+            { id: 'sun', label: 'Воскресенье' },
+          ].map((day) => (
+            <div key={day.id} className="flex flex-col md:flex-row md:items-center gap-4 py-3 border-b border-slate-50 last:border-0">
+              <div className="w-32">
+                <p className="text-sm font-bold text-slate-700">{day.label}</p>
+                <button
+                  onClick={() => setProfile((p: any) => ({
+                    ...p,
+                    schedule: {
+                      ...(p.schedule || {}),
+                      [day.id]: { ...(p.schedule?.[day.id] || {}), isWorking: !p.schedule?.[day.id]?.isWorking }
+                    }
+                  }))}
+                  className={`text-[10px] font-bold uppercase mt-1 ${profile.schedule?.[day.id]?.isWorking ? 'text-blue-600' : 'text-slate-400'}`}
+                >
+                  {profile.schedule?.[day.id]?.isWorking ? '● Работает' : '○ Выходной'}
+                </button>
+              </div>
+
+              {profile.schedule?.[day.id]?.isWorking && (
+                <div className="flex items-center gap-3 flex-1">
+                  <input
+                    type="time"
+                    value={profile.schedule?.[day.id]?.open || '09:00'}
+                    onChange={(e) => setProfile((p: any) => ({
+                      ...p,
+                      schedule: {
+                        ...(p.schedule || {}),
+                        [day.id]: { ...(p.schedule?.[day.id] || {}), open: e.target.value }
+                      }
+                    }))}
+                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                  />
+                  <span className="text-slate-400">—</span>
+                  <input
+                    type="time"
+                    value={profile.schedule?.[day.id]?.close || '18:00'}
+                    onChange={(e) => setProfile((p: any) => ({
+                      ...p,
+                      schedule: {
+                        ...(p.schedule || {}),
+                        [day.id]: { ...(p.schedule?.[day.id] || {}), close: e.target.value }
+                      }
+                    }))}
+                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                  />
+                  {day.id === 'mon' && (
+                    <button
+                      onClick={() => {
+                        const mon = profile.schedule?.mon || { open: '09:00', close: '18:00', isWorking: true };
+                        const nextSchedule = { ...profile.schedule };
+                        ['tue', 'wed', 'thu', 'fri'].forEach(d => {
+                          nextSchedule[d] = { ...mon };
+                        });
+                        setProfile((p: any) => ({ ...p, schedule: nextSchedule }));
+                      }}
+                      className="ml-auto text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition"
+                    >
+                      Копировать Пн–Пт
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── СОЦСЕТИ И ЧАСЫ ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
         <SectionHeader
-          title="Соцсети и часы приёма"
+          title="Соцсети и визитка"
           subtitle="Отображаются на визитке и помогают пациентам связаться с вами"
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -364,11 +538,11 @@ export function ProfileTab({ lang }: { lang: string }) {
             hint="wa.me/номер без пробелов"
           />
           <Field
-            icon="🕐" label="Часы приёма"
+            icon="🕐" label="Часы для визитки"
             value={profile.workingHours || ''}
             onChange={(v) => setProfile((p: any) => ({ ...p, workingHours: v }))}
             placeholder="Пн–Пт, 9:00–16:00"
-            hint="Коротко и понятно для пациентов"
+            hint="Короткая строка для PDF-визитки"
           />
         </div>
       </div>
