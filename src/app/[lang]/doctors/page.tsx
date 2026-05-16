@@ -245,6 +245,8 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
     Применить фильтры
   </button>
 </div>
+              </div> 
+          </aside> 
 
           {/* MAIN GRID */}
           <div className="lg:col-span-3 space-y-6">
