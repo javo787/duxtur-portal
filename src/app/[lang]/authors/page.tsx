@@ -3,7 +3,7 @@ import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -91,23 +91,10 @@ export default async function AuthorsPage({ params }: Props) {
         url: `${BASE_URL}/${lang}/authors`,
         description: L('subtitle', lang),
         publisher: { '@id': `${BASE_URL}/#organization` },
-        breadcrumb: {
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            {
-              '@type': 'ListItem',
-              position: 1,
-              name: 'Duxtur.org',
-              item: `${BASE_URL}/${lang}`,
-            },
-            {
-              '@type': 'ListItem',
-              position: 2,
-              name: L('title', lang),
-              item: `${BASE_URL}/${lang}/authors`,
-            },
-          ],
-        },
+        breadcrumb: buildBreadcrumbJsonLd([
+          { name: 'Duxtur.org', url: `/${lang}` },
+          { name: L('title', lang), url: `/${lang}/authors` },
+        ]),
       }
     ]
   };

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { updateDoctorProfile } from '@/app/actions/update-profile';
 import Script from 'next/script';
+import ProfileCompletionBanner from './ProfileCompletionBanner';
 
 // Helper to safely extract a string from a multilingual field
 function strField(field: any, lang = 'ru'): string {
@@ -199,6 +200,7 @@ export function ProfileTab({ lang }: { lang: string }) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-20">
+      <ProfileCompletionBanner doctor={profile} lang={lang} />
 
       {/* ── AVATAR + NAME HERO ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">

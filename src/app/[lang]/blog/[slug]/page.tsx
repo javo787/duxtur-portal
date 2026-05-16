@@ -6,10 +6,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ShareButtons from '@/components/ShareButtons';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import ViewCounter from '@/components/ViewCounter';
+import FAQSection from '@/components/FAQSection';
 
 const uiLabels: Record<string, Record<string, string>> = {
   verified:        { ru: 'Проверено врачом',    uz: 'Tekshirilgan',          tg: 'Тасдиқшуда',          kk: 'Тексерілген',      ky: 'Текшерилген'        },
@@ -285,14 +286,11 @@ export default async function BlogPage({
       },
     }),
     medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Blog',       item: `${BASE_URL}/${lang}/blog` },
-        { '@type': 'ListItem', position: 3, name: t(article.title), item: articleUrl },
-      ],
-    },
+    breadcrumb: buildBreadcrumbJsonLd([
+      { name: 'Duxtur.org', url: `/${lang}` },
+      { name: 'Blog', url: `/${lang}/blog` },
+      { name: t(article.title), url: `blog/${article.slug}` },
+    ]),
   };
 
   // Убираем undefined поля
@@ -572,6 +570,11 @@ export default async function BlogPage({
                   })}
                 </ul>
               </div>
+            )}
+
+            {/* FAQ Section */}
+            {sections.length >= 3 && (
+              <FAQSection sections={sections} lang={lang} />
             )}
 
             {/* Engagement */}

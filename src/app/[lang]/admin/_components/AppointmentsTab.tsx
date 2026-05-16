@@ -6,14 +6,38 @@ export function AppointmentsTab({ lang }: { lang: string }) {
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchAppointments = () => {
+    setIsLoading(true);
     fetch('/api/doctor/appointments')
       .then(r => r.json())
       .then(data => {
         setAppointments(data);
         setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchAppointments();
   }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchAppointments();
+      } else {
+        const data = await res.json();
+        alert(`Ошибка: ${data.error || 'Не удалось обновить статус'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Произошла ошибка при обновлении статуса');
+    }
+  };
 
   if (isLoading) return <div className="py-10 text-center text-slate-400">Загрузка...</div>;
 
@@ -64,11 +88,39 @@ export function AppointmentsTab({ lang }: { lang: string }) {
                     {apt.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right space-x-2">
+                <td className="px-6 py-4 text-right space-x-3">
                    {apt.status === 'pending' && (
-                     <button className="text-xs font-bold text-blue-600">Подтвердить</button>
+                     <button
+                        onClick={() => updateStatus(apt._id, 'confirmed')}
+                        className="text-xs font-bold text-blue-600 hover:underline"
+                     >
+                        Подтвердить
+                     </button>
                    )}
-                   <button className="text-xs font-bold text-slate-400">...</button>
+                   {apt.status === 'confirmed' && (
+                     <>
+                        <button
+                            onClick={() => updateStatus(apt._id, 'completed')}
+                            className="text-xs font-bold text-emerald-600 hover:underline"
+                        >
+                            Выполнено
+                        </button>
+                        <button
+                            onClick={() => updateStatus(apt._id, 'no_show')}
+                            className="text-xs font-bold text-amber-600 hover:underline"
+                        >
+                            Не пришёл
+                        </button>
+                     </>
+                   )}
+                   {apt.status !== 'cancelled' && (
+                      <button
+                        onClick={() => updateStatus(apt._id, 'cancelled')}
+                        className="text-xs font-bold text-red-400 hover:underline"
+                      >
+                        Отменить
+                      </button>
+                   )}
                 </td>
               </tr>
             ))}

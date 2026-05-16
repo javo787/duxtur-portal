@@ -17,6 +17,7 @@ export async function GET(
   const user = await User.findOne({ email: session.user.email });
   const doctor = await Doctor.findOne({ userId: user?._id });
   if (!doctor) return NextResponse.json(null, { status: 403 });
+  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
 
   const article = await Article.findOne({ slug, authorId: doctor._id }).lean();
   if (!article) return NextResponse.json(null, { status: 404 });
@@ -36,6 +37,7 @@ export async function PATCH(
   const user = await User.findOne({ email: session.user.email });
   const doctor = await Doctor.findOne({ userId: user?._id });
   if (!doctor) return NextResponse.json({ error: 'Нет доступа' }, { status: 403 });
+  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
 
   // Проверяем что статья принадлежит этому врачу
   const existing = await Article.findOne({ slug, authorId: doctor._id });

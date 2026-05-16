@@ -16,6 +16,7 @@ export async function GET() {
 
   const doctor = await Doctor.findOne({ userId: user._id });
   if (!doctor) return NextResponse.json([], { status: 404 });
+  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
 
   const articles = await Article.find({ authorId: doctor._id })
     .select('slug title image category isVerified views createdAt updatedAt')

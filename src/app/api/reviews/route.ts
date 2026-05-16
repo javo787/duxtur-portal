@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 import Doctor from '@/models/Doctor';
 import mongoose from 'mongoose';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,16 +12,25 @@ export async function GET(request: Request) {
 
   if (!doctorId) return NextResponse.json({ error: 'Missing doctorId' }, { status: 400 });
 
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const skip = (page - 1) * limit;
+
   await dbConnect();
   const reviews = await Review.find({ doctorId, isVerified: true })
     .sort({ createdAt: -1 })
-    .limit(10)
+    .skip(skip)
+    .limit(limit)
     .lean();
 
   return NextResponse.json(reviews);
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = rateLimit(ip, 3, 60 * 1000); // 3 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

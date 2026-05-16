@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import Link from 'next/link';
 import { WriteTab } from './_components/WriteTab';
 import { ProfileTab } from './_components/ProfileTab';
@@ -8,6 +8,7 @@ import { MyArticlesTab } from './_components/MyArticlesTab';
 import { ArticleEditModal } from './_components/ArticleEditModal';
 import { AppointmentsTab } from './_components/AppointmentsTab';
 import { AnalyticsTab } from './_components/AnalyticsTab';
+import OnboardingWizard from './_components/OnboardingWizard';
 
 type Tab = 'write' | 'articles' | 'profile' | 'appointments' | 'analytics';
 
@@ -22,6 +23,11 @@ const TABS: { id: Tab; label: string }[] = [
 export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
   const [tab, setTab] = useState<Tab>('write');
+  const [doctor, setDoctor] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/doctor/me').then(r => r.json()).then(setDoctor);
+  }, []);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [articlesKey, setArticlesKey] = useState(0); // force refetch after save
 
@@ -74,6 +80,13 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
       </header>
 
       <div className="max-w-5xl mx-auto p-6 md:p-10">
+        {doctor && (
+          <OnboardingWizard
+            doctor={doctor}
+            lang={lang}
+            onComplete={() => fetch('/api/doctor/me').then(r => r.json()).then(setDoctor)}
+          />
+        )}
         {tab === 'write'    && <WriteTab lang={lang} />}
         {tab === 'articles' && (
           <MyArticlesTab

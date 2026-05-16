@@ -2,12 +2,14 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { DoctorsSortSelect } from './_components/DoctorsSortSelect';
 import { AcceptsToggle } from './_components/AcceptsToggle';
 import MobileFiltersDrawer from './_components/MobileFiltersDrawer';
+import SpecialtyAutocomplete from '@/components/SpecialtyAutocomplete';
+import NearMeButton from '@/components/NearMeButton';
 import UI from '@/dictionaries/doctor-translations';
 
 type Props = {
@@ -24,6 +26,9 @@ type Props = {
     open?: string;
     sort?: string;
     page?: string;
+    lat?: string;
+    lng?: string;
+    radius?: string;
   }>;
 };
 
@@ -57,6 +62,20 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
 
   // Query
   const query: any = { status: 'approved' };
+
+  if (sp.lat && sp.lng) {
+    const lat = parseFloat(sp.lat as string);
+    const lng = parseFloat(sp.lng as string);
+    const radius = parseFloat((sp.radius as string) || '20');
+
+    query['coordinates.coordinates'] = {
+      $near: {
+        $geometry: { type: 'Point', coordinates: [lng, lat] },
+        $maxDistance: radius * 1000 // km to meters
+      }
+    };
+  }
+
   if (sp.city) query.city = new RegExp(sp.city, 'i');
   if (sp.specialty) query['specialty.ru'] = CATEGORY_LABELS[sp.specialty]?.ru || sp.specialty;
   if (sp.type) query.consultationTypes = sp.type;
@@ -98,8 +117,25 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
+  const breadcrumbItems = [
+    { name: 'Duxtur.org', url: `/${lang}` },
+    { name: L('title'), url: `/${lang}/doctors` },
+  ];
+  if (sp.specialty && CATEGORY_LABELS[sp.specialty]) {
+    breadcrumbItems.push({
+      name: CATEGORY_LABELS[sp.specialty][lang] || CATEGORY_LABELS[sp.specialty].ru,
+      url: `/${lang}/doctors/${sp.specialty}`
+    });
+  }
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(breadcrumbItems);
+
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       {/* Hero / Search */}
       <div className="bg-white border-b border-slate-100 pt-8 md:pt-12 pb-10 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 md:px-5 text-center">
@@ -117,14 +153,13 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                 {cities.filter(Boolean).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
 
-              <select name="specialty" defaultValue={sp.specialty} className="w-full md:flex-1 px-6 py-3.5 bg-transparent text-sm font-bold text-slate-700 outline-none border-b md:border-b-0 md:border-r border-slate-100">
-                <option value="">{L('all_specialties')}</option>
-                {Object.entries(CATEGORY_LABELS).map(([key, labels]) => (
-                  <option key={key} value={key}>{labels[lang] || labels.ru}</option>
-                ))}
-              </select>
+              <SpecialtyAutocomplete
+                defaultValue={sp.specialty || ''}
+                lang={lang}
+                placeholder={L('all_specialties')}
+              />
 
-              <select name="type" defaultValue={sp.type} className="w-full md:w-48 px-6 py-3.5 bg-transparent text-sm font-bold text-slate-700 outline-none">
+              <select name="type" defaultValue={sp.type} className="w-full md:w-48 px-6 py-3.5 bg-transparent text-sm font-bold text-slate-700 outline-none border-b md:border-b-0 md:border-r border-slate-100">
                 <option value="">{L('consultation_type')}</option>
                 <option value="in_person">{L('in_person')}</option>
                 <option value="online">{L('online')}</option>
@@ -202,6 +237,10 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                   defaultChecked={sp.accepts === 'true'}
                   label={L('accepts_new')}
                 />
+              </div>
+
+              <div className="pt-4">
+                <NearMeButton />
               </div>
 
               <div className="pt-4">

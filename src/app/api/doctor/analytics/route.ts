@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
+import ViewLog from '@/models/ViewLog';
 import { auth } from '@/auth';
 
 export async function GET() {
@@ -18,13 +19,24 @@ export async function GET() {
 
   const totalArticlesViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
 
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  const viewHistory = await ViewLog.find({
+    entityId: doctor._id,
+    entityType: 'doctor',
+    date: { $gte: thirtyDaysAgo }
+  }).sort({ date: 1 }).lean();
+
   return NextResponse.json({
-    profileViews: { total: doctor.profileViews || 0, trend: '+0%' },
+    profileViews: { total: doctor.profileViews || 0, trend: '+0%', history: viewHistory },
     articleViews: { total: totalArticlesViews, byArticle: articles },
     appointments: {
       total: appointments.length,
       completed: appointments.filter(a => a.status === 'completed').length,
       cancelled: appointments.filter(a => a.status === 'cancelled').length,
+      list: appointments // Include full list for CSV export
     },
     contactClicks: { total: doctor.contactClicks || 0 }
   });

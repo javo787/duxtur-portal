@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import CancelButton from './_components/CancelButton';
 
 export default async function PatientAppointmentsPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();
@@ -56,7 +57,7 @@ export default async function PatientAppointmentsPage({ params }: { params: Prom
                      {apt.status}
                    </span>
                    {apt.status !== 'cancelled' && new Date(apt.date) > new Date() && (
-                     <button className="block text-xs font-bold text-red-500 hover:underline">Отменить</button>
+                     <CancelButton appointmentId={apt._id.toString()} />
                    )}
                 </div>
               </div>

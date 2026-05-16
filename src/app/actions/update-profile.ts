@@ -3,6 +3,7 @@
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { stripHtml } from '@/lib/utils';
 import { updateDoctorProfileByUserId, findDoctorByEmail } from '@/lib/db-doctor';
 import { translateFields } from '@/lib/translation-service';
 
@@ -47,13 +48,13 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
 
     // Собираем поля для перевода
     const fieldsToTranslate: Record<string, string> = {};
-    if (typeof data.bio === 'string' && data.bio !== doctor.bio?.ru) fieldsToTranslate.bio = data.bio;
-    if (typeof data.workplace === 'string' && data.workplace !== doctor.workplace?.ru) fieldsToTranslate.workplace = data.workplace;
-    if (typeof data.education === 'string' && data.education !== doctor.education?.ru) fieldsToTranslate.education = data.education;
+    if (typeof data.bio === 'string' && data.bio !== doctor.bio?.ru) fieldsToTranslate.bio = stripHtml(data.bio);
+    if (typeof data.workplace === 'string' && data.workplace !== doctor.workplace?.ru) fieldsToTranslate.workplace = stripHtml(data.workplace);
+    if (typeof data.education === 'string' && data.education !== doctor.education?.ru) fieldsToTranslate.education = stripHtml(data.education);
 
     const incomingSpecialtyRu = typeof data.specialty === 'string' ? data.specialty : (data.specialty as any)?.ru;
     if (incomingSpecialtyRu && incomingSpecialtyRu !== doctor.specialty?.ru) {
-        fieldsToTranslate.specialty = incomingSpecialtyRu;
+        fieldsToTranslate.specialty = stripHtml(incomingSpecialtyRu);
     }
 
     // Выполняем перевод, если есть новые текстовые данные
@@ -61,8 +62,8 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
 
     const updateFields: Record<string, unknown> = Object.fromEntries(
       Object.entries({
-        name:         data.name,
-        phone:        data.phone,
+        name:         data.name ? stripHtml(data.name) : undefined,
+        phone:        data.phone ? stripHtml(data.phone) : undefined,
         image:        data.image,
         experience:   data.experience,
         languages:    data.languages,
