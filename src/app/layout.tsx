@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   description: "Верифицированные медицинские статьи от врачей Центральной Азии.",
   verification: {
-    google: "ZcN23s2ZiPZ9vBjP4QpQ25RPjKwCikDBiyQt5o4TuA4",
+    google: "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
   },
   alternates: {
     canonical: "https://duxtur.org",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     },
   },
   other: {
-    "google-site-verification": "ZcN23s2ZiPZ9vBjP4QpQ25RPjKwCikDBiyQt5o4TuA4",
+    "google-site-verification": "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
   },
 };
 
