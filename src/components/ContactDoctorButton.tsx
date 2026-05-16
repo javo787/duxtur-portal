@@ -6,6 +6,8 @@ import { signIn, useSession } from 'next-auth/react';
 interface Props {
   doctor: {
     name: string;
+    slug?: string;
+    _id?: any;
     phone?: string;
     instagram?: string;
     telegram?: string;
@@ -59,8 +61,8 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
 
   const handleOpen = () => {
     setOpen(true);
-    if (doctor.slug || (doctor as any)._id) {
-      const id = doctor.slug || (doctor as any)._id.toString();
+    const id = doctor.slug || doctor._id?.toString();
+    if (id) {
       fetch(`/api/doctor/${id}/contact`, { method: 'POST' }).catch(() => {});
     }
   };
