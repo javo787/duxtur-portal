@@ -6,6 +6,8 @@ import type { Metadata } from 'next';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/doctor-constants';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
+import { DoctorsSortSelect } from './_components/DoctorsSortSelect';
+import { AcceptsToggle } from './_components/AcceptsToggle';
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -231,37 +233,18 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
               </div>
 
               {/* Toggles */}
-              <div className="space-y-4 pt-4 border-t border-slate-50">
-                <div className="flex items-center justify-between group">
-                  <span className="text-sm font-bold text-slate-700">{L('accepts_new')}</span>
-                  <input form="search-form" name="accepts" type="hidden" value={sp.accepts === 'true' ? 'true' : 'false'} id="accepts-input" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.getElementById('accepts-input') as HTMLInputElement;
-                      input.value = input.value === 'true' ? 'false' : 'true';
-                      const btn = document.getElementById('accepts-toggle');
-                      if (btn) btn.classList.toggle('bg-blue-600');
-                      if (btn) btn.classList.toggle('bg-slate-200');
-                      const dot = btn?.firstElementChild;
-                      if (dot) dot.classList.toggle('left-6');
-                      if (dot) dot.classList.toggle('left-1');
-                    }}
-                    id="accepts-toggle"
-                    className={`w-10 h-5 rounded-full relative transition ${sp.accepts === 'true' ? 'bg-blue-600' : 'bg-slate-200'}`}
-                  >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${sp.accepts === 'true' ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-              </div>
+<div className="space-y-4 pt-4 border-t border-slate-50">
+  <AcceptsToggle
+    defaultChecked={sp.accepts === 'true'}
+    label={L('accepts_new')}
+  />
+</div>
 
-              <div className="pt-4">
-                <button form="search-form" type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-100">
-                  Применить фильтры
-                </button>
-              </div>
-            </div>
-          </aside>
+<div className="pt-4">
+  <button form="search-form" type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+    Применить фильтры
+  </button>
+</div>
 
           {/* MAIN GRID */}
           <div className="lg:col-span-3 space-y-6">
@@ -273,21 +256,16 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
 
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{L('sort_by')}:</span>
-                <select
-                  defaultValue={sp.sort || ''}
-                  onChange={(e) => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('sort', e.target.value);
-                    window.location.href = url.toString();
-                  }}
-                  className="bg-transparent text-sm font-bold text-slate-700 outline-none cursor-pointer"
-                >
-                  <option value="">{L('relevance')}</option>
-                  <option value="rating">{L('rating')}</option>
-                  <option value="price_asc">{L('price_asc')}</option>
-                  <option value="price_desc">{L('price_desc')}</option>
-                  <option value="exp">{L('experience')}</option>
-                </select>
+                <DoctorsSortSelect
+  defaultValue={sp.sort || ''}
+  labels={{
+    relevance: L('relevance'),
+    rating: L('rating'),
+    price_asc: L('price_asc'),
+    price_desc: L('price_desc'),
+    experience: L('experience'),
+  }}
+/>
               </div>
             </div>
 
