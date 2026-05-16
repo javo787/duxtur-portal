@@ -7,15 +7,17 @@ interface DoctorMapCardProps {
   doctor: any;
   lang: string;
   onClose: () => void;
+  onBuildRoute?: (doctor: any) => void;
+  hasLocation?: boolean;
 }
 
-export default function DoctorMapCard({ doctor, lang, onClose }: DoctorMapCardProps) {
+export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, hasLocation }: DoctorMapCardProps) {
   if (!doctor) return null;
 
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom md:slide-in-from-right duration-300 z-50">
+    <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom md:slide-in-from-right duration-300 z-50 transition-transform active:scale-95">
       <button
         onClick={onClose}
         className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-sm z-10"
@@ -49,6 +51,18 @@ export default function DoctorMapCard({ doctor, lang, onClose }: DoctorMapCardPr
            {doctor.distanceKm && <span>📍 {doctor.distanceKm.toFixed(1)} км</span>}
         </div>
 
+        {doctor.workingHours && (
+          <p className="text-[11px] text-slate-500">🕐 {doctor.workingHours}</p>
+        )}
+
+        {doctor.languages?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {doctor.languages.map((l: string) => (
+              <span key={l} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold uppercase">{l}</span>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <Link
             href={`/${lang}/doctor/${doctor.slug || doctor._id}`}
@@ -57,9 +71,18 @@ export default function DoctorMapCard({ doctor, lang, onClose }: DoctorMapCardPr
             Профиль
           </Link>
           <button className="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-center text-[11px] font-bold transition">
-            Записаться
+            📞 Контакты
           </button>
         </div>
+
+        {hasLocation && onBuildRoute && (
+          <button
+            onClick={() => onBuildRoute(doctor)}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-center text-[11px] font-bold transition flex items-center justify-center gap-2"
+          >
+            🗺 Построить маршрут
+          </button>
+        )}
       </div>
     </div>
   );

@@ -121,13 +121,17 @@ export function ProfileTab({ lang }: { lang: string }) {
   const handleGeocode = async () => {
     if (!profile.city && !profile.address) return;
     setIsGeocoding(true);
+    setErrorMsg('');
     try {
-      const address = `${profile.address}, ${profile.city}`;
-      const res = await fetch(`https://geocode-maps.yandex.ru/1.x/?apikey=${process.env.NEXT_PUBLIC_YANDEX_MAPS_KEY}&format=json&geocode=${encodeURIComponent(address)}`);
+      const address = `${profile.address}${profile.city ? ', ' + profile.city : ''}`;
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`, {
+        headers: { 'User-Agent': 'Duxtur.org/1.0' }
+      });
       const data = await res.json();
-      const pos = data.response.GeoObjectCollection.featureMember[0]?.GeoObject?.Point?.pos;
-      if (pos) {
-        const [lng, lat] = pos.split(' ').map(Number);
+
+      if (data && data[0]) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
         setProfile((p: any) => ({
           ...p,
           coordinates: {
@@ -138,9 +142,17 @@ export function ProfileTab({ lang }: { lang: string }) {
             coordinates: [lng, lat]
           }
         }));
+        setSaveState('saved'); // Show green for success
+        setTimeout(() => setSaveState('idle'), 2000);
+      } else {
+        setErrorMsg('Address not found, try a more specific address');
+        setSaveState('error');
+        setTimeout(() => setSaveState('idle'), 5000);
       }
     } catch (e) {
       console.error(e);
+      setErrorMsg('Geocoding service error');
+      setSaveState('error');
     } finally {
       setIsGeocoding(false);
     }
@@ -405,7 +417,7 @@ export function ProfileTab({ lang }: { lang: string }) {
             {profile.coordinates?.lat && (
               <div className="mt-4 rounded-xl overflow-hidden border border-slate-100 h-[200px] relative bg-slate-50">
                  <img
-                    src={`https://static-maps.yandex.ru/1.x/?ll=${profile.coordinates.lng},${profile.coordinates.lat}&size=600,200&z=15&l=map&pt=${profile.coordinates.lng},${profile.coordinates.lat},pm2blm&apikey=${process.env.NEXT_PUBLIC_YANDEX_MAPS_KEY}`}
+                    src={`https://static-maps.yandex.ru/1.x/?ll=${profile.coordinates.lng},${profile.coordinates.lat}&size=600,200&z=15&l=map&pt=${profile.coordinates.lng},${profile.coordinates.lat},pm2blm`}
                     alt="Map Preview"
                     className="w-full h-full object-cover"
                  />

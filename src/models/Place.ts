@@ -10,12 +10,18 @@ const PlaceSchema = new mongoose.Schema({
   address: String,
   city: String,
   phone: String,
-  coordinates: { lat: Number, lng: Number },
+  coordinates: {
+    lat: Number,
+    lng: Number,
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number] } // [lng, lat]
+  },
   isVerified: { type: Boolean, default: false },
   workingHours: String,
   doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
 }, { timestamps: true });
 
 PlaceSchema.index({ city: 1, type: 1 });
+PlaceSchema.index({ 'coordinates.coordinates': '2dsphere' });
 
 export default mongoose.models.Place || mongoose.model('Place', PlaceSchema);
