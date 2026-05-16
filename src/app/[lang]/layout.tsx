@@ -2,6 +2,16 @@ import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
 import { auth } from '@/auth';
+import { BASE_URL } from "@/lib/seo";
+
+export async function generateMetadata() {
+  return {
+    other: {
+      "link:preconnect:fonts": "https://fonts.googleapis.com",
+      "link:preconnect:fonts-static": "https://fonts.gstatic.com",
+    },
+  };
+}
 
 const inter = Inter({
   variable: "--font-inter",
@@ -30,6 +40,18 @@ export default async function LangLayout({
 
   return (
     <html lang={lang} dir="ltr">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`Duxtur.org RSS — ${lang}`}
+          href={`${BASE_URL}/${lang}/feed.xml`}
+        />
+      </head>
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
         <SessionProvider session={session}>
           {children}

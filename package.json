@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node -e \"const https=require('https');['https://www.google.com/ping?sitemap=https://duxtur.org/sitemap.xml','https://www.bing.com/ping?sitemap=https://duxtur.org/sitemap.xml'].forEach(u=>{try{https.get(u)}catch(e){}})\"",
     "start": "next start",
     "lint": "eslint"
   },

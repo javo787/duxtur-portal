@@ -238,6 +238,34 @@ export default async function DoctorProfilePage({ params }: Props) {
         />
       </div>
 
+      <nav
+        aria-label="breadcrumb"
+        className="max-w-6xl mx-auto px-4 py-2 lg:hidden"
+        itemScope
+        itemType="https://schema.org/BreadcrumbList"
+      >
+        <ol className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+          <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
+            <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+              <span itemProp="name">Duxtur.org</span>
+            </Link>
+            <meta itemProp="position" content="1" />
+          </li>
+          <li>/</li>
+          <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
+            <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+              <span itemProp="name">Врачи</span>
+            </Link>
+            <meta itemProp="position" content="2" />
+          </li>
+          <li>/</li>
+          <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
+            <span itemProp="name" className="text-gray-600 font-medium">{doctor.name}</span>
+            <meta itemProp="position" content="3" />
+          </li>
+        </ol>
+      </nav>
+
       {/* ОСНОВНОЙ КОНТЕНТ */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-10 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 pb-32 lg:pb-10">
 
@@ -398,7 +426,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 leading-relaxed italic">
-                      "{r.text}"
+                      &quot;{r.text}&quot;
                     </p>
                   </div>
                 ))}

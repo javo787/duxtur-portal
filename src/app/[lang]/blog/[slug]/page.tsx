@@ -106,6 +106,7 @@ return {
     "twitter:label1": "Reading time",
     "twitter:data1": `${readingMinutes} min read`,
     "keywords": article.category || "health, medicine",
+    ...(article.image ? { "link:preload:hero": article.image } : {}),
   }
   };
 } 
@@ -301,6 +302,14 @@ export default async function BlogPage({
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      {article.image && (
+        <link
+          rel="preload"
+          as="image"
+          href={article.image}
+          fetchPriority="high"
+        />
+      )}
       <ViewCounter slug={article.slug} />
       {/* Article Schema */}
       <script
@@ -388,7 +397,7 @@ export default async function BlogPage({
             >
               <img
                 src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                alt={article.authorId?.name}
+              alt={article.authorId?.name || 'Doctor'}
                 className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 group-hover:border-blue-400 transition"
               />
               <div>
@@ -603,7 +612,7 @@ export default async function BlogPage({
                   <div className="flex items-center gap-3">
                     <img
                       src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                      alt={article.authorId?.name}
+                      alt={article.authorId?.name || 'Doctor'}
                       className="w-14 h-14 rounded-2xl object-cover border-2 border-white/20"
                     />
                     <div>

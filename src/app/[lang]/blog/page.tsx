@@ -14,8 +14,9 @@ type Props = {
 
 export const revalidate = 1800; // ISR — обновление каждые 30 минут
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang } = await params;
+  const { page } = (await searchParams) as { category?: string; page?: string };
   const titles: Record<string, string> = {
     ru: 'Все статьи — Duxtur.org',
     uz: 'Barcha maqolalar — Duxtur.org',
@@ -33,7 +34,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: titles[lang] || titles.ru,
     description: descs[lang] || descs.ru,
-    alternates: buildAlternates('blog', lang),
+    alternates: {
+      ...buildAlternates('blog', lang),
+      canonical: `${BASE_URL}/${lang}/blog`,
+    },
+    ...(page && parseInt(page) > 1 ? { robots: { index: false, follow: true } } : {}),
+    other: {
+      'link:rss': `${BASE_URL}/${lang}/feed.xml`,
+    },
     openGraph: {
       title: titles[lang] || titles.ru,
       description: descs[lang] || descs.ru,
@@ -313,7 +321,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                       <div className="relative shrink-0">
                         <img
                           src={validArticles[0].authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                          alt={validArticles[0].authorId?.name}
+                          alt={validArticles[0].authorId?.name || 'Doctor'}
                           className="w-10 h-10 rounded-full object-cover border-2 border-gray-100"
                         />
                         <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
@@ -401,7 +409,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                               <div className="relative shrink-0">
                                 <img
                                   src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                                  alt={article.authorId?.name}
+                                  alt={article.authorId?.name || 'Doctor'}
                                   className="w-7 h-7 rounded-full object-cover border border-gray-100"
                                 />
                                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white" />

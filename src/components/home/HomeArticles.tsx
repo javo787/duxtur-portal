@@ -94,7 +94,7 @@ export default function HomeArticles({
                   <div className="relative shrink-0 w-10 h-10">
                     <Image
                       src={featured.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                      alt={featured.authorId?.name}
+                      alt={featured.authorId?.name || 'Doctor'}
                       fill
                       className="rounded-xl object-cover border-2 border-slate-100"
                     />
@@ -154,7 +154,7 @@ export default function HomeArticles({
                         <div className="relative w-6 h-6">
                           <Image
                             src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                            alt={article.authorId?.name}
+                          alt={article.authorId?.name || 'Doctor'}
                             fill
                             className="rounded-lg object-cover border border-slate-100"
                           />
