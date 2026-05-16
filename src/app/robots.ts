@@ -1,13 +1,39 @@
 import { MetadataRoute } from "next";
+import { BASE_URL } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur.org";
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/private/", "/*/admin/", "/*/login/", "/*/register/"],
-    },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "Googlebot",
+        allow: "/",
+        disallow: [
+          "/*/login",
+          "/*/register",
+          "/*/forgot-password",
+          "/*/reset-password",
+          "/*/signup",
+          "/*/search",
+          "/*/admin/",
+          "/private/",
+        ],
+      },
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: [
+          "/*/login",
+          "/*/register",
+          "/*/forgot-password",
+          "/*/reset-password",
+          "/*/signup",
+          "/*/search",
+          "/*/admin/",
+          "/private/",
+        ],
+        crawlDelay: 2,
+      }
+    ],
+    sitemap: `${BASE_URL}/sitemap.xml`,
   };
 }

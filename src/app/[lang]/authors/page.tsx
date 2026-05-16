@@ -3,9 +3,11 @@ import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, BASE_URL } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: string }> };
+
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -65,36 +67,45 @@ export default async function AuthorsPage({ params }: Props) {
     return field[lang] || field['ru'] || '';
   };
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
-
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${L('title', lang)} — Duxtur.org`,
-    url: `${baseUrl}/${lang}/authors`,
-    description: L('subtitle', lang),
-    publisher: {
-      '@type': 'Organization',
-      name: 'Duxtur.org',
-      url: baseUrl,
-    },
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Duxtur.org',
-          item: `${baseUrl}/${lang}`,
+    '@graph': [
+      {
+        '@type': 'MedicalOrganization',
+        '@id': `${BASE_URL}/#organization`,
+        name: 'Duxtur.org',
+        url: BASE_URL,
+        member: doctors.map(doc => ({
+          '@type': 'Person',
+          name: doc.name,
+          url: `${BASE_URL}/${lang}/doctor/${doc.slug || doc._id}`
+        }))
+      },
+      {
+        '@type': 'CollectionPage',
+        name: `${L('title', lang)} — Duxtur.org`,
+        url: `${BASE_URL}/${lang}/authors`,
+        description: L('subtitle', lang),
+        publisher: { '@id': `${BASE_URL}/#organization` },
+        breadcrumb: {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Duxtur.org',
+              item: `${BASE_URL}/${lang}`,
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: L('title', lang),
+              item: `${BASE_URL}/${lang}/authors`,
+            },
+          ],
         },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: L('title', lang),
-          item: `${baseUrl}/${lang}/authors`,
-        },
-      ],
-    },
+      }
+    ]
   };
 
   return (
@@ -109,7 +120,7 @@ export default async function AuthorsPage({ params }: Props) {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={`/${lang}`} className="flex items-center gap-2">
             <span className="text-xl font-extrabold text-gray-900">
-              duxtur<span className="text-blue-600">.com</span>
+              duxtur<span className="text-blue-600">.org</span>
             </span>
           </Link>
           <nav className="flex items-center gap-6 text-sm text-gray-500">
@@ -128,10 +139,18 @@ export default async function AuthorsPage({ params }: Props) {
 
       {/* BREADCRUMB */}
       <div className="max-w-7xl mx-auto px-6 py-3">
-        <nav className="flex items-center gap-2 text-xs text-gray-400">
-          <Link href={`/${lang}`} className="hover:text-blue-600 transition">{L('back', lang)}</Link>
+        <nav className="flex items-center gap-2 text-xs text-gray-400" itemScope itemType="https://schema.org/BreadcrumbList">
+          <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+            <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition">
+              <span itemProp="name">{L('back', lang)}</span>
+            </Link>
+            <meta itemProp="position" content="1" />
+          </span>
           <span>/</span>
-          <span className="text-gray-700 font-medium">{L('title', lang)}</span>
+          <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+            <span itemProp="name" className="text-gray-700 font-medium">{L('title', lang)}</span>
+            <meta itemProp="position" content="2" />
+          </span>
         </nav>
       </div>
 
@@ -222,7 +241,7 @@ export default async function AuthorsPage({ params }: Props) {
                   <div className="flex items-center justify-between mb-4">
                     <span className="inline-flex items-center gap-1.5 text-green-700 text-xs font-bold bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 01-2.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       {L('verified', lang)}
                     </span>

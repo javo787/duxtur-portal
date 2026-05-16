@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { buildAlternates } from '@/lib/seo';
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<{ q?: string }> };
 
@@ -19,6 +20,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title: q ? `"${q}" — ${label} | Duxtur.org` : `${label} — Duxtur.org`,
     robots: { index: false, follow: true },
+    alternates: buildAlternates('search', lang),
   };
 }
 
@@ -69,7 +71,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
       <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={`/${lang}`} className="text-xl font-extrabold text-blue-600">
-            duxtur<span className="text-gray-300 font-light">.com</span>
+            duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
           <Link href={`/${lang}`} className="text-sm text-gray-400 hover:text-gray-700 transition font-medium">
             ← Главная

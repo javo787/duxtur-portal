@@ -6,8 +6,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ShareButtons from '@/components/ShareButtons';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, BASE_URL } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
+import Image from 'next/image';
+import ViewCounter from '@/components/ViewCounter';
 
 const uiLabels: Record<string, Record<string, string>> = {
   verified:        { ru: 'Проверено врачом',    uz: 'Tekshirilgan',          tg: 'Тасдиқшуда',          kk: 'Тексерілген',      ky: 'Текшерилген'        },
@@ -17,7 +19,7 @@ const uiLabels: Record<string, Record<string, string>> = {
   readmin:         { ru: 'мин чтения',           uz: 'daqiqa o\'qish',        tg: 'дақиқаи хондан',      kk: 'мин оқу',          ky: 'мүн окуу'           },
   author:          { ru: 'Об авторе',            uz: 'Muallif haqida',        tg: 'Дар бораи муаллиф',   kk: 'Автор туралы',     ky: 'Автор жөнүндө'      },
   articles:        { ru: 'Все статьи автора →',  uz: 'Muallif maqolalari →',  tg: 'Мақолаҳои муаллиф →', kk: 'Автор мақалалары →', ky: 'Автордун макалалары →' },
-  related:         { ru: 'Похожие статьи',       uz: 'O\'xshash maqolalar',   tg: 'Мақолаҳои монанд',    kk: 'Ұқсас мақалалар',  ky: 'Окшош макалалар'    },
+  related:         { ru: 'Похожие статьи',       uz: 'O\'xshash maqolalar',   tg: 'Maltosh maqolalar',   kk: 'Ұқсас мақалалар',  ky: 'Окшош макалалар'    },
   disclaimer:      { ru: 'Важно',                uz: 'Muhim',                 tg: 'Муҳим',               kk: 'Маңызды',          ky: 'Маанилүү'           },
   published:       { ru: 'Опубликовано',         uz: 'Chop etilgan',          tg: 'Нашр шуд',            kk: 'Жарияланды',       ky: 'Жарыяланды'         },
   updated:         { ru: 'Обновлено',            uz: 'Yangilangan',           tg: 'Навсозӣ шуд',         kk: 'Жаңартылды',       ky: 'Жаңыртылды'         },
@@ -63,13 +65,20 @@ export async function generateMetadata({
   if (!article) return { title: 'Not Found' };
   const t = (f: any) => (f && (f[lang] || f['ru'])) || '';
   const title = `${t(article.title)} | Duxtur.org`;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://duxtur.org";
   const description = t(article.overview).substring(0, 160);
+
+  const fullText = [
+    t(article.overview), t(article.symptoms), t(article.causes),
+    t(article.diagnosis_treatment), t(article.prevention),
+    ...[1, 2, 3, 4, 5].map((i) => t(article[`section${i}_content`])),
+  ].join(' ');
+  const readingMinutes = Math.max(1, Math.ceil(fullText.split(' ').length / 200));
+
 const ogImage = article.image
   ? article.image.startsWith('http')
     ? article.image
-    : `${baseUrl}${article.image}`
-  : `${baseUrl}/og-default.png`;
+    : `${BASE_URL}${article.image}`
+  : `${BASE_URL}/og?title=${encodeURIComponent(t(article.title))}&author=${encodeURIComponent(article.authorId?.name || 'Duxtur')}&lang=${lang}`;
 
 return {
   title,
@@ -93,6 +102,11 @@ return {
     images: [ogImage],
   },
   alternates: buildAlternates(`blog/${slug}`, lang),
+  other: {
+    "twitter:label1": "Reading time",
+    "twitter:data1": `${readingMinutes} min read`,
+    "keywords": article.category || "health, medicine",
+  }
   };
 } 
 
@@ -110,8 +124,6 @@ export default async function BlogPage({
     .lean();
   if (!article) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
-
   const t = (field: any) => {
     if (!field) return '';
     return field[lang] || field['ru'] || '';
@@ -123,7 +135,8 @@ export default async function BlogPage({
     t(article.diagnosis_treatment), t(article.prevention),
     ...[1, 2, 3, 4, 5].map((i) => t(article[`section${i}_content`])),
   ].join(' ');
-  const readingMinutes = Math.max(1, Math.ceil(fullText.split(' ').length / 200));
+  const wordCount = fullText.split(/\s+/).length;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
   // ── Средний рейтинг ───────────────────────────────────────────────────────
   const avgRating =
@@ -190,9 +203,9 @@ export default async function BlogPage({
   const sections = dynamicSections.length > 0 ? dynamicSections : legacySections;
 
   // ── URLs ──────────────────────────────────────────────────────────────────
-  const articleUrl = `${baseUrl}/${lang}/blog/${article.slug}`;
+  const articleUrl = `${BASE_URL}/${lang}/blog/${article.slug}`;
   const authorSlug = article.authorId?.slug || article.authorId?._id;
-  const authorUrl = `${baseUrl}/${lang}/doctor/${authorSlug}`;
+  const authorUrl = `${BASE_URL}/${lang}/doctor/${authorSlug}`;
 
   // ── FAQ из секций (для Google "People Also Ask") ──────────────────────────
   const faqSections = sections.slice(0, 4);
@@ -218,17 +231,24 @@ export default async function BlogPage({
     headline: t(article.title),
     description: t(article.overview).substring(0, 160),
     url: articleUrl,
-    image: article.image,
+    image: article.image || `${BASE_URL}/og-default.png`,
+    thumbnailUrl: article.image || undefined,
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
     dateReviewed: article.lastMedicalReview || article.updatedAt,
     inLanguage: lang,
+    isAccessibleForFree: true,
+    wordCount: wordCount,
+    speakable: {
+      "@type": "SpeakableSpecification",
+      "cssSelector": ["h1", ".article-overview"]
+    },
     reviewedBy: article.reviewedById
       ? {
           '@type': 'Person',
-          '@id': `${baseUrl}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+          '@id': `${BASE_URL}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
           name: article.reviewedById?.name,
-          url: `${baseUrl}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
+          url: `${BASE_URL}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
         }
       : undefined,
     author: {
@@ -241,9 +261,19 @@ export default async function BlogPage({
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.org',
-      url: baseUrl,
-      logo: { '@type': 'ImageObject', url: `${baseUrl}/logo.png` },
+      url: BASE_URL,
+      logo: { '@type': 'ImageObject', url: `${BASE_URL}/logo.png` },
     },
+    interactionStatistic: {
+      "@type": "InteractionCounter",
+      "interactionType": "https://schema.org/ReadAction",
+      "userInteractionCount": article.views || 0
+    },
+    hasPart: sections.map(sec => ({
+      "@type": "WebPageElement",
+      "isAccessibleForFree": true,
+      "cssSelector": `#${sec.id}`
+    })),
     ...(avgRating > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
@@ -257,8 +287,8 @@ export default async function BlogPage({
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${baseUrl}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Blog',       item: `${baseUrl}/${lang}/blog` },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog',       item: `${BASE_URL}/${lang}/blog` },
         { '@type': 'ListItem', position: 3, name: t(article.title), item: articleUrl },
       ],
     },
@@ -271,6 +301,7 @@ export default async function BlogPage({
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <ViewCounter slug={article.slug} />
       {/* Article Schema */}
       <script
         type="application/ld+json"
@@ -288,7 +319,7 @@ export default async function BlogPage({
       <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href={`/${lang}`} className="font-extrabold text-blue-600 text-xl">
-            duxtur<span className="text-gray-300 font-light">.com</span>
+            duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link
@@ -311,10 +342,14 @@ export default async function BlogPage({
 
         {/* HERO */}
         <div className="relative w-full h-72 md:h-[460px] bg-gray-900 overflow-hidden">
-          <img
+          <Image
             src={article.image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=1200'}
             alt={t(article.title)}
             className="w-full h-full object-cover opacity-55"
+            priority={true}
+            fill
+            sizes="100vw"
+            quality={85}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-5xl mx-auto">
@@ -411,18 +446,31 @@ export default async function BlogPage({
           <div className="lg:col-span-8">
 
             {/* Breadcrumb */}
-            <nav aria-label="breadcrumb" className="mb-8">
+            <nav aria-label="breadcrumb" className="mb-8" itemScope itemType="https://schema.org/BreadcrumbList">
               <ol className="flex items-center gap-1.5 flex-wrap text-xs text-gray-400">
-                <li><Link href={`/${lang}`} className="hover:text-blue-600 transition font-medium">Duxtur.org</Link></li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                  <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+                    <span itemProp="name">Duxtur.org</span>
+                  </Link>
+                  <meta itemProp="position" content="1" />
+                </li>
                 <li className="select-none">/</li>
-                <li><Link href={`/${lang}/blog`} className="hover:text-blue-600 transition font-medium">Blog</Link></li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                  <Link href={`/${lang}/blog`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+                    <span itemProp="name">Blog</span>
+                  </Link>
+                  <meta itemProp="position" content="2" />
+                </li>
                 <li className="select-none">/</li>
-                <li className="text-gray-600 line-clamp-1 max-w-xs">{t(article.title)}</li>
+                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                  <span itemProp="name" className="text-gray-600 line-clamp-1 max-w-xs">{t(article.title)}</span>
+                  <meta itemProp="position" content="3" />
+                </li>
               </ol>
             </nav>
 
             {/* Overview */}
-            <div className="text-lg leading-8 text-gray-700 mb-10 font-medium border-l-4 border-blue-200 pl-6 italic">
+            <div className="text-lg leading-8 text-gray-700 mb-10 font-medium border-l-4 border-blue-200 pl-6 italic article-overview">
               <ReactMarkdown>{t(article.overview)}</ReactMarkdown>
             </div>
 
@@ -452,7 +500,7 @@ export default async function BlogPage({
             )}
 
             {/* Секции */}
-            <div className="space-y-14">
+            <div className="space-y-14" itemProp="articleBody">
               {sections.map((sec) => (
                 <section key={sec.id} id={sec.id} className="scroll-mt-20">
                   <h2 className="text-2xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
@@ -608,11 +656,12 @@ export default async function BlogPage({
                         href={`/${lang}/blog/${rel.slug}`}
                         className="flex gap-3 group hover:bg-gray-50 p-2 rounded-xl transition"
                       >
-                        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                          <img
+                        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100 relative">
+                          <Image
                             src={rel.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'}
                             alt={t(rel.title)}
-                            className="w-full h-full object-cover group-hover:scale-105 transition"
+                            fill
+                            className="object-cover group-hover:scale-105 transition"
                           />
                         </div>
                         <div className="flex-1 min-w-0">

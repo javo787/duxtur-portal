@@ -42,6 +42,17 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'duxtur-portal.vercel.app',
+          },
+        ],
+        destination: 'https://duxtur.org/:path*',
+        permanent: true,
+      },
+      {
         source: '/blog',
         destination: '/ru/blog',
         permanent: true,

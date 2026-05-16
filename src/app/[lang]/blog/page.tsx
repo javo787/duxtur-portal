@@ -4,7 +4,8 @@ import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import FadeIn from '@/components/FadeIn';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, BASE_URL } from '@/lib/seo';
+import Image from 'next/image';
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -15,7 +16,6 @@ export const revalidate = 1800; // ISR — обновление каждые 30 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const titles: Record<string, string> = {
     ru: 'Все статьи — Duxtur.org',
     uz: 'Barcha maqolalar — Duxtur.org',
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: titles[lang] || titles.ru,
       description: descs[lang] || descs.ru,
       type: 'website',
-      images: [`${baseUrl}/og-blog.png`],
+      images: [`${BASE_URL}/og-blog.png`],
     },
     twitter: {
       card: 'summary_large_image',
@@ -80,7 +80,6 @@ function pluralRu(n: number, one: string, few: string, many: string) {
 export default async function BlogListPage({ params, searchParams }: Props) {
   const { lang } = await params;
   const { category } = await searchParams;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
 
   await dbConnect();
   void Doctor; // ensure Doctor model registered for populate
@@ -106,19 +105,20 @@ export default async function BlogListPage({ params, searchParams }: Props) {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: L('heading', lang),
-    url: `${baseUrl}/${lang}/blog`,
+    url: `${BASE_URL}/${lang}/blog`,
     description: UI.heading[lang],
+    numberOfItems: validArticles.length,
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.org',
-      url: baseUrl,
+      url: BASE_URL,
     },
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${baseUrl}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${baseUrl}/${lang}/blog` },
-        ...(category ? [{ '@type': 'ListItem', position: 3, name: category, item: `${baseUrl}/${lang}/blog?category=${category}` }] : []),
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/${lang}/blog` },
+        ...(category ? [{ '@type': 'ListItem', position: 3, name: category, item: `${BASE_URL}/${lang}/blog?category=${category}` }] : []),
       ],
     },
     // Топ 5 статей как ItemList для Google Discover
@@ -128,7 +128,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
         itemListElement: validArticles.slice(0, 5).map((a, i) => ({
           '@type': 'ListItem',
           position: i + 1,
-          url: `${baseUrl}/${lang}/blog/${a.slug}`,
+          url: `${BASE_URL}/${lang}/blog/${a.slug}`,
           name: t(a.title),
         })),
       },
@@ -156,7 +156,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                 <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-xl font-extrabold text-gray-900">duxtur<span className="text-blue-600">.com</span></span>
+            <span className="text-xl font-extrabold text-gray-900">duxtur<span className="text-blue-600">.org</span></span>
           </Link>
           <nav className="flex items-center gap-5">
             <Link
@@ -187,15 +187,26 @@ export default async function BlogListPage({ params, searchParams }: Props) {
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           <FadeIn>
             {/* Breadcrumb in hero */}
-            <nav className="flex items-center justify-center gap-1.5 text-xs text-blue-400/70 mb-5">
-              <Link href={`/${lang}`} className="hover:text-blue-300 transition">{L('home', lang)}</Link>
+            <nav className="flex items-center justify-center gap-1.5 text-xs text-blue-400/70 mb-5" itemScope itemType="https://schema.org/BreadcrumbList">
+              <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-300 transition">
+                  <span itemProp="name">{L('home', lang)}</span>
+                </Link>
+                <meta itemProp="position" content="1" />
+              </span>
               <span>/</span>
-              <span className="text-blue-200">Blog</span>
+              <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                <span itemProp="name" className="text-blue-200">Blog</span>
+                <meta itemProp="position" content="2" />
+              </span>
               {category && (
                 <>
                   <span>/</span>
-                  <span className="text-blue-200">
-                    {CATEGORIES.find((c) => c.slug === category)?.label[lang as keyof (typeof CATEGORIES)[0]['label']] || category}
+                  <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+                    <span itemProp="name" className="text-blue-200">
+                      {CATEGORIES.find((c) => c.slug === category)?.label[lang as keyof (typeof CATEGORIES)[0]['label']] || category}
+                    </span>
+                    <meta itemProp="position" content="3" />
                   </span>
                 </>
               )}
@@ -263,10 +274,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
               <Link href={`/${lang}/blog/${validArticles[0].slug}`} className="group block mb-8">
                 <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition duration-500 md:grid md:grid-cols-5">
                   <div className="md:col-span-3 h-72 md:h-80 overflow-hidden relative">
-                    <img
+                    <Image
                       src={validArticles[0].image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900'}
                       alt={t(validArticles[0].title)}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                      fill
+                      className="object-cover group-hover:scale-105 transition duration-700"
+                      priority={true}
+                      sizes="(max-width: 768px) 100vw, 60vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                     {/* Category badge */}
@@ -338,11 +352,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                       >
                         {/* Фото */}
                         <div className="h-52 overflow-hidden relative shrink-0">
-                          <img
+                          <Image
                             src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                             alt={t(article.title)}
-                            className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                            fill
+                            className="object-cover group-hover:scale-110 transition duration-700"
                             loading="lazy"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
                           {/* Бейджи поверх фото */}
