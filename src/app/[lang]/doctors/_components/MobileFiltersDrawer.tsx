@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
+import UI from '@/dictionaries/doctor-translations';
 
 type Props = {
   lang: string;
@@ -11,7 +12,7 @@ type Props = {
   L: (key: string) => string;
 };
 
-export default function MobileFiltersDrawer({ lang, cities, sp, L }: Props) {
+export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
