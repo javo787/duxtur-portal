@@ -33,12 +33,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Поиск врачей (priority 0.9, daily)
-  const doctorSearchPages = languages.map((lang) => ({
-    url: `${BASE_URL}/${lang}/doctors`,
-    lastModified: new Date(),
-    changeFrequency: "daily" as const,
-    priority: 0.9,
-  }));
+  const doctorSearchPages = languages.flatMap((lang) => [
+    {
+      url: `${BASE_URL}/${lang}/doctors`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/${lang}/doctors/map`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+  ]);
 
   // Авторы (priority 0.8, weekly)
   const authorListPages = languages.map((lang) => ({
@@ -46,6 +54,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.8,
+  }));
+
+  // Пациенты (noindex)
+  const patientPages = languages.map((lang) => ({
+    url: `${BASE_URL}/${lang}/patient/appointments`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.5,
   }));
 
   // Статические страницы (priority 0.6, monthly)
@@ -67,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Статьи — только языки где реально есть перевод (priority 0.85, weekly)
   const articlePages = articles.flatMap((article: any) => {
     const availableLangs = languages.filter(
-      (lang) => article.title?.[lang] && article.title[lang].trim().length > 0
+      (lang) => article.title?.[lang] && article.title[lang].trim().length > 5
     );
 
     // Если переводов нет совсем — пропускаем статью
@@ -96,6 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...blogPages,
     ...doctorSearchPages,
     ...authorListPages,
+    ...patientPages,
     ...staticPages,
     ...articlePages,
     ...doctorPages,

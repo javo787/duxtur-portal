@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Doctor from '@/models/Doctor';
+
+export async function GET(req: NextRequest) {
+  try {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+
+    const lat = parseFloat(searchParams.get('lat') || '');
+    const lng = parseFloat(searchParams.get('lng') || '');
+    const radius = parseFloat(searchParams.get('radius') || '50');
+    const specialty = searchParams.get('specialty');
+    const city = searchParams.get('city');
+    const lang_code = searchParams.get('lang_code') || 'ru';
+    const priceMin = parseInt(searchParams.get('priceMin') || '0');
+    const priceMax = parseInt(searchParams.get('priceMax') || '0');
+    const accepts = searchParams.get('accepts');
+    const consultationType = searchParams.get('consultationType');
+
+    const pipeline: any[] = [];
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      pipeline.push({
+        $geoNear: {
+          near: { type: 'Point', coordinates: [lng, lat] },
+          distanceField: 'distanceKm',
+          spherical: true,
+          maxDistance: radius * 1000,
+          distanceMultiplier: 0.001,
+          query: { status: 'approved' }
+        }
+      });
+    } else {
+      pipeline.push({ $match: { status: 'approved' } });
+    }
+
+    const match: any = {};
+    if (specialty) match['specialty.ru'] = specialty; // Or use CATEGORY_LABELS mapping if needed
+    if (city) match.city = new RegExp(city, 'i');
+    if (priceMin > 0) match['priceRange.min'] = { $gte: priceMin };
+    if (priceMax > 0) match['priceRange.max'] = { $lte: priceMax };
+    if (accepts === 'true') match.acceptsNewPatients = true;
+    if (consultationType) match.consultationTypes = consultationType;
+
+    if (Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+
+    pipeline.push({
+      $project: {
+        _id: 1,
+        slug: 1,
+        name: 1,
+        image: 1,
+        city: 1,
+        address: 1,
+        coordinates: 1,
+        specialty: 1,
+        priceRange: 1,
+        consultationTypes: 1,
+        reviewAvg: 1,
+        reviewCount: 1,
+        acceptsNewPatients: 1,
+        languages: 1,
+        distanceKm: 1
+      }
+    });
+
+    pipeline.push({ $limit: 200 });
+
+    const doctors = await Doctor.aggregate(pipeline);
+
+    return NextResponse.json(doctors, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      }
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

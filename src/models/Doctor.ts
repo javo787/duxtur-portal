@@ -44,6 +44,8 @@ const DoctorSchema = new mongoose.Schema({
   coordinates: {
     lat: { type: Number },
     lng: { type: Number },
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number] }, // [lng, lat]
   },
   clinicName: { type: String, default: '' },
 
@@ -90,5 +92,7 @@ DoctorSchema.index({ city: 1 });
 DoctorSchema.index({ 'specialty.ru': 1 });
 DoctorSchema.index({ status: 1 });
 DoctorSchema.index({ reviewAvg: -1 });
+DoctorSchema.index({ 'coordinates.coordinates': '2dsphere' });
+DoctorSchema.index({ name: 'text', 'specialty.ru': 'text', city: 'text' });
 
 export default mongoose.models.Doctor || mongoose.model('Doctor', DoctorSchema);

@@ -55,12 +55,16 @@ export default async function AuthorsPage({ params }: Props) {
     .sort({ createdAt: -1 })
     .lean();
 
-  const doctorsWithCount = await Promise.all(
-    doctors.map(async (doc) => ({
-      ...doc,
-      articleCount: await Article.countDocuments({ authorId: doc._id }),
-    }))
-  );
+  const counts = await Article.aggregate([
+    { $match: { authorId: { $in: doctors.map(d => d._id) } } },
+    { $group: { _id: '$authorId', count: { $sum: 1 } } }
+  ]);
+  const countMap = Object.fromEntries(counts.map(c => [c._id.toString(), c.count]));
+
+  const doctorsWithCount = doctors.map((doc) => ({
+    ...doc,
+    articleCount: countMap[doc._id.toString()] ?? 0,
+  }));
 
   const t = (field: any) => {
     if (!field) return '';

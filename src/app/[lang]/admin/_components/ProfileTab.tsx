@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { updateDoctorProfile } from '@/app/actions/update-profile';
+import Script from 'next/script';
 
 // Helper to safely extract a string from a multilingual field
 function strField(field: any, lang = 'ru'): string {
@@ -94,6 +95,7 @@ export function ProfileTab({ lang }: { lang: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -115,7 +117,34 @@ export function ProfileTab({ lang }: { lang: string }) {
     if (result.success) setProfile((p: any) => ({ ...p, image: result.url }));
   };
 
-  
+  const handleGeocode = async () => {
+    if (!profile.city && !profile.address) return;
+    setIsGeocoding(true);
+    try {
+      const address = `${profile.address}, ${profile.city}`;
+      const res = await fetch(`https://geocode-maps.yandex.ru/1.x/?apikey=${process.env.NEXT_PUBLIC_YANDEX_MAPS_KEY}&format=json&geocode=${encodeURIComponent(address)}`);
+      const data = await res.json();
+      const pos = data.response.GeoObjectCollection.featureMember[0]?.GeoObject?.Point?.pos;
+      if (pos) {
+        const [lng, lat] = pos.split(' ').map(Number);
+        setProfile((p: any) => ({
+          ...p,
+          coordinates: {
+            ...p.coordinates,
+            lat,
+            lng,
+            type: 'Point',
+            coordinates: [lng, lat]
+          }
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveState('idle');
@@ -363,6 +392,24 @@ export function ProfileTab({ lang }: { lang: string }) {
             onChange={(v) => setProfile((p: any) => ({ ...p, clinicName: v }))}
             placeholder="Медицинский центр 'Сино'"
           />
+          <div className="md:col-span-2">
+            <button
+              onClick={handleGeocode}
+              disabled={isGeocoding}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition"
+            >
+              {isGeocoding ? <Spinner /> : '📍 Найти на карте'}
+            </button>
+            {profile.coordinates?.lat && (
+              <div className="mt-4 rounded-xl overflow-hidden border border-slate-100 h-[200px] relative bg-slate-50">
+                 <img
+                    src={`https://static-maps.yandex.ru/1.x/?ll=${profile.coordinates.lng},${profile.coordinates.lat}&size=600,200&z=15&l=map&pt=${profile.coordinates.lng},${profile.coordinates.lat},pm2blm&apikey=${process.env.NEXT_PUBLIC_YANDEX_MAPS_KEY}`}
+                    alt="Map Preview"
+                    className="w-full h-full object-cover"
+                 />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

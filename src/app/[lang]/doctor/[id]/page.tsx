@@ -16,6 +16,7 @@ import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
 import Image from 'next/image';
 import DoctorViewTracker from '@/components/DoctorViewTracker';
 import ReviewModal from './_components/ReviewModal';
+import BookingButton from './_components/BookingButton';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -533,6 +534,18 @@ export default async function DoctorProfilePage({ params }: Props) {
             />
 
             <ContactDoctorButton doctor={doctor} lang={lang} />
+
+            {doctor.acceptsNewPatients !== false && (
+              <BookingButton
+                doctor={{
+                  id: doctor._id.toString(),
+                  name: doctor.name,
+                  schedule: doctor.schedule,
+                  consultationTypes: doctor.consultationTypes
+                }}
+                lang={lang}
+              />
+            )}
 
             {/* Локация и клиника */}
             {(doctor.clinicName || doctor.address) && (

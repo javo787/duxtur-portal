@@ -242,7 +242,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
           >
             {CATEGORIES.map((cat) => {
               const isActive = (category || '') === cat.slug;
-              const href = cat.slug ? `/${lang}/blog?category=${cat.slug}` : `/${lang}/blog`;
+              const href = cat.slug ? `/${lang}/blog/c/${cat.slug}` : `/${lang}/blog`;
               return (
                 <Link
                   key={cat.slug}
