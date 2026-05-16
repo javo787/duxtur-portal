@@ -6,13 +6,17 @@ import { WriteTab } from './_components/WriteTab';
 import { ProfileTab } from './_components/ProfileTab';
 import { MyArticlesTab } from './_components/MyArticlesTab';
 import { ArticleEditModal } from './_components/ArticleEditModal';
+import { AppointmentsTab } from './_components/AppointmentsTab';
+import { AnalyticsTab } from './_components/AnalyticsTab';
 
-type Tab = 'write' | 'articles' | 'profile';
+type Tab = 'write' | 'articles' | 'profile' | 'appointments' | 'analytics';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'write',    label: '✍️ Написать статью' },
   { id: 'articles', label: '📋 Мои статьи' },
   { id: 'profile',  label: '👤 Мой профиль' },
+  { id: 'appointments', label: '📅 Записи' },
+  { id: 'analytics', label: '📊 Аналитика' },
 ];
 
 export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: string }> }) {
@@ -79,6 +83,8 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
           />
         )}
         {tab === 'profile'  && <ProfileTab lang={lang} />}
+        {tab === 'appointments' && <AppointmentsTab lang={lang} />}
+        {tab === 'analytics' && <AnalyticsTab />}
       </div>
 
       {/* Article edit modal */}

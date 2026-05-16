@@ -216,9 +216,17 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
           <div className="lg:col-span-3 space-y-6">
             {/* Sorting & Stats */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <p className="text-sm text-slate-500 font-medium">
-                Найдено <span className="text-slate-900 font-bold">{total}</span> {L('doctors')}
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-slate-500 font-medium">
+                  Найдено <span className="text-slate-900 font-bold">{total}</span> {L('doctors')}
+                </p>
+                <Link
+                  href={`/${lang}/doctors/map`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold hover:bg-blue-100 transition"
+                >
+                  📍 Показать на карте
+                </Link>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{L('sort_by')}:</span>
                 <DoctorsSortSelect

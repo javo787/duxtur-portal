@@ -68,4 +68,9 @@ const ArticleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
+ArticleSchema.index({
+  'title.ru': 'text', 'title.uz': 'text', 'title.tg': 'text', 'title.kk': 'text', 'title.ky': 'text',
+  'overview.ru': 'text', 'overview.uz': 'text', 'overview.tg': 'text', 'overview.kk': 'text', 'overview.ky': 'text'
+});
+
 export default mongoose.models.Article || mongoose.model('Article', ArticleSchema);
