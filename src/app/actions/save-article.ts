@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
 import { auth } from '@/auth';
+import { stripHtml } from '@/lib/utils';
 
 function cleanText(content: any): string {
   if (Array.isArray(content)) return content.map((item) => `• ${item}`).join('\n');
@@ -58,19 +59,19 @@ const slug = transliterate(rawTitle)
   slug,
   authorId: doctor._id,
   image: articleData.image || '',
-  title: { [language]: articleData.title },
-  overview: { [language]: articleData.overview },
+  title: { [language]: stripHtml(articleData.title) },
+  overview: { [language]: stripHtml(articleData.overview) },
   // Динамические секции
-  section1_title: { [language]: articleData.section1_title || '' },
-  section1_content: { [language]: articleData.section1_content || '' },
-  section2_title: { [language]: articleData.section2_title || '' },
-  section2_content: { [language]: articleData.section2_content || '' },
-  section3_title: { [language]: articleData.section3_title || '' },
-  section3_content: { [language]: articleData.section3_content || '' },
-  section4_title: { [language]: articleData.section4_title || '' },
-  section4_content: { [language]: articleData.section4_content || '' },
-  section5_title: { [language]: articleData.section5_title || '' },
-  section5_content: { [language]: articleData.section5_content || '' },
+  section1_title: { [language]: stripHtml(articleData.section1_title || '') },
+  section1_content: { [language]: stripHtml(articleData.section1_content || '') },
+  section2_title: { [language]: stripHtml(articleData.section2_title || '') },
+  section2_content: { [language]: stripHtml(articleData.section2_content || '') },
+  section3_title: { [language]: stripHtml(articleData.section3_title || '') },
+  section3_content: { [language]: stripHtml(articleData.section3_content || '') },
+  section4_title: { [language]: stripHtml(articleData.section4_title || '') },
+  section4_content: { [language]: stripHtml(articleData.section4_content || '') },
+  section5_title: { [language]: stripHtml(articleData.section5_title || '') },
+  section5_content: { [language]: stripHtml(articleData.section5_content || '') },
   references: references,
 isVerified: false,
 aiGenerated: articleData.aiGenerated ?? true,

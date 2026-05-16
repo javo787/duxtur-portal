@@ -4,7 +4,7 @@ import Article from '@/models/Article';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
@@ -17,6 +17,7 @@ import Image from 'next/image';
 import DoctorViewTracker from '@/components/DoctorViewTracker';
 import ReviewModal from './_components/ReviewModal';
 import BookingButton from './_components/BookingButton';
+import ReviewList from './_components/ReviewList';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -31,9 +32,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const firstName = doctor.name.split(' ')[0];
   const lastName = doctor.name.split(' ').slice(1).join(' ');
 
+  const articlesCount = await Article.countDocuments({ authorId: doctor._id });
+
+  const description = `${doctor.name} — ${specialty} в ${doctor.city}. ${doctor.experience} лет опыта, рейтинг ${doctor.reviewAvg}/5. ${articlesCount} медицинских статей на Duxtur.org`;
+
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.org`,
-    description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.org`,
+    description,
     alternates: buildAlternates(`doctor/${id}`, lang),
     openGraph: {
       type: 'profile',
@@ -156,16 +161,26 @@ export default async function DoctorProfilePage({ params }: Props) {
     } : undefined,
     openingHours: doctor.schedule ? buildOpeningHours(doctor.schedule) : undefined,
     priceRange: doctor.priceRange?.min ? `${doctor.priceRange.min}–${doctor.priceRange.max} TJS` : undefined,
+    aggregateRating: doctor.reviewCount > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": doctor.reviewAvg,
+      "reviewCount": doctor.reviewCount,
+      "bestRating": 5
+    } : undefined,
+    review: reviews.length > 0 ? reviews.slice(0, 3).map((r: any) => ({
+      "@type": "Review",
+      "reviewRating": { "@type": "Rating", "ratingValue": r.rating },
+      "author": { "@type": "Person", "name": r.isAnonymous ? "Анонимный пациент" : "Пациент" },
+      "reviewBody": r.text,
+      "datePublished": r.createdAt.toISOString().split('T')[0]
+    })) : undefined,
     lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
     knowsAbout: specialtyLabel || undefined,
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Врачи', item: `${BASE_URL}/${lang}/authors` },
-        { '@type': 'ListItem', position: 3, name: doctor.name, item: doctorUrl },
-      ],
-    },
+    breadcrumb: buildBreadcrumbJsonLd([
+      { name: 'Duxtur.org', url: `/${lang}` },
+      { name: 'Врачи', url: `/${lang}/authors` },
+      { name: doctor.name, url: `doctor/${doctor.slug || doctor._id}` },
+    ]),
   };
   Object.keys(jsonLd).forEach((k) => jsonLd[k] === undefined && delete jsonLd[k]);
 
@@ -400,39 +415,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <ReviewModal doctorId={doctor._id.toString()} doctorName={doctor.name} lang={lang} />
             </div>
 
-            {reviews.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
-                Пока отзывов нет. Будьте первым!
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {reviews.map((r) => (
-                  <div key={r._id.toString()} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold">
-                          {r.isAnonymous ? '?' : 'П'}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {r.isAnonymous ? 'Анонимный пациент' : 'Пациент'}
-                          </p>
-                          <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                            {new Date(r.createdAt).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex text-amber-400 text-xs">
-                        {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed italic">
-                      &quot;{r.text}&quot;
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ReviewList initialReviews={reviews} doctorId={doctor._id.toString()} />
           </div>
 
           {/* "You may also like" section */}

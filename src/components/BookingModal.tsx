@@ -65,8 +65,23 @@ export default function BookingModal({ doctorId, doctorName, doctorSchedule, doc
   };
 
   const downloadICS = () => {
-    const start = `${selectedDate?.replace(/-/g, '')}T${selectedSlot?.replace(':', '')}00`;
-    const end = `${selectedDate?.replace(/-/g, '')}T${selectedSlot?.replace(':', '')}30`; // Default 30 min
+    if (!selectedDate || !selectedSlot) return;
+
+    // Use specific date parsing to avoid timezone issues
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const [hours, minutes] = selectedSlot.split(':').map(Number);
+
+    // We create dates in local time then convert to ISO for UTC
+    const startDate = new Date(year, month - 1, day, hours, minutes);
+    const endDate = new Date(startDate.getTime() + 30 * 60000);
+
+    const formatICSDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const start = formatICSDate(startDate);
+    const end = formatICSDate(endDate);
+
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
@@ -120,11 +135,22 @@ END:VCALENDAR`;
                    const d = new Date();
                    d.setDate(d.getDate() + i + 1);
                    const iso = d.toISOString().split('T')[0];
+
+                   const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                   const dayKey = dayNames[d.getDay()];
+                   const isWorking = doctorSchedule?.[dayKey]?.isWorking;
+                   const isPast = d < new Date();
+                   const isDisabled = !isWorking || isPast;
+
                    return (
                      <button
                        key={iso}
+                       disabled={isDisabled}
                        onClick={() => { setSelectedDate(iso); setStep(2); }}
-                       className={`p-2 rounded-lg text-center transition ${selectedDate === iso ? 'bg-blue-600 text-white' : 'hover:bg-slate-100'}`}
+                       className={`p-2 rounded-lg text-center transition ${
+                         selectedDate === iso ? 'bg-blue-600 text-white' :
+                         isDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100'
+                       }`}
                      >
                        <div className="text-[10px] uppercase">{d.toLocaleDateString(lang, { weekday: 'short' })}</div>
                        <div className="font-bold">{d.getDate()}</div>

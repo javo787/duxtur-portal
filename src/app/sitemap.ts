@@ -3,6 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Article from "@/models/Article";
 import Doctor from "@/models/Doctor";
 import { BASE_URL } from "@/lib/seo";
+import { CATEGORY_LABELS } from "@/lib/doctor-constants";
 
 export const revalidate = 3600; // Регенерация каждый час
 
@@ -107,6 +108,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   );
 
+  // Страницы специалистов по категориям (priority 0.85, weekly)
+  const specialtyPages = Object.keys(CATEGORY_LABELS).flatMap((specialty) =>
+    languages.map((lang) => ({
+      url: `${BASE_URL}/${lang}/doctors/${specialty}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    }))
+  );
+
   return [
     ...mainPages,
     ...blogPages,
@@ -116,5 +127,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPages,
     ...articlePages,
     ...doctorPages,
+    ...specialtyPages,
   ];
 }

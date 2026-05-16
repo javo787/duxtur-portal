@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## MongoDB Indexes
+To ensure search works correctly, you need to create text indexes:
+```bash
+npx tsx src/scripts/create-indexes.ts
+```
+
 ## Getting Started
 
 First, run the development server:

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   try {
     await dbConnect();
     const { searchParams } = new URL(req.url);

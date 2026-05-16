@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { notifyAdminNewDoctor } from '@/lib/telegram';
 import { createDoctor } from '@/lib/db-doctor';
 import { translateText } from '@/lib/translation-service';
+import { stripHtml } from '@/lib/utils';
 
 const translitMap: Record<string, string> = {
   'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
@@ -38,11 +39,11 @@ export async function registerDoctor(formData: FormData) {
   try {
     await dbConnect();
 
-    const name             = formData.get('name') as string;
+    const name             = stripHtml(formData.get('name') as string);
     const email            = formData.get('email') as string;
-    const phone            = formData.get('phone') as string;
+    const phone            = stripHtml(formData.get('phone') as string);
     const password         = formData.get('password') as string;
-    const specialty        = formData.get('specialty') as string;
+    const specialty        = stripHtml(formData.get('specialty') as string);
     const documentImageUrl = formData.get('documentImageUrl') as string;
 
     if (!email || !password || !name || !documentImageUrl) {
