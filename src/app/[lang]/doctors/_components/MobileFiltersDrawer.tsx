@@ -8,12 +8,12 @@ import UI from '@/dictionaries/doctor-translations';
 type Props = {
   lang: string;
   cities: string[];
-  sp: any; // searchParams
-  L: (key: string) => string;
+  sp: any;
 };
 
 export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
   const [open, setOpen] = useState(false);
+  const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
 
   return (
     <>
