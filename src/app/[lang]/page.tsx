@@ -38,6 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [`${BASE_URL}/og-default.png`],
     },
     alternates: buildAlternates('', lang),
+    other: {
+      'link:rss': `${BASE_URL}/${lang}/feed.xml`,
+    },
   };
 }
 

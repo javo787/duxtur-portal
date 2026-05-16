@@ -212,7 +212,7 @@ export default async function AuthorsPage({ params }: Props) {
                   <div className="relative shrink-0">
                     <img
                       src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                      alt={doc.name}
+                      alt={doc.name || 'Doctor'}
                       width={72}
                       height={72}
                       className="w-[72px] h-[72px] rounded-2xl object-cover border-2 border-white/20 group-hover:border-white/50 transition"
