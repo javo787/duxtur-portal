@@ -63,6 +63,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: '/doctors',
+        destination: '/ru/doctors',
+        permanent: true,
+      },
+      {
         source: '/',
         destination: '/ru',
         permanent: true,

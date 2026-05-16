@@ -159,3 +159,62 @@ export async function approveArticle(articleId: string) {
   await Article.findByIdAndUpdate(articleId, { isVerified: true });
   revalidatePath('/admin/portal');
 }
+
+export async function approveReview(reviewId: string) {
+  await dbConnect();
+  const Review = (await import('@/models/Review')).default;
+  const review = await Review.findById(reviewId);
+  if (!review || review.isVerified) return;
+
+  await Review.findByIdAndUpdate(reviewId, { isVerified: true });
+
+  // Recalculate doctor stats
+  const doctor = await Doctor.findById(review.doctorId);
+  if (doctor) {
+    const allReviews = await Review.find({ doctorId: review.doctorId, isVerified: true });
+    const count = allReviews.length;
+    const sum = allReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+    const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+
+    await Doctor.findByIdAndUpdate(review.doctorId, {
+      reviewCount: count,
+      reviewSum: sum,
+      reviewAvg: avg,
+    });
+  }
+
+  revalidatePath('/admin/portal');
+  if (doctor?.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
+}
+
+export async function deleteReview(reviewId: string) {
+  await dbConnect();
+  const Review = (await import('@/models/Review')).default;
+  const review = await Review.findById(reviewId);
+  if (!review) return;
+
+  const doctorId = review.doctorId;
+  const wasVerified = review.isVerified;
+
+  await Review.findByIdAndDelete(reviewId);
+
+  if (wasVerified) {
+    // Recalculate doctor stats
+    const doctor = await Doctor.findById(doctorId);
+    if (doctor) {
+      const allReviews = await Review.find({ doctorId, isVerified: true });
+      const count = allReviews.length;
+      const sum = allReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+      const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+
+      await Doctor.findByIdAndUpdate(doctorId, {
+        reviewCount: count,
+        reviewSum: sum,
+        reviewAvg: avg,
+      });
+      if (doctor.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
+    }
+  }
+
+  revalidatePath('/admin/portal');
+}

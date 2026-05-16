@@ -36,6 +36,59 @@ const DoctorSchema = new mongoose.Schema({
   downloadsCount: { type: Number, default: 0 },
   accentColor: { type: String, default: '#2563eb' },
   cardTheme: { type: String, enum: ['dark', 'light'], default: 'dark' },
+
+  // Location
+  city: { type: String, default: '' },
+  district: { type: String, default: '' },
+  address: { type: String, default: '' },
+  coordinates: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
+  clinicName: { type: String, default: '' },
+
+  // Booking & Schedule
+  acceptsNewPatients: { type: Boolean, default: true },
+  consultationTypes: {
+    type: [String],
+    enum: ['in_person', 'online', 'home_visit'],
+    default: ['in_person'],
+  },
+  priceRange: {
+    min: { type: Number, default: 0 },
+    max: { type: Number, default: 0 },
+    currency: { type: String, default: 'TJS' },
+  },
+  schedule: {
+    mon: { open: String, close: String, isWorking: Boolean },
+    tue: { open: String, close: String, isWorking: Boolean },
+    wed: { open: String, close: String, isWorking: Boolean },
+    thu: { open: String, close: String, isWorking: Boolean },
+    fri: { open: String, close: String, isWorking: Boolean },
+    sat: { open: String, close: String, isWorking: Boolean },
+    sun: { open: String, close: String, isWorking: Boolean },
+  },
+
+  // Patient reviews
+  reviewCount: { type: Number, default: 0 },
+  reviewSum: { type: Number, default: 0 },
+  reviewAvg: { type: Number, default: 0 },
+
+  // Verification badge level
+  verificationLevel: {
+    type: String,
+    enum: ['basic', 'verified', 'premium'],
+    default: 'basic',
+  },
+
+  // Analytics
+  profileViews: { type: Number, default: 0 },
+  contactClicks: { type: Number, default: 0 },
 }, { timestamps: true });
+
+DoctorSchema.index({ city: 1 });
+DoctorSchema.index({ 'specialty.ru': 1 });
+DoctorSchema.index({ status: 1 });
+DoctorSchema.index({ reviewAvg: -1 });
 
 export default mongoose.models.Doctor || mongoose.model('Doctor', DoctorSchema);

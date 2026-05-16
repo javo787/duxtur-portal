@@ -218,21 +218,30 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
               {dict.hero_subtitle}
             </p>
 
-            <div data-animate className="flex flex-wrap justify-center lg:justify-start gap-4">
+            <div data-animate className="flex flex-col sm:flex-row items-center lg:items-start gap-4">
+              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                <Link
+                  href={`/${lang}/blog`}
+                  className="inline-flex items-center gap-2.5 px-7 py-4 bg-slate-900 text-white font-semibold rounded-2xl hover:bg-slate-800 transition-colors active:scale-95 shadow-lg shadow-slate-200"
+                >
+                  {dict.hero_cta_read}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+                <Link
+                  href={`/${lang}/register`}
+                  className="inline-flex items-center gap-2.5 px-7 py-4 border-2 border-slate-200 text-slate-700 font-semibold rounded-2xl hover:border-slate-300 hover:bg-slate-50 transition-colors active:scale-95"
+                >
+                  {dict.hero_cta_write}
+                </Link>
+              </div>
+
               <Link
-                href={`/${lang}/blog`}
-                className="inline-flex items-center gap-2.5 px-7 py-4 bg-slate-900 text-white font-semibold rounded-2xl hover:bg-slate-800 transition-colors active:scale-95"
+                href={`/${lang}/doctors`}
+                className="inline-flex items-center gap-2.5 px-7 py-4 text-blue-600 font-bold hover:text-blue-700 transition-colors active:scale-95"
               >
-                {dict.hero_cta_read}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-              <Link
-                href={`/${lang}/register`}
-                className="inline-flex items-center gap-2.5 px-7 py-4 border-2 border-slate-200 text-slate-700 font-semibold rounded-2xl hover:border-slate-300 hover:bg-slate-50 transition-colors active:scale-95"
-              >
-                {dict.hero_cta_write}
+                🔍 Найти врача рядом →
               </Link>
             </div>
           </div>

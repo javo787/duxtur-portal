@@ -23,6 +23,14 @@ interface DoctorProfileData {
   workingHours?: string;
   accentColor?: string;
   cardTheme?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  clinicName?: string;
+  acceptsNewPatients?: boolean;
+  consultationTypes?: string[];
+  priceRange?: { min: number; max: number; currency: string };
+  schedule?: Record<string, { open: string; close: string; isWorking: boolean }>;
 }
 
 export async function updateDoctorProfile(data: DoctorProfileData) {
@@ -65,6 +73,14 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
         workingHours: data.workingHours,
         accentColor:  data.accentColor,
         cardTheme:    data.cardTheme,
+        city:               data.city,
+        district:           data.district,
+        address:            data.address,
+        clinicName:         data.clinicName,
+        acceptsNewPatients: data.acceptsNewPatients,
+        consultationTypes:  data.consultationTypes,
+        priceRange:         data.priceRange,
+        schedule:           data.schedule,
       }).filter(([_, v]) => v !== undefined && v !== null)
     );
 

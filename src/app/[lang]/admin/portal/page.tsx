@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import User from '@/models/User';
-import { updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle } from '@/app/actions/admin';
+import { updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle, approveReview, deleteReview } from '@/app/actions/admin';
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
@@ -19,7 +19,9 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
 
   await dbConnect();
 
-  const [pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors, pendingArticles, publishedArticles, totalArticles, totalUsers] = await Promise.all([
+  const Review = (await import('@/models/Review')).default;
+
+  const [pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors, pendingArticles, publishedArticles, totalArticles, totalUsers, pendingReviews] = await Promise.all([
   Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
   Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
   Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
@@ -28,6 +30,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
   Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
   Article.countDocuments(),
   User.countDocuments(),
+  Review.find({ isVerified: false }).sort({ createdAt: -1 }).populate('doctorId').lean(),
 ]);
 
   return (
@@ -105,6 +108,47 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                         color="bg-gray-600 hover:bg-gray-700"
                       />
                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* ОТЗЫВЫ НА МОДЕРАЦИИ */}
+        <Section title="Отзывы на модерации" badge={pendingReviews.length} badgeColor="bg-purple-500">
+          {pendingReviews.length === 0 ? (
+            <Empty icon="⭐" text="Нет новых отзывов" />
+          ) : (
+            <div className="space-y-3">
+              {pendingReviews.map((review: any) => (
+                <div key={review._id} className="bg-gray-900 p-4 rounded-2xl border border-purple-900/40 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded-full">
+                        ⭐ {review.rating}/5
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        Врач: {(review.doctorId as any)?.name || 'Неизвестен'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-white italic">"{review.text}"</p>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      📅 {new Date(review.createdAt).toLocaleDateString('ru')} · {review.isAnonymous ? 'Анонимно' : 'От пациента'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <ActionBtn
+                      action={approveReview.bind(null, review._id.toString())}
+                      label="✅ Одобрить"
+                      color="bg-green-600 hover:bg-green-700"
+                    />
+                    <ActionBtn
+                      action={deleteReview.bind(null, review._id.toString())}
+                      label="🗑 Удалить"
+                      color="bg-red-800 hover:bg-red-700"
+                      confirm="Удалить отзыв?"
+                    />
                   </div>
                 </div>
               ))}
