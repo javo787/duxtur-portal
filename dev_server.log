@@ -1,0 +1,37 @@
+
+> duxtur-portal@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 3.1s
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_a56a313d._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/node_modules_@auth_core_a56a313d._.js:5345:210)
+○ Compiling /[lang]/doctors/map ...
+⨯ Error: MONGODB_URI is not defined
+    at module evaluation (src/lib/mongodb-client.ts:10:9)
+    at module evaluation (src/auth.ts:6:1)
+    at module evaluation (src/app/[lang]/layout.tsx:4:1)
+   8 |
+   9 | if (!uri) {
+> 10 |   throw new Error("MONGODB_URI is not defined");
+     |         ^
+  11 | }
+  12 |
+  13 | if (process.env.NODE_ENV === "development") { {
+  type: 'Error',
+  page: '/ru/doctors/map'
+}
+ GET /ru/doctors/map 500 in 8.4s (compile: 7.9s, proxy.ts: 178ms, render: 263ms)

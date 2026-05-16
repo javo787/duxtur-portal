@@ -8,7 +8,7 @@ import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 
 export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
-  const [doctors, setDoctors] = useState([]);
+  const [allPins, setAllPins] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | undefined>();
   const [filters, setFilters] = useState({
@@ -30,10 +30,10 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
   }, []);
 
   useEffect(() => {
-    fetchDoctors();
+    loadData();
   }, [filters, userLocation]);
 
-  async function fetchDoctors() {
+  async function loadData() {
     const sp = new URLSearchParams();
     if (userLocation) {
       sp.set('lat', userLocation.lat.toString());
@@ -43,9 +43,33 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
       if (v) sp.set(k, v);
     });
 
-    const res = await fetch(`/api/doctors/map?${sp.toString()}`);
-    const data = await res.json();
-    setDoctors(data);
+    try {
+      const [doctors, places] = await Promise.all([
+        fetch(`/api/doctors/map?${sp.toString()}`).then(r => r.json()),
+        fetch(`/api/places?city=${filters.city || ''}`).then(r => r.json()),
+      ]);
+
+      const doctorPins = (doctors || []).map((d: any) => ({
+        ...d,
+        type: 'doctor',
+        coordinates: {
+          lat: d.coordinates?.lat || (d.coordinates?.coordinates?.[1]),
+          lng: d.coordinates?.lng || (d.coordinates?.coordinates?.[0])
+        }
+      }));
+
+      const placePins = (places || []).map((p: any) => ({
+        _id: p._id,
+        name: p.name?.[lang] || p.name?.ru || p.name,
+        type: p.type,
+        coordinates: p.coordinates,
+        address: p.address,
+      }));
+
+      setAllPins([...doctorPins, ...placePins]);
+    } catch (error) {
+      console.error("Error loading map data:", error);
+    }
   }
 
   return (
@@ -98,8 +122,11 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
         {/* Map Area */}
         <main className="flex-1 relative h-full">
            <DoctorMap
-             doctors={doctors}
-             onDoctorClick={(slug) => setSelectedDoctor(doctors.find((d: any) => d.slug === slug))}
+             pins={allPins}
+             onPinClick={(slug: string) => {
+               const doc = allPins.find((p: any) => p.slug === slug && p.type === 'doctor');
+               if (doc) setSelectedDoctor(doc);
+             }}
              userLocation={userLocation}
              lang={lang}
            />
