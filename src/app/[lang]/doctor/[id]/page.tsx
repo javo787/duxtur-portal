@@ -4,7 +4,7 @@ import Article from '@/models/Article';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, BASE_URL } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
@@ -13,6 +13,7 @@ import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doct
 import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
+import Image from 'next/image';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -24,10 +25,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   if (!doctor) return { title: 'Врач не найден' };
   const specialty = doctor.specialty?.[lang] || doctor.specialty?.ru || '';
+  const firstName = doctor.name.split(' ')[0];
+  const lastName = doctor.name.split(' ').slice(1).join(' ');
+
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.org`,
     description: `Статьи и профиль врача ${doctor.name}. ${specialty} на портале Duxtur.org`,
     alternates: buildAlternates(`doctor/${id}`, lang),
+    openGraph: {
+      type: 'profile',
+      firstName,
+      lastName,
+      images: [doctor.image || `${BASE_URL}/og-default.png`],
+    }
   };
 }
 
@@ -78,8 +88,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   const educationLabel = t(doctor.education);
   const bioLabel = t(doctor.bio);
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
-  const doctorUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
+  const doctorUrl = `${BASE_URL}/${lang}/doctor/${doctor.slug || doctor._id}`;
 
   const lastReviewedArticle = articles.find((a) => a.lastMedicalReview);
   const lastMedicalReviewDate = lastReviewedArticle?.lastMedicalReview
@@ -110,6 +119,22 @@ export default async function DoctorProfilePage({ params }: Props) {
     description: mission,
     url: doctorUrl,
     image: doctor.image || undefined,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": doctorUrl
+    },
+    knowsLanguage: (doctor.languages || []).map((l: string) => ({
+      "@type": "Language",
+      "name": l
+    })),
+    hasCredential: educationLabel ? {
+      "@type": "EducationalOccupationalCredential",
+      "credentialCategory": "degree",
+      "recognizedBy": {
+        "@type": "Organization",
+        "name": educationLabel
+      }
+    } : undefined,
     worksFor: workplaceLabel
       ? { '@type': 'Organization', name: workplaceLabel }
       : undefined,
@@ -122,8 +147,8 @@ export default async function DoctorProfilePage({ params }: Props) {
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${baseUrl}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Врачи', item: `${baseUrl}/${lang}/authors` },
+        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
+        { '@type': 'ListItem', position: 2, name: 'Врачи', item: `${BASE_URL}/${lang}/authors` },
         { '@type': 'ListItem', position: 3, name: doctor.name, item: doctorUrl },
       ],
     },
@@ -150,16 +175,29 @@ export default async function DoctorProfilePage({ params }: Props) {
             duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
 
-          <nav className="hidden sm:flex items-center text-xs text-gray-400 gap-1.5 overflow-hidden">
-            <Link href={`/${lang}`} className="hover:text-gray-600 transition">Главная</Link>
+          <nav className="hidden sm:flex items-center text-xs text-gray-400 gap-1.5 overflow-hidden" itemScope itemType="https://schema.org/BreadcrumbList">
+            <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+              <Link href={`/${lang}`} itemProp="item" className="hover:text-gray-600 transition">
+                <span itemProp="name">Главная</span>
+              </Link>
+              <meta itemProp="position" content="1" />
+            </span>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
-            <Link href={`/${lang}/authors`} className="hover:text-gray-600 transition">Врачи</Link>
+            <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+              <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-gray-600 transition">
+                <span itemProp="name">Врачи</span>
+              </Link>
+              <meta itemProp="position" content="2" />
+            </span>
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-gray-600 font-medium truncate">{doctor.name}</span>
+            <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+              <span itemProp="name" className="text-gray-600 font-medium truncate">{doctor.name}</span>
+              <meta itemProp="position" content="3" />
+            </span>
           </nav>
 
           <Link
@@ -241,10 +279,11 @@ export default async function DoctorProfilePage({ params }: Props) {
                   >
                     {/* Картинка */}
                     <div className="w-28 md:w-44 shrink-0 overflow-hidden relative">
-                      <img
+                      <Image
                         src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                         alt={t(article.title)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
+                        fill
+                        className="object-cover group-hover:scale-105 transition duration-700"
                       />
                       <div className="absolute top-2 left-2 w-6 h-6 bg-black/40 backdrop-blur-sm text-white text-xs font-black rounded-lg flex items-center justify-center">
                         {idx + 1}
@@ -299,6 +338,30 @@ export default async function DoctorProfilePage({ params }: Props) {
                   </Link>
                 );
               })}
+            </div>
+          )}
+
+          {/* "You may also like" section */}
+          {articles.length > 0 && (
+            <div className="mt-12 pt-10 border-t border-gray-100">
+              <h3 className="text-lg font-black text-gray-900 mb-6">Вам также может быть интересно</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {articles.slice(0, 3).map((a) => (
+                  <Link key={a._id} href={`/${lang}/blog/${a.slug}`} className="group block">
+                    <div className="aspect-video rounded-xl overflow-hidden mb-3 relative">
+                      <Image
+                        src={a.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
+                        alt={t(a.title)}
+                        fill
+                        className="object-cover group-hover:scale-105 transition"
+                      />
+                    </div>
+                    <h4 className="font-bold text-sm text-gray-800 group-hover:text-blue-600 transition line-clamp-2">
+                      {t(a.title)}
+                    </h4>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
