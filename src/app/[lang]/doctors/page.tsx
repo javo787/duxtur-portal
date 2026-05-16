@@ -1,13 +1,13 @@
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
-import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/doctor-constants';
+import { buildAlternates } from '@/lib/seo';
+import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { DoctorsSortSelect } from './_components/DoctorsSortSelect';
 import { AcceptsToggle } from './_components/AcceptsToggle';
+import MobileFiltersDrawer from './_components/MobileFiltersDrawer';
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -51,6 +51,7 @@ const UI: Record<string, Record<string, string>> = {
   rating: { ru: 'По рейтингу', uz: 'Reyting bo\'yicha', tg: 'Мувофиқи рейтинг', kk: 'Рейтинг бойынша', ky: 'Рейтинг боюнча' },
   price_asc: { ru: 'Сначала дешевле', uz: 'Arzonroq', tg: 'Аввал арзон', kk: 'Алдымен арзан', ky: 'Алгач арзан' },
   price_desc: { ru: 'Сначала дороже', uz: 'Qimmatroq', tg: 'Аввал қиммат', kk: 'Алдымен қымбат', ky: 'Алгач кымбат' },
+  doctors: { ru: 'врачей', uz: 'shifokorlar', tg: 'духтурон', kk: 'дәрігерлер', ky: 'дарыгерлер' },
   no_doctors: { ru: 'Врачи не найдены', uz: 'Shifokorlar topilmadi', tg: 'Духтурон ёфт нашуданд', kk: 'Дәрігерлер табылмады', ky: 'Дарыгерлер табылган жок' },
   be_first: { ru: 'Станьте первым врачом в вашем городе!', uz: 'Shahringizdagi birinchi shifokor bo\'ling!', tg: 'Аввалин духтур дар шаҳри худ шавед!', kk: 'Өз қалаңыздағы бірінші дәрігер болыңыз!', ky: 'Өз шаарыңыздагы биринчи дарыгер болуңуз!' },
   register_now: { ru: 'Зарегистрироваться', uz: 'Ro\'yxatdan o\'tish', tg: 'Рӯйхат аз қайд', kk: 'Тіркелу', ky: 'Катталуу' },
@@ -87,10 +88,9 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   await dbConnect();
 
-  // Distinct cities for the dropdown
   const cities: string[] = await Doctor.distinct('city', { status: 'approved' });
 
-  // Query Building
+  // Query
   const query: any = { status: 'approved' };
   if (sp.city) query.city = new RegExp(sp.city, 'i');
   if (sp.specialty) query['specialty.ru'] = CATEGORY_LABELS[sp.specialty]?.ru || sp.specialty;
@@ -119,7 +119,6 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   if (sp.sort === 'price_desc') sort = { 'priceRange.min': -1 };
   if (sp.sort === 'exp') sort = { experience: -1 };
 
-  // Pagination
   const page = parseInt(sp.page || '1');
   const limit = 12;
   const skip = (page - 1) * limit;
@@ -136,13 +135,13 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
-      {/* HERO / SEARCH BAR */}
-      <div className="bg-white border-b border-slate-100 pt-12 pb-16">
-        <div className="max-w-7xl mx-auto px-5 text-center">
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+      {/* Hero / Search */}
+      <div className="bg-white border-b border-slate-100 pt-8 md:pt-12 pb-10 md:pb-16">
+        <div className="max-w-7xl mx-auto px-4 md:px-5 text-center">
+          <h1 className="text-2xl md:text-5xl font-black text-slate-900 mb-3 md:mb-4 tracking-tight">
             {L('title')}
           </h1>
-          <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto">
+          <p className="text-slate-500 text-sm md:text-lg mb-6 md:mb-10 max-w-2xl mx-auto px-2">
             {L('subtitle')}
           </p>
 
@@ -175,11 +174,11 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 py-10">
-        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-10">
-
-          {/* SIDEBAR FILTERS */}
-          <aside className="lg:col-span-1 space-y-8">
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-5 py-6 md:py-10">
+        <div className="lg:grid lg:grid-cols-4 gap-10">
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block lg:col-span-1 space-y-8">
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-8">
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">{L('filters')}</h3>
@@ -233,48 +232,47 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
               </div>
 
               {/* Toggles */}
-<div className="space-y-4 pt-4 border-t border-slate-50">
-  <AcceptsToggle
-    defaultChecked={sp.accepts === 'true'}
-    label={L('accepts_new')}
-  />
-</div>
+              <div className="space-y-4 pt-4 border-t border-slate-50">
+                <AcceptsToggle
+                  defaultChecked={sp.accepts === 'true'}
+                  label={L('accepts_new')}
+                />
+              </div>
 
-<div className="pt-4">
-  <button form="search-form" type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-100">
-    Применить фильтры
-  </button>
-</div>
-              </div> 
-          </aside> 
+              <div className="pt-4">
+                <button form="search-form" type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                  Применить фильтры
+                </button>
+              </div>
+            </div>
+          </aside>
 
-          {/* MAIN GRID */}
+          {/* Main Grid */}
           <div className="lg:col-span-3 space-y-6">
             {/* Sorting & Stats */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-sm text-slate-500 font-medium">
                 Найдено <span className="text-slate-900 font-bold">{total}</span> {L('doctors')}
               </p>
-
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{L('sort_by')}:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{L('sort_by')}:</span>
                 <DoctorsSortSelect
-  defaultValue={sp.sort || ''}
-  labels={{
-    relevance: L('relevance'),
-    rating: L('rating'),
-    price_asc: L('price_asc'),
-    price_desc: L('price_desc'),
-    experience: L('experience'),
-  }}
-/>
+                  defaultValue={sp.sort || ''}
+                  labels={{
+                    relevance: L('relevance'),
+                    rating: L('rating'),
+                    price_asc: L('price_asc'),
+                    price_desc: L('price_desc'),
+                    experience: L('experience'),
+                  }}
+                />
               </div>
             </div>
 
             {/* Grid */}
             {doctors.length === 0 ? (
-              <div className="bg-white rounded-3xl p-20 text-center border border-slate-100 shadow-sm">
-                <div className="text-6xl mb-6">🔍</div>
+              <div className="bg-white rounded-3xl p-10 md:p-20 text-center border border-slate-100 shadow-sm">
+                <div className="text-5xl md:text-6xl mb-6">🔍</div>
                 <h3 className="text-xl font-black text-slate-900 mb-2">{L('no_doctors')}</h3>
                 <p className="text-slate-500 mb-8">{L('be_first')}</p>
                 <Link href={`/${lang}/register`} className="inline-flex items-center px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition">
@@ -282,25 +280,25 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {doctors.map((doc: any) => (
-                  <div key={doc._id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
+                  <div key={doc._id} className="group bg-white rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
                     {/* Header */}
-                    <div className="p-6 pb-0 flex items-start justify-between">
+                    <div className="p-4 md:p-6 pb-0 flex items-start justify-between">
                       <div className="relative">
                         <img
                           src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                           alt={doc.name}
-                          className="w-16 h-16 rounded-2xl object-cover border border-slate-100 group-hover:scale-105 transition"
+                          className="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border border-slate-100 group-hover:scale-105 transition"
                         />
                         {doc.status === 'approved' && (
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title={L('verified')}>
-                            <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title={L('verified')}>
+                            <svg className="w-3 md:w-3.5 h-3 md:h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
                           </div>
                         )}
                       </div>
                       {doc.reviewCount > 0 && (
-                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-xs font-black">
+                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-[10px] md:text-xs font-black">
                           ⭐ {doc.reviewAvg}
                           <span className="text-amber-400 font-bold ml-0.5">({doc.reviewCount})</span>
                         </div>
@@ -308,24 +306,24 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 flex-1 flex flex-col">
+                    <div className="p-4 md:p-6 flex-1 flex flex-col">
                       <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="block group/link">
-                        <h3 className="font-black text-slate-900 group-hover/link:text-blue-600 transition truncate leading-tight">
+                        <h3 className="font-black text-slate-900 group-hover/link:text-blue-600 transition truncate leading-tight text-sm md:text-base">
                           {doc.name}
                         </h3>
-                        <p className="text-xs font-bold text-blue-500 mt-1 uppercase tracking-wider">{t(doc.specialty)}</p>
+                        <p className="text-[10px] md:text-xs font-bold text-blue-500 mt-1 uppercase tracking-wider">{t(doc.specialty)}</p>
                       </Link>
 
-                      <div className="mt-4 space-y-2.5 flex-1">
-                        <div className="flex items-center gap-2 text-[13px] text-slate-500 font-medium">
+                      <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2.5 flex-1">
+                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-500 font-medium">
                           <span className="text-slate-300">📍</span>
                           <span className="truncate">{doc.city}{doc.clinicName ? ` · ${doc.clinicName}` : ''}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-[13px] text-slate-500 font-medium">
+                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-500 font-medium">
                           <span className="text-slate-300">⏱️</span>
                           <span>{doc.experience} {L('years_exp')}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-[13px] text-slate-900 font-bold">
+                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-900 font-bold">
                           <span className="text-slate-300 font-normal">💰</span>
                           {doc.priceRange?.min ? (
                             <span>{L('from')} {doc.priceRange.min} {doc.priceRange.currency || 'TJS'}</span>
@@ -334,9 +332,9 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                       </div>
 
                       {/* Icons */}
-                      <div className="flex gap-2 mt-5">
+                      <div className="flex gap-2 mt-3 md:mt-5">
                         {(doc.consultationTypes || ['in_person']).map((type: string) => (
-                          <span key={type} className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-sm border border-slate-100" title={L(type)}>
+                          <span key={type} className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs md:text-sm border border-slate-100" title={L(type)}>
                             {type === 'in_person' ? '🏥' : type === 'online' ? '💻' : '🏠'}
                           </span>
                         ))}
@@ -344,12 +342,12 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
                     </div>
 
                     {/* Actions */}
-                    <div className="p-4 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-3">
-                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="flex items-center justify-center py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+                    <div className="p-3 md:p-4 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-2 md:gap-3">
+                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="flex items-center justify-center py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] md:text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
                         {L('view_profile')}
                       </Link>
                       <ContactDoctorButton doctor={doc} lang={lang}
-                        className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+                        className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-blue-700 transition"
                       />
                     </div>
                   </div>
@@ -396,6 +394,9 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Mobile Filters Drawer (клиентский компонент) */}
+      <MobileFiltersDrawer lang={lang} cities={cities} sp={sp} L={L} />
     </div>
   );
 }
