@@ -18,7 +18,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
   return (
-    <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50 transition-all animate-slide-up">
+    <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transition-all animate-slide-up" style={{ zIndex: 1001 }}>
       <style>{`
         @keyframes slideUp {
           from { transform: translateY(100%); opacity: 0; }
