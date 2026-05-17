@@ -330,18 +330,31 @@ export default function MapInner({
       markersRef.current.addLayer(marker);
     }
 
-    // Static user marker (non-tracking mode)
-    if (userLocation && !trackingMode) {
-      const userIcon = L.divIcon({
-        className: '',
-        html: `<div style="width:16px;height:16px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(239,68,68,0.3)"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      });
-      L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-        .addTo(markersRef.current)
-        .bindPopup('Вы здесь');
-    }
+    // ── Static user marker (always outside cluster, non-tracking) ─────
+if (userMarkerRef.current && !trackingMode) {
+  userMarkerRef.current.remove();
+  userMarkerRef.current = null;
+}
+if (userAccuracyRef.current && !trackingMode) {
+  userAccuracyRef.current.remove();
+  userAccuracyRef.current = null;
+}
+
+if (userLocation && !trackingMode && mapRef.current) {
+  const userIcon = L.divIcon({
+    className: 'user-location-static',
+    html: `<div style="width:16px;height:16px;background:#ef4444;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(239,68,68,0.3)"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+  userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
+    icon: userIcon,
+    zIndexOffset: 1000,
+  })
+    .addTo(mapRef.current)
+    .bindPopup('Вы здесь');
+}
+    
 
     // Trigger bounds change notification so parent can update visible doctors
     if (onMapBoundsChange && mapRef.current) {
