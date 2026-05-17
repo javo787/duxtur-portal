@@ -68,6 +68,7 @@ export default function MapInner({
   pins: rawPins,
   onPinClick,
   onMapBoundsChange,
+  onMapClick,
   userLocation,
   lang = 'ru',
   center,
