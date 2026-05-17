@@ -27,7 +27,6 @@ export default function SearchForm({ lang, searchParams, cities, L }: SearchForm
     router.push(`/${lang}/doctors?${params.toString()}`);
   };
 
-  // Нормализация значений из query
   const specialtyValue = Array.isArray(searchParams.specialty)
     ? searchParams.specialty[0]
     : searchParams.specialty || '';
@@ -57,10 +56,6 @@ export default function SearchForm({ lang, searchParams, cities, L }: SearchForm
           defaultValue={specialtyValue}
           lang={lang}
           placeholder={L('all_specialties')}
-          onSelect={(value) => {
-            const input = formRef.current?.querySelector('input[name="specialty"]') as HTMLInputElement;
-            if (input) input.value = value;
-          }}
         />
         <input type="hidden" name="specialty" defaultValue={specialtyValue} />
       </div>
@@ -83,10 +78,10 @@ export default function SearchForm({ lang, searchParams, cities, L }: SearchForm
         </select>
       </div>
 
-      {/* Кнопка "Рядом со мной" */}
+      {/* Рядом со мной */}
       <NearMeButton />
 
-      {/* Кнопка поиска */}
+      {/* Поиск */}
       <button
         type="submit"
         className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-blue-900/30 flex-shrink-0 flex items-center gap-2"
