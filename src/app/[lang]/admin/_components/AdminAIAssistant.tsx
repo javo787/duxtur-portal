@@ -53,25 +53,10 @@ export function AdminAIAssistant() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/admin/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: `Ты — AI-помощник для администратора медицинского портала Duxtur.org. 
-Портал публикует верифицированные медицинские статьи для Центральной Азии на 5 языках: русский, узбекский, таджикский, казахский, кыргызский.
-Целевая аудитория: пациенты без медицинского образования.
-Авторы: практикующие врачи.
-
-Твои задачи:
-- Помогать модерировать статьи (критерии качества, безопасности, E-E-A-T)
-- Давать советы по управлению медицинским контентом
-- Помогать с SEO для медицинских сайтов
-- Составлять шаблоны ответов врачам
-- Анализировать качество платформы
-
-Отвечай конкретно, по делу, на русском языке. Если нужны списки — используй их.`,
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
