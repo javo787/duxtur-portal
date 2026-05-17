@@ -12,6 +12,7 @@ type BottomSheetState = 'collapsed' | 'half' | 'full';
 export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
   const [allPins, setAllPins] = useState<any[]>([]);
+  const [allDoctors, setAllDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | undefined>();
   const [filters, setFilters] = useState({
@@ -21,7 +22,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     priceMax: '',
     consultationType: '',
     accepts: '',
-    radius: '20'
+    radius: '25'
   });
   const [trackingMode, setTrackingMode] = useState(false);
   const [targetDoctor, setTargetDoctor] = useState<any>(null);
@@ -57,12 +58,12 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     if (userLocation) {
       sp.set('lat', userLocation.lat.toString());
       sp.set('lng', userLocation.lng.toString());
-      sp.set('radius', (filters.city || filters.radius === '50') ? '50' : '20');
+      sp.set('radius', (filters.city || filters.radius === '50') ? '50' : filters.radius);
     }
     Object.entries(filters).forEach(([k, v]) => {
       if (v && k !== 'radius') sp.set(k, v);
     });
-    if (filters.radius) sp.set('radius', (filters.city || filters.radius === '50') ? '50' : '20');
+    if (filters.radius) sp.set('radius', (filters.city || filters.radius === '50') ? '50' : filters.radius);
 
     try {
       const placesSp = new URLSearchParams();
@@ -100,9 +101,12 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
       const pins = [...doctorPins, ...placePins];
       setAllPins(pins);
 
+      const doctorsOnly = pins.filter(p => p.type === 'doctor');
+      setAllDoctors([...doctorsOnly].sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999)));
+
       // Initial visible doctors calculation if allPins were empty
       if (allPins.length === 0) {
-        setVisibleDoctors(pins.filter(p => p.type === 'doctor'));
+        setVisibleDoctors(doctorsOnly);
       }
     } catch (error) {
       console.error("Error loading map data:", error);
@@ -135,7 +139,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     setFilters(prev => ({ ...prev, radius: '50' }));
   };
 
-  const doctorCount = allPins.filter(p => p.type === 'doctor').length;
+  const doctorCount = allDoctors.length;
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden relative">
@@ -217,13 +221,18 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {allPins.filter(p => p.type === 'doctor').slice(0, 10).map(doc => (
+                  {allDoctors.map(doc => (
                       <div
                         key={doc._id}
                         className="p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-200 cursor-pointer transition-all shadow-sm group"
                         onClick={() => setSelectedDoctor(doc)}
                       >
-                        <p className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors">{doc.name}</p>
+                        <div className="flex justify-between items-start">
+                          <p className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors">{doc.name}</p>
+                          {doc.distanceKm && (
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">📍 {doc.distanceKm.toFixed(1)} км</span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">{doc.specialty?.ru}</p>
                       </div>
                   ))}
@@ -241,6 +250,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                if (doc) setSelectedDoctor(doc);
              }}
              onMapBoundsChange={handleMapBoundsChange}
+             onMapClick={() => setSheetState('collapsed')}
              userLocation={userLocation}
              trackingMode={trackingMode}
              targetDoctor={targetDoctor}
@@ -303,13 +313,23 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
              >
               {/* Drag Handle */}
               <div
-                className="w-full py-4 flex flex-col items-center cursor-pointer"
+                className="w-full py-4 flex flex-col items-center cursor-pointer relative"
                 onClick={cycleSheetState}
               >
                  <div className="w-12 h-1.5 bg-slate-200 rounded-full mb-2"></div>
                  <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
                     {visibleDoctors.length} {lang === 'ru' ? 'врачей рядом' : 'yaqin oradagi shifokorlar'}
                  </p>
+                 {sheetState !== 'collapsed' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSheetState('collapsed'); }}
+                      className="absolute right-4 top-3 w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-full shadow-sm"
+                    >
+                      <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  )}
               </div>
 
               <div className="overflow-y-auto h-full px-6 pb-32">
@@ -420,7 +440,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                                 </div>
                              ))}
                           </div>
-                       ) : visibleDoctors.length === 0 ? (
+                       ) : allDoctors.length === 0 ? (
                           <div className="py-10 text-center">
                              <p className="text-slate-400 text-sm">Никого не найдено</p>
                              <button
@@ -432,7 +452,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                           </div>
                        ) : (
                           <div className="space-y-4">
-                             {visibleDoctors.map(doc => (
+                             {allDoctors.map(doc => (
                                 <div
                                   key={doc._id}
                                   className="flex gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm active:scale-95 transition-transform"
@@ -451,8 +471,13 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                                         className="rounded-2xl object-cover"
                                       />
                                    </div>
-                                   <div className="min-w-0">
-                                      <p className="font-bold text-slate-900 text-sm">{doc.name}</p>
+                                   <div className="flex-1 min-w-0">
+                                      <div className="flex justify-between items-start">
+                                        <p className="font-bold text-slate-900 text-sm">{doc.name}</p>
+                                        {doc.distanceKm && (
+                                          <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">📍 {doc.distanceKm.toFixed(1)} км</span>
+                                        )}
+                                      </div>
                                       <p className="text-[10px] font-bold text-blue-500 uppercase mt-1">{doc.specialty?.ru}</p>
                                       <div className="flex items-center gap-2 mt-2">
                                          <span className="text-xs">⭐ {doc.reviewAvg || 0}</span>
