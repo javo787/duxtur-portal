@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
-const MapPreview = dynamic(() => import('@/components/MapInner'), { ssr: false });
+const LocationPickerModal = dynamic(
+  () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
+  { ssr: false }
+);
 
 export default function AddPlaceModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     type: 'clinic',
@@ -36,6 +40,7 @@ export default function AddPlaceModal({ isOpen, onClose, onSuccess }: { isOpen: 
           ...formData,
           coordinates: { lat, lng, type: 'Point', coordinates: [lng, lat] }
         });
+        setShowMapPicker(true);
       }
     } catch (error) {
       console.error("Geocoding error:", error);
@@ -109,21 +114,30 @@ export default function AddPlaceModal({ isOpen, onClose, onSuccess }: { isOpen: 
 
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Адрес</label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   required
                   className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white outline-none focus:border-blue-500"
                   value={formData.address}
                   onChange={e => setFormData({ ...formData, address: e.target.value })}
                 />
-                <button
-                  type="button"
-                  onClick={handleGeocode}
-                  disabled={geocoding}
-                  className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-xs font-bold text-white transition disabled:opacity-50"
-                >
-                  {geocoding ? '...' : '📍 Найти'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGeocode}
+                    disabled={geocoding}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl text-xs font-bold text-white transition disabled:opacity-50 flex items-center gap-2 shrink-0"
+                  >
+                    {geocoding ? '...' : '📍 Найти на карте'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker(true)}
+                    className="bg-gray-800 border border-gray-700 hover:border-blue-500 px-4 py-2 rounded-xl text-xs font-bold text-white transition flex items-center gap-2 shrink-0"
+                  >
+                    🗺 Выбрать на карте
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -147,18 +161,25 @@ export default function AddPlaceModal({ isOpen, onClose, onSuccess }: { isOpen: 
             </div>
           </div>
 
-          <div className="h-48 w-full rounded-2xl overflow-hidden bg-gray-800 border border-gray-700">
-             <MapPreview
-                pins={[{
-                    _id: 'preview',
-                    name: formData.name || 'Preview',
-                    type: formData.type as any,
-                    coordinates: { lat: formData.coordinates.lat, lng: formData.coordinates.lng }
-                }]}
-                center={[formData.coordinates.lat, formData.coordinates.lng]}
-                zoom={15}
-             />
-          </div>
+          {formData.coordinates.lat !== 38.559 && (
+            <div className="flex items-center gap-2 text-xs text-green-400 bg-green-900/30 px-3 py-1.5 rounded-lg w-fit">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Координаты: {formData.coordinates.lat.toFixed(4)}, {formData.coordinates.lng.toFixed(4)}
+              <button type="button" onClick={() => setShowMapPicker(true)} className="ml-2 text-blue-400 hover:text-blue-300">Изменить</button>
+            </div>
+          )}
+
+          {showMapPicker && (
+            <LocationPickerModal
+              initialLat={formData.coordinates.lat}
+              initialLng={formData.coordinates.lng}
+              onConfirm={(lat, lng) => {
+                setFormData({ ...formData, coordinates: { lat, lng, type: 'Point', coordinates: [lng, lat] } });
+                setShowMapPicker(false);
+              }}
+              onCancel={() => setShowMapPicker(false)}
+            />
+          )}
 
           <button
             disabled={loading}

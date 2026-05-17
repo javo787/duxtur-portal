@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const lat = parseFloat(searchParams.get('lat') || '');
     const lng = parseFloat(searchParams.get('lng') || '');
-    const radius = parseFloat(searchParams.get('radius') || '50');
+    const radius = parseFloat(searchParams.get('radius') || '25');
     const specialty = searchParams.get('specialty');
     const city = searchParams.get('city');
     const lang_code = searchParams.get('lang_code') || 'ru';

@@ -35,6 +35,7 @@ interface MapInnerProps {
   pins: MapPin[];
   onPinClick?: (slug: string) => void;
   onMapBoundsChange?: (bounds: L.LatLngBounds) => void;
+  onMapClick?: () => void;
   userLocation?: { lat: number; lng: number };
   lang?: string;
   center?: [number, number];
@@ -67,6 +68,7 @@ export default function MapInner({
   pins: rawPins,
   onPinClick,
   onMapBoundsChange,
+  onMapClick,
   userLocation,
   lang = 'ru',
   center,
@@ -153,6 +155,10 @@ export default function MapInner({
 
         map.on('moveend', () => {
             if (onMapBoundsChange) onMapBoundsChange(map.getBounds());
+        });
+
+        map.on('click', () => {
+          if (onMapClick) onMapClick();
         });
 
         mapRef.current = map;
