@@ -54,13 +54,60 @@ const PIN_COLORS: Record<string, string> = {
   default:  '#7c3aed',
 };
 
-function createColoredIcon(color: string, label?: string) {
+function createTypedIcon(type: string, label?: string) {
+  let innerSVG = '';
+  let bgColor = PIN_COLORS[type] || PIN_COLORS.default;
+  let borderRadius = '50%';
+  let border = '3px solid white';
+  let color = 'white';
+
+  switch (type) {
+    case 'doctor':
+      innerSVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 18 0"></path><path d="M5 7v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"></path><path d="M12 13v4"></path><circle cx="12" cy="19" r="2"></circle></svg>`;
+      break;
+    case 'clinic':
+      borderRadius = '8px';
+      innerSVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="red"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+      break;
+    case 'pharmacy':
+      bgColor = 'white';
+      border = '3px solid #16a34a';
+      color = '#16a34a';
+      borderRadius = '8px';
+      innerSVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="#16a34a"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+      break;
+    case 'hospital':
+      bgColor = '#dc2626';
+      borderRadius = '8px';
+      innerSVG = `<span style="font-family:sans-serif;font-weight:900;font-size:22px;">H</span>`;
+      break;
+    case 'lab':
+      bgColor = '#0891b2';
+      borderRadius = '8px';
+      innerSVG = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v8H7.5c-1 0-2 .5-2.5 1.5L3 17c-.5 1 0 2 1 2h16c1 0 1.5-1 1-2l-2-5.5c-.5-1-1.5-1.5-2.5-1.5H15V2h-6z"/><path d="M9 8h6"/></svg>`;
+      break;
+    default:
+      innerSVG = label ? `<span style="font-size:10px;font-weight:bold;">${label}</span>` : '';
+  }
+
   return L.divIcon({
     className: '',
-    html: `<div style="width:36px;height:36px;background:${color};border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);color:white;font-size:10px;font-weight:bold;">${label || ''}</span></div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 36],
-    popupAnchor: [0, -36],
+    html: `
+      <div style="position:relative;width:36px;height:44px;">
+        <div style="width:36px;height:36px;background:${bgColor};border:${border};border-radius:${borderRadius};box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:${color};">
+          ${innerSVG}
+        </div>
+        <div style="position:absolute;bottom:0;left:18px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid ${bgColor === 'white' ? '#16a34a' : bgColor};margin-left:-8px;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"></div>
+        ${label && type !== 'hospital' && type !== 'clinic' && type !== 'pharmacy' && type !== 'lab' ? `
+          <div style="position:absolute;top:-10px;right:-10px;background:#f59e0b;color:white;font-size:9px;font-weight:bold;padding:2px 4px;border-radius:6px;border:1.5px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+            ${label}
+          </div>
+        ` : ''}
+      </div>
+    `,
+    iconSize: [36, 44],
+    iconAnchor: [18, 44],
+    popupAnchor: [0, -44],
   });
 }
 
@@ -354,9 +401,8 @@ useEffect(() => {
         continue;
       }
 
-      const color = PIN_COLORS[pin.type ?? 'default'] ?? PIN_COLORS.default;
       const ratingLabel = pin.reviewAvg ? pin.reviewAvg.toFixed(1) : '';
-      const icon = createColoredIcon(color, ratingLabel);
+      const icon = createTypedIcon(pin.type ?? 'default', ratingLabel);
       const marker = L.marker([lat, lng], { icon });
 
       const specialtyLabel = typeof pin.specialty === 'object'
