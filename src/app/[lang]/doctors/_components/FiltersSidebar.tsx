@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AcceptsToggle from './AcceptsToggle';
+import { AcceptsToggle } from './AcceptsToggle';
 import NearMeButton from '@/components/NearMeButton';
 
 interface FiltersSidebarProps {
