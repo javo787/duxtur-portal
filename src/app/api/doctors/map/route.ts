@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const limit = rateLimit(ip, 50, 60 * 1000); // 50 requests per minute
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     await dbConnect();
     const { searchParams } = new URL(req.url);
 
@@ -33,6 +40,7 @@ export async function GET(req: NextRequest) {
       });
     } else {
       pipeline.push({ $match: { status: 'approved' } });
+      pipeline.push({ $sort: { reviewAvg: -1, createdAt: -1 } });
     }
 
     const match: any = {};

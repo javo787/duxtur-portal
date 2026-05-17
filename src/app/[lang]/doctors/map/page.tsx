@@ -40,7 +40,10 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => {
+      loadData();
+    }, 500);
+    return () => clearTimeout(timer);
   }, [filters, userLocation]);
 
   async function loadData() {

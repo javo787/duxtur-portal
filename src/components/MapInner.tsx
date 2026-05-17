@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { fromPin } from '@/lib/coordinates';
 
 if (typeof window !== 'undefined') {
   // @ts-ignore
@@ -63,7 +64,7 @@ function createColoredIcon(color: string, label?: string) {
 }
 
 export default function MapInner({
-  pins,
+  pins: rawPins,
   onPinClick,
   onMapBoundsChange,
   userLocation,
@@ -77,6 +78,7 @@ export default function MapInner({
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.MarkerClusterGroup | null>(null);
+  const markerMapRef = useRef<Map<string, L.Marker>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
@@ -92,9 +94,11 @@ export default function MapInner({
     if (!containerRef.current || mapRef.current) return;
 
     const initMap = async () => {
+        if (!mountedRef.current) return;
         try {
             // Dynamic import markercluster only on client
             await import('leaflet.markercluster');
+            if (!mountedRef.current) return;
 
             // Inject styles if not already present
             if (!document.getElementById('leaflet-markercluster-css')) {
@@ -311,16 +315,38 @@ useEffect(() => {
     return () => { cancelled = true; };
   }, [targetDoctor, userLocation]);
 
+  // ── Normalize pins ──────────────────────────────────────────────────────
+  const pins = useMemo(() => (rawPins || []).map(p => {
+    const coords = fromPin(p);
+    return { ...p, _lat: coords.lat, _lng: coords.lng };
+  }), [rawPins]);
+
   // ── Markers ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !markersRef.current) return;
 
-    markersRef.current.clearLayers();
+    const currentIds = new Set(pins.map(p => p._id));
+    const markerMap = markerMapRef.current;
 
+    // Remove old markers
+    for (const [id, marker] of markerMap.entries()) {
+      if (!currentIds.has(id)) {
+        markersRef.current.removeLayer(marker);
+        markerMap.delete(id);
+      }
+    }
+
+    // Add or update markers
     for (const pin of pins) {
-      const lat = pin.coordinates?.lat;
-      const lng = pin.coordinates?.lng;
-      if (!lat || !lng || !isFinite(lat) || !isFinite(lng)) continue;
+      const lat = pin._lat;
+      const lng = pin._lng;
+      if (lat === undefined || lng === undefined || !isFinite(lat) || !isFinite(lng)) continue;
+
+      if (markerMap.has(pin._id)) {
+        // Optional: update position or popup if needed
+        // For now, assume markers are static for same _id
+        continue;
+      }
 
       const color = PIN_COLORS[pin.type ?? 'default'] ?? PIN_COLORS.default;
       const ratingLabel = pin.reviewAvg ? pin.reviewAvg.toFixed(1) : '';
@@ -347,6 +373,7 @@ useEffect(() => {
       }
 
       markersRef.current.addLayer(marker);
+      markerMap.set(pin._id, marker);
     }
 
     // ── Static user marker (always outside cluster, non-tracking) ─────

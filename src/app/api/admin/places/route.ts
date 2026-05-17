@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Place from '@/models/Place';
 import { auth } from '@/auth';
 import { translateText } from '@/lib/translation-service';
+import { toGeoPoint } from '@/lib/coordinates';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,9 +17,15 @@ export async function POST(req: NextRequest) {
 
     const multilingualName = await translateText(body.name);
 
+    // Ensure coordinates are properly formatted for GeoJSON
+    const lat = body.coordinates?.lat;
+    const lng = body.coordinates?.lng;
+    const geoPoint = (lat && lng) ? toGeoPoint(lat, lng) : body.coordinates;
+
     const place = await Place.create({
       ...body,
       name: multilingualName,
+      coordinates: geoPoint,
       isVerified: true
     });
 
