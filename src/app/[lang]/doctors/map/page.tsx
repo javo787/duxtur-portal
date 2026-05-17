@@ -247,7 +247,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
            />
 
            {/* Floating Map Controls */}
-           <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+           <div className="absolute top-4 right-4 flex flex-col gap-2" style={{ zIndex: 1000 }}>
               <button
                 onClick={() => setTrackingMode(!trackingMode)}
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl border transition-all ${trackingMode ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'}`}
@@ -258,7 +258,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
            </div>
 
            {/* Custom Zoom Controls */}
-           <div className="absolute bottom-32 md:bottom-10 right-4 flex flex-col gap-1 z-10">
+           <div className="absolute bottom-32 md:bottom-10 right-4 flex flex-col gap-1" style={{ zIndex: 1000 }}>
               <button
                 onClick={() => setZoom(prev => Math.min(prev + 1, 19))}
                 className="w-10 h-10 bg-white border border-slate-100 rounded-t-xl flex items-center justify-center font-bold text-slate-600 shadow-lg hover:bg-slate-50 transition-colors"
