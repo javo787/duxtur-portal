@@ -22,6 +22,7 @@ export default function SpecialtyChips({ lang, activeSpecialty }: SpecialtyChips
       </Link>
       {Object.entries(CATEGORIES).map(([key, cfg]) => {
         const isActive = activeSpecialty === key;
+        const label = cfg.labels[lang as keyof typeof cfg.labels] || cfg.labels.ru;
         return (
           <Link
             key={key}
@@ -34,7 +35,7 @@ export default function SpecialtyChips({ lang, activeSpecialty }: SpecialtyChips
             role="listitem"
           >
             <span aria-hidden="true">{cfg.icon}</span>
-            {cfg.labels[lang] || cfg.labels.ru}
+            {label}
           </Link>
         );
       })}
