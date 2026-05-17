@@ -27,6 +27,14 @@ export async function GET(req: NextRequest) {
 
     const pipeline: any[] = [];
 
+    const match: any = {};
+    if (specialty) match['specialty.ru'] = specialty;
+    if (city) match.city = new RegExp(city, 'i');
+    if (priceMin > 0) match['priceRange.min'] = { $gte: priceMin };
+    if (priceMax > 0) match['priceRange.max'] = { $lte: priceMax };
+    if (accepts === 'true') match.acceptsNewPatients = true;
+    if (consultationType) match.consultationTypes = consultationType;
+
     if (!isNaN(lat) && !isNaN(lng)) {
       pipeline.push({
         $geoNear: {
@@ -35,21 +43,16 @@ export async function GET(req: NextRequest) {
           spherical: true,
           maxDistance: radius * 1000,
           distanceMultiplier: 0.001,
-          query: { status: 'approved' }
+          query: {
+            status: 'approved',
+            ...(city ? { city: new RegExp(city, 'i') } : {})
+          }
         }
       });
     } else {
       pipeline.push({ $match: { status: 'approved' } });
-      pipeline.push({ $sort: { reviewAvg: -1, createdAt: -1 } });
+      pipeline.push({ $sort: { reviewAvg: -1 } });
     }
-
-    const match: any = {};
-    if (specialty) match['specialty.ru'] = specialty; // Or use CATEGORY_LABELS mapping if needed
-    if (city) match.city = new RegExp(city, 'i');
-    if (priceMin > 0) match['priceRange.min'] = { $gte: priceMin };
-    if (priceMax > 0) match['priceRange.max'] = { $lte: priceMax };
-    if (accepts === 'true') match.acceptsNewPatients = true;
-    if (consultationType) match.consultationTypes = consultationType;
 
     if (Object.keys(match).length > 0) {
       pipeline.push({ $match: match });

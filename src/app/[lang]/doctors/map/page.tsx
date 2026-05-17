@@ -48,30 +48,31 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
   }, [filters, userLocation]);
 
   async function loadData() {
-    if (!userLocation && !filters.city) {
-      setAllPins([]);
-      return;
-    }
-
     setIsLoading(true);
     const sp = new URLSearchParams();
-    if (userLocation) {
+
+    // Priority: 1. City filter, 2. User Location (Radius)
+    if (filters.city) {
+      sp.set('city', filters.city);
+    } else if (userLocation) {
       sp.set('lat', userLocation.lat.toString());
       sp.set('lng', userLocation.lng.toString());
-      sp.set('radius', (filters.city || filters.radius === '50') ? '50' : filters.radius);
+      sp.set('radius', filters.radius || '25');
     }
+
+    // Add other filters
     Object.entries(filters).forEach(([k, v]) => {
-      if (v && k !== 'radius') sp.set(k, v);
+      if (v && k !== 'radius' && k !== 'city') sp.set(k, v);
     });
-    if (filters.radius) sp.set('radius', (filters.city || filters.radius === '50') ? '50' : filters.radius);
 
     try {
       const placesSp = new URLSearchParams();
-      if (userLocation) {
+      if (filters.city) {
+        placesSp.set('city', filters.city);
+      } else if (userLocation) {
         placesSp.set('lat', userLocation.lat.toString());
         placesSp.set('lng', userLocation.lng.toString());
       }
-      if (filters.city) placesSp.set('city', filters.city);
 
       const [doctors, places] = await Promise.all([
         fetch(`/api/doctors/map?${sp.toString()}`).then(r => r.json()),
@@ -206,8 +207,21 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
            </div>
 
            <div className="pt-6 border-t">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Найдено: {doctorCount}</p>
-              {doctorCount === 0 && !isLoading ? (
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                {filters.city
+                  ? `Врачей в городе ${filters.city}: ${doctorCount}`
+                  : userLocation
+                    ? `Врачей в радиусе 25 км: ${doctorCount}`
+                    : `Всего врачей: ${doctorCount}`
+                }
+              </p>
+              {isLoading ? (
+                <div className="space-y-3">
+                   {[1,2,3].map(i => (
+                      <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />
+                   ))}
+                </div>
+              ) : doctorCount === 0 ? (
                 <div className="text-center py-10">
                   <div className="text-3xl mb-3">🔍</div>
                   <p className="text-xs font-bold text-slate-900 mb-1">Нет врачей в этой области</p>
@@ -255,7 +269,8 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
              trackingMode={trackingMode}
              targetDoctor={targetDoctor}
              onClearRoute={() => setTargetDoctor(null)}
-             zoom={zoom}
+             zoom={!userLocation && !filters.city ? 5 : zoom}
+             center={!userLocation && !filters.city ? [41.2995, 69.2401] : undefined}
              lang={lang}
            />
 
@@ -318,7 +333,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
               >
                  <div className="w-12 h-1.5 bg-slate-200 rounded-full mb-2"></div>
                  <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
-                    {visibleDoctors.length} {lang === 'ru' ? 'врачей рядом' : 'yaqin oradagi shifokorlar'}
+                    {allDoctors.length} {lang === 'ru' ? 'врачей рядом' : 'yaqin oradagi shifokorlar'}
                  </p>
                  {sheetState !== 'collapsed' && (
                     <button
@@ -335,7 +350,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
               <div className="overflow-y-auto h-full px-6 pb-32">
                  {sheetState === 'collapsed' && (
                     <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-                       {visibleDoctors.slice(0, 5).map(doc => (
+                       {allDoctors.slice(0, 5).map(doc => (
                           <div key={doc._id} className="relative shrink-0 w-12 h-12 rounded-2xl overflow-hidden border border-slate-100">
                              <Image
                                 src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
@@ -347,9 +362,9 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                              />
                           </div>
                        ))}
-                       {visibleDoctors.length > 5 && (
+                       {allDoctors.length > 5 && (
                           <div className="shrink-0 w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400">
-                             +{visibleDoctors.length - 5}
+                             +{allDoctors.length - 5}
                           </div>
                        )}
                     </div>
