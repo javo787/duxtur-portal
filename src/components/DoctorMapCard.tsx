@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import ContactDoctorButton from '@/components/ContactDoctorButton';
 
 interface DoctorMapCardProps {
   doctor: any;
@@ -17,7 +18,17 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
   return (
-    <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom md:slide-in-from-right duration-300 z-50 transition-transform active:scale-95">
+    <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50 transition-all animate-slide-up">
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out forwards;
+        }
+      `}</style>
+
       <button
         onClick={onClose}
         className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 shadow-sm z-10"
@@ -32,6 +43,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
             alt={doctor.name}
             width={64}
             height={64}
+            quality={85}
             className="w-16 h-16 rounded-2xl object-cover border border-slate-100"
           />
         </div>
@@ -52,27 +64,35 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
         </div>
 
         {doctor.workingHours && (
-          <p className="text-[11px] text-slate-500">🕐 {doctor.workingHours}</p>
+          <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <span className="shrink-0">🕐</span>
+            <span className="truncate">{doctor.workingHours}</span>
+          </p>
         )}
 
         {doctor.languages?.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {doctor.languages.map((l: string) => (
+            {doctor.languages.slice(0, 3).map((l: string) => (
               <span key={l} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-bold uppercase">{l}</span>
             ))}
+            {doctor.languages.length > 3 && (
+              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded text-[9px] font-bold">+{doctor.languages.length - 3}</span>
+            )}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-2">
           <Link
             href={`/${lang}/doctor/${doctor.slug || doctor._id}`}
-            className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center text-[11px] font-bold transition"
+            className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center text-[11px] font-bold transition flex items-center justify-center"
           >
             Профиль
           </Link>
-          <button className="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-center text-[11px] font-bold transition">
-            📞 Контакты
-          </button>
+          <ContactDoctorButton
+            doctor={doctor}
+            lang={lang}
+            className="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-center text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+          />
         </div>
 
         {hasLocation && onBuildRoute && (

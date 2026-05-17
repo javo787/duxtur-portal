@@ -63,7 +63,12 @@ export async function GET(req: NextRequest) {
         reviewCount: 1,
         acceptsNewPatients: 1,
         languages: 1,
-        distanceKm: 1
+        distanceKm: 1,
+        phone: 1,
+        telegram: 1,
+        whatsapp: 1,
+        instagram: 1,
+        workingHours: 1
       }
     });
 

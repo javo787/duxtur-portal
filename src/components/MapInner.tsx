@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import 'leaflet.markercluster';
 
 if (typeof window !== 'undefined') {
   // @ts-ignore
@@ -84,10 +81,8 @@ export default function MapInner({
   const userAccuracyRef = useRef<L.Circle | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const watchIdRef = useRef<number | null>(null);
-  // Store route info in a ref to avoid triggering re-renders during cleanup
   const routeInfoRef = useRef<RouteInfo | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  // Track whether component is mounted to avoid setState after unmount
   const mountedRef = useRef(true);
 
   const defaultCenter: [number, number] = center || [38.559, 68.773];
@@ -96,44 +91,81 @@ export default function MapInner({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = L.map(containerRef.current, {
-      center: userLocation ? [userLocation.lat, userLocation.lng] : defaultCenter,
-      zoom,
-      zoomControl: false,
-      preferCanvas: true,
-    });
+    const initMap = async () => {
+        try {
+            // Dynamic import markercluster only on client
+            await import('leaflet.markercluster');
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map);
+            // Inject styles if not already present
+            if (!document.getElementById('leaflet-markercluster-css')) {
+                const link = document.createElement('link');
+                link.id = 'leaflet-markercluster-css';
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
+                document.head.appendChild(link);
+            }
+            if (!document.getElementById('leaflet-markercluster-default-css')) {
+                const link = document.createElement('link');
+                link.id = 'leaflet-markercluster-default-css';
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
+                document.head.appendChild(link);
+            }
+        } catch (err) {
+            console.error("Failed to load markercluster:", err);
+        }
 
-    // @ts-ignore
-    markersRef.current = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      maxClusterRadius: 50,
-      iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        const color = count > 50 ? '#dc2626' : count > 10 ? '#eab308' : '#16a34a';
-        return L.divIcon({
-          html: `<div style="background:${color};width:40px;height:40px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.2);">${count}</div>`,
-          className: 'custom-cluster-icon',
-          iconSize: [40, 40],
+        if (!containerRef.current || !mountedRef.current) return;
+
+        const map = L.map(containerRef.current, {
+            center: userLocation ? [userLocation.lat, userLocation.lng] : defaultCenter,
+            zoom,
+            zoomControl: false,
+            preferCanvas: true,
         });
-      },
-    }).addTo(map);
 
-    map.on('moveend', () => {
-      if (onMapBoundsChange) onMapBoundsChange(map.getBounds());
-    });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+        }).addTo(map);
 
-    mapRef.current = map;
+        // @ts-ignore
+        if (L.markerClusterGroup) {
+            // @ts-ignore
+            markersRef.current = L.markerClusterGroup({
+                showCoverageOnHover: false,
+                maxClusterRadius: 50,
+                iconCreateFunction: (cluster: any) => {
+                    const count = cluster.getChildCount();
+                    const color = count > 50 ? '#dc2626' : count > 10 ? '#eab308' : '#16a34a';
+                    return L.divIcon({
+                        html: `<div style="background:${color};width:40px;height:40px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.2);">${count}</div>`,
+                        className: 'custom-cluster-icon',
+                        iconSize: [40, 40],
+                    });
+                },
+            }).addTo(map);
+        }
+
+        map.on('moveend', () => {
+            if (onMapBoundsChange) onMapBoundsChange(map.getBounds());
+        });
+
+        mapRef.current = map;
+
+        // Initial bounds trigger
+        if (onMapBoundsChange) onMapBoundsChange(map.getBounds());
+    };
+
+    initMap();
 
     return () => {
       mountedRef.current = false;
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -147,7 +179,7 @@ export default function MapInner({
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
-          if (!mapRef.current) return;
+          if (!mapRef.current || !mountedRef.current) return;
           const { latitude, longitude, accuracy } = pos.coords;
           const latlng = L.latLng(latitude, longitude);
 
@@ -206,13 +238,11 @@ export default function MapInner({
 
   // ── Route building ──────────────────────────────────────────────────────
   useEffect(() => {
-    // Clear route when targetDoctor is null
     if (!targetDoctor || !userLocation) {
       if (routeLayerRef.current) {
         routeLayerRef.current.remove();
         routeLayerRef.current = null;
       }
-      // Only update state if it actually changed (avoids render during cleanup)
       if (routeInfoRef.current !== null) {
         routeInfoRef.current = null;
         if (mountedRef.current) setRouteInfo(null);
@@ -227,9 +257,11 @@ export default function MapInner({
         const res = await fetch(
           `https://router.project-osrm.org/route/v1/driving/${userLocation!.lng},${userLocation!.lat};${targetDoctor!.lng},${targetDoctor!.lat}?overview=full&geometries=geojson`
         );
-        if (cancelled || !mapRef.current) return;
+        if (cancelled || !mapRef.current || !mountedRef.current) return;
 
         const data = await res.json();
+        if (cancelled || !mapRef.current || !mountedRef.current) return;
+
         if (data.routes?.[0]) {
           const route = data.routes[0];
           const coordinates = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
@@ -248,7 +280,7 @@ export default function MapInner({
             time: Math.round(route.duration / 60),
           };
           routeInfoRef.current = info;
-          if (mountedRef.current) setRouteInfo(info);
+          if (mountedRef.current && !cancelled) setRouteInfo(info);
         }
       } catch (err) {
         console.warn('Route building error:', err);
@@ -310,7 +342,12 @@ export default function MapInner({
         .addTo(markersRef.current)
         .bindPopup('Вы здесь');
     }
-  }, [pins, userLocation, lang, onPinClick, trackingMode]);
+
+    // Trigger bounds change notification so parent can update visible doctors
+    if (onMapBoundsChange && mapRef.current) {
+        onMapBoundsChange(mapRef.current.getBounds());
+    }
+  }, [pins, userLocation, lang, onPinClick, trackingMode, onMapBoundsChange]);
 
   return (
     <div className="relative w-full h-full">
