@@ -284,19 +284,20 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
            )}
 
            {/* Loading Spinner */}
-           {isLoading && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
-                 <div className="bg-white px-4 py-2 rounded-full shadow-2xl border border-slate-100 flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs font-bold text-slate-600">Загрузка...</span>
-                 </div>
-              </div>
-           )}
+{isLoading && (
+   <div className="absolute top-4 left-1/2 -translate-x-1/2" style={{ zIndex: 1001 }}>
+      <div className="bg-white px-4 py-2 rounded-full shadow-2xl border border-slate-100 flex items-center gap-2">
+         <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+         <span className="text-xs font-bold text-slate-600">Загрузка...</span>
+      </div>
+   </div>
+)}
 
            {/* Mobile Bottom Sheet */}
            <div
-             className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-slate-100 transition-all duration-500 ease-in-out z-40 ${getSheetHeight()}`}
-           >
+             className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-slate-100 transition-all duration-500 ease-in-out ${getSheetHeight()}`}
+             style={{ zIndex: 1001 }}
+             >
               {/* Drag Handle */}
               <div
                 className="w-full py-4 flex flex-col items-center cursor-pointer"
