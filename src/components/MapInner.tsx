@@ -171,70 +171,89 @@ export default function MapInner({
   }, []);
 
   // ── Tracking mode ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapRef.current) return;
+useEffect(() => {
+  if (!mapRef.current) return;
 
-    if (trackingMode) {
-      if (!navigator.geolocation) return;
+  if (trackingMode) {
+    if (!navigator.geolocation) return;
 
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          if (!mapRef.current || !mountedRef.current) return;
-          const { latitude, longitude, accuracy } = pos.coords;
-          const latlng = L.latLng(latitude, longitude);
-
-          if (!userMarkerRef.current) {
-            const pulseIcon = L.divIcon({
-              className: 'user-location-pulse',
-              html: `<div class="pulse-dot"></div>`,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
-            });
-            userMarkerRef.current = L.marker(latlng, { icon: pulseIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
-          } else {
-            userMarkerRef.current.setLatLng(latlng);
-          }
-
-          if (!userAccuracyRef.current) {
-            userAccuracyRef.current = L.circle(latlng, {
-              radius: accuracy,
-              color: '#2563eb',
-              fillColor: '#2563eb',
-              fillOpacity: 0.15,
-              weight: 1,
-            }).addTo(mapRef.current);
-          } else {
-            userAccuracyRef.current.setLatLng(latlng).setRadius(accuracy);
-          }
-        },
-        (err) => console.warn('Geolocation error:', err),
-        { enableHighAccuracy: true }
-      );
-    } else {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      userMarkerRef.current?.remove();
-      userMarkerRef.current = null;
-      userAccuracyRef.current?.remove();
-      userAccuracyRef.current = null;
+    // Сразу центрируемся, если координаты уже известны
+    if (userLocation) {
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 17, {
+        animate: true,
+        duration: 0.5,
+      });
     }
 
-    return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    };
-  }, [trackingMode]);
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!mapRef.current || !mountedRef.current) return;
+        const { latitude, longitude, accuracy } = pos.coords;
+        const latlng = L.latLng(latitude, longitude);
 
+        if (!userMarkerRef.current) {
+          const pulseIcon = L.divIcon({ /* ... код без изменений ... */ });
+          userMarkerRef.current = L.marker(latlng, { icon: pulseIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
+        } else {
+          userMarkerRef.current.setLatLng(latlng);
+        }
+
+        if (!userAccuracyRef.current) {
+          userAccuracyRef.current = L.circle(latlng, {
+            radius: accuracy,
+            color: '#2563eb',
+            fillColor: '#2563eb',
+            fillOpacity: 0.15,
+            weight: 1,
+          }).addTo(mapRef.current);
+        } else {
+          userAccuracyRef.current.setLatLng(latlng).setRadius(accuracy);
+        }
+      },
+      (err) => console.warn('Geolocation error:', err),
+      { enableHighAccuracy: true }
+    );
+  } else {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    userMarkerRef.current?.remove();
+    userMarkerRef.current = null;
+    userAccuracyRef.current?.remove();
+    userAccuracyRef.current = null;
+  }
+
+  return () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  };
+}, [trackingMode, userLocation]); // добавлена зависимость userLocation
+
+  
   // ── Zoom sync ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (mapRef.current && mapRef.current.getZoom() !== zoom) {
       mapRef.current.setZoom(zoom);
     }
   }, [zoom]);
+
+  // ── Center on user when location first becomes available ────────────
+const hasCenteredOnUser = useRef(false);
+
+useEffect(() => {
+  if (!mapRef.current || !userLocation) return;
+  if (hasCenteredOnUser.current) return;
+  if (trackingMode) return; // не мешаем tracking-режиму
+
+  hasCenteredOnUser.current = true;
+  mapRef.current.setView([userLocation.lat, userLocation.lng], 16, {
+    animate: true,
+    duration: 0.8,
+  });
+}, [userLocation, trackingMode]);
 
   // ── Route building ──────────────────────────────────────────────────────
   useEffect(() => {
