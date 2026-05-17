@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import DoctorMap from '@/components/DoctorMap';
 import DoctorMapCard from '@/components/DoctorMapCard';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
+
+type BottomSheetState = 'collapsed' | 'half' | 'full';
 
 export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
@@ -17,13 +20,14 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     priceMin: '',
     priceMax: '',
     consultationType: '',
-    accepts: ''
+    accepts: '',
+    radius: '20'
   });
   const [trackingMode, setTrackingMode] = useState(false);
   const [targetDoctor, setTargetDoctor] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [visibleDoctors, setVisibleDoctors] = useState<any[]>([]);
-  const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(false);
+  const [sheetState, setSheetState] = useState<BottomSheetState>('collapsed');
   const [zoom, setZoom] = useState(13);
 
   useEffect(() => {
@@ -50,11 +54,12 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     if (userLocation) {
       sp.set('lat', userLocation.lat.toString());
       sp.set('lng', userLocation.lng.toString());
-      sp.set('radius', '20');
+      sp.set('radius', (filters.city || filters.radius === '50') ? '50' : '20');
     }
     Object.entries(filters).forEach(([k, v]) => {
-      if (v) sp.set(k, v);
+      if (v && k !== 'radius') sp.set(k, v);
     });
+    if (filters.radius) sp.set('radius', (filters.city || filters.radius === '50') ? '50' : '20');
 
     try {
       const placesSp = new URLSearchParams();
@@ -89,7 +94,13 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
         address: p.address,
       }));
 
-      setAllPins([...doctorPins, ...placePins]);
+      const pins = [...doctorPins, ...placePins];
+      setAllPins(pins);
+
+      // Initial visible doctors calculation if allPins were empty
+      if (allPins.length === 0) {
+        setVisibleDoctors(pins.filter(p => p.type === 'doctor'));
+      }
     } catch (error) {
       console.error("Error loading map data:", error);
     } finally {
@@ -97,13 +108,31 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
     }
   }
 
-  const handleMapBoundsChange = (bounds: any) => {
+  const handleMapBoundsChange = useCallback((bounds: any) => {
     const visible = allPins.filter(pin =>
         pin.type === 'doctor' &&
         bounds.contains([pin.coordinates.lat, pin.coordinates.lng])
     );
     setVisibleDoctors(visible);
+  }, [allPins]);
+
+  const cycleSheetState = () => {
+    if (sheetState === 'collapsed') setSheetState('half');
+    else if (sheetState === 'half') setSheetState('full');
+    else setSheetState('collapsed');
   };
+
+  const getSheetHeight = () => {
+    if (sheetState === 'collapsed') return 'h-[96px]';
+    if (sheetState === 'half') return 'h-[45vh]';
+    return 'h-[80vh]';
+  };
+
+  const expandSearch = () => {
+    setFilters(prev => ({ ...prev, radius: '50' }));
+  };
+
+  const doctorCount = allPins.filter(p => p.type === 'doctor').length;
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden relative">
@@ -170,19 +199,33 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
            </div>
 
            <div className="pt-6 border-t">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Найдено: {allPins.filter(p => p.type === 'doctor').length}</p>
-              <div className="space-y-3">
-                 {allPins.filter(p => p.type === 'doctor').slice(0, 10).map(doc => (
-                    <div
-                      key={doc._id}
-                      className="p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-200 cursor-pointer transition-all shadow-sm group"
-                      onClick={() => setSelectedDoctor(doc)}
-                    >
-                       <p className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors">{doc.name}</p>
-                       <p className="text-[10px] text-slate-400 mt-0.5">{doc.specialty?.ru}</p>
-                    </div>
-                 ))}
-              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Найдено: {doctorCount}</p>
+              {doctorCount === 0 && !isLoading ? (
+                <div className="text-center py-10">
+                  <div className="text-3xl mb-3">🔍</div>
+                  <p className="text-xs font-bold text-slate-900 mb-1">Нет врачей в этой области</p>
+                  <p className="text-[10px] text-slate-400 mb-4">Попробуйте расширить поиск</p>
+                  <button
+                    onClick={expandSearch}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-bold"
+                  >
+                    Расширить поиск
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allPins.filter(p => p.type === 'doctor').slice(0, 10).map(doc => (
+                      <div
+                        key={doc._id}
+                        className="p-3 bg-white rounded-xl border border-slate-100 hover:border-blue-200 cursor-pointer transition-all shadow-sm group"
+                        onClick={() => setSelectedDoctor(doc)}
+                      >
+                        <p className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors">{doc.name}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{doc.specialty?.ru}</p>
+                      </div>
+                  ))}
+                </div>
+              )}
            </div>
         </aside>
 
@@ -212,15 +255,6 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
               >
                 📍
               </button>
-              <button
-                onClick={() => {
-                   if (document.fullscreenElement) document.exitFullscreen();
-                   else document.documentElement.requestFullscreen();
-                }}
-                className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-xl text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                🗺
-              </button>
            </div>
 
            {/* Custom Zoom Controls */}
@@ -239,26 +273,6 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
               </button>
            </div>
 
-           {/* Empty State Overlay */}
-           {allPins.length === 0 && !isLoading && (
-              <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-sm flex items-center justify-center p-6 z-20">
-                 <div className="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm border border-slate-100">
-                    <div className="text-4xl mb-4">🔍</div>
-                    <h3 className="text-lg font-black text-slate-900 mb-2">Выберите город или включите локацию</h3>
-                    <p className="text-sm text-slate-500 mb-6">Чтобы увидеть врачей и клиники поблизости</p>
-                    <button
-                       onClick={() => {
-                          const city = prompt('Введите город (например, Душанбе):');
-                          if (city) setFilters({ ...filters, city });
-                       }}
-                       className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-xl shadow-blue-200"
-                    >
-                       Указать город
-                    </button>
-                 </div>
-              </div>
-           )}
-
            {selectedDoctor && (
              <DoctorMapCard
                doctor={selectedDoctor}
@@ -271,7 +285,7 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
 
            {/* Loading Spinner */}
            {isLoading && (
-              <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
                  <div className="bg-white px-4 py-2 rounded-full shadow-2xl border border-slate-100 flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs font-bold text-slate-600">Загрузка...</span>
@@ -281,12 +295,12 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
 
            {/* Mobile Bottom Sheet */}
            <div
-             className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-slate-100 transition-all duration-500 ease-in-out z-40 ${isBottomSheetExpanded ? 'h-[80vh]' : 'h-24'}`}
+             className={`lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-slate-100 transition-all duration-500 ease-in-out z-40 ${getSheetHeight()}`}
            >
               {/* Drag Handle */}
               <div
                 className="w-full py-4 flex flex-col items-center cursor-pointer"
-                onClick={() => setIsBottomSheetExpanded(!isBottomSheetExpanded)}
+                onClick={cycleSheetState}
               >
                  <div className="w-12 h-1.5 bg-slate-200 rounded-full mb-2"></div>
                  <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
@@ -294,12 +308,19 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                  </p>
               </div>
 
-              <div className="overflow-y-auto h-full px-6 pb-24">
-                 {!isBottomSheetExpanded ? (
+              <div className="overflow-y-auto h-full px-6 pb-32">
+                 {sheetState === 'collapsed' && (
                     <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
                        {visibleDoctors.slice(0, 5).map(doc => (
-                          <div key={doc._id} className="shrink-0 w-12 h-12 rounded-2xl overflow-hidden border border-slate-100">
-                             <img src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
+                          <div key={doc._id} className="relative shrink-0 w-12 h-12 rounded-2xl overflow-hidden border border-slate-100">
+                             <Image
+                                src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                                alt=""
+                                fill
+                                sizes="48px"
+                                quality={85}
+                                className="object-cover"
+                             />
                           </div>
                        ))}
                        {visibleDoctors.length > 5 && (
@@ -308,53 +329,124 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                           </div>
                        )}
                     </div>
-                 ) : (
-                    <div className="space-y-6 pt-4">
-                       {/* Mobile Filters */}
-                       <div className="grid grid-cols-2 gap-3">
-                          <button
-                             onClick={() => {
-                                const city = prompt('Ваш город?');
-                                if (city) setFilters({...filters, city});
-                             }}
-                             className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-left"
-                          >
-                             <p className="text-[10px] font-bold text-slate-400 uppercase">Город</p>
-                             <p className="text-xs font-bold text-slate-900 truncate">{filters.city || 'Не выбран'}</p>
-                          </button>
-                          <button
-                             onClick={() => setTrackingMode(!trackingMode)}
-                             className={`p-3 rounded-2xl border text-left ${trackingMode ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}
-                          >
-                             <p className="text-[10px] font-bold text-slate-400 uppercase">Локация</p>
-                             <p className="text-xs font-bold text-blue-600">{trackingMode ? 'Включена' : 'Выключена'}</p>
-                          </button>
-                       </div>
+                 )}
 
-                       {/* Doctors List */}
+                 {sheetState === 'half' && (
+                    <div className="space-y-6 pt-4 animate-in fade-in duration-300">
                        <div className="space-y-4">
-                          <h4 className="text-sm font-black text-slate-900">Список врачей в этой области</h4>
-                          {visibleDoctors.length === 0 ? (
-                             <div className="py-10 text-center">
-                                <p className="text-slate-400 text-sm">Никого не найдено в этой области</p>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">📍 Город</label>
+                            <input
+                              type="text"
+                              placeholder="Ваш город..."
+                              className="w-full p-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:border-blue-500 outline-none"
+                              value={filters.city}
+                              onChange={(e) => setFilters({...filters, city: e.target.value})}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Прием</label>
+                            <div className="flex gap-2">
+                              {[
+                                { id: 'in_person', label: '🏥 Клиника' },
+                                { id: 'online', label: '💻 Онлайн' },
+                                { id: 'home_visit', label: '🏠 Домой' }
+                              ].map(t => (
                                 <button
-                                  onClick={() => setZoom(prev => Math.max(prev - 2, 1))}
-                                  className="mt-4 px-6 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                                  key={t.id}
+                                  onClick={() => setFilters({...filters, consultationType: filters.consultationType === t.id ? '' : t.id})}
+                                  className={`flex-1 py-2.5 rounded-xl border text-[10px] font-bold transition-all ${filters.consultationType === t.id ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-100 text-slate-600'}`}
                                 >
-                                  Увеличить радиус (отдалить)
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                             <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Принимает новых</p>
+                                <button
+                                  onClick={() => setFilters({...filters, accepts: filters.accepts === 'true' ? '' : 'true'})}
+                                  className={`text-xs font-bold ${filters.accepts === 'true' ? 'text-blue-600' : 'text-slate-400'}`}
+                                >
+                                  {filters.accepts === 'true' ? 'Да' : 'Не важно'}
                                 </button>
                              </div>
-                          ) : (
-                             visibleDoctors.map(doc => (
+                             <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Цена до</p>
+                                <input
+                                  type="number"
+                                  placeholder="500"
+                                  className="bg-transparent text-xs font-bold text-slate-900 outline-none w-full"
+                                  value={filters.priceMax}
+                                  onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
+                                />
+                             </div>
+                          </div>
+                       </div>
+
+                       <button
+                        onClick={() => setSheetState('full')}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl"
+                       >
+                         Показать результаты
+                       </button>
+                    </div>
+                 )}
+
+                 {sheetState === 'full' && (
+                    <div className="space-y-4 pt-4 animate-in fade-in duration-300">
+                       <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-black text-slate-900">Список врачей</h4>
+                          <button onClick={() => setSheetState('half')} className="text-[10px] font-bold text-blue-600">Фильтры</button>
+                       </div>
+
+                       {isLoading ? (
+                          <div className="space-y-4">
+                             {[1,2,3].map(i => (
+                                <div key={i} className="flex gap-4 p-4 bg-white rounded-3xl border border-slate-100 animate-pulse">
+                                   <div className="w-16 h-16 rounded-2xl bg-slate-100" />
+                                   <div className="flex-1 space-y-2">
+                                      <div className="h-4 w-32 bg-slate-100 rounded" />
+                                      <div className="h-3 w-20 bg-slate-100 rounded" />
+                                      <div className="h-3 w-full bg-slate-100 rounded" />
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                       ) : visibleDoctors.length === 0 ? (
+                          <div className="py-10 text-center">
+                             <p className="text-slate-400 text-sm">Никого не найдено</p>
+                             <button
+                               onClick={() => setZoom(prev => Math.max(prev - 2, 1))}
+                               className="mt-4 px-6 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600"
+                             >
+                               Отдалить карту
+                             </button>
+                          </div>
+                       ) : (
+                          <div className="space-y-4">
+                             {visibleDoctors.map(doc => (
                                 <div
                                   key={doc._id}
                                   className="flex gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-sm active:scale-95 transition-transform"
                                   onClick={() => {
                                      setSelectedDoctor(doc);
-                                     setIsBottomSheetExpanded(false);
+                                     setSheetState('collapsed');
                                   }}
                                 >
-                                   <img src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-16 h-16 rounded-2xl object-cover" />
+                                   <div className="relative w-16 h-16 shrink-0">
+                                      <Image
+                                        src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                                        alt=""
+                                        fill
+                                        sizes="64px"
+                                        quality={85}
+                                        className="rounded-2xl object-cover"
+                                      />
+                                   </div>
                                    <div className="min-w-0">
                                       <p className="font-bold text-slate-900 text-sm">{doc.name}</p>
                                       <p className="text-[10px] font-bold text-blue-500 uppercase mt-1">{doc.specialty?.ru}</p>
@@ -364,9 +456,9 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
                                       </div>
                                    </div>
                                 </div>
-                             ))
-                          )}
-                       </div>
+                             ))}
+                          </div>
+                       )}
                     </div>
                  )}
               </div>
