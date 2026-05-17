@@ -91,7 +91,7 @@ export default function DoctorsPageContent({
                   Найдено <span className="text-slate-900 font-bold text-base">{total}</span> {L('doctors')}
                 </p>
                 { (sp.city || sp.specialty || sp.type) && (
-                  <ActiveFilters lang={lang} searchParams={sp} L={L} />
+                  <ActiveFilters lang={lang} searchParams={sp} />
                 )}
               </div>
 
