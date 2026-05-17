@@ -131,23 +131,42 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(breadcrumbItems);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-20">
+    <div className="min-h-screen bg-white pb-20">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       {/* Hero / Search */}
-      <div className="bg-white border-b border-slate-100 pt-8 md:pt-12 pb-10 md:pb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-5 text-center">
-          <h1 className="text-2xl md:text-5xl font-black text-slate-900 mb-3 md:mb-4 tracking-tight">
+      <div className="relative overflow-hidden bg-white pt-8 md:pt-16 pb-12 md:pb-24">
+        {/* Тёплый фоновый градиент как на главной */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-amber-50/40 via-white to-white" />
+
+        {/* Декоративные круги */}
+        <div
+          className="absolute top-0 right-[5%] w-64 h-64 rounded-full pointer-events-none opacity-20"
+          style={{
+            background: 'radial-gradient(circle, oklch(0.70 0.16 75 / 0.4), transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-[2%] w-48 h-48 rounded-full pointer-events-none opacity-10"
+          style={{
+            background: 'radial-gradient(circle, oklch(0.45 0.08 255 / 0.4), transparent 70%)',
+            filter: 'blur(36px)',
+          }}
+        />
+
+        <div className="relative max-w-7xl mx-auto px-4 md:px-5 text-center">
+          <h1 className="text-3xl md:text-6xl font-black text-slate-900 mb-4 md:mb-6 tracking-tight">
             {L('title')}
           </h1>
-          <p className="text-slate-500 text-sm md:text-lg mb-6 md:mb-10 max-w-2xl mx-auto px-2">
+          <p className="text-slate-500 text-base md:text-xl mb-10 md:mb-14 max-w-2xl mx-auto px-2 font-medium">
             {L('subtitle')}
           </p>
 
-          <form id="search-form" action={`/${lang}/doctors`} method="GET" className="max-w-4xl mx-auto">
-            <div className="bg-white p-2 rounded-2xl md:rounded-full border border-slate-200 shadow-xl shadow-slate-200/40 flex flex-col md:flex-row items-center gap-2">
+          <form id="search-form" action={`/${lang}/doctors`} method="GET" className="max-w-5xl mx-auto">
+            <div className="bg-white/70 backdrop-blur-xl p-3 rounded-3xl md:rounded-full border border-white shadow-2xl shadow-slate-200/60 flex flex-col md:flex-row items-center gap-2">
               <select name="city" defaultValue={sp.city} className="w-full md:w-48 px-6 py-3.5 bg-transparent text-sm font-bold text-slate-700 outline-none border-b md:border-b-0 md:border-r border-slate-100">
                 <option value="">{L('all_cities')}</option>
                 {cities.filter(Boolean).map(c => <option key={c} value={c}>{c}</option>)}
@@ -294,72 +313,74 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {doctors.map((doc: any) => (
-                  <div key={doc._id} className="group bg-white rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
-                    {/* Header */}
-                    <div className="p-4 md:p-6 pb-0 flex items-start justify-between">
-                      <div className="relative">
-                        <img
-                          src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                          alt={doc.name}
-                          className="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border border-slate-100 group-hover:scale-105 transition"
-                        />
-                        {doc.status === 'approved' && (
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center" title={L('verified')}>
-                            <svg className="w-3 md:w-3.5 h-3 md:h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
-                          </div>
-                        )}
+                  <div key={doc._id} className="relative group bg-white rounded-[2.5rem] border border-slate-50 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col h-full overflow-hidden">
+                    {/* Rating Badge - Absolute positioned at top right */}
+                    {doc.reviewCount > 0 && (
+                      <div className="absolute top-6 right-6 z-10 flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-2xl text-xs font-black shadow-sm">
+                        ⭐ {doc.reviewAvg}
+                        <span className="text-amber-400 font-bold ml-0.5">({doc.reviewCount})</span>
                       </div>
-                      {doc.reviewCount > 0 && (
-                        <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-[10px] md:text-xs font-black">
-                          ⭐ {doc.reviewAvg}
-                          <span className="text-amber-400 font-bold ml-0.5">({doc.reviewCount})</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
 
-                    {/* Content */}
-                    <div className="p-4 md:p-6 flex-1 flex flex-col">
-                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="block group/link">
-                        <h3 className="font-black text-slate-900 group-hover/link:text-blue-600 transition truncate leading-tight text-sm md:text-base">
+                    <div className="p-6 md:p-8 flex-1 flex flex-col">
+                      {/* Avatar & Basic Info */}
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className="relative shrink-0">
+                          <img
+                            src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                            alt={doc.name}
+                            className="w-20 h-20 md:w-24 md:h-24 rounded-3xl object-cover border-4 border-slate-50 group-hover:scale-105 transition duration-500"
+                          />
+                          {doc.status === 'approved' && (
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 md:w-7 md:h-7 bg-emerald-500 rounded-full border-4 border-white flex items-center justify-center shadow-lg" title={L('verified')}>
+                              <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name & Specialty */}
+                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="block group/link mb-5">
+                        <h3 className="font-black text-slate-900 group-hover/link:text-blue-600 transition leading-tight text-xl md:text-2xl mb-1.5">
                           {doc.name}
                         </h3>
-                        <p className="text-[10px] md:text-xs font-bold text-blue-500 mt-1 uppercase tracking-wider">{t(doc.specialty)}</p>
+                        <p className="text-blue-500 font-bold uppercase tracking-widest text-[11px] md:text-xs">{t(doc.specialty)}</p>
                       </Link>
 
-                      <div className="mt-3 md:mt-4 space-y-1.5 md:space-y-2.5 flex-1">
-                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-500 font-medium">
-                          <span className="text-slate-300">📍</span>
+                      {/* Details List */}
+                      <div className="space-y-3.5 flex-1">
+                        <div className="flex items-center gap-3 text-[13px] md:text-sm text-slate-500 font-medium bg-slate-50/50 p-2 rounded-2xl border border-slate-50">
+                          <span className="text-lg">📍</span>
                           <span className="truncate">{doc.city}{doc.clinicName ? ` · ${doc.clinicName}` : ''}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-500 font-medium">
-                          <span className="text-slate-300">⏱️</span>
+                        <div className="flex items-center gap-3 text-[13px] md:text-sm text-slate-500 font-medium bg-slate-50/50 p-2 rounded-2xl border border-slate-50">
+                          <span className="text-lg">⏱️</span>
                           <span>{doc.experience} {L('years_exp')}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs md:text-[13px] text-slate-900 font-bold">
-                          <span className="text-slate-300 font-normal">💰</span>
+                        <div className="flex items-center gap-3 text-[13px] md:text-sm text-slate-900 font-bold bg-slate-50/50 p-2 rounded-2xl border border-slate-50">
+                          <span className="text-lg">💰</span>
                           {doc.priceRange?.min ? (
                             <span>{L('from')} {doc.priceRange.min} {doc.priceRange.currency || 'TJS'}</span>
                           ) : '—'}
                         </div>
-                      </div>
-
-                      {/* Icons */}
-                      <div className="flex gap-2 mt-3 md:mt-5">
-                        {(doc.consultationTypes || ['in_person']).map((type: string) => (
-                          <span key={type} className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs md:text-sm border border-slate-100" title={L(type)}>
-                            {type === 'in_person' ? '🏥' : type === 'online' ? '💻' : '🏠'}
-                          </span>
-                        ))}
+                        {/* Consultation Icons Row */}
+                        <div className="flex gap-2.5 pt-1.5">
+                          {(doc.consultationTypes || ['in_person']).map((type: string) => (
+                            <div key={type} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-lg shadow-sm" title={L(type)}>
+                              {type === 'in_person' ? '🏥' : type === 'online' ? '💻' : '🏠'}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="p-3 md:p-4 bg-slate-50/50 border-t border-slate-100 grid grid-cols-2 gap-2 md:gap-3">
-                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="flex items-center justify-center py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] md:text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+                    {/* Actions Row */}
+                    <div className="p-5 md:p-6 bg-slate-50/30 border-t border-slate-50 grid grid-cols-2 gap-4">
+                      <Link href={`/${lang}/doctor/${doc.slug || doc._id}`} className="flex items-center justify-center py-4 bg-white border border-slate-200 rounded-2xl text-xs md:text-sm font-bold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                         {L('view_profile')}
                       </Link>
                       <ContactDoctorButton doctor={doc} lang={lang}
-                        className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[10px] md:text-xs font-bold hover:bg-blue-700 transition"
+                        className="w-full flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-2xl text-xs md:text-sm font-bold hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200"
                       />
                     </div>
                   </div>
