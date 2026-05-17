@@ -2,6 +2,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { updateDoctorProfile } from '@/app/actions/update-profile';
 import ProfileCompletionBanner from './ProfileCompletionBanner';
@@ -18,6 +19,11 @@ import CardDesign from './_profile-sections/CardDesign';
 import SaveBar from './_profile-sections/SaveBar';
 import { Spinner, strField } from './_profile-sections/_shared';
 
+// Динамический импорт модалки (без SSR, так как Leaflet работает только в браузере)
+const LocationPickerModal = dynamic(() => import('./_profile-sections/LocationPickerModal'), {
+  ssr: false,
+});
+
 export function ProfileTab({ lang }: { lang: string }) {
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +32,7 @@ export function ProfileTab({ lang }: { lang: string }) {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   useEffect(() => {
     fetch('/api/doctor/me')
@@ -80,6 +87,20 @@ export function ProfileTab({ lang }: { lang: string }) {
     } finally {
       setIsGeocoding(false);
     }
+  };
+
+  // Обработчик получения координат из модалки
+  const handleCoordinatesSelected = (lat: number, lng: number) => {
+    setProfile((p: any) => ({
+      ...p,
+      coordinates: {
+        lat,
+        lng,
+        type: 'Point',
+        coordinates: [lng, lat],
+      },
+    }));
+    setShowMapPicker(false);
   };
 
   const handleSave = async () => {
@@ -145,6 +166,7 @@ export function ProfileTab({ lang }: { lang: string }) {
         setProfile={setProfile}
         onGeocode={handleGeocode}
         isGeocoding={isGeocoding}
+        onOpenMapPicker={() => setShowMapPicker(true)}
       />
 
       <AppointmentsPricing profile={profile} setProfile={setProfile} />
@@ -158,6 +180,15 @@ export function ProfileTab({ lang }: { lang: string }) {
         saveState={saveState}
         errorMsg={errorMsg}
       />
+
+      {showMapPicker && (
+        <LocationPickerModal
+          initialLat={profile.coordinates?.lat}
+          initialLng={profile.coordinates?.lng}
+          onConfirm={handleCoordinatesSelected}
+          onCancel={() => setShowMapPicker(false)}
+        />
+      )}
     </div>
   );
 }
