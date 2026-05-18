@@ -9,7 +9,7 @@ import Pagination from './Pagination';
 import CtaBanner from './CtaBanner';
 import MobileFiltersDrawer from './MobileFiltersDrawer';
 import ActiveFilters from './ActiveFilters';
-import { DoctorsSortSelect } from './DoctorsSortSelect'; // Именованный экспорт — проверьте, при необходимости смените на default
+import { DoctorsSortSelect } from './DoctorsSortSelect';
 import UI from '@/dictionaries/doctor-translations';
 
 interface DoctorsPageContentProps {
@@ -39,13 +39,13 @@ export default function DoctorsPageContent({
 
   return (
     <div className="min-h-screen bg-[#f8f7f4]">
-      {/* JSON-LD структурированные данные */}
+      {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
-      {/* Верхняя панель (можно вынести в layout позже) */}
+      {/* Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href={`/${lang}`} className="flex items-center gap-2.5 group" aria-label="Duxtur.org - Главная">
@@ -71,10 +71,16 @@ export default function DoctorsPageContent({
         </div>
       </header>
 
-      {/* Hero-секция с поиском */}
-      <DoctorsHero lang={lang} searchParams={sp} cities={cities} activeSpecialty={activeSpecialty} L={L} />
+      {/* Hero + поиск (светлая тёплая тема) */}
+      <DoctorsHero
+        lang={lang}
+        searchParams={sp}
+        cities={cities}
+        activeSpecialty={activeSpecialty}
+        L={L}
+      />
 
-      {/* Основной контент страницы */}
+      {/* Основной контент */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="lg:grid lg:grid-cols-4 gap-8">
           {/* Десктопный сайдбар с фильтрами */}
@@ -82,29 +88,31 @@ export default function DoctorsPageContent({
             <FiltersSidebar lang={lang} searchParams={sp} cities={cities} L={L} />
           </aside>
 
-          {/* Результаты и сортировка */}
+          {/* Результаты, сортировка, сетка, пагинация, CTA */}
           <div className="lg:col-span-3 space-y-5">
-            {/* Панель статистики и сортировки */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white rounded-2xl border border-slate-100 shadow-sm px-5 py-3.5">
-              <div className="flex items-center gap-4 flex-wrap">
-                <p className="text-sm text-slate-500 font-medium">
-                  Найдено <span className="text-slate-900 font-bold text-base">{total}</span> {L('doctors')}
+            {/* Панель статистики и сортировки (обновлённая светлая) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-sm text-slate-500">
+                  Найдено{' '}
+                  <span className="text-slate-900 font-bold text-[15px]">{total}</span>{' '}
+                  {L('doctors')}
                 </p>
-                { (sp.city || sp.specialty || sp.type) && (
+                {(sp.city || sp.specialty || sp.type) && (
                   <ActiveFilters lang={lang} searchParams={sp} />
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Link
                   href={`/${lang}/doctors/map`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold transition border border-slate-200"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-semibold transition border border-blue-100"
                 >
                   📍 На карте
                 </Link>
 
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-400 font-medium hidden sm:inline">{L('sort_by')}:</span>
+                  <span className="text-slate-400 text-xs hidden sm:inline">Сортировка:</span>
                   <DoctorsSortSelect
                     defaultValue={sp.sort as string || ''}
                     labels={{
@@ -119,10 +127,10 @@ export default function DoctorsPageContent({
               </div>
             </div>
 
-            {/* Сетка карточек врачей */}
+            {/* Сетка врачей */}
             <DoctorsGrid doctors={doctors} lang={lang} L={L} />
 
-            {/* Пагинация */}
+            {/* Пагинация с разделителем и подписью (уже внутри компонента) */}
             {totalPages > 1 && (
               <Pagination
                 lang={lang}
@@ -138,7 +146,7 @@ export default function DoctorsPageContent({
         </div>
       </div>
 
-      {/* Мобильный drawer с фильтрами */}
+      {/* Мобильные фильтры (FAB и drawer) */}
       <MobileFiltersDrawer lang={lang} cities={cities} sp={sp} />
     </div>
   );
