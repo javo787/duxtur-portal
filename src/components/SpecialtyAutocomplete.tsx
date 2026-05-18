@@ -7,9 +7,15 @@ interface SpecialtyAutocompleteProps {
   defaultValue: string;
   lang: string;
   placeholder: string;
+  inputClassName?: string; // ← добавить
 }
 
-export default function SpecialtyAutocomplete({ defaultValue, lang, placeholder }: SpecialtyAutocompleteProps) {
+export default function SpecialtyAutocomplete({
+  defaultValue,
+  lang,
+  placeholder,
+  inputClassName, // ← добавить
+}: SpecialtyAutocompleteProps) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<{ key: string; label: string }[]>([]);
@@ -47,12 +53,10 @@ export default function SpecialtyAutocomplete({ defaultValue, lang, placeholder 
     if (val.trim() === '') {
       setSuggestions(staticOptions);
     } else {
-      // Static filtering
       const filtered = staticOptions.filter(opt =>
         opt.label.toLowerCase().includes(val.toLowerCase())
       );
 
-      // Dynamic fetch with debounce logic (simple version)
       if (val.length > 2) {
         try {
           const res = await fetch(`/api/search?q=${encodeURIComponent(val)}&type=doctors&lang=${lang}`);
@@ -61,16 +65,15 @@ export default function SpecialtyAutocomplete({ defaultValue, lang, placeholder 
             key: d.specialty?.[lang] || d.specialty?.ru || 'general',
             label: d.specialty?.[lang] || d.specialty?.ru || ''
           })).filter((opt: any, index: number, self: any[]) =>
-            opt.label && self.findIndex(t => t.label === opt.label) === index
+            opt.label && self.findIndex((t: any) => t.label === opt.label) === index
           );
 
-          // Combine and unique
           const combined = [...filtered];
           dynamicOptions.forEach((opt: any) => {
-             if (!combined.find(c => c.label === opt.label)) combined.push(opt);
+            if (!combined.find((c: any) => c.label === opt.label)) combined.push(opt);
           });
           setSuggestions(combined);
-        } catch (e) {
+        } catch {
           setSuggestions(filtered);
         }
       } else {
@@ -85,6 +88,10 @@ export default function SpecialtyAutocomplete({ defaultValue, lang, placeholder 
     setIsOpen(false);
   };
 
+  // Дефолтный className если inputClassName не передан
+  const defaultInputClassName =
+    'w-full px-6 py-3.5 bg-transparent text-sm font-medium text-slate-700 placeholder:text-slate-400 outline-none border-b md:border-b-0 md:border-r border-slate-100';
+
   return (
     <div ref={wrapperRef} className="relative w-full md:flex-1">
       <input
@@ -92,11 +99,11 @@ export default function SpecialtyAutocomplete({ defaultValue, lang, placeholder 
         value={query}
         onChange={handleInputChange}
         onFocus={() => {
-            setIsOpen(true);
-            if (query.trim() === '') setSuggestions(staticOptions);
+          setIsOpen(true);
+          if (query.trim() === '') setSuggestions(staticOptions);
         }}
         placeholder={placeholder}
-        className="w-full px-6 py-3.5 bg-transparent text-sm font-bold text-slate-700 outline-none border-b md:border-b-0 md:border-r border-slate-100"
+        className={inputClassName ?? defaultInputClassName} // ← применить
       />
       <input type="hidden" name="specialty" value={selected} />
 
