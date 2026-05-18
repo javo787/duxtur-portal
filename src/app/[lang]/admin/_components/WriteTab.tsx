@@ -145,12 +145,12 @@ export function WriteTab({ lang }: { lang: string }) {
     <div className="space-y-6">
       {showTutorial && <TutorialModal onClose={handleCloseTutorial} />}
 
-      {/* MODE CARDS */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+      {/* MODE SELECTOR — pills with radio buttons */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-extrabold text-gray-900 text-lg">Выберите режим</h2>
+          <h2 className="font-extrabold text-gray-900 text-base">Как создать статью?</h2>
           <button onClick={() => setShowTutorial(true)}
-            className="flex items-center gap-1.5 text-xs text-blue-600 font-bold hover:bg-blue-50 px-3 py-1.5 rounded-full transition border border-blue-100">
+            className="text-xs text-blue-600 font-semibold hover:underline flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                 d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -159,108 +159,129 @@ export function WriteTab({ lang }: { lang: string }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Pills row */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {MODES.map((m) => (
             <button key={m.id} onClick={() => { setMode(m.id); setDraft(''); }}
-              className={`p-4 rounded-2xl border-2 text-left transition relative ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2 transition-all whitespace-nowrap shrink-0 ${
                 mode === m.id
-                  ? m.isManual ? 'border-gray-800 bg-gray-900' : 'border-blue-500 bg-blue-50'
-                  : 'border-gray-100 hover:border-blue-200 bg-gray-50'
+                  ? m.isManual ? 'border-gray-900 bg-gray-900 text-white' : 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}>
+              {/* Radio circle */}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                mode === m.id ? (m.isManual ? 'border-white' : 'border-blue-600') : 'border-gray-300'
+              }`}>
+                {mode === m.id && (
+                  <span className={`w-2 h-2 rounded-full ${m.isManual ? 'bg-white' : 'bg-blue-600'}`} />
+                )}
+              </span>
+              <span className="text-base leading-none">{m.icon}</span>
+              <span className="font-bold text-sm">{m.title}</span>
               {m.isManual && (
-                <span className="absolute top-2 right-2 text-[10px] font-extrabold bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full">
-                  NEW
-                </span>
-              )}
-              <span className="text-2xl block mb-2">{m.icon}</span>
-              <p className={`font-extrabold text-sm mb-1 ${
-                mode === m.id ? (m.isManual ? 'text-white' : 'text-blue-700') : 'text-gray-900'
-              }`}>{m.title}</p>
-              <p className={`text-xs leading-relaxed ${
-                mode === m.id && m.isManual ? 'text-gray-400' : 'text-gray-500'
-              }`}>{m.desc}</p>
-              {!m.isManual && (
-                <p className="text-xs text-gray-400 mt-2">До {m.limit.toLocaleString()} символов</p>
+                <span className="text-[9px] font-black bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full">NEW</span>
               )}
             </button>
           ))}
         </div>
+
+        {/* Dynamic hint for selected mode */}
+        <div className={`mt-3 rounded-xl px-4 py-3 flex items-start gap-2.5 transition-all ${
+          currentMode.isManual ? 'bg-gray-50 border border-gray-200' : 'bg-blue-50 border border-blue-100'
+        }`}>
+          <span className="text-base shrink-0 mt-0.5">💡</span>
+          <p className={`text-xs leading-relaxed ${currentMode.isManual ? 'text-gray-600' : 'text-blue-800'}`}>
+            {currentMode.hint}
+          </p>
+        </div>
       </div>
 
-      {/* AI INPUT FORM */}
+      {/* AI INPUT FORM — only non‑manual modes */}
       {(mode as string) !== 'manual' && (
-        <>
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
-              <div>
-                <h3 className="font-extrabold text-gray-900">{currentMode.icon} {currentMode.title}</h3>
-                <p className="text-sm text-gray-500 mt-0.5">{currentMode.hint}</p>
-              </div>
-              <select value={language} onChange={(e) => setLanguage(e.target.value)}
-                className="p-2.5 border-2 border-gray-100 rounded-xl bg-gray-50 font-medium text-sm focus:border-blue-500 outline-none shrink-0">
-                {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-              </select>
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+          {/* Language selector */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Язык статьи</span>
+            <select value={language} onChange={(e) => setLanguage(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 font-medium focus:border-blue-500 outline-none">
+              {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </select>
+          </div>
 
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-blue-800 text-sm flex gap-3 mb-4">
-              <span className="text-xl shrink-0">💡</span>
-              <p>{currentMode.hint}</p>
-            </div>
-
+          {/* Auto‑resize textarea with internal counter */}
+          <div className="relative">
             <textarea
-              className={`w-full h-72 p-5 text-base border-2 rounded-2xl outline-none transition resize-none placeholder-gray-300 leading-relaxed ${
-                isOverLimit ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-blue-500'
+              className={`w-full p-4 pb-8 text-sm border-2 rounded-xl outline-none resize-none placeholder-gray-300 leading-relaxed transition-colors ${
+                isOverLimit ? 'border-red-300 bg-red-50 focus:border-red-400' : 'border-gray-200 bg-gray-50 focus:border-blue-500 focus:bg-white'
               }`}
               placeholder={
                 mode === 'write' ? 'Например: Мигрень — это интенсивная головная боль...'
-                : mode === 'process' ? 'Вставьте текст научной статьи...'
+                : mode === 'process' ? 'Вставьте текст научной статьи из PubMed, ВОЗ...'
                 : 'Вставьте медицинский текст для перевода...'
               }
+              rows={5}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 300) + 'px';
+              }}
             />
+            {/* Symbol counter inside the field */}
+            <span className={`absolute bottom-3 right-3 text-[11px] font-bold pointer-events-none ${
+              isOverLimit ? 'text-red-500' : draft.length > currentMode.limit * 0.85 ? 'text-amber-500' : 'text-gray-300'
+            }`}>
+              {draft.length.toLocaleString()} / {currentMode.limit.toLocaleString()}
+            </span>
+          </div>
 
-            <div className="flex items-center justify-between mt-3 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <span className={`text-sm font-bold ${
-                  isOverLimit ? 'text-red-500' : isUnderMin ? 'text-gray-400' : 'text-green-600'
-                }`}>
-                  {draft.length.toLocaleString()} / {currentMode.limit.toLocaleString()} символов
-                </span>
-                {isOverLimit && <span className="text-xs text-red-500 font-bold bg-red-50 px-2 py-1 rounded-lg">Превышен лимит</span>}
-                {!isOverLimit && !isUnderMin && <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded-lg">✓ Готово к обработке</span>}
-              </div>
-              <button onClick={handleProcess} disabled={isLoading || isUnderMin || isOverLimit}
-                className="flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                {isLoading ? <><Spinner /> AI обрабатывает...</>
-                  : mode === 'write' ? '✨ Создать статью'
-                  : mode === 'process' ? '📄 Адаптировать'
-                  : '🌐 Перевести'}
-              </button>
-            </div>
-            {isUnderMin && draft.length > 0 && (
-              <p className="text-xs text-amber-600 mt-2 font-medium">
-                Минимум {currentMode.minLimit} символов. Добавьте ещё {currentMode.minLimit - draft.trim().length}.
+          {/* Button + smart disabled hint */}
+          <div className="space-y-2">
+            <button onClick={handleProcess} disabled={isLoading || isUnderMin || isOverLimit}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all shadow-sm disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none">
+              {isLoading ? (
+                <><Spinner />
+                  <span>AI обрабатывает
+                    <span className="inline-flex gap-0.5 ml-1">
+                      {[0,1,2].map(i => (
+                        <span key={i} className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                      ))}
+                    </span>
+                  </span>
+                </>
+              ) : mode === 'write' ? '✨ Создать статью'
+                : mode === 'process' ? '📄 Адаптировать для пациентов'
+                : '🌐 Перевести'}
+            </button>
+            {/* Explanation below the button */}
+            {!isLoading && (
+              <p className={`text-xs text-center transition-all min-h-[20px] ${
+                isOverLimit ? 'text-red-500 font-medium' : isUnderMin && draft.length > 0 ? 'text-amber-500' : 'text-transparent'
+              }`}>
+                {isOverLimit ? `⚠️ Сократите текст на ${(draft.length - currentMode.limit).toLocaleString()} символов`
+                  : isUnderMin && draft.length > 0 ? `✏️ Ещё ${currentMode.minLimit - draft.trim().length} символов`
+                  : '·'}
               </p>
             )}
           </div>
-
-          {/* SUPPORT */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between gap-4 shadow-sm">
-            <div>
-              <p className="font-bold text-gray-900 text-sm">Нужна помощь?</p>
-              <p className="text-xs text-gray-400 mt-0.5">Напишите нам — ответим в течение часа</p>
-            </div>
-            <a href="https://t.me/duxturcom" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#229ED9] hover:bg-[#1a8bbf] text-white rounded-xl font-bold text-sm transition shrink-0">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.667l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.892z" />
-              </svg>
-              Telegram поддержка
-            </a>
-          </div>
-        </>
+        </div>
       )}
+
+      {/* SUPPORT */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between gap-4 shadow-sm">
+        <div>
+          <p className="font-bold text-gray-900 text-sm">Нужна помощь?</p>
+          <p className="text-xs text-gray-400 mt-0.5">Напишите нам — ответим в течение часа</p>
+        </div>
+        <a href="https://t.me/duxturcom" target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#229ED9] hover:bg-[#1a8bbf] text-white rounded-xl font-bold text-sm transition shrink-0">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.667l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.892z" />
+          </svg>
+          Telegram поддержка
+        </a>
+      </div>
     </div>
   );
 }
