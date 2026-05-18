@@ -19,14 +19,15 @@ export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
     <>
       {/* Кнопка открытия */}
       <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-10 right-6 z-40 lg:hidden bg-blue-600 text-white w-16 h-16 rounded-full shadow-[0_20px_50px_rgba(37,99,235,0.4)] flex items-center justify-center active:scale-90 transition-all duration-300 border-4 border-white"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-        </svg>
-      </button>
+  type="button"
+  onClick={() => setOpen(true)}
+  className="fixed bottom-8 right-5 z-40 lg:hidden bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg shadow-blue-200 flex items-center justify-center active:scale-90 transition-all duration-200 border-4 border-white"
+  aria-label="Открыть фильтры"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+  </svg>
+</button>
 
       {/* Оверлей + Drawer */}
       {open && (
