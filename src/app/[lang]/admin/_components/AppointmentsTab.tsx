@@ -42,91 +42,93 @@ export function AppointmentsTab({ lang }: { lang: string }) {
   if (isLoading) return <div className="py-10 text-center text-slate-400">Загрузка...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-2xl border shadow-sm">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Всего записей</p>
-          <p className="text-3xl font-black mt-1">{appointments.length}</p>
+    <div className="space-y-4">
+      {/* Stats cards – 2 columns */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white p-4 rounded-2xl border shadow-sm">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Всего записей</p>
+          <p className="text-2xl font-black mt-1 text-slate-900">{appointments.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl border shadow-sm">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Предстоит</p>
-          <p className="text-3xl font-black mt-1">
-             {appointments.filter((a: any) => a.status === 'confirmed' || a.status === 'pending').length}
+        <div className="bg-white p-4 rounded-2xl border shadow-sm">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Предстоит</p>
+          <p className="text-2xl font-black mt-1 text-blue-600">
+            {appointments.filter((a: any) => a.status === 'confirmed' || a.status === 'pending').length}
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b">
-            <tr>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Пациент</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Дата и время</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Тип</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Статус</th>
-              <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Действия</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {appointments.map((apt: any) => (
-              <tr key={apt._id.toString()} className="hover:bg-slate-50/50">
-                <td className="px-6 py-4">
-                  <p className="font-bold text-sm text-slate-900">{apt.patientName}</p>
-                  <p className="text-xs text-slate-400">{apt.patientPhone}</p>
-                </td>
-                <td className="px-6 py-4 text-sm font-medium">
-                  {new Date(apt.date).toLocaleDateString('ru')} в {apt.timeSlot}
-                </td>
-                <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">
-                  {apt.type}
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${
-                    apt.status === 'confirmed' ? 'bg-green-50 text-green-600' :
-                    apt.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
-                  }`}>
-                    {apt.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right space-x-3">
-                   {apt.status === 'pending' && (
-                     <button
-                        onClick={() => updateStatus(apt._id, 'confirmed')}
-                        className="text-xs font-bold text-blue-600 hover:underline"
-                     >
-                        Подтвердить
-                     </button>
-                   )}
-                   {apt.status === 'confirmed' && (
-                     <>
-                        <button
-                            onClick={() => updateStatus(apt._id, 'completed')}
-                            className="text-xs font-bold text-emerald-600 hover:underline"
-                        >
-                            Выполнено
-                        </button>
-                        <button
-                            onClick={() => updateStatus(apt._id, 'no_show')}
-                            className="text-xs font-bold text-amber-600 hover:underline"
-                        >
-                            Не пришёл
-                        </button>
-                     </>
-                   )}
-                   {apt.status !== 'cancelled' && (
-                      <button
-                        onClick={() => updateStatus(apt._id, 'cancelled')}
-                        className="text-xs font-bold text-red-400 hover:underline"
-                      >
-                        Отменить
-                      </button>
-                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {appointments.length === 0 ? (
+        /* Empty state */
+        <div className="bg-white rounded-2xl border shadow-sm p-10 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl">📅</div>
+          <div>
+            <p className="font-bold text-slate-800 text-base">Пока нет записей</p>
+            <p className="text-sm text-slate-400 mt-1 leading-relaxed">
+              Когда пациенты запишутся на приём,<br />они появятся здесь
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* Appointment cards instead of table */
+        <div className="space-y-3">
+          {appointments.map((apt: any) => (
+            <div key={apt._id.toString()} className="bg-white rounded-2xl border shadow-sm p-4">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">{apt.patientName}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{apt.patientPhone}</p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase shrink-0 ${
+                  apt.status === 'confirmed' ? 'bg-green-50 text-green-600 border border-green-100' :
+                  apt.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                  apt.status === 'completed' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                  'bg-slate-50 text-slate-400 border border-slate-100'
+                }`}>
+                  {apt.status === 'confirmed' ? 'Подтверждён' :
+                   apt.status === 'pending' ? 'Ожидает' :
+                   apt.status === 'completed' ? 'Завершён' :
+                   apt.status === 'cancelled' ? 'Отменён' : apt.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+                <span className="flex items-center gap-1">
+                  📅 {new Date(apt.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+                </span>
+                <span>🕒 {apt.timeSlot}</span>
+                <span className="uppercase font-bold">
+                  {apt.type === 'in_person' ? '🏥 Очно' : apt.type === 'online' ? '💻 Онлайн' : '🏠 На дому'}
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {apt.status === 'pending' && (
+                  <button onClick={() => updateStatus(apt._id, 'confirmed')}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition">
+                    ✅ Подтвердить
+                  </button>
+                )}
+                {apt.status === 'confirmed' && (
+                  <>
+                    <button onClick={() => updateStatus(apt._id, 'completed')}
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition">
+                      ✔ Завершить
+                    </button>
+                    <button onClick={() => updateStatus(apt._id, 'no_show')}
+                      className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg border border-amber-200 hover:bg-amber-100 transition">
+                      Не пришёл
+                    </button>
+                  </>
+                )}
+                {apt.status !== 'cancelled' && apt.status !== 'completed' && (
+                  <button onClick={() => updateStatus(apt._id, 'cancelled')}
+                    className="px-3 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-lg border border-red-100 hover:bg-red-100 transition">
+                    Отменить
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
