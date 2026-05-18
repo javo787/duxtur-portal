@@ -23,7 +23,6 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title = `${specLabel}`;
   }
   if (city) title += ` ${lang === 'ru' ? 'в' : ''} ${city}`;
-  // Бренд добавляем только в <title>, а не в h1
   return {
     title: `${title} — Duxtur.org`,
     description: UI.subtitle[lang] || UI.subtitle.ru,
@@ -42,18 +41,23 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
 
   // Формируем query
   const query: any = { status: 'approved' };
-  // Гео-поиск
+
+  // Гео-поиск — $geoWithin вместо $near (не требует сортировки)
   if (sp.lat && sp.lng) {
     const lat = parseFloat(sp.lat as string);
     const lng = parseFloat(sp.lng as string);
-    const radius = parseFloat((sp.radius as string) || '20');
-    query['coordinates.coordinates'] = {
-      $near: {
-        $geometry: { type: 'Point', coordinates: [lng, lat] },
-        $maxDistance: radius * 1000,
+    const radiusKm = parseFloat((sp.radius as string) || '20');
+    const earthRadiusKm = 6371;
+    query['coordinates'] = {
+      $geoWithin: {
+        $centerSphere: [
+          [lng, lat],
+          radiusKm / earthRadiusKm, // радиус в радианах
+        ],
       },
     };
   }
+
   if (sp.city) query.city = new RegExp(sp.city as string, 'i');
   if (sp.specialty)
     query['specialty.ru'] = CATEGORY_LABELS[sp.specialty as string]?.ru || sp.specialty;
