@@ -276,3 +276,22 @@
 .animate-slide-left {
   animation: slide-left 0.3s ease-out;
 }
+
+  /* Doctors page light theme refinements */
+.doctors-hero-gradient {
+  background: linear-gradient(135deg, #f8faff 0%, #eef4ff 40%, #fdf8f0 100%);
+}
+
+/* Chip active state animation */
+@keyframes chip-select {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Улучшенные тени карточек врачей */
+.doctor-card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+}
+.doctor-card-shadow:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+}
