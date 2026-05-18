@@ -90,25 +90,38 @@ export default function DoctorMapSearchPage({ params }: { params: Promise<{ lang
         fetch(`/api/places?${placesSp.toString()}`).then((r) => r.json()),
       ]);
 
-      const doctorPins = (doctors || []).map((d: any) => ({
-        ...d,
-        type: 'doctor',
-        coordinates: {
-          lat: d.coordinates?.lat || d.coordinates?.coordinates?.[1],
-          lng: d.coordinates?.lng || d.coordinates?.coordinates?.[0],
-        },
-      }));
+      // Безопасное извлечение координат и фильтрация записей без корректных lat/lng
+      const doctorPins = (doctors || [])
+        .map((d: any) => {
+          const lat = d.coordinates?.lat ?? d.coordinates?.coordinates?.[1];
+          const lng = d.coordinates?.lng ?? d.coordinates?.coordinates?.[0];
+          return {
+            ...d,
+            type: 'doctor',
+            coordinates: {
+              lat: (lat !== undefined && lat !== null && !isNaN(Number(lat))) ? Number(lat) : undefined,
+              lng: (lng !== undefined && lng !== null && !isNaN(Number(lng))) ? Number(lng) : undefined,
+            },
+          };
+        })
+        .filter((d: any) => d.coordinates.lat !== undefined && d.coordinates.lng !== undefined);
 
-      const placePins = (places || []).map((p: any) => ({
-        _id: p._id,
-        name: p.name?.[lang] || p.name?.ru || p.name,
-        type: p.type,
-        coordinates: {
-          lat: p.coordinates?.lat || p.coordinates?.coordinates?.[1],
-          lng: p.coordinates?.lng || p.coordinates?.coordinates?.[0],
-        },
-        address: p.address,
-      }));
+      const placePins = (places || [])
+        .map((p: any) => {
+          const lat = p.coordinates?.lat ?? p.coordinates?.coordinates?.[1];
+          const lng = p.coordinates?.lng ?? p.coordinates?.coordinates?.[0];
+          return {
+            _id: p._id,
+            name: p.name?.[lang] || p.name?.ru || p.name,
+            type: p.type,
+            coordinates: {
+              lat: (lat !== undefined && lat !== null && !isNaN(Number(lat))) ? Number(lat) : undefined,
+              lng: (lng !== undefined && lng !== null && !isNaN(Number(lng))) ? Number(lng) : undefined,
+            },
+            address: p.address,
+          };
+        })
+        .filter((p: any) => p.coordinates.lat !== undefined && p.coordinates.lng !== undefined);
 
       const pins = [...doctorPins, ...placePins];
       setAllPins(pins);
