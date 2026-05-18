@@ -1,25 +1,33 @@
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/doctor-constants';
 
-interface SpecialtyChipsProps {
+export default function SpecialtyChips({
+  lang,
+  activeSpecialty,
+}: {
   lang: string;
   activeSpecialty: string;
-}
-
-export default function SpecialtyChips({ lang, activeSpecialty }: SpecialtyChipsProps) {
+}) {
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-4 pb-1" role="list" aria-label="Специальности">
+    <div
+      className="flex gap-2 overflow-x-auto scrollbar-hide mt-5 pb-1"
+      role="list"
+      aria-label="Фильтр по специальности"
+    >
+      {/* «Все» — всегда чуть заметнее неактивных специальностей */}
       <Link
         href={`/${lang}/doctors`}
-        className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition border ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs transition-all border ${
           !activeSpecialty
-            ? 'bg-white text-slate-900 border-white shadow-md'
-            : 'bg-white/8 border-white/15 text-white/70 hover:bg-white/12 hover:text-white'
+            ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-semibold'
+            : 'bg-white border-slate-200 text-slate-700 font-semibold hover:border-slate-300 hover:text-slate-900'
         }`}
         role="listitem"
+        aria-current={!activeSpecialty ? 'true' : undefined}
       >
         Все
       </Link>
+
       {Object.entries(CATEGORIES).map(([key, cfg]) => {
         const isActive = activeSpecialty === key;
         const label = cfg.labels[lang as keyof typeof cfg.labels] || cfg.labels.ru;
@@ -27,12 +35,13 @@ export default function SpecialtyChips({ lang, activeSpecialty }: SpecialtyChips
           <Link
             key={key}
             href={`/${lang}/doctors?specialty=${key}`}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition border ${
+            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all border ${
               isActive
-                ? 'bg-white text-slate-900 border-white shadow-md'
-                : 'bg-white/8 border-white/15 text-white/70 hover:bg-white/12 hover:text-white'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-semibold'
+                : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/60'
             }`}
             role="listitem"
+            aria-current={isActive ? 'true' : undefined}
           >
             <span aria-hidden="true">{cfg.icon}</span>
             {label}
