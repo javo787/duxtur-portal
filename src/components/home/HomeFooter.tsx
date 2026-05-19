@@ -1,8 +1,10 @@
 
 import Link from 'next/link';
+import { getT } from '@/i18n';
 
 export default function HomeFooter({ lang }: { lang: string }) {
   const year = new Date().getFullYear();
+  const t = getT(lang);
 
   return (
     <footer className="border-t border-slate-200 bg-white">
@@ -21,7 +23,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
               </span>
             </Link>
             <p className="text-[13.5px] text-slate-500 leading-relaxed max-w-[220px]">
-              Медицинский контент-портал Центральной Азии. Статьи от верифицированных врачей.
+              {t('home.footerTagline')}
             </p>
             <div className="flex flex-wrap gap-1.5 mt-5">
               {['RU', 'TJ', 'UZ', 'KZ', 'KG'].map((l) => (
@@ -34,13 +36,13 @@ export default function HomeFooter({ lang }: { lang: string }) {
 
           {/* Читателям */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">Читателям</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">{t('home.footerForReaders')}</h4>
             <ul className="space-y-3">
               {[
-                { href: `/${lang}/blog`, label: 'Все статьи' },
-                { href: `/${lang}/doctors`, label: 'Найти врача' },
-                { href: `/${lang}/authors`, label: 'Авторы-врачи' },
-                { href: `/${lang}/search`, label: 'Поиск' },
+                { href: `/${lang}/blog`, label: t('nav.allArticles') },
+                { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
+                { href: `/${lang}/authors`, label: t('nav.authors') },
+                { href: `/${lang}/search`, label: t('common.search') },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-[13.5px] text-slate-500 hover:text-blue-600 transition-colors">
@@ -53,11 +55,11 @@ export default function HomeFooter({ lang }: { lang: string }) {
 
           {/* Врачам */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">Врачам</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">{t('home.footerForDoctors')}</h4>
             <ul className="space-y-3">
               {[
-                { href: `/${lang}/register`, label: 'Стать автором' },
-                { href: `/${lang}/login`, label: 'Личный кабинет' },
+                { href: `/${lang}/register`, label: t('nav.becomeAuthor') },
+                { href: `/${lang}/login`, label: t('nav.myOffice') },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-[13.5px] text-slate-500 hover:text-blue-600 transition-colors">
@@ -70,11 +72,11 @@ export default function HomeFooter({ lang }: { lang: string }) {
 
           {/* О портале */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">О портале</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 mb-4">{t('home.footerAbout')}</h4>
             <ul className="space-y-3">
               {[
-                { href: `/${lang}/about`, label: 'О нас', external: false },
-                { href: `/${lang}/editorial`, label: 'Редполитика', external: false },
+                { href: `/${lang}/about`, label: t('nav.aboutUs'), external: false },
+                { href: `/${lang}/editorial`, label: t('nav.editorialPolicy'), external: false },
                 { href: 'https://t.me/duxturcom', label: 'Telegram', external: true },
               ].map((link) => (
                 <li key={link.href}>
@@ -104,10 +106,10 @@ export default function HomeFooter({ lang }: { lang: string }) {
         <div className="pt-7 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-[12.5px] text-slate-400">© {year} Duxtur.org</p>
           <p className="text-[12px] text-slate-300 text-center max-w-md">
-            Информация на сайте носит ознакомительный характер. Всегда консультируйтесь с врачом.
+            {t('home.footerDisclaimer')}
           </p>
           <Link href={`/${lang}/editorial`} className="text-[12.5px] text-slate-400 hover:text-blue-600 transition-colors">
-            Редакционная политика
+            {t('nav.editorialPolicy')}
           </Link>
         </div>
       </div>

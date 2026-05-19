@@ -1,18 +1,21 @@
 import Link from 'next/link';
 import FadeIn from '@/components/FadeIn';
 import Image from 'next/image';
+import { getT } from '@/i18n';
 
 export default function HomeArticles({
   lang,
   articles,
   dict,
-  t,
+  t: dbT,
 }: {
   lang: string;
   articles: any[];
   dict: any;
   t: (f: any) => string;
 }) {
+  const t = getT(lang);
+
   if (articles.length === 0) {
     return (
       <section className="py-24 bg-white">
@@ -23,13 +26,13 @@ export default function HomeArticles({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
               </svg>
             </div>
-            <p className="font-display text-2xl font-semibold text-slate-800 mb-2">Статьи скоро появятся</p>
-            <p className="text-slate-400 mb-8 text-[15px]">Первые врачи уже готовят материалы</p>
+            <p className="font-display text-2xl font-semibold text-slate-800 mb-2">{t('home.articlesComingSoon')}</p>
+            <p className="text-slate-400 mb-8 text-[15px]">{t('home.articlesComingSoonSub')}</p>
             <Link
               href={`/${lang}/register`}
               className="inline-flex items-center gap-2 px-7 py-3.5 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition active:scale-95"
             >
-              Стать первым автором
+              {t('home.articlesBecomeFirst')}
             </Link>
           </FadeIn>
         </div>
@@ -46,7 +49,7 @@ export default function HomeArticles({
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-2">
-                Последние материалы
+                {t('home.articlesTitle')}
               </p>
               <h2 className="font-display text-[28px] font-bold text-slate-900 tracking-tight leading-none">
                 {dict.blog_title}
@@ -56,7 +59,7 @@ export default function HomeArticles({
               href={`/${lang}/blog`}
               className="flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 border-b border-blue-300 hover:border-blue-600 transition-colors pb-0.5"
             >
-              Все статьи
+              {t('nav.allArticles')}
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
@@ -71,7 +74,7 @@ export default function HomeArticles({
               <div className="h-64 md:h-[380px] overflow-hidden relative">
                 <Image
                   src={featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900'}
-                  alt={t(featured.title)}
+                  alt={dbT(featured.title)}
                   fill
                   className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -87,7 +90,7 @@ export default function HomeArticles({
                     {dict.blog_verified}
                   </span>
                   <h3 className="font-display text-[22px] md:text-[26px] font-semibold text-slate-900 group-hover:text-slate-800 transition leading-[1.25] line-clamp-3 mb-4" style={{ letterSpacing: '-0.025em' }}>
-                    {t(featured.title)}
+                    {dbT(featured.title)}
                   </h3>
                 </div>
                 <div className="flex items-center gap-3.5 pt-6 border-t border-slate-100">
@@ -105,7 +108,7 @@ export default function HomeArticles({
                       {featured.authorId?.name || 'Dr. Expert'}
                     </p>
                     <p className="text-[12px] font-normal truncate text-blue-600">
-                      {t(featured.authorId?.specialty) || 'Врач'}
+                      {dbT(featured.authorId?.specialty) || 'Врач'}
                     </p>
                   </div>
                   <div className="shrink-0 flex items-center gap-1 text-[13px] font-medium text-blue-600 group-hover:gap-2 transition-all">
@@ -132,7 +135,7 @@ export default function HomeArticles({
                     <div className="h-44 overflow-hidden relative flex-shrink-0">
                       <Image
                         src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                        alt={t(article.title)}
+                        alt={dbT(article.title)}
                         fill
                         className="object-cover group-hover:scale-[1.06] transition-transform duration-600 ease-out"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -148,7 +151,7 @@ export default function HomeArticles({
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <h3 className="font-display text-[14.5px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors leading-snug line-clamp-2 flex-1 mb-4" style={{ letterSpacing: '-0.015em' }}>
-                        {t(article.title)}
+                        {dbT(article.title)}
                       </h3>
                       <div className="pt-3.5 border-t border-slate-50 flex items-center gap-2.5">
                         <div className="relative w-6 h-6">
@@ -180,7 +183,7 @@ export default function HomeArticles({
               href={`/${lang}/blog`}
               className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl border border-slate-200 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 active:scale-95"
             >
-              Смотреть все статьи
+              {t('home.articlesViewAll')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

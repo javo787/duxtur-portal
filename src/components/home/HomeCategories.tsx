@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useT } from '@/i18n';
 import {
   HeartPulse,
   Brain,
@@ -79,21 +80,6 @@ const ACCENT_COLORS: Record<string, string> = {
   slate: 'text-slate-700 bg-slate-50 border-slate-200',
 };
 
-const ARTICLE_LABEL: Record<string, string> = {
-  ru: 'статей',
-  uz: 'maqola',
-  tg: 'мақола',
-  kk: 'мақала',
-  ky: 'макала',
-};
-const ALL_LABEL: Record<string, string> = {
-  ru: 'Все статьи →',
-  uz: 'Barcha maqolalar →',
-  tg: 'Ҳама мақолаҳо →',
-  kk: 'Барлық мақалалар →',
-  ky: 'Бардык макалалар →',
-};
-
 interface Props {
   lang: string;
   dict: any;
@@ -101,7 +87,8 @@ interface Props {
 }
 
 export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
-  const articleWord = ARTICLE_LABEL[lang] || ARTICLE_LABEL.ru;
+  const { t } = useT(lang);
+  const articleWord = t('common.articles');
 
   return (
     <section className="py-16 bg-white">
@@ -109,17 +96,17 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
         <div className="flex items-end justify-between mb-8">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-1.5">
-              Разделы медицины
+              {t('home.categoriesTitle')}
             </p>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {dict.cat_title ?? 'Темы'}
+              {dict.cat_title ?? t('home.categoriesTitle')}
             </h2>
           </div>
           <Link
             href={`/${lang}/blog`}
             className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-600 border-b border-slate-300 hover:border-slate-800 transition-colors pb-0.5 group"
           >
-            {ALL_LABEL[lang] || ALL_LABEL.ru}
+            {t('home.categoriesAllArticles')}
             <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
           </Link>
         </div>
@@ -174,7 +161,7 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
                        border border-slate-200 text-sm font-medium text-slate-700 
                        hover:bg-slate-50 transition-all shadow-sm"
           >
-            {ALL_LABEL[lang] || ALL_LABEL.ru}
+            {t('home.categoriesAllArticles')}
           </Link>
         </div>
       </div>

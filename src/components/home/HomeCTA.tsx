@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import FadeIn from '@/components/FadeIn';
+import { getT } from '@/i18n';
 
 export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
+  const t = getT(lang);
+
   return (
     <section className="relative overflow-hidden py-24 bg-slate-900">
       {/* dot grid */}
@@ -19,7 +22,7 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
         <div className="flex flex-col md:flex-row items-center gap-14">
           <FadeIn direction="left" className="flex-1 max-w-lg text-center md:text-left">
             <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.1em] px-4 py-2 rounded-full mb-7 bg-blue-600/20 text-blue-200">
-              Для практикующих врачей
+              {t('home.ctaForDoctors')}
             </span>
             <h2 className="font-display text-[32px] md:text-[40px] font-bold text-white leading-[1.1] tracking-[-0.03em] mb-5">
               {dict.for_doctors}
@@ -29,9 +32,9 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
             </p>
             <ul className="space-y-3.5">
               {[
-                'Бесплатная регистрация и верификация',
-                'AI-помощник для написания статей',
-                'Аудитория на 5 языках Центральной Азии',
+                t('home.ctaFeature1'),
+                t('home.ctaFeature2'),
+                t('home.ctaFeature3'),
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-[14px] text-slate-300">
                   <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-amber-500/20">
@@ -53,10 +56,10 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: any }) {
                 </svg>
               </div>
               <p className="font-display text-[20px] font-semibold text-white mb-1.5 tracking-tight">
-                Верификация за 24ч
+                {t('home.ctaVerification')}
               </p>
               <p className="text-[13px] mb-7 text-slate-400">
-                Ваш профиль будет отображаться как «Подтверждённый врач»
+                {t('home.ctaVerificationDesc')}
               </p>
               <Link
                 href={`/${lang}/register`}

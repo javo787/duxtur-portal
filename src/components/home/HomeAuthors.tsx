@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { getT } from '@/i18n';
 
 export default function HomeAuthors({
   lang,
   authors,
-  t,
+  t: dbT,
 }: {
   lang: string;
   authors: any[];
   t: (f: any) => string;
 }) {
+  const t = getT(lang);
+
   if (authors.length === 0) return null;
 
   return (
@@ -18,17 +21,17 @@ export default function HomeAuthors({
         <div className="flex items-end justify-between mb-10">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-2">
-              Верифицированные специалисты
+              {t('home.authorsSubtitle')}
             </p>
             <h2 className="font-display text-[26px] font-bold text-slate-900 tracking-tight">
-              Авторы-врачи
+              {t('home.authorsTitle')}
             </h2>
           </div>
           <Link
             href={`/${lang}/authors`}
             className="hidden md:flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 border-b border-blue-300 hover:border-blue-600 transition-colors pb-0.5"
           >
-            Все авторы
+            {t('home.authorsViewAll')}
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -59,7 +62,7 @@ export default function HomeAuthors({
                 {doc.name}
               </p>
               <p className="text-[11.5px] font-normal text-blue-600">
-                {t(doc.specialty)}
+                {dbT(doc.specialty)}
               </p>
             </Link>
           ))}
@@ -67,7 +70,7 @@ export default function HomeAuthors({
 
         <div className="text-center mt-5 md:hidden">
           <Link href={`/${lang}/authors`} className="text-[13.5px] font-medium text-blue-600">
-            Все авторы →
+            {t('home.authorsViewAll')} →
           </Link>
         </div>
       </div>

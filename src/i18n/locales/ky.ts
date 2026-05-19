@@ -76,6 +76,7 @@ export const ky = {
     categoriesAllArticles: 'Бардык макалалар →',
     articlesTitle: 'Дарыгерлерден макалалар',
     articlesComingSoon: 'Макалалар жакында пайда болот',
+    articlesComingSoonSub: 'Биринчи дарыгерлер материалдарды даярдап жатыр',
     articlesBecomeFirst: 'Биринчи автор болуңуз',
     articlesViewAll: 'Бардык макалаларды көрүү',
     authorsTitle: 'Автор-дарыгерлер',
@@ -95,6 +96,7 @@ export const ky = {
     footerAbout: 'Портал жөнүндө',
     footerDisclaimer: 'Сайттагы маалымат таанышуу мүнөзүндө. Ар дайым дарыгер менен кеңешиңиз.',
     searchPlaceholder: 'Макалаларды издеңиз: мигрень, диабет...',
+    ctaForDoctors: 'Таттыктуу дарыгерлер үчүн',
   },
   blog: {
     title: 'Бардык макалалар',

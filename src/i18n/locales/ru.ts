@@ -76,6 +76,7 @@ export const ru = {
     categoriesAllArticles: 'Все статьи →',
     articlesTitle: 'Статьи от врачей',
     articlesComingSoon: 'Статьи скоро появятся',
+    articlesComingSoonSub: 'Первые врачи уже готовят материалы',
     articlesBecomeFirst: 'Станьте первым автором',
     articlesViewAll: 'Смотреть все статьи',
     authorsTitle: 'Авторы-врачи',
@@ -95,6 +96,7 @@ export const ru = {
     footerAbout: 'О портале',
     footerDisclaimer: 'Информация на сайте носит ознакомительный характер. Всегда консультируйтесь с врачом.',
     searchPlaceholder: 'Ищите статьи: мигрень, диабет, простуда...',
+    ctaForDoctors: 'Для практикующих врачей',
   },
   blog: {
     title: 'Все статьи',
