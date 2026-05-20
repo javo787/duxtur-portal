@@ -2,19 +2,12 @@
 
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // npm install qrcode.react
+import { useT } from '@/i18n';
 
 type Props = { url: string; title: string; lang: string };
 
-const ui: Record<string, Record<string, string>> = {
-  share:  { ru: 'Поделиться', uz: 'Ulashish', tg: 'Мубодила', kk: 'Бөлісу', ky: 'Бөлүшүү' },
-  copied: { ru: 'Скопировано!', uz: 'Nusxalandi!', tg: 'Нусха гирифта шуд!', kk: 'Көшірілді!', ky: 'Көчүрүлдү!' },
-  copy:   { ru: 'Копировать', uz: 'Nusxalash', tg: 'Нусха гирифтан', kk: 'Көшіру', ky: 'Көчүрүү' },
-  qr:     { ru: 'QR-код', uz: 'QR-kod', tg: 'QR-код', kk: 'QR-код', ky: 'QR-код' },
-};
-
-const L = (key: string, lang: string) => ui[key]?.[lang] || ui[key]?.ru;
-
 export default function ShareButtons({ url, title, lang }: Props) {
+  const { t } = useT(lang);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const encoded = encodeURIComponent(url);
@@ -39,7 +32,7 @@ export default function ShareButtons({ url, title, lang }: Props) {
     <div className="space-y-3">
       {/* Основной ряд кнопок */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-bold text-gray-500">{L('share', lang)}:</span>
+        <span className="text-sm font-bold text-gray-500">{t('common.share')}:</span>
 
         {/* Telegram */}
         <a
@@ -81,14 +74,14 @@ export default function ShareButtons({ url, title, lang }: Props) {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              {L('copied', lang)}
+              {t('share.copied')}
             </>
           ) : (
             <>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              {L('copy', lang)}
+              {t('share.copy')}
             </>
           )}
         </button>
@@ -101,7 +94,7 @@ export default function ShareButtons({ url, title, lang }: Props) {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2m0 0H8m4-7V4m0 0L8 8m4-4l4 4m-4 7v4m0 0l-4-4m4 4l4-4" />
           </svg>
-          {L('qr', lang)}
+          {t('share.qrCode')}
         </button>
       </div>
 

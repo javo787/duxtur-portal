@@ -410,6 +410,7 @@ export const ru = {
     radiusDoctors: 'Врачей в радиусе 25 км',
   },
   share: {
+    qrCode: 'QR-код',
     shareProfile: 'Поделиться профилем',
     copy: 'Копировать',
     copied: 'Скопировано',

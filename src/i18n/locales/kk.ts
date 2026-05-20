@@ -410,6 +410,7 @@ export const kk = {
     radiusDoctors: '25 км радиустағы дәрігерлер',
   },
   share: {
+    qrCode: 'QR-код',
     shareProfile: 'Профильмен бөлісу',
     copy: 'Көшіру',
     copied: 'Көшірілді',

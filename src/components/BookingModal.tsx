@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useT } from '@/i18n';
 
 interface BookingModalProps {
   doctorId: string;
@@ -13,6 +14,7 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ doctorId, doctorName, doctorSchedule, doctorConsultationTypes, lang, onClose }: BookingModalProps) {
+  const { t } = useT(lang);
   const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -35,15 +37,6 @@ export default function BookingModal({ doctorId, doctorName, doctorSchedule, doc
         .then(setAvailableSlots);
     }
   }, [selectedDate, doctorId]);
-
-  const labels: any = {
-    ru: { step1: 'Выберите дату', step2: 'Выберите время', step3: 'Ваши данные', step4: 'Подтверждение', book: 'Записаться', success: 'Вы успешно записаны!', ics: 'Добавить в календарь' },
-    uz: { step1: 'Sanani tanlang', step2: 'Vaqtni tanlang', step3: 'Ma’lumotlar', step4: 'Tasdiqlash', book: 'Yozilish', success: 'Muvaffaqiyatli yozildingiz!', ics: 'Kalendarga qoʻshish' },
-    tg: { step1: 'Санаро интихоб кунед', step2: 'Вақтро интихоб кунед', step3: 'Маълумоти шумо', step4: 'Тасдиқ', book: 'Сабт шудан', success: 'Шумо бомуваффақият сабт шудед!', ics: 'Ба тақвим илова кунед' },
-    kk: { step1: 'Күнді таңдаңыз', step2: 'Уақытты таңдаңыз', step3: 'Сіздің деректеріңіз', step4: 'Растау', book: 'Жазылу', success: 'Сіз сәтті жазылдыңыз!', ics: 'Күнтізбеге қосу' },
-    ky: { step1: 'Күндү тандаңыз', step2: 'Убакытты тандаңыз', step3: 'Сиздин маалыматтар', step4: 'Ырастоо', book: 'Жазылуу', success: 'Сиз ийгиликтүү жазылдыңыз!', ics: 'Күнтізбеге кошуу' }
-  };
-  const L = (k: string) => labels[lang]?.[k] || labels.ru[k];
 
   const handleBooking = async () => {
     setIsSubmitting(true);
@@ -87,7 +80,7 @@ VERSION:2.0
 BEGIN:VEVENT
 DTSTART:${start}
 DTEND:${end}
-SUMMARY:Запись к врачу: ${doctorName}
+SUMMARY:${t('booking.title')}: ${doctorName}
 DESCRIPTION:Консультация (${formData.type})
 END:VEVENT
 END:VCALENDAR`;
@@ -104,13 +97,13 @@ END:VCALENDAR`;
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center">
           <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-black mb-2">{L('success')}</h2>
+          <h2 className="text-2xl font-black mb-2">{t('booking.success')}</h2>
           <p className="text-slate-500 mb-6">{doctorName}, {selectedDate} в {selectedSlot}</p>
           <div className="space-y-3">
             <button onClick={downloadICS} className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition">
-              📅 {L('ics')}
+              📅 {t('booking.addToCalendar')}
             </button>
-            <button onClick={onClose} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">Закрыть</button>
+            <button onClick={onClose} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">{t('booking.close')}</button>
           </div>
         </div>
       </div>
@@ -121,14 +114,14 @@ END:VCALENDAR`;
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
         <div className="p-6 border-b flex items-center justify-between">
-          <h2 className="font-black text-slate-900">Запись к врачу</h2>
+          <h2 className="font-black text-slate-900">{t('booking.title')}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-900">✕</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="font-bold">{L('step1')}</h3>
+              <h3 className="font-bold">{t('booking.selectDate')}</h3>
               <div className="grid grid-cols-7 gap-1">
                  {/* Simplified calendar logic */}
                  {[...Array(14)].map((_, i) => {
@@ -163,7 +156,7 @@ END:VCALENDAR`;
 
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="font-bold">{L('step2')}</h3>
+              <h3 className="font-bold">{t('booking.selectTime')}</h3>
               <div className="grid grid-cols-4 gap-2">
                 {availableSlots.map(s => (
                   <button
@@ -181,16 +174,16 @@ END:VCALENDAR`;
 
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="font-bold">{L('step3')}</h3>
+              <h3 className="font-bold">{t('booking.yourDetails')}</h3>
               <input
                 className="w-full p-3 bg-slate-50 border rounded-xl"
-                placeholder="Ваше имя"
+                placeholder={t('booking.yourName')}
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
               />
               <input
                 className="w-full p-3 bg-slate-50 border rounded-xl"
-                placeholder="Телефон"
+                placeholder={t('booking.phone')}
                 value={formData.phone}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
               />
@@ -199,13 +192,15 @@ END:VCALENDAR`;
                 value={formData.type}
                 onChange={e => setFormData({...formData, type: e.target.value})}
               >
-                {doctorConsultationTypes.map(t => (
-                  <option key={t} value={t}>{t === 'in_person' ? 'В клинике' : t === 'online' ? 'Онлайн' : 'На дому'}</option>
+                {doctorConsultationTypes.map(typ => (
+                  <option key={typ} value={typ}>
+                    {typ === 'in_person' ? t('booking.inClinic') : typ === 'online' ? t('booking.online') : t('booking.atHome')}
+                  </option>
                 ))}
               </select>
               <textarea
                 className="w-full p-3 bg-slate-50 border rounded-xl"
-                placeholder="Жалобы или примечания"
+                placeholder={t('booking.notes')}
                 value={formData.notes}
                 onChange={e => setFormData({...formData, notes: e.target.value})}
               />
@@ -214,7 +209,7 @@ END:VCALENDAR`;
                 onClick={handleBooking}
                 className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Бронирование...' : L('book')}
+                {isSubmitting ? t('booking.booking') : t('booking.book')}
               </button>
               <button onClick={() => setStep(2)} className="text-sm text-blue-600 font-bold">← Назад</button>
             </div>
