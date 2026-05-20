@@ -410,6 +410,7 @@ export const ky = {
     radiusDoctors: '25 км радиустагы дарыгерлер',
   },
   share: {
+    qrCode: 'QR-код',
     shareProfile: 'Профиль менен бөлүшүү',
     copy: 'Көчүрүү',
     copied: 'Көчүрүлдү',

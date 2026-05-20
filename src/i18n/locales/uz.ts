@@ -410,6 +410,7 @@ export const uz = {
     radiusDoctors: '25 km radiusdagi shifokorlar',
   },
   share: {
+    qrCode: 'QR-kod',
     shareProfile: 'Profilni ulashish',
     copy: 'Nusxa olish',
     copied: 'Nusxalandi',

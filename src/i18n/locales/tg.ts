@@ -410,6 +410,7 @@ export const tg = {
     radiusDoctors: 'Духтурон дар радиуси 25 км',
   },
   share: {
+    qrCode: 'QR-код',
     shareProfile: 'Мубодилаи профил',
     copy: 'Нусхабардорӣ',
     copied: 'Нусхабардорӣ шуд',

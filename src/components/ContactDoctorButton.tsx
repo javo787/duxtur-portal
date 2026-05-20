@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
+import { useT } from '@/i18n';
 
 interface Props {
   doctor: {
@@ -17,22 +18,6 @@ interface Props {
   lang: string;
   className?: string;
 }
-
-const labels: Record<string, Record<string, string>> = {
-  btn:       { ru: 'Связаться с врачом', uz: "Shifokor bilan bog'lanish", tg: 'Бо духтур тамос гирифтан', kk: 'Дәрігермен байланысу', ky: 'Дарыгер менен байланышуу' },
-  unlock:    { ru: 'Войдите чтобы увидеть контакты', uz: 'Kontaktlarni ko\'rish uchun kiring', tg: 'Барои дидани тамосҳо ворид шавед', kk: 'Байланыстарды көру үшін кіріңіз', ky: 'Байланыштарды көрүү үчүн кириңиз' },
-  google:    { ru: 'Войти через Google', uz: 'Google orqali kirish', tg: 'Тавассути Google ворид шавед', kk: 'Google арқылы кіру', ky: 'Google аркылуу кирүү' },
-  email_ph:  { ru: 'ваш@email.com', uz: 'email@manzil.com', tg: 'email@manzil.com', kk: 'email@manzil.com', ky: 'email@manzil.com' },
-  email_btn: { ru: 'Получить ссылку', uz: 'Havola olish', tg: 'Истиноди гирифтан', kk: 'Сілтеме алу', ky: 'Шилтеме алуу' },
-  sent:      { ru: 'Проверьте почту!', uz: 'Pochtani tekshiring!', tg: 'Поштаро тафтиш кунед!', kk: 'Поштаңызды тексеріңіз!', ky: 'Почтаңызды текшериңиз!' },
-  hours:     { ru: 'Часы приёма', uz: 'Qabul vaqti', tg: 'Соатҳои қабул', kk: 'Қабылдау уақыты', ky: 'Кабыл алуу убактысы' },
-  write:     { ru: 'Написать', uz: 'Yozish', tg: 'Навиштан', kk: 'Жазу', ky: 'Жазуу' },
-  call:      { ru: 'Позвонить', uz: 'Qo\'ng\'iroq qilish', tg: 'Занг задан', kk: 'Қоңырау шалу', ky: 'Чалуу' },
-  close:     { ru: 'Закрыть', uz: 'Yopish', tg: 'Бастан', kk: 'Жабу', ky: 'Жабуу' },
-  noContact: { ru: 'Врач не добавил контакты', uz: 'Shifokor kontakt qo\'shmagan', tg: 'Духтур тамосҳо илова накардааст', kk: 'Дәрігер байланыс қоспаған', ky: 'Дарыгер байланыш кошкон эмес' },
-  or:        { ru: 'или', uz: 'yoki', tg: 'ё', kk: 'немесе', ky: 'же' },
-};
-const L = (k: string, lang: string) => labels[k]?.[lang] || labels[k]?.ru || '';
 
 // Размытый контакт — placeholder для blur эффекта
 function BlurredContact({ icon, color }: { icon: React.ReactNode; color: string }) {
@@ -50,6 +35,7 @@ function BlurredContact({ icon, color }: { icon: React.ReactNode; color: string 
 }
 
 export default function ContactDoctorButton({ doctor, lang, className }: Props) {
+  const { t } = useT(lang);
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -96,7 +82,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 8V5z" />
         </svg>
-        {L('btn', lang)}
+        {t('contact.title')}
       </button>
 
       {/* Модальное окно */}
@@ -116,7 +102,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                   <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {L('hours', lang)}: {doctor.workingHours}
+                  {t('contact.workingHours')}: {doctor.workingHours}
                 </p>
               )}
             </div>
@@ -155,7 +141,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
-                          <span className="text-sm font-bold text-gray-700">{L('unlock', lang)}</span>
+                          <span className="text-sm font-bold text-gray-700">{t('contact.unlock')}</span>
                         </div>
                       </div>
                     </div>
@@ -165,7 +151,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                   {emailSent ? (
                     <div className="text-center py-4">
                       <div className="text-3xl mb-2">📧</div>
-                      <p className="font-bold text-gray-900">{L('sent', lang)}</p>
+                      <p className="font-bold text-gray-900">{t('contact.sent')}</p>
                       <p className="text-xs text-gray-400 mt-1">{email}</p>
                     </div>
                   ) : (
@@ -182,7 +168,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
-                        {loading === 'google' ? 'Подключение...' : L('google', lang)}
+                        {loading === 'google' ? t('contact.connectingGoogle') : t('contact.loginGoogle')}
                       </button>
 
                       {/* Telegram */}
@@ -194,13 +180,13 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                         <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.667l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.978.892z"/>
                         </svg>
-                        Войти через Telegram
+                        {t('contact.loginTelegram')}
                       </button>
 
                       {/* Разделитель */}
                       <div className="flex items-center gap-3">
                         <div className="flex-1 h-px bg-gray-100" />
-                        <span className="text-xs text-gray-400">{L('or', lang)} email</span>
+                        <span className="text-xs text-gray-400">{t('contact.or')} email</span>
                         <div className="flex-1 h-px bg-gray-100" />
                       </div>
 
@@ -211,7 +197,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           required
                           value={email}
                           onChange={e => setEmail(e.target.value)}
-                          placeholder={L('email_ph', lang)}
+                          placeholder={t('contact.emailPlaceholder')}
                           className="flex-1 px-3 py-3 bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-blue-400 focus:bg-white outline-none text-sm text-gray-800 placeholder-gray-300 transition"
                         />
                         <button
@@ -219,7 +205,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           disabled={!!loading || !email}
                           className="px-4 py-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-sm transition disabled:opacity-50 shrink-0"
                         >
-                          {loading === 'email' ? '...' : L('email_btn', lang)}
+                          {loading === 'email' ? '...' : t('contact.emailBtn')}
                         </button>
                       </form>
                     </div>
@@ -231,7 +217,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
               {isLoggedIn && (
                 <>
                   {!hasContacts ? (
-                    <p className="text-center text-gray-400 text-sm py-4">{L('noContact', lang)}</p>
+                    <p className="text-center text-gray-400 text-sm py-4">{t('contact.noContacts')}</p>
                   ) : (
                     <div className="space-y-2.5">
                       {doctor.phone && (
@@ -245,7 +231,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                             </svg>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-400 font-medium">{L('call', lang)}</p>
+                            <p className="text-xs text-gray-400 font-medium">{t('contact.call')}</p>
                             <p className="font-bold text-gray-900 truncate">{doctor.phone}</p>
                           </div>
                           <svg className="w-4 h-4 text-blue-300 group-hover:text-blue-500 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +254,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-gray-400 font-medium">WhatsApp</p>
-                            <p className="font-bold text-gray-900">{L('write', lang)}</p>
+                            <p className="font-bold text-gray-900">{t('contact.write')}</p>
                           </div>
                           <svg className="w-4 h-4 text-gray-300 group-hover:text-green-500 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -290,7 +276,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-gray-400 font-medium">Telegram</p>
-                            <p className="font-bold text-gray-900">{L('write', lang)}</p>
+                            <p className="font-bold text-gray-900">{t('contact.write')}</p>
                           </div>
                           <svg className="w-4 h-4 text-gray-300 group-hover:text-sky-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -312,7 +298,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-gray-400 font-medium">Instagram</p>
-                            <p className="font-bold text-gray-900">{L('write', lang)}</p>
+                            <p className="font-bold text-gray-900">{t('contact.write')}</p>
                           </div>
                           <svg className="w-4 h-4 text-gray-300 group-hover:text-pink-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -328,7 +314,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                 onClick={() => setOpen(false)}
                 className="mt-4 w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-2xl text-sm transition"
               >
-                {L('close', lang)}
+                {t('contact.close')}
               </button>
             </div>
           </div>
