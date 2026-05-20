@@ -76,6 +76,7 @@ export const uz = {
     categoriesAllArticles: 'Barcha maqolalar →',
     articlesTitle: 'Shifokorlardan maqolalar',
     articlesComingSoon: 'Maqolalar tez orada paydo boʻladi',
+    articlesComingSoonSub: 'Birinchi shifokorlar allaqachon materiallar tayyorlamoqda',
     articlesBecomeFirst: 'Birinchi muallif boʻling',
     articlesViewAll: 'Barcha maqolalarni koʻrish',
     authorsTitle: 'Muallif-shifokorlar',
@@ -95,6 +96,7 @@ export const uz = {
     footerAbout: 'Portal haqida',
     footerDisclaimer: 'Saytdagi maʼlumotlar tanishuv xarakteriga ega. Har doim shifokor bilan maslahatlashing.',
     searchPlaceholder: 'Maqolalar qidiring: migran, diabet...',
+    ctaForDoctors: 'Amaliyotchi shifokorlar uchun',
   },
   blog: {
     title: 'Barcha maqolalar',

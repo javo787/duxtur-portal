@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useId } from 'react';
 import Link from 'next/link';
+import { useT } from '@/i18n';
 
 // ─── Живая иллюстрация (крест + ECG + орбиты) ──────────────────────────────
 function HeroIllustration() {
@@ -144,6 +145,7 @@ function HeroIllustration() {
 // ─── Основной компонент HomeHero ────────────────────────────────────────────
 export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useT(lang);
 
   // Анимация появления текста
   useEffect(() => {
@@ -163,9 +165,9 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
   }, []);
 
   const stats = [
-    { num: '5', label: dict.hero_stat_languages },
-    { num: '100%', label: dict.hero_stat_verification },
-    { num: '24ч', label: dict.hero_stat_time },
+    { num: '5', label: t('home.heroStatLanguages') },
+    { num: '100%', label: t('home.heroStatVerification') },
+    { num: '24ч', label: t('home.heroStatTime') },
   ];
 
   return (
@@ -199,7 +201,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
               className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-slate-200 bg-white shadow-sm text-[12px] font-semibold text-slate-500 uppercase tracking-[0.08em] mb-10"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              {dict.hero_badge}
+              {t('home.heroBadge')}
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
             </div>
 
@@ -241,7 +243,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
                 href={`/${lang}/doctors`}
                 className="inline-flex items-center gap-2.5 px-7 py-4 text-blue-600 font-bold hover:text-blue-700 transition-colors active:scale-95"
               >
-                🔍 Найти врача рядом →
+                {t('home.heroCtaFindDoctor')}
               </Link>
             </div>
           </div>

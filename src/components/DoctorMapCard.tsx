@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
+import { useT } from '@/i18n';
 
 interface DoctorMapCardProps {
   doctor: any;
@@ -13,9 +14,10 @@ interface DoctorMapCardProps {
 }
 
 export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, hasLocation }: DoctorMapCardProps) {
+  const { t } = useT(lang);
   if (!doctor) return null;
 
-  const t = (field: any) => field?.[lang] || field?.ru || '';
+  const dbT = (field: any) => field?.[lang] || field?.ru || '';
 
   return (
     <div className="absolute bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:top-4 md:right-4 md:bottom-auto w-auto md:w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transition-all animate-slide-up" style={{ zIndex: 1001 }}>
@@ -49,7 +51,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
         </div>
         <div className="min-w-0">
           <h3 className="font-black text-slate-900 text-sm leading-tight truncate">{doctor.name}</h3>
-          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mt-1">{t(doctor.specialty)}</p>
+          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mt-1">{dbT(doctor.specialty)}</p>
           <div className="flex items-center gap-1 mt-1">
              <span className="text-xs">⭐ {doctor.reviewAvg || 0}</span>
              <span className="text-[10px] text-slate-400">({doctor.reviewCount || 0})</span>
@@ -86,7 +88,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
             href={`/${lang}/doctor/${doctor.slug || doctor._id}`}
             className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-center text-[11px] font-bold transition flex items-center justify-center"
           >
-            Профиль
+            {t('doctors.viewProfile')}
           </Link>
           <ContactDoctorButton
             doctor={doctor}
@@ -100,7 +102,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
             onClick={() => onBuildRoute(doctor)}
             className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-center text-[11px] font-bold transition flex items-center justify-center gap-2"
           >
-            🗺 Построить маршрут
+            {t('map.buildRoute')}
           </button>
         )}
       </div>

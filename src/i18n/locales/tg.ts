@@ -76,6 +76,7 @@ export const tg = {
     categoriesAllArticles: 'Ҳама мақолаҳо →',
     articlesTitle: 'Мақолаҳо аз духтурон',
     articlesComingSoon: 'Мақолаҳо ба зудӣ пайдо мешаванд',
+    articlesComingSoonSub: 'Духтурони аввал аллакай маводҳо омода карда истодаанд',
     articlesBecomeFirst: 'Аввалин муаллиф шавед',
     articlesViewAll: 'Дидани ҳама мақолаҳо',
     authorsTitle: 'Муаллиф-духтурон',
@@ -95,6 +96,7 @@ export const tg = {
     footerAbout: 'Дар бораи портал',
     footerDisclaimer: 'Маълумот дар сайт хусусияти шиносоӣ дорад. Ҳамеша бо духтур машварат кунед.',
     searchPlaceholder: 'Ҷустуҷӯ кунед: мигрен, диабет...',
+    ctaForDoctors: 'Барои духтурони амалкунанда',
   },
   blog: {
     title: 'Ҳама мақолаҳо',

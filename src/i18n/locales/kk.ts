@@ -76,6 +76,7 @@ export const kk = {
     categoriesAllArticles: 'Барлық мақалалар →',
     articlesTitle: 'Дәрігерлерден мақалалар',
     articlesComingSoon: 'Мақалалар жақында пайда болады',
+    articlesComingSoonSub: 'Алғашқы дәрігерлер материалдарды дайындап жатыр',
     articlesBecomeFirst: 'Бірінші автор болыңыз',
     articlesViewAll: 'Барлық мақалаларды көру',
     authorsTitle: 'Автор-дәрігерлер',
@@ -95,6 +96,7 @@ export const kk = {
     footerAbout: 'Портал туралы',
     footerDisclaimer: 'Сайттағы ақпарат танысу сипатында. Әрқашан дәрігермен кеңесіңіз.',
     searchPlaceholder: 'Мақалалар іздеңіз: мигрень, диабет...',
+    ctaForDoctors: 'Тәжірибелі дәрігерлер үшін',
   },
   blog: {
     title: 'Барлық мақалалар',
