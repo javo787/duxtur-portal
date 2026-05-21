@@ -4,32 +4,30 @@ const LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
 
 /** Собирает URL без трейлинг-слэша, даже если путь пустой */
 function buildUrl(lang: string, path: string) {
-  const cleanPath = path ? `/${path}` : '';
-  // Убеждаемся, что нет двойных слэшей и BASE_URL правильный
-  return `${BASE_URL}/${lang}${cleanPath}`;
+  // Убираем лишние слэши в начале и конце пути
+  const cleanPath = path.replace(/^\/+|\/+$/g, '');
+  const pathPart = cleanPath ? `/${cleanPath}` : '';
+  return `${BASE_URL}/${lang}${pathPart}`;
 }
 
 export function buildAlternates(path: string, currentLang = "ru") {
+  // Контролируем, что canonical всегда указывает на текущую языковую версию
   const canonical = buildUrl(currentLang, path);
-  const languages = Object.fromEntries(
-    LANGS.map((l) => [l, buildUrl(l, path)])
-  ) as Record<(typeof LANGS)[number], string> & { 'x-default': string };
 
-  // Unit-test-style console.assert in development mode to catch any missing language keys
-  if (process.env.NODE_ENV === 'development') {
-    LANGS.forEach(lang => {
-      if (!languages[lang]) {
-        console.error(`SEO Warning: Missing hreflang for ${lang}`);
-      }
-    });
+  // Собираем список альтернативных версий (hreflang)
+  const languages: Record<string, string> = {};
+
+  // Добавляем все поддерживаемые языки
+  for (const lang of LANGS) {
+    languages[lang] = buildUrl(lang, path);
   }
+
+  // Добавляем x-default, указывающий на русскую версию как на основную
+  languages['x-default'] = buildUrl('ru', path);
 
   return {
     canonical,
-    languages: {
-      ...languages,
-      'x-default': buildUrl('ru', path),   // всегда русский как дефолт
-    },
+    languages,
   };
 }
 

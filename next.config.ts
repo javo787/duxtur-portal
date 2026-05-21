@@ -65,22 +65,22 @@ const nextConfig: NextConfig = {
       {
         source: '/blog',
         destination: '/ru/blog',
-        permanent: true,
+        permanent: false, // 307 redirect so Google doesn't consolidate all languages to /ru
       },
       {
         source: '/authors',
         destination: '/ru/authors',
-        permanent: true,
+        permanent: false,
       },
       {
         source: '/doctors',
         destination: '/ru/doctors',
-        permanent: true,
+        permanent: false,
       },
       {
         source: '/',
         destination: '/ru',
-        permanent: true,
+        permanent: false,
       },
     ];
   },
