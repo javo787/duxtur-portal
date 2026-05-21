@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import FadeIn from '@/components/FadeIn';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { getT, T } from '@/i18n';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
@@ -21,16 +22,6 @@ const CATEGORIES = [
   { label: { ru: 'Дерматология', uz: 'Dermatologiya', tg: 'Дерматология', kk: 'Дерматология', ky: 'Дерматология' }, slug: 'dermatology', icon: '🩺' },
 ];
 
-const UI: Record<string, Record<string, string>> = {
-  heading:  { ru: 'Все статьи',       uz: 'Barcha maqolalar', tg: 'Ҳамаи мақолаҳо', kk: 'Барлық мақалалар', ky: 'Бардык макалалар' },
-  verified: { ru: 'Проверено врачом', uz: 'Tekshirilgan',      tg: 'Тасдиқшуда',     kk: 'Тексерілген',      ky: 'Текшерилген'      },
-  read:     { ru: 'Читать',           uz: "O'qish",            tg: 'Хондан',          kk: 'Оқу',              ky: 'Окуу'             },
-  empty:    { ru: 'Статьи скоро появятся', uz: 'Maqolalar tez orada', tg: 'Мақолаҳо ба зудӣ', kk: 'Мақалалар жақында', ky: 'Макалалар жакында' },
-  author_cta: { ru: 'Стать автором →', uz: 'Muallif bo\'ling →', tg: 'Муаллиф шавед →', kk: 'Автор болу →', ky: 'Автор болуу →' },
-  home:     { ru: 'Главная',          uz: 'Bosh sahifa',       tg: 'Асосӣ',           kk: 'Басты',            ky: 'Башкы'            },
-};
-const L = (k: string, lang: string) => UI[k]?.[lang] || UI[k]?.ru || '';
-
 export async function generateStaticParams() {
   const languages = ['ru', 'uz', 'tg', 'kk', 'ky'];
   const categories = CATEGORIES.filter(c => c.slug).map(c => c.slug);
@@ -42,24 +33,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const categoryInfo = CATEGORIES.find(c => c.slug === category);
   if (!categoryInfo) return notFound();
 
-  const categoryName = categoryInfo.label[lang as keyof typeof categoryInfo.label] || categoryInfo.label.ru;
-  const titles: Record<string, string> = {
-    ru: `${categoryName} — Статьи врачей | Duxtur.org`,
-    uz: `${categoryName} — Shifokorlar maqolalari | Duxtur.org`,
-    tg: `${categoryName} — Мақолаҳои табибон | Duxtur.org`,
-    kk: `${categoryName} — Дәрігерлер мақалалары | Duxtur.org`,
-    ky: `${categoryName} — Дарыгерлердин макалалары | Duxtur.org`,
-  };
+  const categoryName = T(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`, lang);
 
   return {
-    title: titles[lang] || titles.ru,
-    description: `${categoryName}. Медицинские статьи от практикующих врачей на портале Duxtur.org.`,
+    title: `${categoryName} — ${T('nav.authors', lang)} | Duxtur.org`,
+    description: `${categoryName}. ${T('home.authorsSubtitle', lang)}.`,
     alternates: buildAlternates(`blog/c/${category}`, lang),
   };
 }
 
 export default async function BlogCategoryPage({ params }: Props) {
   const { lang, category } = await params;
+  const t = getT(lang);
   const categoryInfo = CATEGORIES.find(c => c.slug === category);
   if (!categoryInfo) notFound();
 
@@ -72,13 +57,13 @@ export default async function BlogCategoryPage({ params }: Props) {
     .select('slug title overview image authorId createdAt category ratings')
     .lean();
 
-  const t = (field: any): string => {
+  const dbT = (field: any): string => {
     if (!field) return '';
     return field[lang] || field['ru'] || '';
   };
 
-  const validArticles = articles.filter((a) => t(a.title).length > 0);
-  const categoryName = categoryInfo.label[lang as keyof typeof categoryInfo.label] || categoryInfo.label.ru;
+  const validArticles = articles.filter((a) => dbT(a.title).length > 0);
+  const categoryName = t(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -109,7 +94,7 @@ export default async function BlogCategoryPage({ params }: Props) {
           </Link>
           <nav className="flex items-center gap-5">
             <Link href={`/${lang}/blog`} className="text-sm text-gray-500 hover:text-gray-900 font-medium transition">
-              {L('home', lang)}
+              {t('nav.home')}
             </Link>
           </nav>
         </div>
@@ -120,7 +105,7 @@ export default async function BlogCategoryPage({ params }: Props) {
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           <FadeIn>
             <nav className="flex items-center justify-center gap-1.5 text-xs text-blue-400/70 mb-5">
-              <Link href={`/${lang}`} className="hover:text-blue-300 transition">{L('home', lang)}</Link>
+              <Link href={`/${lang}`} className="hover:text-blue-300 transition">{t('nav.home')}</Link>
               <span>/</span>
               <Link href={`/${lang}/blog`} className="hover:text-blue-300 transition">Blog</Link>
               <span>/</span>
@@ -129,7 +114,7 @@ export default async function BlogCategoryPage({ params }: Props) {
             <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight">
               {categoryName}
             </h1>
-            <p className="text-blue-200 text-base">{validArticles.length} материалов</p>
+            <p className="text-blue-200 text-base">{validArticles.length} {t('common.articles')}</p>
           </FadeIn>
         </div>
       </div>
@@ -151,7 +136,7 @@ export default async function BlogCategoryPage({ params }: Props) {
                 }`}
               >
                 <span>{cat.icon}</span>
-                {cat.label[lang as keyof typeof cat.label] || cat.label.ru}
+                  {t(`blog.category${cat.slug ? cat.slug.charAt(0).toUpperCase() + cat.slug.slice(1) : 'All'}`)}
               </Link>
             );
           })}
@@ -159,7 +144,7 @@ export default async function BlogCategoryPage({ params }: Props) {
 
         {validArticles.length === 0 ? (
           <div className="bg-white rounded-3xl p-20 text-center border border-gray-100 shadow-sm">
-            <p className="text-xl font-bold text-gray-700 mb-2">{L('empty', lang)}</p>
+            <p className="text-xl font-bold text-gray-700 mb-2">{t('blog.comingSoon')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -172,7 +157,7 @@ export default async function BlogCategoryPage({ params }: Props) {
                   <div className="h-52 overflow-hidden relative shrink-0">
                     <Image
                       src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                      alt={t(article.title)}
+                      alt={dbT(article.title)}
                       fill
                       className="object-cover group-hover:scale-110 transition duration-700"
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -180,7 +165,7 @@ export default async function BlogCategoryPage({ params }: Props) {
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-snug line-clamp-2 flex-1 mb-3 text-base">
-                      {t(article.title)}
+                      {dbT(article.title)}
                     </h3>
                     <div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2 mt-auto">
                       <div className="flex items-center gap-2 min-w-0">
@@ -192,7 +177,7 @@ export default async function BlogCategoryPage({ params }: Props) {
                         <span className="text-xs text-gray-500 truncate font-medium">{article.authorId?.name}</span>
                       </div>
                       <span className="text-xs text-gray-400 shrink-0">
-                        {new Date(article.createdAt).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+                        {new Date(article.createdAt).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
                   </div>
