@@ -4,6 +4,7 @@ import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { getT, T } from '@/i18n';
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -11,44 +12,16 @@ export const revalidate = 3600;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
-  const titles: Record<string, string> = {
-    ru: 'Наши авторы-врачи — Duxtur.org',
-    uz: 'Bizning shifokor-mualliflar — Duxtur.org',
-    tg: 'Муаллифони мо — Duxtur.org',
-    kk: 'Біздің дәрігер-авторлар — Duxtur.org',
-    ky: 'Биздин автор-дарыгерлер — Duxtur.org',
-  };
-  const descs: Record<string, string> = {
-    ru: 'Практикующие врачи Центральной Азии, пишущие для Duxtur.org. Верифицированные специалисты — кардиологи, неврологи, педиатры.',
-    uz: 'Markaziy Osiyo amaliyotchi shifokorlari Duxtur.org uchun yozadi.',
-    tg: 'Духтурони амалкунандаи Осиёи Марказӣ барои Duxtur.org менависанд.',
-    kk: 'Орта Азияның тәжірибелі дәрігерлері Duxtur.org үшін жазады.',
-    ky: 'Борбордук Азиянын тажрыйбалуу дарыгерлери Duxtur.org үчүн жазат.',
-  };
   return {
-    title: titles[lang] || titles.ru,
-    description: descs[lang] || descs.ru,
+    title: T('nav.authors', lang) + ' — Duxtur.org',
+    description: T('home.authorsSubtitle', lang),
     alternates: buildAlternates('authors', lang),
   };
 }
 
-const ui: Record<string, Record<string, string>> = {
-  title:    { ru: 'Авторы-врачи',        uz: 'Shifokor-mualliflar',   tg: 'Муаллифон-духтурон',   kk: 'Дәрігер-авторлар',      ky: 'Автор-дарыгерлер'        },
-  subtitle: { ru: 'Практикующие врачи Центральной Азии, которые делятся знаниями', uz: 'Markaziy Osiyo amaliyotchi shifokorlari', tg: 'Духтурони амалкунандаи Осиёи Марказӣ', kk: 'Орта Азияның тәжірибелі дәрігерлері', ky: 'Борбордук Азиянын тажрыйбалуу дарыгерлери' },
-  articles: { ru: 'статей',              uz: 'maqola',                tg: 'мақола',               kk: 'мақала',                ky: 'макала'                  },
-  verified: { ru: 'Верифицирован',       uz: 'Tasdiqlangan',          tg: 'Тасдиқшуда',           kk: 'Расталған',             ky: 'Тастыкталган'            },
-  read:     { ru: 'Читать статьи',       uz: 'Maqolalarni o\'qish',   tg: 'Мақолаҳоро хонед',    kk: 'Мақалаларды оқу',       ky: 'Макалаларды окуу'        },
-  join:     { ru: 'Вы врач? Станьте автором', uz: 'Shifokor misiz? Muallif bo\'ling', tg: 'Шумо духтур ҳастед?', kk: 'Сіз дәрігер бе?',      ky: 'Сиз дарыгер белесиз?'   },
-  join_btn: { ru: 'Подать заявку',       uz: 'Ariza topshirish',      tg: 'Ариза додан',          kk: 'Өтінім беру',           ky: 'Арыз берүү'              },
-  back:     { ru: 'Главная',             uz: 'Bosh sahifa',           tg: 'Саҳифаи асосӣ',        kk: 'Басты бет',             ky: 'Башкы бет'               },
-  exp:      { ru: 'лет опыта',           uz: 'yil tajriba',           tg: 'соли таҷриба',         kk: 'жыл тәжірибе',          ky: 'жыл тажрыйба'            },
-  doctors:  { ru: 'врачей',              uz: 'shifokor',              tg: 'духтур',               kk: 'дәрігер',               ky: 'дарыгер'                 },
-  langs:    { ru: 'языков',              uz: 'til',                   tg: 'забон',                kk: 'тіл',                   ky: 'тил'                     },
-};
-const L = (key: string, lang: string) => ui[key]?.[lang] || ui[key]?.ru || '';
-
 export default async function AuthorsPage({ params }: Props) {
   const { lang } = await params;
+  const t = getT(lang);
   await dbConnect();
 
   const doctors: any[] = await Doctor.find({ status: 'approved' })
@@ -66,7 +39,7 @@ export default async function AuthorsPage({ params }: Props) {
     articleCount: countMap[doc._id.toString()] ?? 0,
   }));
 
-  const t = (field: any) => {
+  const dbT = (field: any) => {
     if (!field) return '';
     return field[lang] || field['ru'] || '';
   };
@@ -87,13 +60,13 @@ export default async function AuthorsPage({ params }: Props) {
       },
       {
         '@type': 'CollectionPage',
-        name: `${L('title', lang)} — Duxtur.org`,
+        name: `${t('nav.authors')} — Duxtur.org`,
         url: `${BASE_URL}/${lang}/authors`,
-        description: L('subtitle', lang),
+        description: t('home.authorsSubtitle'),
         publisher: { '@id': `${BASE_URL}/#organization` },
         breadcrumb: buildBreadcrumbJsonLd([
           { name: 'Duxtur.org', url: `/${lang}` },
-          { name: L('title', lang), url: `/${lang}/authors` },
+          { name: t('nav.authors'), url: `/${lang}/authors` },
         ]),
       }
     ]
@@ -116,13 +89,13 @@ export default async function AuthorsPage({ params }: Props) {
           </Link>
           <nav className="flex items-center gap-6 text-sm text-gray-500">
             <Link href={`/${lang}/blog`} className="hover:text-gray-900 transition font-medium">
-              {lang === 'ru' ? 'Статьи' : 'Blog'}
+              {t('nav.articles')}
             </Link>
             <Link
               href={`/${lang}/register`}
               className="bg-blue-600 text-white px-5 py-2 rounded-full font-bold hover:bg-blue-700 transition text-xs"
             >
-              {L('join_btn', lang)}
+              {t('home.ctaBtn')}
             </Link>
           </nav>
         </div>
@@ -133,13 +106,13 @@ export default async function AuthorsPage({ params }: Props) {
         <nav className="flex items-center gap-2 text-xs text-gray-400" itemScope itemType="https://schema.org/BreadcrumbList">
           <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
             <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition">
-              <span itemProp="name">{L('back', lang)}</span>
+              <span itemProp="name">{t('nav.home')}</span>
             </Link>
             <meta itemProp="position" content="1" />
           </span>
           <span>/</span>
           <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-            <span itemProp="name" className="text-gray-700 font-medium">{L('title', lang)}</span>
+            <span itemProp="name" className="text-gray-700 font-medium">{t('nav.authors')}</span>
             <meta itemProp="position" content="2" />
           </span>
         </nav>
@@ -150,21 +123,21 @@ export default async function AuthorsPage({ params }: Props) {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-blue-200 text-xs font-bold uppercase tracking-widest mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Все врачи верифицированы вручную
+            {t('home.verifiedManually')}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
-            {L('title', lang)}
+            {t('nav.authors')}
           </h1>
           <p className="text-blue-200 text-lg max-w-2xl mx-auto leading-relaxed">
-            {L('subtitle', lang)}
+            {t('home.authorsSubtitle')}
           </p>
 
           {/* Статистика */}
           <div className="flex items-center justify-center gap-8 mt-10">
             {[
-              { value: doctors.length, label: L('doctors', lang) },
-              { value: 5, label: L('langs', lang) },
-              { value: '100%', label: lang === 'ru' ? 'верифицированы' : 'verified' },
+              { value: doctors.length, label: t('common.doctors') },
+              { value: 5, label: t('common.languages') },
+              { value: '100%', label: t('common.verifiedPlural') },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-extrabold text-white">{stat.value}</div>
@@ -181,13 +154,13 @@ export default async function AuthorsPage({ params }: Props) {
         {doctorsWithCount.length === 0 ? (
           <div className="bg-white rounded-3xl p-20 text-center border border-gray-100 shadow-sm">
             <div className="text-6xl mb-4">👨‍⚕️</div>
-            <p className="text-xl font-bold text-gray-700 mb-2">Авторы скоро появятся</p>
-            <p className="text-gray-400 mb-8 text-sm">Первые врачи уже проходят верификацию</p>
+            <p className="text-xl font-bold text-gray-700 mb-2">{t('home.articlesComingSoon')}</p>
+            <p className="text-gray-400 mb-8 text-sm">{t('home.authorsComingSoonSub')}</p>
             <Link
               href={`/${lang}/register`}
               className="px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
             >
-              Стать первым автором →
+              {t('home.articlesBecomeFirst')} →
             </Link>
           </div>
         ) : (
@@ -218,10 +191,10 @@ export default async function AuthorsPage({ params }: Props) {
                     <p className="font-extrabold text-white text-base leading-tight truncate group-hover:text-blue-200 transition">
                       {doc.name}
                     </p>
-                    <p className="text-blue-300 text-sm mt-1 truncate">{t(doc.specialty)}</p>
+                    <p className="text-blue-300 text-sm mt-1 truncate">{dbT(doc.specialty)}</p>
                     {doc.experience > 0 && (
                       <p className="text-blue-400/60 text-xs mt-1">
-                        {doc.experience} {L('exp', lang)}
+                        {doc.experience} {t('doctor.yearsExp')}
                       </p>
                     )}
                   </div>
@@ -234,11 +207,11 @@ export default async function AuthorsPage({ params }: Props) {
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 01-2.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      {L('verified', lang)}
+                      {t('doctor.verified')}
                     </span>
                     <span className="text-sm font-extrabold text-gray-900">
                       {doc.articleCount}
-                      <span className="text-gray-400 font-normal text-xs ml-1">{L('articles', lang)}</span>
+                      <span className="text-gray-400 font-normal text-xs ml-1">{t('common.articles')}</span>
                     </span>
                   </div>
 
@@ -254,10 +227,10 @@ export default async function AuthorsPage({ params }: Props) {
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                     <span className="text-xs text-gray-400">
-                      с {new Date(doc.createdAt).toLocaleDateString('ru', { month: 'long', year: 'numeric' })}
+                      {t('common.since')} {new Date(doc.createdAt).toLocaleDateString(lang, { month: 'long', year: 'numeric' })}
                     </span>
                     <span className="text-blue-600 text-xs font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                      {L('read', lang)}
+                      {t('blog.readMore')}
                       <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                     </span>
                   </div>
@@ -272,13 +245,13 @@ export default async function AuthorsPage({ params }: Props) {
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3">{L('join', lang)}</h2>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3">{t('home.ctaTitle')}</h2>
               <ul className="space-y-2 text-blue-200 text-sm">
                 {[
-                  lang === 'ru' ? 'Бесплатная регистрация и верификация' : 'Free registration',
-                  lang === 'ru' ? 'AI помогает структурировать статьи' : 'AI helps structure articles',
-                  lang === 'ru' ? 'Аудитория на 5 языках Центральной Азии' : 'Audience in 5 languages',
-                  lang === 'ru' ? 'Профиль врача с индексацией в Google' : 'Doctor profile indexed in Google',
+                  t('home.ctaFeature1'),
+                  t('home.ctaFeature2'),
+                  t('home.ctaFeature3'),
+                  t('home.ctaFeature4'),
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <span className="text-green-400 shrink-0">✓</span>
@@ -291,7 +264,7 @@ export default async function AuthorsPage({ params }: Props) {
               href={`/${lang}/register`}
               className="shrink-0 bg-white text-slate-900 font-extrabold py-4 px-10 rounded-full hover:bg-blue-50 transition shadow-2xl hover:-translate-y-0.5 transform text-sm whitespace-nowrap"
             >
-              {L('join_btn', lang)} →
+              {t('home.ctaBtn')} →
             </Link>
           </div>
         </div>

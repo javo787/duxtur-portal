@@ -4,29 +4,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { buildAlternates } from '@/lib/seo';
+import { getT, T } from '@/i18n';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-
-  const titles: Record<string, string> = {
-    ru: 'Редакционная политика — Duxtur.org',
-    uz: 'Tahririyat siyosati — Duxtur.org',
-    tg: 'Сиёсати таҳририявӣ — Duxtur.org',
-    kk: 'Редакциялық саясат — Duxtur.org',
-    ky: 'Редакциялык саясат — Duxtur.org',
-  };
-
-  const descs: Record<string, string> = {
-    ru: 'Редакционные стандарты Duxtur.org: как мы создаём, проверяем и публикуем медицинский контент. Процесс верификации врачей и стандарты качества.',
-    uz: 'Duxtur.org tahririyat standartlari: tibbiy kontentni qanday yaratamiz, tekshiramiz va chop etamiz. Shifokorlarni tasdiqlash jarayoni.',
-    tg: 'Стандартҳои таҳририявии Duxtur.org: чӣ тавр мо мӯҳтавои тиббӣ эҷод, тафтиш ва нашр мекунем. Раванди тасдиқи духтурон.',
-    kk: 'Duxtur.org редакциялық стандарттары: медициналық контентті қалай жасаймыз, тексереміз және жариялаймыз. Дәрігерлерді верификациялау процесі.',
-    ky: 'Duxtur.org редакциялык стандарттары: медициналык контентти кантип түзөбүз, текшеребиз жана жарыялайбыз. Дарыгерлерди верификациялоо процесси.',
-  };
-
   return {
-    title: titles[lang] ?? titles.ru,
-    description: descs[lang] ?? descs.ru,
+    title: T('editorial.title', lang),
+    description: T('editorial.intro', lang),
     robots: { index: true, follow: true },
     alternates: buildAlternates('editorial', lang),
   };
@@ -34,14 +18,15 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function EditorialPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
+  const t = getT(lang);
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Редакционная политика Duxtur.org',
+    name: t('editorial.titleHeading'),
     url: `${baseUrl}/${lang}/editorial`,
-    description: 'Стандарты создания и верификации медицинского контента',
+    description: t('editorial.intro'),
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.org',
@@ -65,7 +50,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
             <span className="text-xl font-extrabold text-gray-900">duxtur<span className="text-blue-600">.com</span></span>
           </Link>
           <Link href={`/${lang}/about`} className="text-sm text-gray-500 hover:text-blue-600 font-medium transition">
-            ← О нас
+            ← {t('nav.aboutUs')}
           </Link>
         </div>
       </header>
@@ -73,14 +58,14 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
       <main className="max-w-3xl mx-auto px-4 py-16">
 
         <div className="mb-12">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Редакционная политика</h1>
-          <p className="text-gray-500 text-sm">Последнее обновление: апрель 2025</p>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">{t('editorial.titleHeading')}</h1>
+          <p className="text-gray-500 text-sm">{t('editorial.lastUpdated')}</p>
         </div>
 
         {/* Intro */}
         <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl mb-10">
           <p className="text-gray-700 leading-relaxed text-sm">
-            Медицинская информация относится к категории <strong>YMYL (Your Money or Your Life)</strong> — контент с высоким влиянием на жизнь пользователей. Duxtur.org применяет строгие редакционные стандарты чтобы гарантировать точность, актуальность и безопасность публикуемых материалов.
+            {t('editorial.introText')}
           </p>
         </div>
 
@@ -88,14 +73,14 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">01.</span> Кто может публиковать на Duxtur.org
+              <span className="text-blue-600">01.</span> {t('editorial.s1Title')}
             </h2>
-            <p className="text-gray-600 leading-relaxed mb-3">К публикации допускаются исключительно:</p>
+            <p className="text-gray-600 leading-relaxed mb-3">{t('editorial.s1Intro')}</p>
             <ul className="space-y-2 text-gray-600 text-sm">
               {[
-                'Врачи с дипломом о высшем медицинском образовании',
-                'Специалисты с действующей врачебной лицензией',
-                'Медицинские работники с практическим опытом работы',
+                t('editorial.s1Item1'),
+                t('editorial.s1Item2'),
+                t('editorial.s1Item3'),
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <span className="text-green-500 shrink-0">✓</span>
@@ -103,25 +88,25 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
                 </li>
               ))}
             </ul>
-            <p className="text-gray-600 leading-relaxed mt-3 text-sm">Авторы-не медики, журналисты без медицинского образования и анонимные пользователи к публикации не допускаются.</p>
+            <p className="text-gray-600 leading-relaxed mt-3 text-sm">{t('editorial.s1Exclude')}</p>
           </section>
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">02.</span> Процесс верификации автора
+              <span className="text-blue-600">02.</span> {t('editorial.s2Title')}
             </h2>
             <ol className="space-y-3 text-sm text-gray-600">
               {[
-                { n: '1', t: 'Подача заявки', d: 'Врач заполняет форму регистрации и загружает фото диплома или лицензии.' },
-                { n: '2', t: 'Ручная проверка', d: 'Редактор Duxtur.org проверяет подлинность документа, соответствие специализации, контактные данные. Срок: 1-3 рабочих дня.' },
-                { n: '3', t: 'Решение', d: 'Заявка одобряется или отклоняется. При отклонении врач получает пояснение.' },
-                { n: '4', t: 'Пробный период', d: 'После одобрения первые 3 статьи проходят дополнительную редакционную проверку.' },
+                { n: '1', title: t('editorial.s2Step1Title'), desc: t('editorial.s2Step1Text') },
+                { n: '2', title: t('editorial.s2Step2Title'), desc: t('editorial.s2Step2Text') },
+                { n: '3', title: t('editorial.s2Step3Title'), desc: t('editorial.s2Step3Text') },
+                { n: '4', title: t('editorial.s2Step4Title'), desc: t('editorial.s2Step4Text') },
               ].map((item) => (
                 <li key={item.n} className="flex gap-4 p-4 bg-gray-50 rounded-xl">
                   <span className="font-extrabold text-blue-600 shrink-0 text-base">{item.n}.</span>
                   <div>
-                    <p className="font-bold text-gray-900 mb-1">{item.t}</p>
-                    <p>{item.d}</p>
+                    <p className="font-bold text-gray-900 mb-1">{item.title}</p>
+                    <p>{item.desc}</p>
                   </div>
                 </li>
               ))}
@@ -130,45 +115,45 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">03.</span> Стандарты создания статей
+              <span className="text-blue-600">03.</span> {t('editorial.s3Title')}
             </h2>
             <div className="space-y-3 text-sm text-gray-600">
-              <p className="leading-relaxed"><strong className="text-gray-900">Достоверность:</strong> все медицинские утверждения должны быть подкреплены источниками из авторитетных организаций: ВОЗ, CDC, Mayo Clinic, PubMed, национальные клинические рекомендации.</p>
-              <p className="leading-relaxed"><strong className="text-gray-900">Актуальность:</strong> статья должна отражать актуальные медицинские стандарты. Устаревшие методы лечения недопустимы без соответствующей пометки.</p>
-              <p className="leading-relaxed"><strong className="text-gray-900">Минимум 2 источника:</strong> каждая статья обязана содержать минимум 2 ссылки на авторитетные медицинские источники.</p>
-              <p className="leading-relaxed"><strong className="text-gray-900">Дисклеймер:</strong> каждая статья автоматически получает предупреждение о том, что информация носит образовательный характер и не заменяет консультацию врача.</p>
-              <p className="leading-relaxed"><strong className="text-gray-900">Запрещено:</strong> реклама конкретных лекарств, клиник или препаратов в тексте статьи; недоказанные методы лечения без соответствующей пометки; контент способный причинить вред.</p>
+              <p className="leading-relaxed"><strong className="text-gray-900">{t('editorial.s3Item1Title')}:</strong> {t('editorial.s3Item1Text')}</p>
+              <p className="leading-relaxed"><strong className="text-gray-900">{t('editorial.s3Item2Title')}:</strong> {t('editorial.s3Item2Text')}</p>
+              <p className="leading-relaxed"><strong className="text-gray-900">{t('editorial.s3Item3Title')}:</strong> {t('editorial.s3Item3Text')}</p>
+              <p className="leading-relaxed"><strong className="text-gray-900">{t('editorial.s3Item4Title')}:</strong> {t('editorial.s3Item4Text')}</p>
+              <p className="leading-relaxed"><strong className="text-gray-900">{t('editorial.s3Item5Title')}:</strong> {t('editorial.s3Item5Text')}</p>
             </div>
           </section>
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">04.</span> Использование искусственного интеллекта
+              <span className="text-blue-600">04.</span> {t('editorial.s4Title')}
             </h2>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-gray-700 leading-relaxed">
-              <p className="mb-3">Duxtur.org использует инструменты на базе ИИ   для помощи врачам в структурировании и оформлении статей. ИИ помогает:</p>
+              <p className="mb-3">{t('editorial.s4Intro')}</p>
               <ul className="space-y-1 mb-3">
-                <li className="flex gap-2"><span>•</span>Структурировать черновик врача в профессиональную статью</li>
-                <li className="flex gap-2"><span>•</span>Адаптировать научные тексты для широкой аудитории</li>
-                <li className="flex gap-2"><span>•</span>Переводить контент на языки Центральной Азии</li>
+                <li className="flex gap-2"><span>•</span>{t('editorial.s4Item1')}</li>
+                <li className="flex gap-2"><span>•</span>{t('editorial.s4Item2')}</li>
+                <li className="flex gap-2"><span>•</span>{t('editorial.s4Item3')}</li>
               </ul>
-              <p className="font-medium text-amber-800">ИИ не является автором медицинских решений. Вся медицинская информация написана или проверена практикующим врачом. Статьи, созданные с помощью ИИ, помечаются соответствующим образом.</p>
+              <p className="font-medium text-amber-800">{t('editorial.s4Note')}</p>
             </div>
           </section>
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">05.</span> Обновление и удаление контента
+              <span className="text-blue-600">05.</span> {t('editorial.s5Title')}
             </h2>
             <p className="text-gray-600 text-sm leading-relaxed mb-3">
-              Медицинская информация меняется — рекомендации ВОЗ, протоколы лечения, новые исследования. Редакция обязуется:
+              {t('editorial.s5Intro')}
             </p>
             <ul className="space-y-2 text-sm text-gray-600">
               {[
-                'Обновлять статьи при появлении новых клинических рекомендаций',
-                'Удалять статьи содержащие устаревшую или опасную информацию',
-                'Помечать статьи датой последнего обновления',
-                'Принимать сообщения об ошибках от читателей через Telegram',
+                t('editorial.s5Item1'),
+                t('editorial.s5Item2'),
+                t('editorial.s5Item3'),
+                t('editorial.s5Item4'),
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <span className="text-blue-500 shrink-0">→</span>
@@ -180,24 +165,24 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">06.</span> Конфликт интересов
+              <span className="text-blue-600">06.</span> {t('editorial.s6Title')}
             </h2>
             <p className="text-gray-600 text-sm leading-relaxed">
-              Авторы не имеют права рекламировать в статьях конкретные препараты, клиники или медицинские услуги которые они предоставляют лично. Любой коммерческий контент должен быть явно помечен как рекламный материал и проходит отдельную проверку.
+              {t('editorial.s6Text')}
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-blue-600">07.</span> Сообщить об ошибке
+              <span className="text-blue-600">07.</span> {t('editorial.s7Title')}
             </h2>
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
-              Если вы обнаружили медицинскую неточность, устаревшую информацию или нарушение редакционных стандартов — сообщите нам. Мы рассматриваем каждое обращение.
+              {t('editorial.s7Text')}
             </p>
             {/* НАЙТИ и ЗАМЕНИТЬ кнопку в editorial/page.tsx — секция 07 */}
             
               <a href="https://t.me/duxturcom" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm transition">
-              Написать редакции в Telegram
+              {t('editorial.reportError')}
             </a>
             
             
