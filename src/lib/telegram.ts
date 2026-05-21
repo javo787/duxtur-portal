@@ -75,6 +75,11 @@ export async function sendAppointmentSummaryToDoctor(doctorChatId: string, appoi
   await sendTelegramMessage(doctorChatId, message);
 }
 
+export async function sendMessageToAdmin(text: string) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_CHAT_ID) return;
+  await sendTelegramMessage(TELEGRAM_ADMIN_CHAT_ID, text);
+}
+
 async function sendTelegramMessage(chatId: string, text: string) {
   if (!TELEGRAM_BOT_TOKEN || !chatId) return;
   try {
