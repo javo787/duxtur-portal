@@ -481,4 +481,16 @@ export const tg = {
     generating: 'PDF сохта шуда истодааст…',
     downloadError: 'Хатогӣ. Боз кӯшиш кунед',
   },
+  search: {
+    title: 'Ҷустуҷӯ',
+    placeholder: 'Ҷустуҷӯ аз рӯи мақолаҳо ва духтурон...',
+    tabAll: 'Ҳама',
+    tabArticles: 'Мақолаҳо',
+    tabDoctors: 'Духтурон',
+    foundArticles: 'Мақолаҳо ёфт шуданд',
+    foundDoctors: 'Духтурон ёфт шуданд',
+    empty: 'Ҳеҷ чиз ёфт нашуд',
+    emptyHint: 'Дархости дигарро санҷед',
+    searching: 'Ҷустуҷӯ...',
+  },
 } as const

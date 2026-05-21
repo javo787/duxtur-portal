@@ -481,4 +481,16 @@ export const ru = {
     generating: 'Генерируем PDF…',
     downloadError: 'Ошибка. Попробуйте ещё раз',
   },
+  search: {
+    title: 'Поиск',
+    placeholder: 'Поиск по статьям и врачам...',
+    tabAll: 'Все',
+    tabArticles: 'Статьи',
+    tabDoctors: 'Врачи',
+    foundArticles: 'Найдено статей',
+    foundDoctors: 'Найдено врачей',
+    empty: 'Ничего не найдено',
+    emptyHint: 'Попробуйте другой запрос',
+    searching: 'Поиск...',
+  },
 } as const

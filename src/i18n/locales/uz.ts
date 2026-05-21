@@ -481,4 +481,16 @@ export const uz = {
     generating: 'PDF yaratilmoqda…',
     downloadError: 'Xatolik. Qayta urinib koʻring',
   },
+  search: {
+    title: 'Qidiruv',
+    placeholder: 'Maqolalar va shifokorlar boʻyicha qidiruv...',
+    tabAll: 'Barchasi',
+    tabArticles: 'Maqolalar',
+    tabDoctors: 'Shifokorlar',
+    foundArticles: 'Maqolalar topildi',
+    foundDoctors: 'Shifokorlar topildi',
+    empty: 'Hech narsa topilmadi',
+    emptyHint: 'Boshqa soʻrovni sinab koʻring',
+    searching: 'Qidirilmoqda...',
+  },
 } as const

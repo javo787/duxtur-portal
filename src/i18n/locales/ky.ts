@@ -481,4 +481,16 @@ export const ky = {
     generating: 'PDF түзүлүүдө…',
     downloadError: 'Ката. Кайра аракет кылыңыз',
   },
+  search: {
+    title: 'Издөө',
+    placeholder: 'Макалалар жана дарыгерлер боюнча издөө...',
+    tabAll: 'Бардыгы',
+    tabArticles: 'Макалалар',
+    tabDoctors: 'Дарыгерлер',
+    foundArticles: 'Макалалар табылды',
+    foundDoctors: 'Дарыгерлер табылды',
+    empty: 'Эч нерсе табылган жок',
+    emptyHint: 'Башка суроо-талапты байкап көрүңүз',
+    searching: 'Издөө...',
+  },
 } as const

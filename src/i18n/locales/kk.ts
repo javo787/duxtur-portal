@@ -481,4 +481,16 @@ export const kk = {
     generating: 'PDF жасалуда…',
     downloadError: 'Қате. Қайта көріңіз',
   },
+  search: {
+    title: 'Іздеу',
+    placeholder: 'Мақалалар мен дәрігерлер бойынша іздеу...',
+    tabAll: 'Барлығы',
+    tabArticles: 'Мақалалар',
+    tabDoctors: 'Дәрігерлер',
+    foundArticles: 'Мақалалар табылды',
+    foundDoctors: 'Дәрігерлер табылды',
+    empty: 'Ештеңе табылмады',
+    emptyHint: 'Басқа сұранысты байқап көріңіз',
+    searching: 'Іздеу...',
+  },
 } as const
