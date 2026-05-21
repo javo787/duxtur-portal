@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '@/i18n';
 
 interface MapDesktopSidebarProps {
   filters: any;
@@ -23,15 +24,16 @@ export function MapDesktopSidebar({
   expandSearch,
   lang,
 }: MapDesktopSidebarProps) {
+  const { t } = useT(lang);
   return (
     <aside className="hidden lg:block w-[320px] border-r overflow-y-auto p-6 space-y-8 bg-slate-50/50">
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">
-          📍 Город
+          📍 {t('map.filterCity')}
         </label>
         <input
           type="text"
-          placeholder="Поиск по городу..."
+          placeholder={t('map.filterCity')}
           className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none shadow-sm"
           value={filters.city}
           onChange={(e) => setFilters({ ...filters, city: e.target.value })}
@@ -40,30 +42,30 @@ export function MapDesktopSidebar({
 
       <div>
         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">
-          Тип приема
+          {t('map.filterType')}
         </label>
         <div className="grid grid-cols-1 gap-2">
           {[
-            { id: 'in_person', label: '🏥 В клинике' },
-            { id: 'online', label: '💻 Онлайн' },
-            { id: 'home_visit', label: '🏠 На дому' },
-          ].map((t) => (
+            { id: 'in_person', label: t('map.inClinic') },
+            { id: 'online', label: t('map.online') },
+            { id: 'home_visit', label: t('map.atHome') },
+          ].map((type) => (
             <button
-              key={t.id}
+              key={type.id}
               onClick={() =>
                 setFilters({
                   ...filters,
-                  consultationType: filters.consultationType === t.id ? '' : t.id,
+                  consultationType: filters.consultationType === type.id ? '' : type.id,
                 })
               }
               className={`flex items-center justify-between p-3 rounded-xl border text-sm font-bold transition-all ${
-                filters.consultationType === t.id
+                filters.consultationType === type.id
                   ? 'bg-blue-600 border-blue-600 text-white'
                   : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
               }`}
             >
-              <span>{t.label}</span>
-              {filters.consultationType === t.id && <span>✓</span>}
+              <span>{type.label}</span>
+              {filters.consultationType === type.id && <span>✓</span>}
             </button>
           ))}
         </div>
@@ -72,10 +74,10 @@ export function MapDesktopSidebar({
       <div className="pt-6 border-t">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
           {filters.city
-            ? `Врачей в городе ${filters.city}: ${doctorCount}`
+            ? `${t('map.cityDoctors')} ${filters.city}: ${doctorCount}`
             : userLocation
-            ? `Врачей в радиусе 25 км: ${doctorCount}`
-            : `Всего врачей: ${doctorCount}`}
+            ? `${t('map.radiusDoctors')}: ${doctorCount}`
+            : `${t('map.totalDoctors')}: ${doctorCount}`}
         </p>
         {isLoading ? (
           <div className="space-y-3">
@@ -92,13 +94,13 @@ export function MapDesktopSidebar({
         ) : doctorCount === 0 ? (
           <div className="text-center py-10">
             <div className="text-3xl mb-3">🔍</div>
-            <p className="text-xs font-bold text-slate-900 mb-1">Нет врачей в этой области</p>
-            <p className="text-[10px] text-slate-400 mb-4">Попробуйте расширить поиск</p>
+            <p className="text-xs font-bold text-slate-900 mb-1">{t('map.noResults')}</p>
+            <p className="text-[10px] text-slate-400 mb-4">{t('map.noResultsDesc')}</p>
             <button
               onClick={expandSearch}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-bold"
             >
-              Расширить поиск
+              {t('map.expandSearch')}
             </button>
           </div>
         ) : (
@@ -115,7 +117,7 @@ export function MapDesktopSidebar({
                   </p>
                   {doc.distanceKm && (
                     <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">
-                      📍 {doc.distanceKm.toFixed(1)} км
+                      📍 {doc.distanceKm.toFixed(1)} {t('map.km')}
                     </span>
                   )}
                 </div>

@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import SpecialtyAutocomplete from '@/components/SpecialtyAutocomplete';
 import NearMeButton from '@/components/NearMeButton';
+import { useT } from '@/i18n';
 
 interface SearchFormProps {
   lang: string;
@@ -13,6 +14,7 @@ interface SearchFormProps {
 }
 
 export default function SearchForm({ lang, searchParams, cities, L }: SearchFormProps) {
+  const { t } = useT(lang);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
 
@@ -103,8 +105,8 @@ export default function SearchForm({ lang, searchParams, cities, L }: SearchForm
 
       {/* Нижняя строка — только NearMe, компактная */}
       <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/60 flex items-center gap-2">
-        <NearMeButton />
-        <span className="text-xs text-slate-400 hidden sm:inline">или найдите врача рядом с вами</span>
+        <NearMeButton lang={lang} />
+        <span className="text-xs text-slate-400 hidden sm:inline">{t('doctors.nearMePrompt')}</span>
       </div>
     </form>
   );

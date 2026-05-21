@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
+import { useT } from '@/i18n';
 
 type BottomSheetState = 'collapsed' | 'half' | 'full';
 
@@ -28,6 +29,7 @@ export function MapMobileBottomSheet({
   onDoctorSelect,
   expandSearch,
 }: MapMobileBottomSheetProps) {
+  const { t } = useT(lang);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -90,7 +92,7 @@ export function MapMobileBottomSheet({
         >
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mb-2"></div>
           <p className="text-xs font-black text-slate-900 uppercase tracking-widest">
-            {doctorCount} {lang === 'ru' ? 'врачей рядом' : 'yaqin oradagi shifokorlar'}
+            {doctorCount} {t('map.doctorsNearby')}
           </p>
           {state !== 'collapsed' && (
             <button
@@ -138,11 +140,11 @@ export function MapMobileBottomSheet({
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-                    📍 Город
+                    📍 {t('map.filterCity')}
                   </label>
                   <input
                     type="text"
-                    placeholder="Ваш город..."
+                    placeholder={t('map.filterCity')}
                     className="w-full p-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:border-blue-500 outline-none"
                     value={filters.city}
                     onChange={(e) => setFilters({ ...filters, city: e.target.value })}
@@ -151,29 +153,29 @@ export function MapMobileBottomSheet({
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-                    Прием
+                    {t('map.filterType')}
                   </label>
                   <div className="flex gap-2">
                     {[
-                      { id: 'in_person', label: '🏥 Клиника' },
-                      { id: 'online', label: '💻 Онлайн' },
-                      { id: 'home_visit', label: '🏠 Домой' },
-                    ].map((t) => (
+                      { id: 'in_person', label: t('map.inClinic') },
+                      { id: 'online', label: t('map.online') },
+                      { id: 'home_visit', label: t('map.atHome') },
+                    ].map((type) => (
                       <button
-                        key={t.id}
+                        key={type.id}
                         onClick={() =>
                           setFilters({
                             ...filters,
-                            consultationType: filters.consultationType === t.id ? '' : t.id,
+                            consultationType: filters.consultationType === type.id ? '' : type.id,
                           })
                         }
                         className={`flex-1 py-2.5 rounded-xl border text-[10px] font-bold transition-all ${
-                          filters.consultationType === t.id
+                          filters.consultationType === type.id
                             ? 'bg-blue-600 border-blue-600 text-white'
                             : 'bg-white border-slate-100 text-slate-600'
                         }`}
                       >
-                        {t.label}
+                        {type.label}
                       </button>
                     ))}
                   </div>
@@ -181,18 +183,18 @@ export function MapMobileBottomSheet({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Принимает новых</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('doctors.acceptsNew')}</p>
                     <button
                       onClick={() =>
                         setFilters({ ...filters, accepts: filters.accepts === 'true' ? '' : 'true' })
                       }
                       className={`text-xs font-bold ${filters.accepts === 'true' ? 'text-blue-600' : 'text-slate-400'}`}
                     >
-                      {filters.accepts === 'true' ? 'Да' : 'Не важно'}
+                      {filters.accepts === 'true' ? t('common.yes') : t('common.all')}
                     </button>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Цена до</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('map.priceTo')}</p>
                     <input
                       type="number"
                       placeholder="500"
@@ -208,7 +210,7 @@ export function MapMobileBottomSheet({
                 onClick={() => setState('full')}
                 className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-xl"
               >
-                Показать результаты
+                {t('map.showResults')}
               </button>
             </div>
           )}
@@ -216,9 +218,9 @@ export function MapMobileBottomSheet({
           {state === 'full' && (
             <div className="space-y-4 pt-4 animate-in fade-in duration-300">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-black text-slate-900">Список врачей</h4>
+                <h4 className="text-sm font-black text-slate-900">{t('map.doctorList')}</h4>
                 <button onClick={() => setState('half')} className="text-[10px] font-bold text-blue-600">
-                  Фильтры
+                  {t('map.listFilters')}
                 </button>
               </div>
 
@@ -241,13 +243,13 @@ export function MapMobileBottomSheet({
               ) : doctorCount === 0 ? (
                 <div className="py-20 text-center flex flex-col items-center">
                   <div className="text-5xl mb-4">🔍</div>
-                  <p className="text-slate-900 font-bold text-lg mb-2">Никого не найдено</p>
-                  <p className="text-slate-400 text-sm mb-6">Попробуйте изменить фильтры или расширить область поиска</p>
+                  <p className="text-slate-900 font-bold text-lg mb-2">{t('map.noResults')}</p>
+                  <p className="text-slate-400 text-sm mb-6">{t('map.noResultsDesc')}</p>
                   <button
                     onClick={expandSearch}
                     className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-blue-100"
                   >
-                    Расширить поиск
+                    {t('map.expandSearch')}
                   </button>
                 </div>
               ) : (
@@ -276,7 +278,7 @@ export function MapMobileBottomSheet({
                           <p className="font-bold text-slate-900 text-sm truncate">{doc.name}</p>
                           {doc.distanceKm && (
                             <span className="text-[10px] text-slate-400 whitespace-nowrap ml-2">
-                              📍 {doc.distanceKm.toFixed(1)} км
+                              📍 {doc.distanceKm.toFixed(1)} {t('map.km')}
                             </span>
                           )}
                         </div>
@@ -286,7 +288,7 @@ export function MapMobileBottomSheet({
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs">⭐ {doc.reviewAvg || 0}</span>
                           <span className="text-[10px] text-slate-400">
-                            💰 От {doc.priceRange?.min} {doc.priceRange?.currency}
+                            💰 {t('common.from')} {doc.priceRange?.min} {doc.priceRange?.currency}
                           </span>
                         </div>
                       </div>

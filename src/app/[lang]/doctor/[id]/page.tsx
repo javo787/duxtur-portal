@@ -55,6 +55,8 @@ function getReadingTime(article: any): number {
 }
 
 function getMission(specialty: string, lang: string): string {
+  // TODO: Mission statements should ideally be translated per doctor by themselves.
+  // Using generic professional statements for now.
   const t = getT(lang);
   const missions: Record<string, string> = {
     'кардиология': t('doctor.missionCardiology'),
@@ -250,6 +252,7 @@ export default async function DoctorProfilePage({ params }: Props) {
           totalViews={totalViews}
           articlesCount={articles.length}
           categoryKey={categoryKey}
+          lang={lang}
         />
       </div>
 
@@ -513,6 +516,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             <TrustBadges
               lastMedicalReviewDate={lastMedicalReviewDate}
               lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
+              lang={lang}
             />
 
             <ContactDoctorButton doctor={doctor} lang={lang} />

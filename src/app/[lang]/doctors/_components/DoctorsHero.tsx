@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import SearchForm from './SearchForm';
 import SpecialtyChips from './SpecialtyChips';
+import { getT } from '@/i18n';
 
 interface DoctorsHeroProps {
   lang: string;
@@ -11,6 +12,7 @@ interface DoctorsHeroProps {
 }
 
 export default function DoctorsHero({ lang, searchParams, cities, activeSpecialty, L }: DoctorsHeroProps) {
+  const t = getT(lang);
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-amber-50/40 pt-8 pb-7 border-b border-slate-200/60">
       
@@ -23,7 +25,7 @@ export default function DoctorsHero({ lang, searchParams, cities, activeSpecialt
 
         {/* Хлебные крошки — усиленный контраст */}
         <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-5 font-medium" aria-label="Breadcrumb">
-          <Link href={`/${lang}`} className="hover:text-blue-600 transition text-slate-600">Главная</Link>
+          <Link href={`/${lang}`} className="hover:text-blue-600 transition text-slate-600">{t('nav.home')}</Link>
           <span aria-hidden="true" className="text-slate-300">/</span>
           <span className="text-slate-800 font-semibold">{L('title')}</span>
         </nav>
@@ -32,7 +34,7 @@ export default function DoctorsHero({ lang, searchParams, cities, activeSpecialt
           {/* Верификационный бейдж */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold uppercase tracking-wider mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
-            Верифицированные специалисты
+            {t('home.authorsSubtitle')}
           </div>
 
           {/* Заголовок */}

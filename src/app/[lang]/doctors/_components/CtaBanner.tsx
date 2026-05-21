@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { getT } from '@/i18n';
 
 export default function CtaBanner({ lang }: { lang: string }) {
+  const t = getT(lang);
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-7">
       {/* Декор */}
@@ -10,20 +12,20 @@ export default function CtaBanner({ lang }: { lang: string }) {
       <div className="relative flex flex-col sm:flex-row items-center gap-5">
         <div className="flex-1 text-center sm:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white/70 text-[10px] font-semibold uppercase tracking-wider mb-3">
-            🩺 Для врачей
+            🩺 {t('home.ctaForDoctors')}
           </div>
           <h3 className="text-lg font-bold text-white mb-1">
-            Вы врач? Присоединяйтесь к Duxtur.org
+            {t('home.ctaTitle')}
           </h3>
           <p className="text-blue-200/80 text-sm">
-            Верификация за 24 часа · Бесплатно · AI-помощник
+            {t('home.ctaSubtitle')}
           </p>
         </div>
         <Link
           href={`/${lang}/register`}
           className="flex-shrink-0 px-6 py-3 bg-white text-slate-900 font-bold text-sm rounded-xl hover:bg-amber-50 transition shadow-lg"
         >
-          Подать заявку →
+          {t('auth.registerBtn')}
         </Link>
       </div>
     </div>
