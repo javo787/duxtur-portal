@@ -48,6 +48,7 @@ const DoctorSchema = new mongoose.Schema({
     coordinates: { type: [Number] }, // [lng, lat]
   },
   clinicName: { type: String, default: '' },
+  clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', default: null },
 
   // Booking & Schedule
   acceptsNewPatients: { type: Boolean, default: true },
