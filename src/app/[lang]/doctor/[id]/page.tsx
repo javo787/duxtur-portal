@@ -4,6 +4,7 @@ import Article from '@/models/Article';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { getT, T } from '@/i18n';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
@@ -27,14 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const doctor = await Doctor.findOne({
     $or: [{ slug: id }, { _id: id.match(/^[a-f\d]{24}$/i) ? id : null }],
   });
-  if (!doctor) return { title: 'Врач не найден' };
+  if (!doctor) return { title: T('doctor.notFound', lang) };
   const specialty = doctor.specialty?.[lang] || doctor.specialty?.ru || '';
-  const firstName = doctor.name.split(' ')[0];
-  const lastName = doctor.name.split(' ').slice(1).join(' ');
 
   const articlesCount = await Article.countDocuments({ authorId: doctor._id });
 
-  const description = `${doctor.name} — ${specialty} в ${doctor.city}. ${doctor.experience} лет опыта, рейтинг ${doctor.reviewAvg}/5. ${articlesCount} медицинских статей на Duxtur.org`;
+  const description = `${doctor.name} — ${specialty}. ${doctor.city}. ${doctor.experience} ${T('common.yearsExp', lang)}. ${articlesCount} ${T('common.articles', lang)} Duxtur.org`;
 
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.org`,
@@ -42,8 +41,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: buildAlternates(`doctor/${id}`, lang),
     openGraph: {
       type: 'profile',
-      firstName,
-      lastName,
       images: [doctor.image || `${BASE_URL}/og-default.png`],
     }
   };
@@ -57,23 +54,25 @@ function getReadingTime(article: any): number {
   return Math.max(2, Math.ceil(words / 200));
 }
 
-function getMission(specialty: string): string {
+function getMission(specialty: string, lang: string): string {
+  const t = getT(lang);
   const missions: Record<string, string> = {
-    'кардиология': 'Помогаю пациентам обрести здоровое сердце и уверенность в завтрашнем дне',
-    'неврология': 'Помогаю восстановить ясность ума и свободу движений',
-    'стоматология': 'Возвращаю красоту и здоровье вашей улыбки',
-    'педиатрия': 'Забочусь о самом ценном — здоровье ваших детей',
-    'дерматология': 'Помогаю обрести уверенность через здоровую кожу',
-    'офтальмология': 'Открываю мир ярких красок для ваших глаз',
-    'хирургия': 'Возвращаю качество жизни через точность и заботу',
-    'гинекология': 'С заботой о женском здоровье на каждом этапе жизни',
+    'кардиология': t('doctor.missionCardiology'),
+    'неврология': t('doctor.missionNeurology'),
+    'стоматология': t('doctor.missionDentistry'),
+    'педиатрия': t('doctor.missionPediatrics'),
+    'дерматология': t('doctor.missionDermatology'),
+    'офтальмология': t('doctor.missionOphthalmology'),
+    'хирургия': t('doctor.missionSurgery'),
+    'гинекология': t('doctor.missionGynecology'),
   };
-  return missions[specialty.toLowerCase()] || 'Помогаю пациентам достичь лучшего здоровья и качества жизни';
+  return missions[specialty.toLowerCase()] || t('doctor.genericMission');
 }
 
 export default async function DoctorProfilePage({ params }: Props) {
   await dbConnect();
   const { lang, id } = await params;
+  const t = getT(lang);
 
   const doctor: any = await Doctor.findOne({
     $or: [{ slug: id }, ...(id.match(/^[a-f\d]{24}$/i) ? [{ _id: id }] : [])],
@@ -88,22 +87,22 @@ export default async function DoctorProfilePage({ params }: Props) {
     Review.find({ doctorId: doctor._id, isVerified: true }).sort({ createdAt: -1 }).limit(5).lean(),
   ]);
 
-  const t = (field: any) => {
+  const dbT = (field: any) => {
     if (!field) return '';
     if (typeof field === 'string') return field;
     return field[lang] || field['ru'] || '';
   };
 
-  const specialtyLabel = t(doctor.specialty);
-  const workplaceLabel = t(doctor.workplace);
-  const educationLabel = t(doctor.education);
-  const bioLabel = t(doctor.bio);
+  const specialtyLabel = dbT(doctor.specialty);
+  const workplaceLabel = dbT(doctor.workplace);
+  const educationLabel = dbT(doctor.education);
+  const bioLabel = dbT(doctor.bio);
 
   const doctorUrl = `${BASE_URL}/${lang}/doctor/${doctor.slug || doctor._id}`;
 
   const lastReviewedArticle = articles.find((a) => a.lastMedicalReview);
   const lastMedicalReviewDate = lastReviewedArticle?.lastMedicalReview
-    ? new Date(lastReviewedArticle.lastMedicalReview).toLocaleDateString('ru', {
+    ? new Date(lastReviewedArticle.lastMedicalReview).toLocaleDateString(lang, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -111,7 +110,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     : null;
 
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
-  const mission = bioLabel || getMission(doctor.specialty?.ru || specialtyLabel);
+  const mission = bioLabel || getMission(doctor.specialty?.ru || specialtyLabel, lang);
 
   let categoryKey = 'general';
   for (const [key, labels] of Object.entries(CATEGORY_LABELS)) {
@@ -170,7 +169,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     review: reviews.length > 0 ? reviews.slice(0, 3).map((r: any) => ({
       "@type": "Review",
       "reviewRating": { "@type": "Rating", "ratingValue": r.rating },
-      "author": { "@type": "Person", "name": r.isAnonymous ? "Анонимный пациент" : "Пациент" },
+      "author": { "@type": "Person", "name": r.isAnonymous ? T('common.anonymous', lang) : T('common.patient', lang) },
       "reviewBody": r.text,
       "datePublished": r.createdAt.toISOString().split('T')[0]
     })) : undefined,
@@ -178,7 +177,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     knowsAbout: specialtyLabel || undefined,
     breadcrumb: buildBreadcrumbJsonLd([
       { name: 'Duxtur.org', url: `/${lang}` },
-      { name: 'Врачи', url: `/${lang}/authors` },
+      { name: T('nav.authors', lang), url: `/${lang}/authors` },
       { name: doctor.name, url: `doctor/${doctor.slug || doctor._id}` },
     ]),
   };
@@ -208,7 +207,7 @@ export default async function DoctorProfilePage({ params }: Props) {
           <nav className="hidden sm:flex items-center text-xs text-gray-400 gap-1.5 overflow-hidden" itemScope itemType="https://schema.org/BreadcrumbList">
             <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
               <Link href={`/${lang}`} itemProp="item" className="hover:text-gray-600 transition">
-                <span itemProp="name">Главная</span>
+                <span itemProp="name">{t('nav.home')}</span>
               </Link>
               <meta itemProp="position" content="1" />
             </span>
@@ -217,7 +216,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             </svg>
             <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
               <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-gray-600 transition">
-                <span itemProp="name">Врачи</span>
+                <span itemProp="name">{t('nav.authors')}</span>
               </Link>
               <meta itemProp="position" content="2" />
             </span>
@@ -237,7 +236,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="hidden sm:inline">Все врачи</span>
+            <span className="hidden sm:inline">{t('doctor.allDoctors')}</span>
           </Link>
         </div>
       </header>
@@ -270,7 +269,7 @@ export default async function DoctorProfilePage({ params }: Props) {
           <li>/</li>
           <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
             <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-blue-600 transition font-medium">
-              <span itemProp="name">Врачи</span>
+              <span itemProp="name">{t('nav.authors')}</span>
             </Link>
             <meta itemProp="position" content="2" />
           </li>
@@ -301,7 +300,7 @@ export default async function DoctorProfilePage({ params }: Props) {
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-gray-900 tracking-tight">
-              Публикации
+              {t('doctor.articles')}
               {articles.length > 0 && (
                 <span className="ml-2.5 bg-gray-100 text-gray-500 text-sm font-bold px-2.5 py-0.5 rounded-full">
                   {articles.length}
@@ -318,8 +317,8 @@ export default async function DoctorProfilePage({ params }: Props) {
                     d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <p className="font-bold text-gray-700 mb-1 text-lg">Материалы готовятся</p>
-              <p className="text-sm text-gray-400">Врач скоро опубликует первую статью</p>
+              <p className="font-bold text-gray-700 mb-1 text-lg">{t('doctor.noArticles')}</p>
+              <p className="text-sm text-gray-400">{t('doctor.noArticlesDesc')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -339,7 +338,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                     <div className="w-28 md:w-44 shrink-0 overflow-hidden relative">
                       <Image
                         src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                        alt={t(article.title)}
+                        alt={dbT(article.title)}
                         fill
                         className="object-cover group-hover:scale-105 transition duration-700"
                       />
@@ -360,20 +359,20 @@ export default async function DoctorProfilePage({ params }: Props) {
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            Проверено
+                            {t('blog.verified')}
                           </span>
                         </div>
                         <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2 text-[14px]">
-                          {t(article.title)}
+                          {dbT(article.title)}
                         </h3>
                         <p className="text-sm text-gray-400 mt-1 line-clamp-1 leading-relaxed hidden md:block">
-                          {t(article.overview)}
+                          {dbT(article.overview)}
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-50">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-400">
-                            {new Date(article.createdAt).toLocaleDateString('ru', {
+                            {new Date(article.createdAt).toLocaleDateString(lang, {
                               day: 'numeric', month: 'short', year: 'numeric',
                             })}
                           </span>
@@ -382,11 +381,11 @@ export default async function DoctorProfilePage({ params }: Props) {
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            {readingTime} мин
+                            {readingTime} {t('map.min')}
                           </span>
                         </div>
                         <span className="text-blue-500 text-xs font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                          Читать
+                          {t('blog.readMore')}
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                           </svg>
@@ -403,13 +402,13 @@ export default async function DoctorProfilePage({ params }: Props) {
           <div className="mt-12 pt-10 border-t border-gray-100">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight">Отзывы пациентов</h3>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">{t('doctor.reviews')}</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex text-amber-400 text-sm">
                     {'★'.repeat(Math.round(doctor.reviewAvg || 0))}{'☆'.repeat(5 - Math.round(doctor.reviewAvg || 0))}
                   </div>
                   <span className="text-sm font-bold text-gray-900">{doctor.reviewAvg || 0}</span>
-                  <span className="text-xs text-gray-400">({doctor.reviewCount || 0} отзывов)</span>
+                  <span className="text-xs text-gray-400">({doctor.reviewCount || 0} {t('blog.ratings')})</span>
                 </div>
               </div>
               <ReviewModal doctorId={doctor._id.toString()} doctorName={doctor.name} lang={lang} />
@@ -421,20 +420,20 @@ export default async function DoctorProfilePage({ params }: Props) {
           {/* "You may also like" section */}
           {articles.length > 0 && (
             <div className="mt-12 pt-10 border-t border-gray-100">
-              <h3 className="text-lg font-black text-gray-900 mb-6">Вам также может быть интересно</h3>
+              <h3 className="text-lg font-black text-gray-900 mb-6">{t('doctor.alsoLike')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {articles.slice(0, 3).map((a) => (
                   <Link key={a._id} href={`/${lang}/blog/${a.slug}`} className="group block">
                     <div className="aspect-video rounded-xl overflow-hidden mb-3 relative">
                       <Image
                         src={a.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                        alt={t(a.title)}
+                        alt={dbT(a.title)}
                         fill
                         className="object-cover group-hover:scale-105 transition"
                       />
                     </div>
                     <h4 className="font-bold text-sm text-gray-800 group-hover:text-blue-600 transition line-clamp-2">
-                      {t(a.title)}
+                      {dbT(a.title)}
                     </h4>
                   </Link>
                 ))}
@@ -450,7 +449,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="bg-gradient-to-r from-[#0a1628] to-[#0f2a52] px-5 py-4">
                 <p className="text-blue-300/70 text-[10px] font-black uppercase tracking-[0.15em] mb-0.5">
-                  Профиль врача
+                  {t('doctor.profile')}
                 </p>
                 <p className="text-white font-black text-base leading-tight">{doctor.name}</p>
                 {specialtyLabel && (
@@ -462,25 +461,25 @@ export default async function DoctorProfilePage({ params }: Props) {
                 {doctor.experience > 0 && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                    label="Стаж" value={`${doctor.experience} лет`}
+                    label={t('doctor.experience')} value={`${doctor.experience} ${t('common.years')}`}
                   />
                 )}
                 {workplaceLabel && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-                    label="Место работы" value={workplaceLabel}
+                    label={t('doctor.workplace')} value={workplaceLabel}
                   />
                 )}
                 {educationLabel && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>}
-                    label="Образование" value={educationLabel}
+                    label={t('doctor.education')} value={educationLabel}
                   />
                 )}
                 {doctor.languages?.length > 0 && (
                   <SidebarRow
                     icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>}
-                    label="Языки" value={doctor.languages.join(', ')}
+                    label={t('doctor.languages')} value={doctor.languages.join(', ')}
                   />
                 )}
               </div>
@@ -488,7 +487,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               {bioLabel && (
                 <div className="px-5 pb-5 pt-0">
                   <div className="border-t border-gray-50 pt-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-2">О враче</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-2">{t('doctor.about')}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{bioLabel}</p>
                   </div>
                 </div>
@@ -497,7 +496,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               {doctor.sameAs?.length > 0 && (
                 <div className="px-5 pb-5">
                   <div className="border-t border-gray-50 pt-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">Профили</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">{t('doctor.profiles')}</p>
                     <div className="flex gap-2 flex-wrap">
                       {doctor.sameAs.map((link: string, i: number) => (
                         <a key={i} href={link} target="_blank" rel="noopener noreferrer"
@@ -534,7 +533,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             {(doctor.clinicName || doctor.address) && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
-                  Место приёма
+                  {t('doctor.clinicAddress')}
                 </h3>
                 <div className="space-y-3">
                   {doctor.clinicName && (
@@ -559,26 +558,27 @@ export default async function DoctorProfilePage({ params }: Props) {
             {doctor.schedule && Object.values(doctor.schedule).some((d: any) => d.isWorking) && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
-                  График работы
+                  {t('doctor.workingHours')}
                 </h3>
                 <div className="space-y-2">
                   {[
-                    { id: 'mon', label: 'Пн' },
-                    { id: 'tue', label: 'Вт' },
-                    { id: 'wed', label: 'Ср' },
-                    { id: 'thu', label: 'Чт' },
-                    { id: 'fri', label: 'Пт' },
-                    { id: 'sat', label: 'Сб' },
-                    { id: 'sun', label: 'Вс' },
+                    { id: 'mon', day_idx: 1 },
+                    { id: 'tue', day_idx: 2 },
+                    { id: 'wed', day_idx: 3 },
+                    { id: 'thu', day_idx: 4 },
+                    { id: 'fri', day_idx: 5 },
+                    { id: 'sat', day_idx: 6 },
+                    { id: 'sun', day_idx: 0 },
                   ].map((day) => {
                     const d = doctor.schedule[day.id];
                     const today = new Date().getDay();
                     const isToday = [0, 1, 2, 3, 4, 5, 6].indexOf(today === 0 ? 6 : today - 1) === ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(day.id);
+                    const label = new Date(2024, 0, day.day_idx).toLocaleDateString(lang, { weekday: 'short' });
 
                     return (
                       <div key={day.id} className={`flex items-center justify-between text-xs ${isToday ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
-                        <span>{day.label}</span>
-                        <span>{d?.isWorking ? `${d.open} – ${d.close}` : 'Выходной'}</span>
+                        <span className="capitalize">{label}</span>
+                        <span>{d?.isWorking ? `${d.open} – ${d.close}` : t('doctor.dayOff')}</span>
                       </div>
                     );
                   })}
@@ -590,12 +590,12 @@ export default async function DoctorProfilePage({ params }: Props) {
             {doctor.priceRange?.min > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
-                  Консультации
+                  {t('doctor.consultations')}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Стоимость</span>
-                    <span className="text-sm font-black text-gray-900">от {doctor.priceRange.min} TJS</span>
+                    <span className="text-xs text-gray-500">{t('doctor.priceFrom')}</span>
+                    <span className="text-sm font-black text-gray-900">{t('common.from')} {doctor.priceRange.min} TJS</span>
                   </div>
                   <div className="flex gap-2">
                     {(doctor.consultationTypes || ['in_person']).map((type: string) => (
@@ -610,7 +610,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
-                Поделиться профилем
+                {t('doctor.shareProfile')}
               </h3>
               <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} lang={lang} />
               <DownloadCardButton doctorSlug={doctor.slug} lang={lang} />

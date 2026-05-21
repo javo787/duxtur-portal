@@ -3,6 +3,7 @@ import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { getT, T } from '@/i18n';
 import FadeIn from '@/components/FadeIn';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import Image from 'next/image';
@@ -17,23 +18,10 @@ export const revalidate = 1800; // ISR — обновление каждые 30 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang } = await params;
   const { page } = (await searchParams) as { category?: string; page?: string };
-  const titles: Record<string, string> = {
-    ru: 'Все статьи — Duxtur.org',
-    uz: 'Barcha maqolalar — Duxtur.org',
-    tg: 'Ҳамаи мақолаҳо — Duxtur.org',
-    kk: 'Барлық мақалалар — Duxtur.org',
-    ky: 'Бардык макалалар — Duxtur.org',
-  };
-  const descs: Record<string, string> = {
-    ru: 'Медицинские статьи от практикующих врачей. Кардиология, неврология, педиатрия и другие специализации.',
-    uz: 'Amaliyotchi shifokorlardan tibbiy maqolalar. Kardiologiya, nevrologiya, pediatriya.',
-    tg: 'Мақолаҳои тиббӣ аз табибони амалкунанда. Кардиология, неврология, педиатрия.',
-    kk: 'Тәжірибелі дәрігерлерден медициналық мақалалар. Кардиология, неврология, педиатрия.',
-    ky: 'Практикалык дарыгерлерден медициналык макалалар. Кардиология, неврология, педиатрия.',
-  };
+
   return {
-    title: titles[lang] || titles.ru,
-    description: descs[lang] || descs.ru,
+    title: T('blog.title', lang),
+    description: T('home.authorsSubtitle', lang),
     alternates: {
       ...buildAlternates('blog', lang),
       canonical: `${BASE_URL}/${lang}/blog`,
@@ -43,15 +31,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       'link:rss': `${BASE_URL}/${lang}/feed.xml`,
     },
     openGraph: {
-      title: titles[lang] || titles.ru,
-      description: descs[lang] || descs.ru,
+      title: T('blog.title', lang),
+      description: T('home.authorsSubtitle', lang),
       type: 'website',
       images: [`${BASE_URL}/og-blog.png`],
     },
     twitter: {
       card: 'summary_large_image',
-      title: titles[lang] || titles.ru,
-      description: descs[lang] || descs.ru,
+      title: T('blog.title', lang),
+      description: T('home.authorsSubtitle', lang),
     },
   };
 }
@@ -65,28 +53,9 @@ const CATEGORIES = [
   { label: { ru: 'Дерматология', uz: 'Dermatologiya', tg: 'Дерматология', kk: 'Дерматология', ky: 'Дерматология' }, slug: 'dermatology', icon: '🩺' },
 ];
 
-const UI: Record<string, Record<string, string>> = {
-  heading:  { ru: 'Все статьи',       uz: 'Barcha maqolalar', tg: 'Ҳамаи мақолаҳо', kk: 'Барлық мақалалар', ky: 'Бардык макалалар' },
-  verified: { ru: 'Проверено врачом', uz: 'Tekshirilgan',      tg: 'Тасдиқшуда',     kk: 'Тексерілген',      ky: 'Текшерилген'      },
-  read:     { ru: 'Читать',           uz: "O'qish",            tg: 'Хондан',          kk: 'Оқу',              ky: 'Окуу'             },
-  empty:    { ru: 'Статьи скоро появятся', uz: 'Maqolalar tez orada', tg: 'Мақолаҳо ба зудӣ', kk: 'Мақалалар жақында', ky: 'Макалалар жакында' },
-  author_cta: { ru: 'Стать автором →', uz: 'Muallif bo\'ling →', tg: 'Муаллиф шавед →', kk: 'Автор болу →', ky: 'Автор болуу →' },
-  home:     { ru: 'Главная',          uz: 'Bosh sahifa',       tg: 'Асосӣ',           kk: 'Басты',            ky: 'Башкы'            },
-  minread:  { ru: 'мин',              uz: 'daq',               tg: 'дақ',             kk: 'мин',              ky: 'мүн'              },
-};
-const L = (k: string, lang: string) => UI[k]?.[lang] || UI[k]?.ru || '';
-
-// Правильное русское склонение
-function pluralRu(n: number, one: string, few: string, many: string) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} ${few}`;
-  return `${n} ${many}`;
-}
-
 export default async function BlogListPage({ params, searchParams }: Props) {
   const { lang } = await params;
+  const t = getT(lang);
   const { category } = await searchParams;
 
   await dbConnect();
@@ -101,20 +70,20 @@ export default async function BlogListPage({ params, searchParams }: Props) {
     .select('slug title overview image authorId createdAt category ratings')
     .lean();
 
-  const t = (field: any): string => {
+  const dbT = (field: any): string => {
     if (!field) return '';
     return field[lang] || field['ru'] || field['uz'] || field['tg'] || field['kk'] || field['ky'] || '';
   };
 
-  const validArticles = articles.filter((a) => t(a.title).length > 0);
+  const validArticles = articles.filter((a) => dbT(a.title).length > 0);
 
   // ── CollectionPage JSON-LD ────────────────────────────────────────────────
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: L('heading', lang),
+    name: t('blog.title'),
     url: `${BASE_URL}/${lang}/blog`,
-    description: UI.heading[lang],
+    description: t('blog.title'),
     numberOfItems: validArticles.length,
     publisher: {
       '@type': 'Organization',
@@ -137,16 +106,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
           '@type': 'ListItem',
           position: i + 1,
           url: `${BASE_URL}/${lang}/blog/${a.slug}`,
-          name: t(a.title),
+          name: dbT(a.title),
         })),
       },
     }),
   };
 
-  const countLabel =
-    lang === 'ru'
-      ? pluralRu(validArticles.length, 'материал', 'материала', 'материалов')
-      : `${validArticles.length} ${lang === 'uz' ? 'ta maqola' : lang === 'tg' ? 'мақола' : lang === 'kk' ? 'мақала' : 'макала'}`;
+  const countLabel = `${validArticles.length} ${t('common.articles')}`;
 
   return (
     <div className="min-h-screen bg-[#f4f6fb] font-sans">
@@ -171,7 +137,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
               href={`/${lang}/authors`}
               className="text-sm text-gray-500 hover:text-gray-900 font-medium transition hidden md:block"
             >
-              {lang === 'ru' ? 'Врачи' : lang === 'uz' ? 'Shifokorlar' : lang === 'tg' ? 'Духтурон' : lang === 'kk' ? 'Дәрігерлер' : 'Дарыгерлер'}
+              {t('nav.authors')}
             </Link>
             <Link
               href={`/${lang}`}
@@ -180,7 +146,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
-              {L('home', lang)}
+              {t('nav.home')}
             </Link>
           </nav>
         </div>
@@ -198,7 +164,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
             <nav className="flex items-center justify-center gap-1.5 text-xs text-blue-400/70 mb-5" itemScope itemType="https://schema.org/BreadcrumbList">
               <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
                 <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-300 transition">
-                  <span itemProp="name">{L('home', lang)}</span>
+                  <span itemProp="name">{t('nav.home')}</span>
                 </Link>
                 <meta itemProp="position" content="1" />
               </span>
@@ -212,7 +178,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                   <span>/</span>
                   <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
                     <span itemProp="name" className="text-blue-200">
-                      {CATEGORIES.find((c) => c.slug === category)?.label[lang as keyof (typeof CATEGORIES)[0]['label']] || category}
+                      {t(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`)}
                     </span>
                     <meta itemProp="position" content="3" />
                   </span>
@@ -222,10 +188,10 @@ export default async function BlogListPage({ params, searchParams }: Props) {
 
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/20 border border-green-500/30 text-green-300 text-xs font-bold uppercase tracking-wider mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              {L('verified', lang)}
+              {t('blog.verified')}
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight">
-              {L('heading', lang)}
+              {t('blog.title')}
             </h1>
             <p className="text-blue-200 text-base">{countLabel}</p>
           </FadeIn>
@@ -254,7 +220,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                   }`}
                 >
                   <span>{cat.icon}</span>
-                  {cat.label[lang as keyof typeof cat.label] || cat.label.ru}
+                  {t(`blog.category${cat.slug ? cat.slug.charAt(0).toUpperCase() + cat.slug.slice(1) : 'All'}`)}
                 </Link>
               );
             })}
@@ -266,12 +232,12 @@ export default async function BlogListPage({ params, searchParams }: Props) {
           <FadeIn>
             <div className="bg-white rounded-3xl p-20 text-center border border-gray-100 shadow-sm">
               <div className="text-5xl mb-4">📝</div>
-              <p className="text-xl font-bold text-gray-700 mb-2">{L('empty', lang)}</p>
+              <p className="text-xl font-bold text-gray-700 mb-2">{t('blog.comingSoon')}</p>
               <Link
                 href={`/${lang}/register`}
                 className="inline-flex mt-6 px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
               >
-                {L('author_cta', lang)}
+                {t('home.ctaBtn')}
               </Link>
             </div>
           </FadeIn>
@@ -284,7 +250,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                   <div className="md:col-span-3 h-72 md:h-80 overflow-hidden relative">
                     <Image
                       src={validArticles[0].image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900'}
-                      alt={t(validArticles[0].title)}
+                      alt={dbT(validArticles[0].title)}
                       fill
                       className="object-cover group-hover:scale-105 transition duration-700"
                       priority={true}
@@ -296,7 +262,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                       <div className="absolute top-4 left-4">
                         <span className="bg-blue-600/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full">
                           {CATEGORIES.find((c) => c.slug === validArticles[0].category)?.icon}{' '}
-                          {CATEGORIES.find((c) => c.slug === validArticles[0].category)?.label[lang as keyof (typeof CATEGORIES)[0]['label']] || validArticles[0].category}
+                          {t(`blog.category${validArticles[0].category.charAt(0).toUpperCase() + validArticles[0].category.slice(1)}`)}
                         </span>
                       </div>
                     )}
@@ -308,13 +274,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        {L('verified', lang)}
+                        {t('blog.verified')}
                       </span>
                       <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 group-hover:text-blue-600 transition-colors duration-300 leading-tight line-clamp-3 mb-3">
-                        {t(validArticles[0].title)}
+                        {dbT(validArticles[0].title)}
                       </h2>
                       <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">
-                        {t(validArticles[0].overview)}
+                        {dbT(validArticles[0].overview)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3 pt-5 border-t border-gray-100 mt-4">
@@ -330,10 +296,10 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                         <p className="text-sm font-bold text-gray-900 truncate">
                           {validArticles[0].authorId?.name || 'Dr.'}
                         </p>
-                        <p className="text-xs text-blue-500">{t(validArticles[0].authorId?.specialty)}</p>
+                        <p className="text-xs text-blue-500">{dbT(validArticles[0].authorId?.specialty)}</p>
                       </div>
                       <span className="text-blue-600 font-bold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform shrink-0">
-                        {L('read', lang)}
+                        {t('blog.readMore')}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                         </svg>
@@ -362,7 +328,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                         <div className="h-52 overflow-hidden relative shrink-0">
                           <Image
                             src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                            alt={t(article.title)}
+                            alt={dbT(article.title)}
                             fill
                             className="object-cover group-hover:scale-110 transition duration-700"
                             loading="lazy"
@@ -375,12 +341,12 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
-                              {L('verified', lang)}
+                              {t('blog.verified')}
                             </span>
                             {article.category && article.category !== 'general' && (
                               <span className="bg-blue-600/85 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full w-fit">
                                 {CATEGORIES.find((c) => c.slug === article.category)?.icon}{' '}
-                                {CATEGORIES.find((c) => c.slug === article.category)?.label[lang as keyof (typeof CATEGORIES)[0]['label']] || article.category}
+                                {t(`blog.category${article.category.charAt(0).toUpperCase() + article.category.slice(1)}`)}
                               </span>
                             )}
                           </div>
@@ -397,11 +363,11 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                         {/* Контент */}
                         <div className="p-5 flex flex-col flex-1">
                           <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-snug line-clamp-2 flex-1 mb-3 text-base">
-                            {t(article.title)}
+                            {dbT(article.title)}
                           </h3>
-                          {t(article.overview) && (
+                          {dbT(article.overview) && (
                             <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-3">
-                              {t(article.overview)}
+                              {dbT(article.overview)}
                             </p>
                           )}
                           <div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2 mt-auto">
@@ -419,7 +385,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                               </span>
                             </div>
                             <span className="text-xs text-gray-400 shrink-0">
-                              {new Date(article.createdAt).toLocaleDateString('ru', {
+                              {new Date(article.createdAt).toLocaleDateString(lang, {
                                 day: 'numeric',
                                 month: 'short',
                               })}

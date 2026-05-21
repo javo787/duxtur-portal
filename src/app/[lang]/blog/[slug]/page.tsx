@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import { getT, T } from '@/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
@@ -11,32 +12,6 @@ import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import ViewCounter from '@/components/ViewCounter';
 import FAQSection from '@/components/FAQSection';
-
-const uiLabels: Record<string, Record<string, string>> = {
-  verified:        { ru: 'Проверено врачом',    uz: 'Tekshirilgan',          tg: 'Тасдиқшуда',          kk: 'Тексерілген',      ky: 'Текшерилген'        },
-  contents:        { ru: 'Содержание',           uz: 'Mundarija',             tg: 'Мундариҷа',           kk: 'Мазмұны',          ky: 'Мазмуну'            },
-  sources:         { ru: 'Источники',            uz: 'Manbalar',              tg: 'Сарчашмаҳо',          kk: 'Дереккөздер',      ky: 'Булактар'           },
-  back:            { ru: 'Главная',              uz: 'Bosh sahifa',           tg: 'Саҳифаи асосӣ',       kk: 'Басты бет',        ky: 'Башкы бет'          },
-  readmin:         { ru: 'мин чтения',           uz: 'daqiqa o\'qish',        tg: 'дақиқаи хондан',      kk: 'мин оқу',          ky: 'мүн окуу'           },
-  author:          { ru: 'Об авторе',            uz: 'Muallif haqida',        tg: 'Дар бораи муаллиф',   kk: 'Автор туралы',     ky: 'Автор жөнүндө'      },
-  articles:        { ru: 'Все статьи автора →',  uz: 'Muallif maqolalari →',  tg: 'Мақолаҳои муаллиф →', kk: 'Автор мақалалары →', ky: 'Автордун макалалары →' },
-  related:         { ru: 'Похожие статьи',       uz: 'O\'xshash maqolalar',   tg: 'Maltosh maqolalar',   kk: 'Ұқсас мақалалар',  ky: 'Окшош макалалар'    },
-  disclaimer:      { ru: 'Важно',                uz: 'Muhim',                 tg: 'Муҳим',               kk: 'Маңызды',          ky: 'Маанилүү'           },
-  published:       { ru: 'Опубликовано',         uz: 'Chop etilgan',          tg: 'Нашр шуд',            kk: 'Жарияланды',       ky: 'Жарыяланды'         },
-  updated:         { ru: 'Обновлено',            uz: 'Yangilangan',           tg: 'Навсозӣ шуд',         kk: 'Жаңартылды',       ky: 'Жаңыртылды'         },
-  medicalReview:   { ru: 'Медицинская проверка', uz: 'Tibbiy tekshiruv',      tg: 'Тафтиши тиббӣ',       kk: 'Медициналық тексеру', ky: 'Медициналык текшерүү' },
-  reviewedByLabel: { ru: 'Проверено',            uz: 'Tekshirdi',             tg: 'Тасдиқ шуд',          kk: 'Тексерді',         ky: 'Текшерди'           },
-  faqTitle:        { ru: 'Часто задаваемые вопросы', uz: 'Ko\'p so\'raladigan savollar', tg: 'Саволҳои зуд-зуд', kk: 'Жиі қойылатын сұрақтар', ky: 'Көп берилүүчү суроолор' },
-  disclaimer_text: {
-    ru: 'Эта статья носит информационный характер и не заменяет консультацию врача. При наличии симптомов обратитесь к специалисту.',
-    uz: 'Bu maqola ma\'lumot maqsadida bo\'lib, shifokor maslahatini almashtirmaydi.',
-    tg: 'Ин мақола иттилоотӣ аст ва ҷойгузини машварати духтур намешавад.',
-    kk: 'Бұл мақала ақпараттық сипатта және дәрігер кеңесін алмастырмайды.',
-    ky: 'Бул макала маалыматтык мүнөздө жана дарыгердин кеңешин алмаштырбайт.',
-  },
-};
-
-const L = (key: string, lang: string) => uiLabels[key]?.[lang] || uiLabels[key]?.ru || key;
 
 // ─── ISR: регенерация каждые 6 часов ────────────────────────────────────────
 export const revalidate = 21600;
@@ -120,22 +95,23 @@ export default async function BlogPage({
 }) {
   await dbConnect();
   const { slug, lang } = await params;
+  const t = getT(lang);
   const article: any = await Article.findOne({ slug })
     .populate('authorId')
     .populate('reviewedById')
     .lean();
   if (!article) notFound();
 
-  const t = (field: any) => {
+  const dbT = (field: any) => {
     if (!field) return '';
     return field[lang] || field['ru'] || '';
   };
 
   // ── Время чтения ──────────────────────────────────────────────────────────
   const fullText = [
-    t(article.overview), t(article.symptoms), t(article.causes),
-    t(article.diagnosis_treatment), t(article.prevention),
-    ...[1, 2, 3, 4, 5].map((i) => t(article[`section${i}_content`])),
+    dbT(article.overview), dbT(article.symptoms), dbT(article.causes),
+    dbT(article.diagnosis_treatment), dbT(article.prevention),
+    ...[1, 2, 3, 4, 5].map((i) => dbT(article[`section${i}_content`])),
   ].join(' ');
   const wordCount = fullText.split(/\s+/).length;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
@@ -174,7 +150,7 @@ export default async function BlogPage({
   // ── Даты ──────────────────────────────────────────────────────────────────
   const fmt = (d: any) =>
     d
-      ? new Date(d).toLocaleDateString('ru', {
+      ? new Date(d).toLocaleDateString(lang, {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -186,19 +162,17 @@ export default async function BlogPage({
 
   // ── Секции ────────────────────────────────────────────────────────────────
   const legacySections = [
-    { id: 'symptoms',   title: { ru: 'Симптомы',     uz: 'Belgilar',      tg: 'Аломатҳо',  kk: 'Белгілер',  ky: 'Белгилер'   }, content: t(article.symptoms)             },
-    { id: 'causes',     title: { ru: 'Причины',      uz: 'Sabablar',      tg: 'Сабабҳо',   kk: 'Себептер',  ky: 'Себептер'   }, content: t(article.causes)               },
-    { id: 'treatment',  title: { ru: 'Лечение',      uz: 'Davolash',      tg: 'Табобат',   kk: 'Емдеу',     ky: 'Дарылоо'    }, content: t(article.diagnosis_treatment)  },
-    { id: 'prevention', title: { ru: 'Профилактика', uz: 'Profilaktika',  tg: 'Пешгирӣ',  kk: 'Алдын алу', ky: 'Алдын алуу' }, content: t(article.prevention)           },
-  ]
-    .filter((s) => s.content && s.content.length > 0)
-    .map((s) => ({ ...s, title: s.title[lang as keyof typeof s.title] || s.title.ru }));
+    { id: 'symptoms',   title: t('blog.sectionSymptoms'), content: dbT(article.symptoms)             },
+    { id: 'causes',     title: t('blog.sectionCauses'), content: dbT(article.causes)               },
+    { id: 'treatment',  title: t('blog.sectionTreatment'), content: dbT(article.diagnosis_treatment)  },
+    { id: 'prevention', title: t('blog.sectionPrevention'), content: dbT(article.prevention)           },
+  ].filter((s) => s.content && s.content.length > 0);
 
   const dynamicSections = [1, 2, 3, 4, 5]
     .map((i) => ({
       id: `section${i}`,
-      title: t(article[`section${i}_title`]),
-      content: t(article[`section${i}_content`]),
+      title: dbT(article[`section${i}_title`]),
+      content: dbT(article[`section${i}_content`]),
     }))
     .filter((s) => s.title && s.content);
 
@@ -230,8 +204,8 @@ export default async function BlogPage({
   const articleJsonLd: any = {
     '@context': 'https://schema.org',
     '@type': ['Article', 'MedicalWebPage'],
-    headline: t(article.title),
-    description: t(article.overview).substring(0, 160),
+    headline: dbT(article.title),
+    description: dbT(article.overview).substring(0, 160),
     url: articleUrl,
     image: article.image || `${BASE_URL}/og-default.png`,
     thumbnailUrl: article.image || undefined,
@@ -257,7 +231,7 @@ export default async function BlogPage({
       '@type': 'Person',
       '@id': authorUrl,
       name: article.authorId?.name,
-      jobTitle: t(article.authorId?.specialty),
+      jobTitle: dbT(article.authorId?.specialty),
       url: authorUrl,
     },
     publisher: {
@@ -289,7 +263,7 @@ export default async function BlogPage({
     breadcrumb: buildBreadcrumbJsonLd([
       { name: 'Duxtur.org', url: `/${lang}` },
       { name: 'Blog', url: `/${lang}/blog` },
-      { name: t(article.title), url: `blog/${article.slug}` },
+      { name: dbT(article.title), url: `blog/${article.slug}` },
     ]),
   };
 
@@ -339,7 +313,7 @@ export default async function BlogPage({
               href={`/${lang}`}
               className="text-sm text-gray-400 hover:text-gray-700 font-medium transition"
             >
-              ← {L('back', lang)}
+              ← {t('nav.home')}
             </Link>
           </div>
         </div>
@@ -351,7 +325,7 @@ export default async function BlogPage({
         <div className="relative w-full h-72 md:h-[460px] bg-gray-900 overflow-hidden">
           <Image
             src={article.image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=1200'}
-            alt={t(article.title)}
+            alt={dbT(article.title)}
             className="w-full h-full object-cover opacity-55"
             priority={true}
             fill
@@ -365,13 +339,13 @@ export default async function BlogPage({
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                {L('verified', lang)}
+                {t('blog.verified')}
               </span>
               <span className="text-white/60 text-xs flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {readingMinutes} {L('readmin', lang)}
+                {readingMinutes} {t('blog.articleReadingMin')}
               </span>
               {avgRating > 0 && (
                 <span className="text-yellow-400 text-xs font-bold flex items-center gap-1">
@@ -381,7 +355,7 @@ export default async function BlogPage({
               )}
             </div>
             <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight max-w-3xl">
-              {t(article.title)}
+              {dbT(article.title)}
             </h1>
           </div>
         </div>
@@ -402,24 +376,24 @@ export default async function BlogPage({
                 <p className="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm leading-tight">
                   {article.authorId?.name || 'Dr. Expert'}
                 </p>
-                <p className="text-xs text-blue-500 mt-0.5">{t(article.authorId?.specialty) || 'Врач'}</p>
+                <p className="text-xs text-blue-500 mt-0.5">{dbT(article.authorId?.specialty) || t('common.verified')}</p>
               </div>
             </Link>
 
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex flex-col">
-                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{L('published', lang)}</span>
+                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{t('blog.articlePublished')}</span>
                 <span className="text-xs text-gray-600 font-semibold mt-0.5">{datePublished}</span>
               </div>
               {dateUpdated && dateUpdated !== datePublished && (
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{L('updated', lang)}</span>
+                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{t('blog.articleUpdated')}</span>
                   <span className="text-xs text-gray-600 font-semibold mt-0.5">{dateUpdated}</span>
                 </div>
               )}
               {dateMedicalReview && (
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-green-600 font-medium uppercase tracking-wider">{L('medicalReview', lang)}</span>
+                  <span className="text-[10px] text-green-600 font-medium uppercase tracking-wider">{t('blog.articleMedicalReview')}</span>
                   <span className="text-xs text-green-700 font-semibold mt-0.5">{dateMedicalReview}</span>
                 </div>
               )}
@@ -431,17 +405,17 @@ export default async function BlogPage({
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  {L('reviewedByLabel', lang)}: <span className="font-bold ml-1">{article.reviewedById?.name}</span>
+                  {t('blog.articleReviewedBy')}: <span className="font-bold ml-1">{article.reviewedById?.name}</span>
                 </Link>
               ) : article.reviewedBy ? (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1.5 rounded-full font-medium">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  {L('reviewedByLabel', lang)}: {article.reviewedBy}
+                  {t('blog.articleReviewedBy')}: {article.reviewedBy}
                 </span>
               ) : null}
-              <ShareButtons url={articleUrl} title={t(article.title)} lang={lang} />
+              <ShareButtons url={articleUrl} title={dbT(article.title)} lang={lang} />
             </div>
           </div>
         </div>
@@ -470,7 +444,7 @@ export default async function BlogPage({
                 </li>
                 <li className="select-none">/</li>
                 <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-                  <span itemProp="name" className="text-gray-600 line-clamp-1 max-w-xs">{t(article.title)}</span>
+                  <span itemProp="name" className="text-gray-600 line-clamp-1 max-w-xs">{dbT(article.title)}</span>
                   <meta itemProp="position" content="3" />
                 </li>
               </ol>
@@ -478,7 +452,7 @@ export default async function BlogPage({
 
             {/* Overview */}
             <div className="text-lg leading-8 text-gray-700 mb-10 font-medium border-l-4 border-blue-200 pl-6 italic article-overview">
-              <ReactMarkdown>{t(article.overview)}</ReactMarkdown>
+              <ReactMarkdown>{dbT(article.overview)}</ReactMarkdown>
             </div>
 
             {/* Оглавление */}
@@ -486,7 +460,7 @@ export default async function BlogPage({
               <div className="bg-blue-50 rounded-2xl p-6 mb-12 border border-blue-100">
                 <h3 className="font-extrabold text-sm text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-1 h-4 bg-blue-500 rounded-full" />
-                  {L('contents', lang)}
+                  {t('blog.articleContents')}
                 </h3>
                 <ul className="space-y-2">
                   {sections.map((sec, i) => (
@@ -538,8 +512,8 @@ export default async function BlogPage({
             <div className="mt-12 bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4">
               <span className="text-2xl shrink-0">⚠️</span>
               <div>
-                <p className="font-extrabold text-amber-800 text-sm mb-1">{L('disclaimer', lang)}</p>
-                <p className="text-amber-700 text-sm leading-relaxed">{L('disclaimer_text', lang)}</p>
+                <p className="font-extrabold text-amber-800 text-sm mb-1">{t('blog.articleDisclaimer')}</p>
+                <p className="text-amber-700 text-sm leading-relaxed">{t('blog.articleDisclaimerText')}</p>
               </div>
             </div>
 
@@ -547,7 +521,7 @@ export default async function BlogPage({
             {article.references?.length > 0 && (
               <div className="mt-10 pt-8 border-t border-gray-100">
                 <h4 className="font-extrabold text-gray-400 mb-4 text-xs uppercase tracking-widest">
-                  {L('sources', lang)}
+                  {t('blog.articleSources')}
                 </h4>
                 <ul className="space-y-2">
                   {article.references.map((ref: string, i: number) => {
@@ -589,7 +563,7 @@ export default async function BlogPage({
 
             {/* Поделиться внизу */}
             <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
-              <ShareButtons url={articleUrl} title={t(article.title)} lang={lang} />
+              <ShareButtons url={articleUrl} title={dbT(article.title)} lang={lang} />
             </div>
           </div>
 
@@ -602,7 +576,7 @@ export default async function BlogPage({
     {sections.length > 1 && (
       <TableOfContents
         sections={sections}
-        label={L('contents', lang)}
+        label={t('blog.articleContents')}
       />
     )}
 
@@ -611,7 +585,7 @@ export default async function BlogPage({
               {/* Карточка автора */}
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-br from-slate-800 to-blue-900 p-6 text-white">
-                  <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3">{L('author', lang)}</p>
+                  <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3">{t('blog.articleAuthor')}</p>
                   <div className="flex items-center gap-3">
                     <img
                       src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
@@ -620,7 +594,7 @@ export default async function BlogPage({
                     />
                     <div>
                       <p className="font-extrabold text-white leading-tight">{article.authorId?.name || 'Dr. Expert'}</p>
-                      <p className="text-blue-300 text-sm mt-0.5">{t(article.authorId?.specialty) || 'Врач'}</p>
+                      <p className="text-blue-300 text-sm mt-0.5">{dbT(article.authorId?.specialty) || t('common.verified')}</p>
                     </div>
                   </div>
                 </div>
@@ -629,13 +603,13 @@ export default async function BlogPage({
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    {L('verified', lang)}
+                    {t('blog.verified')}
                   </span>
                   <Link
                     href={`/${lang}/doctor/${article.authorId?.slug || article.authorId?._id}`}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition"
                   >
-                    {L('articles', lang)}
+                    {t('blog.articleAuthorArticles')}
                   </Link>
                 </div>
               </div>
@@ -651,7 +625,7 @@ export default async function BlogPage({
                       </svg>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400">{article.ratings?.length} оценок</p>
+                  <p className="text-xs text-gray-400">{article.ratings?.length} {t('blog.ratings')}</p>
                 </div>
               )}
 
@@ -659,7 +633,7 @@ export default async function BlogPage({
               {relatedArticles.length > 0 && (
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-extrabold text-gray-900 text-sm mb-4 uppercase tracking-wider">
-                    {L('related', lang)}
+                    {t('blog.articleRelated')}
                   </h3>
                   <div className="space-y-3">
                     {relatedArticles.map((rel) => (
@@ -671,14 +645,14 @@ export default async function BlogPage({
                         <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100 relative">
                           <Image
                             src={rel.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'}
-                            alt={t(rel.title)}
+                            alt={dbT(rel.title)}
                             fill
                             className="object-cover group-hover:scale-105 transition"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition line-clamp-2 leading-snug">
-                            {t(rel.title)}
+                            {dbT(rel.title)}
                           </p>
                         </div>
                       </Link>
