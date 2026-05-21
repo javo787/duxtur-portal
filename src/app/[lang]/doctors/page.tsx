@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { buildAlternates, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import UI from '@/dictionaries/doctor-translations';
+import { getT } from '@/i18n';
 import DoctorsPageContent from './_components/DoctorsPageContent';
 
 type Props = {
@@ -22,7 +23,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     const specLabel = CATEGORY_LABELS[specialty][lang] || CATEGORY_LABELS[specialty].ru;
     title = `${specLabel}`;
   }
-  if (city) title += ` ${lang === 'ru' ? 'в' : ''} ${city}`;
+  if (city) title += ` ${lang === 'ru' ? 'в ' : ''}${city}`;
   return {
     title: `${title} — Duxtur.org`,
     description: UI.subtitle[lang] || UI.subtitle.ru,
@@ -33,6 +34,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 export default async function DoctorsPage({ params, searchParams }: Props) {
   const { lang } = await params;
   const sp = await searchParams;
+  const t = getT(lang);
 
   await dbConnect();
 

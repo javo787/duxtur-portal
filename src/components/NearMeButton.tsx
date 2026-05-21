@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useT } from '@/i18n';
 
-export default function NearMeButton() {
+export default function NearMeButton({ lang }: { lang: string }) {
+  const { t } = useT(lang);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const handleNearMe = () => {
     if (!navigator.geolocation) {
-      alert('Геолокация не поддерживается вашим браузером');
+      alert(t('doctors.noGeolocation'));
       return;
     }
 
@@ -27,7 +29,7 @@ export default function NearMeButton() {
       },
       (error) => {
         console.error('Geolocation error:', error);
-        alert('Не удалось определить ваше местоположение');
+        alert(t('doctors.geolocationError'));
         setLoading(false);
       }
     );
@@ -43,7 +45,7 @@ export default function NearMeButton() {
       {loading ? (
         <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
       ) : (
-        <span>📍 Рядом со мной</span>
+        <span>{t('doctors.nearMe')}</span>
       )}
     </button>
   );

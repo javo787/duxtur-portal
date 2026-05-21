@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Avatar3D from './Avatar3D';
 import { CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
+import { getT } from '@/i18n';
 
 interface DoctorHeroProps {
   doctor: any;
@@ -9,6 +10,7 @@ interface DoctorHeroProps {
   totalViews: number;
   articlesCount: number;
   categoryKey: string;
+  lang: string;
 }
 
 export default function DoctorHero({
@@ -18,7 +20,9 @@ export default function DoctorHero({
   totalViews,
   articlesCount,
   categoryKey,
+  lang,
 }: DoctorHeroProps) {
+  const t = getT(lang);
   const gradient = CATEGORY_GRADIENTS[categoryKey] || CATEGORY_GRADIENTS.general;
 
   return (
@@ -89,19 +93,19 @@ export default function DoctorHero({
 
         {/* Строка 3: метрики горизонтально — скролл если не влезает */}
         <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none pb-0.5">
-          <MobileStat value={articlesCount.toString()} label={articlesCount < 5 ? 'статьи' : 'статей'} icon="📄" />
+          <MobileStat value={articlesCount.toString()} label={t('common.articles')} icon="📄" />
           {doctor.experience > 0 && (
-            <MobileStat value={`${doctor.experience}`} label="лет опыта" icon="⏱" />
+            <MobileStat value={`${doctor.experience}`} label={t('doctor.yearsExp')} icon="⏱" />
           )}
           {totalViews > 0 && (
             <MobileStat
               value={totalViews > 999 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString()}
-              label="прочтений"
+              label={t('doctor.reads')}
               icon="👁"
             />
           )}
           {doctor.languages?.length > 0 && (
-            <MobileStat value={doctor.languages.join(' · ')} label="языки приёма" icon="🌐" />
+            <MobileStat value={doctor.languages.join(' · ')} label={t('common.languages')} icon="🌐" />
           )}
         </div>
       </div>
@@ -121,7 +125,7 @@ export default function DoctorHero({
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              Верифицирован
+              {t('doctor.verified')}
             </div>
           </div>
 
@@ -146,17 +150,17 @@ export default function DoctorHero({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <HeroStat icon={<PdfIcon />} value={articlesCount.toString()} label={articlesCount < 5 ? 'статьи' : 'статей'} />
-              {doctor.experience > 0 && <HeroStat icon={<CalendarIcon />} value={`${doctor.experience}`} label="лет опыта" />}
+              <HeroStat icon={<PdfIcon />} value={articlesCount.toString()} label={t('common.articles')} />
+              {doctor.experience > 0 && <HeroStat icon={<CalendarIcon />} value={`${doctor.experience}`} label={t('doctor.yearsExp')} />}
               {totalViews > 0 && (
                 <HeroStat
                   icon={<EyeIcon />}
                   value={totalViews > 999 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString()}
-                  label="прочтений"
+                  label={t('doctor.reads')}
                 />
               )}
               {doctor.languages?.length > 0 && (
-                <HeroStat icon={<GlobeIcon />} value={doctor.languages.length.toString()} label={doctor.languages.length === 1 ? 'язык' : 'языка'} />
+                <HeroStat icon={<GlobeIcon />} value={doctor.languages.length.toString()} label={t('common.languages')} />
               )}
             </div>
           </div>

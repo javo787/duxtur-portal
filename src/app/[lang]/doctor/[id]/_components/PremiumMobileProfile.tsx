@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import DownloadCardButton from '@/components/DownloadCardButton';
+import { useT } from '@/i18n';
 
 interface PremiumMobileProfileProps {
   doctor: any;
@@ -20,6 +21,7 @@ export function PremiumMobileProfile({
   articles,
   lang,
 }: PremiumMobileProfileProps) {
+  const { t: i18nT } = useT(lang);
   const [bioExpanded, setBioExpanded] = useState(false);
 
   const t = (field: any) => {
@@ -117,7 +119,7 @@ export function PremiumMobileProfile({
                     d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
                   />
                 </svg>
-                {specialtyLabel || 'Врач'}
+                {specialtyLabel || i18nT('common.doctorSingle')}
               </div>
               <h1 className="text-[18px] font-black text-white leading-tight">
                 {doctor.name}
@@ -147,7 +149,7 @@ export function PremiumMobileProfile({
                   onClick={() => setBioExpanded(!bioExpanded)}
                   className="mt-1.5 text-[11px] font-semibold text-blue-400"
                 >
-                  {bioExpanded ? 'Свернуть' : 'Читать далее'}
+                  {bioExpanded ? i18nT('common.collapse') : i18nT('blog.readMore')}
                 </button>
               )}
             </div>
@@ -158,7 +160,7 @@ export function PremiumMobileProfile({
             {articles.length > 0 && (
               <MetricChip
                 value={articles.length.toString()}
-                label={articles.length === 1 ? 'статья' : articles.length < 5 ? 'статьи' : 'статей'}
+                label={i18nT('common.articles')}
                 icon="📄"
                 accent={doctor.accentColor}
               />
@@ -166,7 +168,7 @@ export function PremiumMobileProfile({
             {(doctor.experience || 0) > 0 && (
               <MetricChip
                 value={`${doctor.experience}`}
-                label="лет опыта"
+                label={i18nT('doctor.yearsExp')}
                 icon="⏱"
                 accent={doctor.accentColor}
               />
@@ -174,7 +176,7 @@ export function PremiumMobileProfile({
             {doctor.languages?.length > 0 && (
               <MetricChip
                 value={doctor.languages.join(' · ')}
-                label="языки"
+                label={i18nT('common.languages')}
                 icon="🌐"
                 accent={doctor.accentColor}
               />
@@ -182,7 +184,7 @@ export function PremiumMobileProfile({
             {educationLabel && (
               <MetricChip
                 value={educationLabel.split(',')[0]}
-                label="образование"
+                label={i18nT('doctor.education')}
                 icon="🎓"
                 accent={doctor.accentColor}
               />
@@ -203,22 +205,22 @@ export function PremiumMobileProfile({
       <div className="grid grid-cols-2 gap-2">
         <TrustBadge
           icon="✅"
-          title="Верифицирован"
-          subtitle="Диплом подтверждён"
+          title={i18nT('doctor.verified')}
+          subtitle={i18nT('doctor.diplomaVerified')}
           color="#10b981"
         />
         {lastMedicalReviewDate ? (
           <TrustBadge
             icon="🔬"
-            title="Проверка"
+            title={i18nT('blog.articleMedicalReview')}
             subtitle={lastMedicalReviewDate}
             color="#3b82f6"
           />
         ) : (
           <TrustBadge
             icon="📝"
-            title="Публикации"
-            subtitle={`${articles.length} материалов`}
+            title={i18nT('doctor.articles')}
+            subtitle={`${articles.length} ${i18nT('common.articles')}`}
             color="#8b5cf6"
           />
         )}
@@ -246,7 +248,7 @@ export function PremiumMobileProfile({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               }
-              label="Место работы"
+              label={i18nT('doctor.workplace')}
               value={workplaceLabel}
             />
           )}
@@ -257,14 +259,14 @@ export function PremiumMobileProfile({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               }
-              label="Часы приёма"
+              label={i18nT('doctor.workingHours')}
               value={doctor.workingHours}
             />
           )}
           {doctor.sameAs?.length > 0 && (
             <div className="px-4 py-3 border-t border-gray-50">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">
-                Профили
+                {i18nT('doctor.profiles')}
               </p>
               <div className="flex flex-wrap gap-2">
                 {doctor.sameAs.map((link: string, i: number) => {

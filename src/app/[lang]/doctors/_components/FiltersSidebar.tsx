@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AcceptsToggle } from './AcceptsToggle';
 import NearMeButton from '@/components/NearMeButton';
+import { useT } from '@/i18n';
 
 interface FiltersSidebarProps {
   lang: string;
@@ -13,6 +14,7 @@ interface FiltersSidebarProps {
 }
 
 export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebarProps) {
+  const { t } = useT(lang);
   const router = useRouter();
   const sp = searchParams;
 
@@ -39,7 +41,7 @@ export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebar
           {L('filters')}
         </h3>
         <Link href={resetUrl} className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition">
-          Сбросить
+          {t('common.reset')}
         </Link>
       </div>
 
@@ -103,7 +105,7 @@ export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebar
         <fieldset>
           <legend className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] block mb-3">{L('languages')}</legend>
           <div className="space-y-2">
-            {['Русский', 'Тоҷикӣ', "O'zbek", 'English'].map(lng => {
+            {['Русский', 'Тоҷикӣ', 'Oʻzbek', 'English'].map(lng => {
               const isChecked = Array.isArray(sp.lang_spoken)
                 ? sp.lang_spoken.includes(lng)
                 : sp.lang_spoken === lng;
@@ -130,11 +132,11 @@ export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebar
 
         {/* Рядом со мной */}
         <div>
-          <NearMeButton />
+          <NearMeButton lang={lang} />
         </div>
 
         <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-blue-100">
-          Применить фильтры
+          {t('doctors.applyFilters')}
         </button>
       </form>
     </div>

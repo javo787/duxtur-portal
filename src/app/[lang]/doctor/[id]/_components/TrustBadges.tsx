@@ -2,13 +2,16 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useT } from '@/i18n';
 
 interface TrustBadgesProps {
   lastMedicalReviewDate: string | null;
   lastArticleDate: string | null;
+  lang: string;
 }
 
-export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: TrustBadgesProps) {
+export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate, lang }: TrustBadgesProps) {
+  const { t } = useT(lang);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: 
   return (
     <div ref={containerRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden opacity-0 translate-y-4 transition-all duration-700 ease-out [&.animate-fade-in]:opacity-100 [&.animate-fade-in]:translate-y-0">
       <div className="px-5 py-4 border-b border-gray-50 bg-gradient-to-r from-gray-50 to-white">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">Доверие и верификация</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">{t('doctor.trustTitle')}</p>
       </div>
       <div className="p-5 space-y-4">
         <div className="flex items-start gap-3">
@@ -44,8 +47,8 @@ export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: 
             </svg>
           </div>
           <div>
-            <p className="font-bold text-gray-800 text-sm">Верифицированный автор</p>
-            <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">Диплом и квалификация подтверждены</p>
+            <p className="font-bold text-gray-800 text-sm">{t('doctor.verifiedBadge')}</p>
+            <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">{t('doctor.diplomaVerified')}</p>
           </div>
         </div>
         {lastMedicalReviewDate && (
@@ -56,9 +59,9 @@ export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: 
               </svg>
             </div>
             <div>
-              <p className="font-bold text-gray-800 text-sm">Медицинская проверка</p>
+              <p className="font-bold text-gray-800 text-sm">{t('blog.articleMedicalReview')}</p>
               <p className="text-blue-600 text-xs font-semibold mt-0.5">{lastMedicalReviewDate}</p>
-              <p className="text-gray-400 text-xs mt-0.5">Контент проверен практикующим врачом</p>
+              <p className="text-gray-400 text-xs mt-0.5">{t('doctor.contentReviewed')}</p>
             </div>
           </div>
         )}
@@ -70,8 +73,8 @@ export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate }: 
               </svg>
             </div>
             <div>
-              <p className="font-bold text-gray-800 text-sm">Активный автор</p>
-              <p className="text-gray-400 text-xs mt-0.5">Последняя публикация: {new Date(lastArticleDate).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p className="font-bold text-gray-800 text-sm">{t('doctor.activeAuthor')}</p>
+              <p className="text-gray-400 text-xs mt-0.5">{t('doctor.lastPublication')} {new Date(lastArticleDate).toLocaleDateString(lang, { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import UI from '@/dictionaries/doctor-translations';
+import { useT } from '@/i18n';
 
 type Props = {
   lang: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
+  const { t } = useT(lang);
   const [open, setOpen] = useState(false);
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
 
@@ -23,7 +25,7 @@ export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
   onClick={() => setOpen(true)}
   className="fixed bottom-24 right-5 z-40 lg:hidden bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center active:scale-90 transition-all duration-200 border-4 border-white"
   style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15), 0 2px 8px rgba(37,99,235,0.25)' }}
-  aria-label="Открыть фильтры"
+  aria-label={t('doctors.filters')}
 >
   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -86,7 +88,7 @@ export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">{L('languages')}</label>
                   <div className="space-y-2">
-                    {['Русский', 'Тоҷикӣ', "O'zbek", 'English'].map(lng => {
+                    {['Русский', 'Тоҷикӣ', 'Oʻzbek', 'English'].map(lng => {
                       const isChecked = Array.isArray(sp.lang_spoken) ? sp.lang_spoken.includes(lng) : sp.lang_spoken === lng;
                       return (
                         <label key={lng} className="flex items-center gap-3 cursor-pointer group">
@@ -110,12 +112,12 @@ export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
                 </div>
 
                 <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-100">
-                  Применить фильтры
+                  {t('doctors.applyFilters')}
                 </button>
               </form>
 
               <Link href={`/${lang}/doctors`} className="block text-center mt-4 text-sm font-bold text-blue-600 hover:underline" onClick={() => setOpen(false)}>
-                Сбросить все фильтры
+                {t('doctors.resetFilters')}
               </Link>
             </div>
           </div>
