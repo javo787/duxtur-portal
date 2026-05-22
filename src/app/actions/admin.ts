@@ -4,8 +4,89 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import User from '@/models/User';
+import Clinic from '@/models/Clinic';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
+
+async function sendClinicStatusEmail(
+  clinicId: string,
+  status: 'approved' | 'rejected',
+  lang: string = 'ru'
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY is not set. Skipping email notification.');
+    return;
+  }
+  const resend = new Resend(apiKey);
+
+  await dbConnect();
+  const clinic = await Clinic.findById(clinicId).lean() as { name?: any; slug?: string; _id: any; userId: any };
+  if (!clinic) return;
+
+  const user = await User.findById(clinic.userId).lean() as { email?: string };
+  if (!user?.email) return;
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
+  const cabinetUrl = `${baseUrl}/${lang}/clinic/admin`;
+
+  const subjects = {
+    approved: '✅ Ваша клиника одобрена — Duxtur.org',
+    rejected: '❌ Заявка не прошла проверку — Duxtur.org',
+  };
+
+  const approvedHtml = `
+    <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px;">
+      <div style="background: linear-gradient(135deg, #0f2a52, #1a3a6e); padding: 24px; border-radius: 16px; text-align: center; margin-bottom: 28px;">
+        <h1 style="color: white; font-size: 22px; margin: 0;">duxtur<span style="color: #60a5fa;">.org</span></h1>
+        <p style="color: #93c5fd; margin: 8px 0 0;">Медицинский портал Центральной Азии</p>
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 8px;">🎉</div>
+        <h2 style="color: #166534; margin: 0 0 8px;">Клиника одобрена!</h2>
+        <p style="color: #15803d; margin: 0;">Теперь ваша клиника доступна на портале Duxtur.org</p>
+      </div>
+
+      <p style="color: #374151; line-height: 1.7;">Здравствуйте,</p>
+      <p style="color: #374151; line-height: 1.7;">Ваша заявка на регистрацию клиники <strong>${clinic.name?.ru || ''}</strong> одобрена. Вы можете войти в панель управления для настройки профиля и добавления врачей.</p>
+
+      <div style="margin: 28px 0;">
+        <a href="${cabinetUrl}" style="display: block; text-align: center; background: #2563eb; color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: bold;">
+          Перейти в панель управления →
+        </a>
+      </div>
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center;">Вопросы? Telegram: <a href="https://t.me/duxturcom" style="color: #2563eb;">@duxturcom</a></p>
+    </div>
+  `;
+
+  const rejectedHtml = `
+    <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px;">
+      <div style="background: linear-gradient(135deg, #0f2a52, #1a3a6e); padding: 24px; border-radius: 16px; text-align: center; margin-bottom: 28px;">
+        <h1 style="color: white; font-size: 22px; margin: 0;">duxtur<span style="color: #60a5fa;">.org</span></h1>
+      </div>
+
+      <h2 style="color: #374151;">Здравствуйте,</h2>
+      <p style="color: #6b7280; line-height: 1.7;">К сожалению, ваша заявка на регистрацию клиники не прошла верификацию.</p>
+
+      <p style="color: #6b7280; line-height: 1.7;">Вы можете связаться с поддержкой для уточнения причин:</p>
+
+      <a href="https://t.me/duxturcom" style="display: block; text-align: center; background: #2563eb; color: white; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: bold; margin: 20px 0;">
+        Связаться в Telegram
+      </a>
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center;">© Duxtur.org</p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: 'Duxtur.org <noreply@duxtur.org>',
+    to: user.email,
+    subject: subjects[status as keyof typeof subjects],
+    html: status === 'approved' ? approvedHtml : rejectedHtml,
+  });
+}
 
 async function sendDoctorStatusEmail(
   doctorId: string,
@@ -117,6 +198,42 @@ export async function updateDoctorStatus(id: string, status: string) {
     );
   }
 
+  revalidatePath('/admin/portal');
+}
+
+export async function approveClinic(id: string) {
+  await dbConnect();
+  await Clinic.findByIdAndUpdate(id, { status: 'approved' });
+  await sendClinicStatusEmail(id, 'approved').catch(err =>
+    console.error('Email send error:', err)
+  );
+  revalidatePath('/admin/portal');
+}
+
+export async function rejectClinic(id: string) {
+  await dbConnect();
+  await Clinic.findByIdAndUpdate(id, { status: 'rejected' });
+  await sendClinicStatusEmail(id, 'rejected').catch(err =>
+    console.error('Email send error:', err)
+  );
+  revalidatePath('/admin/portal');
+}
+
+export async function deleteClinic(id: string) {
+  await dbConnect();
+  const clinic = await Clinic.findById(id);
+  if (!clinic) return;
+  // Удаляем User аккаунт владельца клиники
+  await User.findByIdAndDelete(clinic.userId);
+  // Удаляем саму клинику
+  await Clinic.findByIdAndDelete(id);
+  revalidatePath('/admin/portal');
+}
+
+export async function banClinic(id: string, banned: boolean) {
+  await dbConnect();
+  const status = banned ? 'banned' : 'approved';
+  await Clinic.findByIdAndUpdate(id, { status });
   revalidatePath('/admin/portal');
 }
 

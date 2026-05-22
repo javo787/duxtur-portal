@@ -8,13 +8,15 @@ import { MyArticlesTab } from './_components/MyArticlesTab';
 import { ArticleEditModal } from './_components/ArticleEditModal';
 import { AppointmentsTab } from './_components/AppointmentsTab';
 import { AnalyticsTab } from './_components/AnalyticsTab';
+import { ClinicInvitationsTab } from './_components/ClinicInvitationsTab';
 import OnboardingWizard from './_components/OnboardingWizard';
 
-type Tab = 'write' | 'articles' | 'profile' | 'appointments' | 'analytics';
+type Tab = 'write' | 'articles' | 'profile' | 'appointments' | 'analytics' | 'invitations';
 
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'articles',     icon: '📋', label: 'Статьи' },
   { id: 'appointments', icon: '📅', label: 'Записи' },
+  { id: 'invitations',  icon: '🏥', label: 'Клиника' },
   { id: 'profile',      icon: '👤', label: 'Профиль' },
   { id: 'analytics',    icon: '📊', label: 'Статистика' },
 ];
@@ -83,6 +85,7 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
         )}
         {tab === 'profile'  && <ProfileTab lang={lang} />}
         {tab === 'appointments' && <AppointmentsTab lang={lang} />}
+        {tab === 'invitations' && <ClinicInvitationsTab lang={lang} />}
         {tab === 'analytics' && <AnalyticsTab />}
       </div>
 
