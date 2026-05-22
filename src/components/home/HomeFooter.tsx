@@ -41,6 +41,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
               {[
                 { href: `/${lang}/blog`, label: t('nav.allArticles') },
                 { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
+                { href: `/${lang}/clinics`, label: 'Клиники' },
                 { href: `/${lang}/authors`, label: t('nav.authors') },
                 { href: `/${lang}/search`, label: t('common.search') },
               ].map((link) => (

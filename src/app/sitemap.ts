@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import dbConnect from "@/lib/mongodb";
 import Article from "@/models/Article";
 import Doctor from "@/models/Doctor";
+import Clinic from "@/models/Clinic";
 import { BASE_URL } from "@/lib/seo";
 import { CATEGORY_LABELS } from "@/lib/doctor-constants";
 
@@ -12,9 +13,10 @@ const languages = ["ru", "uz", "tg", "kk", "ky"];
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await dbConnect();
 
-  const [articles, doctors] = await Promise.all([
+  const [articles, doctors, clinics] = await Promise.all([
     Article.find({}).select("slug updatedAt title").lean(),
     Doctor.find({ status: "approved" }).select("slug _id updatedAt").lean(),
+    Clinic.find({ status: "approved" }).select("slug updatedAt").lean(),
   ]);
 
   // Главные страницы (priority 1.0, daily)
@@ -56,6 +58,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
+
+  const clinicDirectoryPages = languages.map((lang) => ({
+    url: `${BASE_URL}/${lang}/clinics`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.9,
+  }));
+
+  const clinicProfilePages = clinics.flatMap((clinic: any) =>
+    languages.map((lang) => ({
+      url: `${BASE_URL}/${lang}/clinic/${clinic.slug}`,
+      lastModified: new Date(clinic.updatedAt || new Date()),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }))
+  );
 
   // Пациенты (noindex)
   const patientPages = languages.map((lang) => ({
@@ -123,6 +141,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...blogPages,
     ...doctorSearchPages,
     ...authorListPages,
+    ...clinicDirectoryPages,
+    ...clinicProfilePages,
     ...patientPages,
     ...staticPages,
     ...articlePages,
