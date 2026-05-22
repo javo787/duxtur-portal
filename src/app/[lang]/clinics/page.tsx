@@ -51,10 +51,10 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
             <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10">{t('home.heroSubtitle')}</p>
 
             {/* Filters placeholder */}
-            <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row gap-2">
-               <input className="flex-1 bg-transparent px-6 py-4 text-white outline-none placeholder:text-slate-500 font-bold" placeholder={t('map.filterCity')} />
-               <button className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 transition">{t('common.search')}</button>
-            </div>
+            <form method="GET" className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row gap-2">
+               <input name="q" defaultValue={filters.q} className="flex-1 bg-transparent px-6 py-4 text-white outline-none placeholder:text-slate-500 font-bold" placeholder={t('map.filterCity')} />
+               <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 transition">{t('common.search')}</button>
+            </form>
          </div>
       </section>
 
