@@ -5,6 +5,7 @@ import { registerDoctor } from '@/app/actions/register';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { getT } from '@/i18n';
 
 const Spinner = ({ dark = false }: { dark?: boolean }) => (
   <svg className={`animate-spin h-5 w-5 ${dark ? 'text-slate-900' : 'text-white'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -39,6 +40,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function RegisterForm({ lang }: { lang: string }) {
+  const t = getT(lang);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -149,8 +151,13 @@ export default function RegisterForm({ lang }: { lang: string }) {
 
           {/* Шапка формы */}
           <div className="px-8 py-8 border-b border-slate-50">
-            <h2 className="text-2xl font-extrabold text-slate-900">Стать автором</h2>
-            <p className="text-slate-500 text-sm mt-1 font-medium">Делитесь знаниями с пациентами Центральной Азии</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-1">
+              <h2 className="text-2xl font-extrabold text-slate-900">{t('auth.registerTitle')}</h2>
+              <Link href={`/${lang}/clinic/register`} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition px-3 py-1.5 bg-blue-50 rounded-lg inline-block w-fit">
+                {t('clinic.registerClinic')} →
+              </Link>
+            </div>
+            <p className="text-slate-500 text-sm font-medium">{t('auth.registerSubtitle')}</p>
             <div className="flex flex-wrap gap-3 mt-4">
               {['Бесплатно', 'AI-помощник', '5 языков'].map((item) => (
                 <span key={item} className="flex items-center gap-1.5 text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">

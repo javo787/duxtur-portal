@@ -60,6 +60,7 @@ export default function HomeFooter({ lang }: { lang: string }) {
             <ul className="space-y-3">
               {[
                 { href: `/${lang}/register`, label: t('nav.becomeAuthor') },
+                { href: `/${lang}/clinic/register`, label: t('clinic.registerClinic') },
                 { href: `/${lang}/login`, label: t('nav.myOffice') },
               ].map((link) => (
                 <li key={link.href}>

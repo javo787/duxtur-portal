@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import ClinicCard from './_components/ClinicCard';
+import Link from 'next/link';
 import { getT, T } from '@/i18n';
 import type { Metadata } from 'next';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
@@ -48,7 +49,19 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
       <section className="bg-slate-900 pt-32 pb-20 px-4">
          <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">{t('clinic.findClinic')}</h1>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10">{t('home.heroSubtitle')}</p>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-6">{t('home.heroSubtitle')}</p>
+
+            <div className="flex justify-center mb-10">
+              <Link
+                href={`/${lang}/clinic/register`}
+                className="text-blue-400 font-bold hover:text-blue-300 transition flex items-center gap-2 group"
+              >
+                {t('clinic.registerClinic')}
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
 
             {/* Filters placeholder */}
             <form method="GET" className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row gap-2">
