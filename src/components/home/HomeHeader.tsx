@@ -22,6 +22,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
   const navLinks = [
     { href: `/${lang}/blog`, label: 'Статьи' },
     { href: `/${lang}/doctors`, label: 'Найти врача' },
+    { href: `/${lang}/clinics`, label: 'Клиники' },
     { href: `/${lang}/search`, label: 'Поиск' },
   ];
 
