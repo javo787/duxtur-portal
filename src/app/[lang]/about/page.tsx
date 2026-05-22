@@ -68,7 +68,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                 <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-xl font-extrabold text-gray-900">duxtur<span className="text-blue-600">.com</span></span>
+            <span className="text-xl font-extrabold text-gray-900">duxtur<span className="text-blue-600">.org</span></span>
           </Link>
           <Link href={`/${lang}`} className="text-sm text-gray-500 hover:text-blue-600 font-medium transition">
             ← {t('nav.home')}

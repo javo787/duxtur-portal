@@ -22,10 +22,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title: T('blog.title', lang),
     description: T('home.authorsSubtitle', lang),
-    alternates: {
-      ...buildAlternates('blog', lang),
-      canonical: `${BASE_URL}/${lang}/blog`,
-    },
+    alternates: buildAlternates('blog', lang),
     ...(page && parseInt(page) > 1 ? { robots: { index: false, follow: true } } : {}),
     other: {
       'link:rss': `${BASE_URL}/${lang}/feed.xml`,

@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.org`,
     description,
-    alternates: buildAlternates(`doctor/${id}`, lang),
+    alternates: buildAlternates(`doctor/${doctor.slug || doctor._id}`, lang),
     openGraph: {
       type: 'profile',
       images: [doctor.image || `${BASE_URL}/og-default.png`],
