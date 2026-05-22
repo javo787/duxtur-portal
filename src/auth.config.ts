@@ -31,6 +31,9 @@ export const authConfig = {
         if (role === 'portal_admin') {
           return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
         }
+        if (role === 'clinic') {
+          return Response.redirect(new URL(`/${lang}/clinic/admin`, nextUrl));
+        }
         return Response.redirect(new URL(`/${lang}/admin`, nextUrl));
       }
 
