@@ -2,7 +2,11 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import User from '@/models/User';
-import { updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle, approveReview, deleteReview } from '@/app/actions/admin';
+import Clinic from '@/models/Clinic';
+import {
+  updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle, approveReview, deleteReview,
+  approveClinic, rejectClinic, deleteClinic, banClinic
+} from '@/app/actions/admin';
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
@@ -22,17 +26,25 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
 
   const Review = (await import('@/models/Review')).default;
 
-  const [pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors, pendingArticles, publishedArticles, totalArticles, totalUsers, pendingReviews] = await Promise.all([
-  Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-  Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
-  Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
-  Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
-  Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean(),
-  Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
-  Article.countDocuments(),
-  User.countDocuments(),
-  Review.find({ isVerified: false }).sort({ createdAt: -1 }).populate('doctorId').lean(),
-]);
+  const [
+    pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors,
+    pendingArticles, publishedArticles, totalArticles,
+    totalUsers,
+    pendingReviews,
+    pendingClinics, approvedClinics
+  ] = await Promise.all([
+    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
+    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
+    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
+    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
+    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean(),
+    Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
+    Article.countDocuments(),
+    User.countDocuments(),
+    Review.find({ isVerified: false }).sort({ createdAt: -1 }).populate('doctorId').lean(),
+    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
+    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-950 font-sans text-white">
@@ -56,17 +68,18 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         <PlacesSection />
 
         {/* СТАТИСТИКА */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <StatCard label="Заявки" value={pendingDoctors.length} color="bg-yellow-900/40 border-yellow-700 text-yellow-400" icon="⏳" urgent={pendingDoctors.length > 0} />
+          <StatCard label="Клиники" value={pendingClinics.length} color="bg-blue-900/40 border-blue-700 text-blue-400" icon="🏥" urgent={pendingClinics.length > 0} />
           <StatCard label="Авторов" value={approvedDoctors.length} color="bg-green-900/40 border-green-700 text-green-400" icon="✅" />
           <StatCard label="Статей" value={totalArticles} color="bg-blue-900/40 border-blue-700 text-blue-400" icon="📄" />
-<StatCard label="На модерации" value={pendingArticles.length} color="bg-amber-900/40 border-amber-700 text-amber-400" icon="📝" urgent={pendingArticles.length > 0} />
+          <StatCard label="На модерации" value={pendingArticles.length} color="bg-amber-900/40 border-amber-700 text-amber-400" icon="📝" urgent={pendingArticles.length > 0} />
           <StatCard label="Забанено" value={bannedDoctors.length} color="bg-red-900/40 border-red-700 text-red-400" icon="🚫" />
           <StatCard label="Пользователей" value={totalUsers} color="bg-purple-900/40 border-purple-700 text-purple-400" icon="👥" />
         </div>
 
         {/* НОВЫЕ ЗАЯВКИ */}
-        <Section title="Новые заявки" badge={pendingDoctors.length} badgeColor="bg-red-500">
+        <Section title="Новые заявки (Врачи)" badge={pendingDoctors.length} badgeColor="bg-red-500">
           {pendingDoctors.length === 0 ? (
             <Empty icon="🎉" text="Все заявки обработаны" />
           ) : (
@@ -119,6 +132,61 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
           )}
         </Section>
 
+        {/* НОВЫЕ КЛИНИКИ */}
+        <Section title="Новые клиники" badge={pendingClinics.length} badgeColor="bg-blue-500">
+          {pendingClinics.length === 0 ? (
+            <Empty icon="🏥" text="Нет новых заявок от клиник" />
+          ) : (
+            <div className="grid gap-4">
+              {pendingClinics.map((clinic: any) => (
+                <div key={clinic._id} className="bg-gray-900 p-6 rounded-2xl border border-blue-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
+                    <img src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{clinic.name?.ru}</h3>
+                        <span className="text-[10px] font-black uppercase bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded border border-blue-700">
+                          {clinic.type}
+                        </span>
+                      </div>
+                      <span className="bg-yellow-900/50 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-700">
+                        На проверке
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-400">
+                      <span className="bg-gray-800 px-3 py-1 rounded-lg">📍 {clinic.city}</span>
+                      <span className="bg-gray-800 px-3 py-1 rounded-lg">📞 {clinic.phone}</span>
+                      <a href={clinic.licenseDocument} target="_blank" rel="noopener noreferrer" className="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg hover:bg-blue-600/40 transition">
+                        📋 Лицензия
+                      </a>
+                    </div>
+                    <div className="flex gap-3 mt-4">
+                      <ActionBtn
+                        action={approveClinic.bind(null, clinic._id.toString())}
+                        label="✅ Одобрить"
+                        color="bg-green-600 hover:bg-green-700"
+                      />
+                      <ActionBtn
+                        action={rejectClinic.bind(null, clinic._id.toString())}
+                        label="❌ Отклонить"
+                        color="bg-red-600 hover:bg-red-700"
+                      />
+                      <ActionBtn
+                        action={deleteClinic.bind(null, clinic._id.toString())}
+                        label="🗑 Удалить"
+                        color="bg-gray-600 hover:bg-gray-700"
+                        confirm="Удалить клинику и аккаунт владельца?"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
         {/* ОТЗЫВЫ НА МОДЕРАЦИИ */}
         <Section title="Отзывы на модерации" badge={pendingReviews.length} badgeColor="bg-purple-500">
           {pendingReviews.length === 0 ? (
@@ -152,6 +220,48 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                       label="🗑 Удалить"
                       color="bg-red-800 hover:bg-red-700"
                       confirm="Удалить отзыв?"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* ОДОБРЕННЫЕ КЛИНИКИ */}
+        <Section title="Одобренные клиники" badge={approvedClinics.length} badgeColor="bg-emerald-600">
+          {approvedClinics.length === 0 ? (
+            <Empty icon="🏥" text="Нет одобренных клиник" />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {approvedClinics.map((clinic: any) => (
+                <div key={clinic._id} className="bg-gray-900 p-5 rounded-2xl border border-gray-800 flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-800">
+                    <img src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white truncate">{clinic.name?.ru}</p>
+                    <p className="text-xs text-blue-400">{clinic.type} · {clinic.city}</p>
+                    <p className="text-[10px] text-gray-500 mt-1">👨‍⚕️ Врачей: {clinic.doctorIds?.length || 0}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <Link
+                      href={`/${lang}/clinic/${clinic.slug}`}
+                      target="_blank"
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition text-center"
+                    >
+                      👁 Профиль
+                    </Link>
+                    <ActionBtn
+                      action={banClinic.bind(null, clinic._id.toString(), true)}
+                      label="🚫 Бан"
+                      color="bg-orange-700 hover:bg-orange-600"
+                    />
+                    <ActionBtn
+                      action={deleteClinic.bind(null, clinic._id.toString())}
+                      label="🗑 Удалить"
+                      color="bg-red-800 hover:bg-red-700"
+                      confirm="Удалить клинику безвозвратно?"
                     />
                   </div>
                 </div>
