@@ -5,36 +5,9 @@ import User from '@/models/User';
 import Clinic from '@/models/Clinic';
 import bcrypt from 'bcryptjs';
 import { translateText } from '@/lib/translation-service';
-import { stripHtml } from '@/lib/utils';
+import { stripHtml, generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
-
-const translitMap: Record<string, string> = {
-  'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z',
-  'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
-  'с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
-  'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
-  // Таджикские
-  'ӣ':'i','ӯ':'u','ҳ':'h','қ':'q','ғ':'g','ҷ':'j',
-  // Казахские/Кыргызские
-  'ң':'n','ү':'u','ұ':'u','ө':'o','ә':'a','і':'i',
-  // Узбекские
-  'ʻ':'','ʼ':'',
-};
-
-function transliterate(text: string): string {
-  return text.toLowerCase().split('').map(char => translitMap[char] ?? char).join('');
-}
-
-function generateSlug(name: string): string {
-  return transliterate(name)
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 60)
-    + '-' + Date.now().toString().slice(-4);
-}
 
 export async function registerClinic(formData: any) {
   try {
@@ -74,6 +47,10 @@ export async function registerClinic(formData: any) {
 
     const translatedName = await translateText(name);
 
+    const geoCoordinates = (coordinates?.lat && coordinates?.lng)
+      ? { lat: coordinates.lat, lng: coordinates.lng, type: 'Point' as const, coordinates: [coordinates.lng, coordinates.lat] }
+      : undefined;
+
     await Clinic.create({
       userId: newUser._id,
       name: translatedName,
@@ -83,7 +60,7 @@ export async function registerClinic(formData: any) {
       type,
       city,
       address,
-      coordinates,
+      coordinates: geoCoordinates,
       logo,
       licenseDocument,
       status: 'pending',
@@ -109,6 +86,9 @@ export async function registerClinic(formData: any) {
 
 export async function updateClinicProfile(id: string, data: any) {
   try {
+    if (!id || !id.match(/^[a-f\d]{24}$/i)) {
+      return { success: false, error: 'Invalid clinic ID' };
+    }
     await dbConnect();
     const session = await auth();
     if (!session || (session.user as any)?.role !== 'clinic') {
