@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import RegisterClinicForm from './RegisterClinicForm';
+import { T } from '@/i18n';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   return {
-    title: 'Регистрация клиники — Duxtur.org',
-    description: 'Зарегистрируйте вашу клинику на портале Duxtur.org',
+    title: `${T('clinic.registerClinic', lang)} — Duxtur.org`,
+    description: T('home.heroSubtitle', lang), // Using subtitle as a high-quality description
   };
 }
 
