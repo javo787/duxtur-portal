@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
+import { getT } from '@/i18n';
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -29,6 +30,7 @@ function LoginButton() {
 }
 
 export default function LoginForm({ lang }: { lang: string }) {
+  const t = getT(lang);
   const [errorMessage, dispatch] = useFormState(authenticate, undefined);
   const [showPassword, setShowPassword] = useState(false);
   const { data: session, status } = useSession();
@@ -172,10 +174,15 @@ export default function LoginForm({ lang }: { lang: string }) {
 
               <LoginButton />
 
-              <p className="text-center text-sm text-slate-500 pt-2 font-medium">
-                Нет аккаунта?{' '}
-                <Link href={`/${lang}/register`} className="text-blue-600 font-bold hover:underline">
-                  Подать заявку
+              <p className="text-center text-sm text-slate-500 pt-2 font-medium flex flex-col gap-2">
+                <span>
+                  {t('auth.loginNoAcc')}{' '}
+                  <Link href={`/${lang}/register`} className="text-blue-600 font-bold hover:underline">
+                    {t('auth.loginApply')}
+                  </Link>
+                </span>
+                <Link href={`/${lang}/clinic/register`} className="text-xs text-slate-400 hover:text-blue-600 transition font-bold">
+                  {t('clinic.registerClinic')} →
                 </Link>
               </p>
 
