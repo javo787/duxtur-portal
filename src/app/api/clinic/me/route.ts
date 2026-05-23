@@ -24,8 +24,13 @@ export async function PATCH(req: NextRequest) {
     if (!session || (session.user as any)?.role !== 'clinic') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    await dbConnect();
+    const clinic = await Clinic.findOne({ userId: session.user?.id }).lean();
+    if (!clinic) {
+      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
+    }
     const body = await req.json();
-    const result = await updateClinicProfile(body._id, body);
+    const result = await updateClinicProfile((clinic as any)._id.toString(), body);
     if (result.success) return NextResponse.json({ success: true });
     return NextResponse.json({ error: result.error }, { status: 400 });
   } catch (error: any) {

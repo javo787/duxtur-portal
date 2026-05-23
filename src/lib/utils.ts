@@ -24,5 +24,5 @@ export function generateSlug(name: string): string {
   return name.toLowerCase().split('').map(c => translitMap[c] ?? c).join('')
     .replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-').replace(/^-+|-+$/g, '')
-    .substring(0, 60) + '-' + Date.now().toString().slice(-4);
+    .substring(0, 60) + '-' + Date.now().toString().slice(-6);
 }
