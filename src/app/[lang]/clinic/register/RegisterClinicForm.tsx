@@ -118,6 +118,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
   const logoInputRef    = useRef<HTMLInputElement>(null);
   const licenseInputRef = useRef<HTMLInputElement>(null);
+  const cityRef         = useRef<HTMLDivElement>(null);
 
   const [step, setStep]                       = useState<1 | 2 | 3>(1);
   const [isSuccess, setIsSuccess]             = useState(false);
@@ -127,6 +128,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const [showPassword, setShowPassword]       = useState(false);
   const [isMapOpen, setIsMapOpen]             = useState(false);
   const [submitError, setSubmitError]         = useState<string | null>(null);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
   const [formData, setFormData] = useState({
     name:       '',
@@ -146,6 +148,16 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (submitError) setSubmitError(null);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cityRef.current && !cityRef.current.contains(event.target as Node)) {
+        setShowCitySuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const goToStep = (n: 1 | 2 | 3) => {
     setStep(n);
@@ -350,10 +362,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
         />
       </div>
 
-      <div className="relative max-w-[1200px] mx-auto px-4 py-8 md:py-16 grid lg:grid-cols-[1fr_480px] gap-12 items-start">
+      <div className="relative max-w-[1200px] mx-auto px-4 py-6 md:py-16 grid lg:grid-cols-[1fr_480px] gap-8 lg:gap-12 items-start">
 
         {/* Left Column: Hero & Info */}
-        <div className="space-y-10 lg:sticky lg:top-16">
+        <div className="space-y-8 md:space-y-10 lg:sticky lg:top-16">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -363,7 +375,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             </Link>
           </motion.div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -380,7 +392,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-6xl font-black leading-[1.1] tracking-tight"
+              className="text-3xl md:text-6xl font-black leading-[1.1] tracking-tight"
             >
               {t('clinic.heroTitle')}
             </motion.h1>
@@ -396,7 +408,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
           </div>
 
           {/* Benefits Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3 md:gap-4">
             {[
               { icon: '🔵', label: t('clinic.benefitVerification'), color: 'bg-blue-50 text-blue-700' },
               { icon: '🌐', label: t('clinic.benefitLanguages'), color: 'bg-amber-50 text-amber-700' },
@@ -407,10 +419,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
-                className={`${b.color} rounded-[32px] p-6 border border-white shadow-xl shadow-black/5 flex flex-col items-center text-center`}
+                className={`${b.color} rounded-[24px] md:rounded-[32px] p-4 md:p-6 border border-white shadow-xl shadow-black/5 flex flex-col items-center text-center`}
               >
-                <div className="text-3xl mb-3">{b.icon}</div>
-                <div className="text-[11px] font-black uppercase tracking-wider leading-tight">{b.label}</div>
+                <div className="text-2xl md:text-3xl mb-2 md:mb-3">{b.icon}</div>
+                <div className="text-[9px] md:text-[11px] font-black uppercase tracking-wider leading-tight">{b.label}</div>
               </motion.div>
             ))}
           </div>
@@ -442,8 +454,8 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
           {/* Main Card */}
           <div className="bg-white rounded-[48px] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
             {/* Header / Stepper */}
-            <div className="px-8 pt-10 pb-6 border-b border-slate-50 bg-slate-50/50">
-              <div className="flex items-center justify-between mb-8 relative px-4">
+            <div className="px-6 md:px-8 pt-8 md:pt-10 pb-6 border-b border-slate-50 bg-slate-50/50">
+              <div className="flex items-center justify-between mb-6 md:mb-8 relative px-4">
                 {/* Progress bar background */}
                 <div className="absolute top-1/2 left-8 right-8 h-0.5 bg-slate-200 -translate-y-1/2 pointer-events-none" />
                 {/* Active progress bar */}
@@ -486,7 +498,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
               </div>
             </div>
 
-            <div className="p-8 md:p-10">
+            <div className="p-6 md:p-10">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={step}
@@ -494,7 +506,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-8"
+                  className="space-y-6 md:space-y-8"
                 >
                   {/* ══ STEP 1 ══ */}
                   {step === 1 && (
@@ -508,37 +520,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                           value={formData.name}
                           onChange={(e) => handleInputChange('name', e.target.value)}
                           placeholder={t('clinic.clinicNamePlaceholder')}
-                          className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 placeholder-slate-300 font-bold"
+                          className="w-full p-5 md:p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all text-slate-900 placeholder-slate-300 font-bold"
                         />
                       </div>
 
-                      <div className="space-y-4">
-                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                          {t('clinic.institutionType')}
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                          {CLINIC_TYPES.map((typeOption) => (
-                            <motion.button
-                              key={typeOption.id}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => handleInputChange('type', typeOption.id)}
-                              className={`flex flex-col gap-4 p-6 rounded-[32px] border-2 text-left transition-all duration-300 min-h-[120px] ${
-                                formData.type === typeOption.id
-                                  ? 'border-blue-600 bg-blue-50/50 shadow-lg shadow-blue-100/50'
-                                  : 'border-slate-100 bg-slate-50/50 grayscale opacity-60 hover:opacity-100 hover:grayscale-0'
-                              }`}
-                            >
-                              <span className="text-4xl">{typeOption.emoji}</span>
-                              <span className={`text-[11px] font-black uppercase leading-tight tracking-wide ${
-                                formData.type === typeOption.id ? 'text-blue-700' : 'text-slate-500'
-                              }`}>
-                                {t(`clinic.type_${typeOption.id}`)}
-                              </span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -548,7 +533,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             value={formData.phone}
                             onChange={(e) => handleInputChange('phone', e.target.value)}
                             placeholder="+992..."
-                            className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
+                            className="w-full p-5 md:p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
                           />
                         </div>
                         <div className="space-y-2">
@@ -558,7 +543,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             value={formData.email}
                             onChange={(e) => handleInputChange('email', e.target.value)}
                             placeholder="mail@clinic.com"
-                            className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
+                            className="w-full p-5 md:p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
                           />
                         </div>
                       </div>
@@ -570,7 +555,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                           value={formData.ownerName}
                           onChange={(e) => handleInputChange('ownerName', e.target.value)}
                           placeholder={t('clinic.ownerNamePlaceholder')}
-                          className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
+                          className="w-full p-5 md:p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
                         />
                       </div>
 
@@ -590,7 +575,53 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                     <>
                       <div className="space-y-4">
                         <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{t('doctors.allCities')}</label>
-                        <div className="grid grid-cols-2 gap-3">
+
+                        {/* Searchable City Input */}
+                        <div className="relative" ref={cityRef}>
+                          <input
+                            type="text"
+                            value={formData.city}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            onFocus={() => setShowCitySuggestions(true)}
+                            placeholder={t('map.filterCity')}
+                            className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
+                          />
+                          <AnimatePresence>
+                            {showCitySuggestions && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute z-20 w-full mt-2 bg-white border border-slate-100 rounded-[24px] shadow-2xl max-h-[240px] overflow-y-auto scrollbar-hide"
+                              >
+                                {ALLOWED_CITIES.filter(c =>
+                                  c.toLowerCase().includes(formData.city.toLowerCase())
+                                ).map((c) => (
+                                  <button
+                                    key={c}
+                                    onClick={() => {
+                                      handleInputChange('city', c);
+                                      setShowCitySuggestions(false);
+                                    }}
+                                    className="w-full text-left px-6 py-4 hover:bg-blue-50 font-bold text-slate-700 transition-colors flex items-center justify-between"
+                                  >
+                                    {c}
+                                    {formData.city === c && <span className="text-blue-600 font-black">✓</span>}
+                                  </button>
+                                ))}
+                                {ALLOWED_CITIES.filter(c =>
+                                  c.toLowerCase().includes(formData.city.toLowerCase())
+                                ).length === 0 && (
+                                  <div className="px-6 py-4 text-slate-400 font-medium text-sm italic">
+                                    {t('common.noResults')}
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <div className="hidden md:grid grid-cols-2 gap-3">
                           {ALLOWED_CITIES.map((c) => (
                             <button
                               key={c}
@@ -614,7 +645,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                           value={formData.address}
                           onChange={(e) => handleInputChange('address', e.target.value)}
                           placeholder={t('clinic.addressPlaceholder')}
-                          className="w-full p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
+                          className="w-full p-5 md:p-6 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold text-slate-900"
                         />
                       </div>
 
@@ -622,7 +653,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setIsMapOpen(true)}
-                        className={`w-full p-8 rounded-[32px] border-2 border-dashed flex items-center justify-center gap-5 transition-all ${
+                        className={`w-full p-6 md:p-8 rounded-[32px] border-2 border-dashed flex items-center justify-center gap-5 transition-all ${
                           formData.coordinates.lat
                             ? 'border-green-200 bg-green-50/50 text-green-700'
                             : 'border-slate-200 bg-slate-50/50 text-slate-400'
@@ -675,7 +706,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   {/* ══ STEP 3 ══ */}
                   {step === 3 && (
                     <>
-                      <div className="p-6 rounded-[32px] bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-2xl shadow-blue-900/20">
+                      <div className="p-5 md:p-6 rounded-[32px] bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-2xl shadow-blue-900/20">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-4">
                           {t('clinic.afterVerificationTitle')}
                         </p>
@@ -767,7 +798,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             value={formData.password}
                             onChange={(e) => handleInputChange('password', e.target.value)}
                             placeholder={t('auth.passwordPlaceholder')}
-                            className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold"
+                            className="w-full p-4 md:p-5 bg-slate-50 border-2 border-transparent rounded-[24px] focus:border-blue-600 focus:bg-white outline-none transition-all font-bold"
                           />
                           <button
                             type="button"
