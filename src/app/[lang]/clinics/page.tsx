@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getT, T } from '@/i18n';
 import type { Metadata } from 'next';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
 
 export const revalidate = 3600; // 1 hour
 
@@ -18,28 +19,87 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function ClinicsDirectoryPage({ params, searchParams }: {
   params: Promise<{ lang: string }>,
-  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string }>
+  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string }>
 }) {
   const { lang } = await params;
   const filters = await searchParams;
   const t = getT(lang as any);
 
+  const page = Math.max(1, parseInt(filters.page || '1', 10));
+  const limit = 20;
+
+  // Validation
+  let validatedCity = filters.city;
+  if (validatedCity && !ALLOWED_CITIES.includes(validatedCity)) {
+    validatedCity = undefined;
+  }
+
+  let validatedType = filters.type;
+  if (validatedType && !ALLOWED_CLINIC_TYPES.includes(validatedType as ClinicType)) {
+    validatedType = undefined;
+  }
+
+  let validatedSpecialty = filters.specialty;
+  if (validatedSpecialty && validatedSpecialty.length > 100) validatedSpecialty = undefined;
+
+  // Sanitization of q
+  let sanitizedQ = '';
+  if (filters.q) {
+    sanitizedQ = filters.q.slice(0, 100).replace(/[^\p{L}\p{N}\s]/gu, '');
+  }
+
   await dbConnect();
 
   const query: any = { status: 'approved' };
-  if (filters.city) query.city = filters.city;
-  if (filters.type) query.type = filters.type;
-  if (filters.specialty) query.specialties = filters.specialty;
-  if (filters.q) {
-     query.$text = { $search: filters.q };
+  if (validatedCity) query.city = validatedCity;
+  if (validatedType) query.type = validatedType;
+  if (validatedSpecialty) query.specialties = validatedSpecialty;
+  if (sanitizedQ) {
+     query.$text = { $search: sanitizedQ };
   }
 
-  const clinics = await Clinic.find(query).sort({ 'rating.avg': -1 }).lean();
+  const [clinics, total] = await Promise.all([
+    Clinic.aggregate([
+      { $match: query },
+      { $sort: { 'rating.avg': -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+      {
+        $addFields: {
+          doctorCount: { $size: { $ifNull: ["$doctorIds", []] } }
+        }
+      },
+      {
+        $project: {
+          doctorIds: 0,
+          userId: 0,
+          licenseNumber: 0,
+          licenseDocument: 0,
+          updatedAt: 0,
+          __v: 0
+        }
+      }
+    ]),
+    Clinic.countDocuments(query)
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: t('nav.home'), url: `/${lang}` },
     { name: t('clinic.title'), url: `/${lang}/clinics` },
   ]);
+
+  // Helper to build pagination URL
+  const buildPageUrl = (p: number) => {
+    const params = new URLSearchParams();
+    if (filters.city) params.set('city', filters.city);
+    if (filters.type) params.set('type', filters.type);
+    if (filters.specialty) params.set('specialty', filters.specialty);
+    if (filters.q) params.set('q', filters.q);
+    params.set('page', p.toString());
+    return `/${lang}/clinics?${params.toString()}`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 text-slate-800">
@@ -79,11 +139,38 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
               <p className="text-xl font-black text-slate-900">{t('common.noResults')}</p>
            </div>
          ) : (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {clinics.map((clinic: any) => (
-                <ClinicCard key={clinic._id.toString()} clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
-              ))}
-           </div>
+           <>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {clinics.map((clinic: any) => (
+                  <ClinicCard key={clinic._id.toString()} clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
+                ))}
+             </div>
+
+             {/* Pagination */}
+             {totalPages > 1 && (
+               <div className="mt-12 flex justify-center gap-2">
+                 {page > 1 && (
+                   <Link
+                     href={buildPageUrl(page - 1)}
+                     className="px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 transition"
+                   >
+                     {t('common.prev')}
+                   </Link>
+                 )}
+                 <div className="flex items-center px-6 py-3 bg-white border border-slate-200 rounded-2xl font-black text-slate-900">
+                   {page} / {totalPages}
+                 </div>
+                 {page < totalPages && (
+                   <Link
+                     href={buildPageUrl(page + 1)}
+                     className="px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 transition"
+                   >
+                     {t('common.next')}
+                   </Link>
+                 )}
+               </div>
+             )}
+           </>
          )}
       </section>
     </div>

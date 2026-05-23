@@ -78,9 +78,13 @@ const ClinicSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 ClinicSchema.index({ 'coordinates.coordinates': '2dsphere' });
-ClinicSchema.index({ 'name.ru': 'text', 'name.uz': 'text', 'description.ru': 'text' });
+ClinicSchema.index(
+  { 'name.ru': 'text', 'name.uz': 'text', 'description.ru': 'text' },
+  { default_language: 'russian' }
+);
 ClinicSchema.index({ slug: 1 });
 ClinicSchema.index({ status: 1 });
 ClinicSchema.index({ city: 1 });
+ClinicSchema.index({ status: 1, city: 1, type: 1, specialties: 1, 'rating.avg': -1 });
 
 export default mongoose.models.Clinic || mongoose.model('Clinic', ClinicSchema);
