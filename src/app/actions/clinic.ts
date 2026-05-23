@@ -1,5 +1,6 @@
 'use server';
 
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Clinic from '@/models/Clinic';
@@ -10,8 +11,10 @@ import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
 
 export async function registerClinic(formData: any) {
+  await dbConnect();
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await dbConnect();
 
     const {
       name,
@@ -31,19 +34,20 @@ export async function registerClinic(formData: any) {
       return { success: false, error: 'Заполните обязательные поля и загрузите лицензию!' };
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).session(session);
     if (existingUser) {
+      await session.abortTransaction();
       return { success: false, error: 'Email уже занят.' };
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({
+    const newUser = await User.create([{
       email,
       password: hashedPassword,
       role: 'clinic',
       name: ownerName || name,
-    });
+    }], { session });
 
     const translatedName = await translateText(name);
 
@@ -51,20 +55,44 @@ export async function registerClinic(formData: any) {
       ? { lat: coordinates.lat, lng: coordinates.lng, type: 'Point' as const, coordinates: [coordinates.lng, coordinates.lat] }
       : undefined;
 
-    await Clinic.create({
-      userId: newUser._id,
-      name: translatedName,
-      slug: generateSlug(name),
-      email,
-      phone,
-      type,
-      city,
-      address,
-      coordinates: geoCoordinates,
-      logo,
-      licenseDocument,
-      status: 'pending',
-    });
+    try {
+      await Clinic.create([{
+        userId: newUser[0]._id,
+        name: translatedName,
+        slug: generateSlug(name),
+        email,
+        phone,
+        type,
+        city,
+        address,
+        coordinates: geoCoordinates,
+        logo,
+        licenseDocument,
+        status: 'pending',
+      }], { session });
+    } catch (err: any) {
+      if (err.code === 11000 && err.keyPattern?.slug) {
+        // Retry once with a new slug
+        await Clinic.create([{
+          userId: newUser[0]._id,
+          name: translatedName,
+          slug: generateSlug(name),
+          email,
+          phone,
+          type,
+          city,
+          address,
+          coordinates: geoCoordinates,
+          logo,
+          licenseDocument,
+          status: 'pending',
+        }], { session });
+      } else {
+        throw err;
+      }
+    }
+
+    await session.commitTransaction();
 
     // Notify admin
     const message = `🏥 *Новая заявка: Клиника*\n\n` +
@@ -79,8 +107,11 @@ export async function registerClinic(formData: any) {
 
     return { success: true };
   } catch (error: any) {
+    await session.abortTransaction();
     console.error('Clinic Reg Error:', error);
     return { success: false, error: error.message };
+  } finally {
+    await session.endSession();
   }
 }
 

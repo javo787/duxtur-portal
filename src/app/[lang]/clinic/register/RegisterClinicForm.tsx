@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { ALLOWED_CITIES, CLINIC_TYPES } from '@/lib/clinic-constants';
+import { getT } from '@/i18n';
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
@@ -28,12 +29,6 @@ const Spinner = ({ dark = false }: { dark?: boolean }) => (
   </svg>
 );
 
-// ─── Step definitions ────────────────────────────────────────────────────────
-const STEPS = [
-  { num: 1, icon: '🏥', title: 'О клинике',        subtitle: 'Название, тип, контакты' },
-  { num: 2, icon: '📍', title: 'Адрес',             subtitle: 'Где вас найдут пациенты' },
-  { num: 3, icon: '🔐', title: 'Верификация',        subtitle: 'Лицензия и доступ' },
-];
 
 // ─── Animated check icon ─────────────────────────────────────────────────────
 function AnimatedCheck() {
@@ -58,8 +53,8 @@ function AnimatedCheck() {
 
 // ─── Live preview card ───────────────────────────────────────────────────────
 function ClinicPreviewCard({
-  name, type, city, logo,
-}: { name: string; type: string; city: string; logo: string }) {
+  name, type, city, logo, t
+}: { name: string; type: string; city: string; logo: string; t: any }) {
   const typeObj = CLINIC_TYPES.find((t) => t.id === type);
   return (
     <div
@@ -83,14 +78,14 @@ function ClinicPreviewCard({
         <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
-        Верифицировано
+        {t('common.verified')}
       </div>
 
       <div className="pt-6 pb-4 px-4">
-        <p className="font-black text-slate-900 text-sm truncate">{name || 'Название клиники'}</p>
+        <p className="font-black text-slate-900 text-sm truncate">{name || t('clinic.clinicName')}</p>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
-            {typeObj?.label || 'Клиника'}
+            {typeObj ? t(`clinic.type_${typeObj.id}`) : t('clinic.type_clinic')}
           </span>
           {city && (
             <span className="text-[10px] text-slate-400 font-bold flex items-center gap-0.5">
@@ -100,7 +95,7 @@ function ClinicPreviewCard({
         </div>
         <div className="mt-3 flex items-center gap-1 text-amber-400 text-xs">
           {'★★★★★'.split('').map((s, i) => <span key={i}>{s}</span>)}
-          <span className="text-slate-400 text-[10px] ml-1 font-bold">Новая клиника</span>
+          <span className="text-slate-400 text-[10px] ml-1 font-bold">{t('clinic.newClinic')}</span>
         </div>
       </div>
     </div>
@@ -109,6 +104,14 @@ function ClinicPreviewCard({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RegisterClinicForm({ lang }: { lang: string }) {
+  const t = getT(lang);
+
+  const STEPS = [
+    { num: 1, icon: '🏥', title: t('clinic.registerStep1'), subtitle: t('clinic.aboutClinicSub') },
+    { num: 2, icon: '📍', title: t('clinic.registerStep2'), subtitle: t('clinic.locationSub') },
+    { num: 3, icon: '🔐', title: t('clinic.registerStep3'), subtitle: t('clinic.verificationSub') },
+  ];
+
   const logoInputRef    = useRef<HTMLInputElement>(null);
   const licenseInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +122,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const [isUploadingLicense, setIsUploadingLicense] = useState(false);
   const [showPassword, setShowPassword]       = useState(false);
   const [isMapOpen, setIsMapOpen]             = useState(false);
+  const [submitError, setSubmitError]         = useState<string | null>(null);
 
   // Animate step changes
   const [stepVisible, setStepVisible]         = useState(true);
@@ -129,7 +133,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     phone:      '',
     email:      '',
     ownerName:  '',
-    city:       'Душанбе',
+    city:       ALLOWED_CITIES[0],
     address:    '',
     coordinates: { lat: 0, lng: 0 },
     logo:        '',
@@ -137,8 +141,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     password:   '',
   });
 
-  const handleInputChange = (field: string, value: any) =>
+  const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (submitError) setSubmitError(null);
+  };
 
   const goToStep = (n: 1 | 2 | 3) => {
     setStepVisible(false);
@@ -150,12 +156,13 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
+    setSubmitError(null);
     const fd = new FormData();
     fd.append('file', file);
     const res = await uploadImageToCloudinary(fd);
     setIsUploading(false);
     if (res.success) handleInputChange('logo', res.url);
-    else alert('Ошибка загрузки логотипа');
+    else setSubmitError(t('common.error'));
   };
 
   // ─── License upload ────────────────────────────────────────────────────────
@@ -163,21 +170,23 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingLicense(true);
+    setSubmitError(null);
     const fd = new FormData();
     fd.append('file', file);
     const res = await uploadImageToCloudinary(fd);
     setIsUploadingLicense(false);
     if (res.success) handleInputChange('licenseDocument', res.url);
-    else alert('Ошибка загрузки лицензии');
+    else setSubmitError(t('common.error'));
   };
 
   // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!formData.name || !formData.email || !formData.password || !formData.licenseDocument) {
-      alert('Заполните обязательные поля и загрузите лицензию!');
+      setSubmitError(t('auth.uploadFirst'));
       return;
     }
     setIsLoading(true);
+    setSubmitError(null);
     try {
       const res  = await fetch('/api/clinic/register', {
         method:  'POST',
@@ -186,9 +195,9 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
       });
       const data = await res.json();
       if (res.ok) setIsSuccess(true);
-      else alert(data.error || 'Ошибка при регистрации');
+      else setSubmitError(data.error || t('common.error'));
     } catch {
-      alert('Ошибка соединения');
+      setSubmitError(t('common.error'));
     } finally {
       setIsLoading(false);
     }
@@ -219,31 +228,32 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
               </div>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-black text-slate-900">Заявка принята!</h1>
-              <p className="text-slate-500 text-sm mt-1 font-medium">Добро пожаловать в сеть Duxtur.org</p>
+              <h1 className="text-2xl font-black text-slate-900">{t('clinic.registerSuccess')}</h1>
+              <p className="text-slate-500 text-sm mt-1 font-medium">{t('clinic.welcome')}</p>
             </div>
           </div>
 
           {/* Verification preview */}
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-              Ваш будущий профиль
+              {t('clinic.futureProfile')}
             </p>
             <ClinicPreviewCard
               name={formData.name}
               type={formData.type}
               city={formData.city}
               logo={formData.logo}
+              t={t}
             />
           </div>
 
           {/* Timeline */}
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Что дальше</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('clinic.whatNext')}</p>
             {[
-              { icon: '🔍', title: 'Проверка документов', desc: 'В течение 24 часов', delay: '0s', done: false },
-              { icon: '📧', title: 'Email с результатом', desc: 'На указанный адрес',  delay: '.1s', done: false },
-              { icon: '✅', title: 'Профиль активирован', desc: 'Синий бейдж верификации', delay: '.2s', done: false },
+              { icon: '🔍', title: t('clinic.docCheck'), desc: t('clinic.within24h'), delay: '0s', done: false },
+              { icon: '📧', title: t('clinic.emailResult'), desc: t('clinic.toEmail'),  delay: '.1s', done: false },
+              { icon: '✅', title: t('clinic.profileActivated'), desc: t('clinic.blueBadge'), delay: '.2s', done: false },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-4"
                    style={{ animation: `fadeUp 0.4s ease ${item.delay} both` }}>
@@ -260,7 +270,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             href={`/${lang}`}
             className="block w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-center hover:bg-black active:scale-95 transition"
           >
-            На главную
+            {t('common.back')}
           </Link>
         </div>
       </div>
@@ -289,7 +299,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             duxtur<span className="text-blue-600">.org</span>
           </Link>
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Для клиник
+            {t('clinic.forClinics')}
           </span>
         </div>
 
@@ -316,24 +326,23 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5 mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: 'ringPing 2s ease infinite' }} />
               <span className="text-white text-[10px] font-black uppercase tracking-widest">
-                Верифицированная платформа
+                {t('clinic.verifiedPlatform')}
               </span>
             </div>
 
             <h1 className="text-white font-black text-xl leading-tight mb-1">
-              Ваша клиника —<br />
-              <span className="text-blue-300">на карте всей Центральной Азии</span>
+              {t('clinic.heroTitle')}
             </h1>
             <p className="text-white/60 text-xs font-medium leading-relaxed mb-5">
-              Портал, где пациенты ищут проверенных врачей и клиники. Синий бейдж верификации — знак доверия.
+              {t('clinic.heroSubtitle')}
             </p>
 
             {/* 3 benefits */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: '🔵', label: 'Бейдж верификации' },
-                { icon: '🌐', label: '5 языков региона' },
-                { icon: '🔍', label: 'Индекс Google' },
+                { icon: '🔵', label: t('clinic.benefitVerification') },
+                { icon: '🌐', label: t('clinic.benefitLanguages') },
+                { icon: '🔍', label: t('clinic.benefitGoogle') },
               ].map((b, i) => (
                 <div key={i}
                   className="bg-white/10 backdrop-blur-sm rounded-2xl px-3 py-3 text-center border border-white/10"
@@ -396,7 +405,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
           {/* current step label */}
           <div className="text-center">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Шаг {step} из {STEPS.length}
+              {t('common.step')} {step} {t('common.of')} {STEPS.length}
             </p>
             <p className="font-black text-slate-800 text-sm">{STEPS[step - 1].title}</p>
           </div>
@@ -421,13 +430,13 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
               <>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                    Название клиники
+                    {t('clinic.clinicName')}
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="МедЦентр Здоровье"
+                    placeholder={t('clinic.clinicNamePlaceholder')}
                     className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition text-slate-800 placeholder-slate-300 font-medium"
                   />
                 </div>
@@ -435,27 +444,27 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                 {/* Type selector — pill grid */}
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                    Тип учреждения
+                    {t('clinic.institutionType')}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {CLINIC_TYPES.map((t) => (
+                    {CLINIC_TYPES.map((typeOption) => (
                       <button
-                        key={t.id}
+                        key={typeOption.id}
                         type="button"
-                        onClick={() => handleInputChange('type', t.id)}
+                        onClick={() => handleInputChange('type', typeOption.id)}
                         className="flex items-center gap-2.5 p-3 rounded-2xl border-2 text-left transition-all duration-200"
                         style={{
-                          borderColor:   formData.type === t.id ? '#2563eb' : '#f1f5f9',
-                          background:    formData.type === t.id ? '#eff6ff' : '#f8fafc',
-                          transform:     formData.type === t.id ? 'scale(1.02)' : 'scale(1)',
+                          borderColor:   formData.type === typeOption.id ? '#2563eb' : '#f1f5f9',
+                          background:    formData.type === typeOption.id ? '#eff6ff' : '#f8fafc',
+                          transform:     formData.type === typeOption.id ? 'scale(1.02)' : 'scale(1)',
                         }}
                       >
-                        <span className="text-xl leading-none">{t.emoji}</span>
+                        <span className="text-xl leading-none">{typeOption.emoji}</span>
                         <span
                           className="text-xs font-black leading-tight"
-                          style={{ color: formData.type === t.id ? '#1d4ed8' : '#64748b' }}
+                          style={{ color: formData.type === typeOption.id ? '#1d4ed8' : '#64748b' }}
                         >
-                          {t.label}
+                          {t(`clinic.type_${typeOption.id}`)}
                         </span>
                       </button>
                     ))}
@@ -465,44 +474,50 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                 {/* Phone + Email */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Телефон</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('auth.registerPhone')}</label>
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+992..."
+                      placeholder={t('auth.phonePlaceholder')}
                       className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition font-medium text-slate-800 placeholder-slate-300"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('auth.registerEmail')}</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="clinic@example.com"
+                      placeholder={t('auth.emailPlaceholder')}
                       className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition font-medium text-slate-800 placeholder-slate-300"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ФИО руководителя</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('clinic.ownerName')}</label>
                   <input
                     type="text"
                     value={formData.ownerName}
                     onChange={(e) => handleInputChange('ownerName', e.target.value)}
-                    placeholder="Иванов Иван Иванович"
+                    placeholder={t('clinic.ownerNamePlaceholder')}
                     className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition font-medium text-slate-800 placeholder-slate-300"
                   />
                 </div>
+
+                {submitError && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-2xl field-appear">
+                    {submitError}
+                  </div>
+                )}
 
                 <button
                   onClick={() => goToStep(2)}
                   className="w-full py-4 rounded-2xl font-black text-white text-base active:scale-95 transition-all"
                   style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', boxShadow: '0 8px 24px rgba(37,99,235,0.3)' }}
                 >
-                  Далее → Адрес
+                  {t('clinic.nextAddress')}
                 </button>
               </>
             )}
@@ -511,7 +526,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             {step === 2 && (
               <>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Город</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('doctors.allCities')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {ALLOWED_CITIES.map((c) => (
                       <button
@@ -533,12 +548,12 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Точный адрес</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('clinic.exactAddress')}</label>
                   <input
                     type="text"
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="ул. Главная, 10"
+                    placeholder={t('clinic.addressPlaceholder')}
                     className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition font-medium text-slate-800 placeholder-slate-300"
                   />
                 </div>
@@ -559,36 +574,43 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   <span className="font-black text-sm">
                     {formData.coordinates.lat
                       ? `${formData.coordinates.lat.toFixed(4)}, ${formData.coordinates.lng.toFixed(4)}`
-                      : 'Отметить на карте (необязательно)'}
+                      : t('clinic.markOnMapOptional')}
                   </span>
                 </button>
 
                 {/* Live preview */}
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                    Так будет выглядеть ваша клиника в каталоге
+                    {t('clinic.previewTitle')}
                   </p>
                   <ClinicPreviewCard
                     name={formData.name}
                     type={formData.type}
                     city={formData.city}
                     logo={formData.logo}
+                    t={t}
                   />
                 </div>
+
+                {submitError && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-2xl field-appear">
+                    {submitError}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => goToStep(1)}
                     className="py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 active:scale-95 transition"
                   >
-                    ← Назад
+                    {t('common.prev')}
                   </button>
                   <button
                     onClick={() => goToStep(3)}
                     className="py-4 rounded-2xl font-black text-white active:scale-95 transition"
                     style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', boxShadow: '0 8px 24px rgba(37,99,235,0.3)' }}
                   >
-                    Далее →
+                    {t('common.next')}
                   </button>
                 </div>
               </>
@@ -603,13 +625,13 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   style={{ background: 'linear-gradient(135deg,#eff6ff,#f0f9ff)' }}
                 >
                   <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">
-                    После верификации вы получите
+                    {t('clinic.afterVerificationTitle')}
                   </p>
                   {[
-                    '🔵 Синий бейдж «Верифицировано»',
-                    '🔍 Индексация в Google и поиск по 5 языкам',
-                    '👨‍⚕️ Возможность привязать врачей клиники',
-                    '📊 Статистика просмотров профиля',
+                    t('clinic.afterVerification1'),
+                    t('clinic.afterVerification2'),
+                    t('clinic.afterVerification3'),
+                    t('clinic.afterVerification4'),
                   ].map((item, i) => (
                     <p key={i} className="text-xs font-bold text-blue-700 mb-1.5">{item}</p>
                   ))}
@@ -620,7 +642,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   {/* Logo */}
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                      Логотип
+                      {t('clinic.logoLabel')}
                     </label>
                     <div
                       onClick={() => !isUploading && logoInputRef.current?.click()}
@@ -635,7 +657,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                       ) : (
                         <>
                           <span className="text-2xl mb-1">📸</span>
-                          <span className="text-[9px] font-black text-slate-400 uppercase">Логотип</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase">{t('clinic.logoLabel')}</span>
                         </>
                       )}
                       {isUploading && (
@@ -650,7 +672,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   {/* License */}
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                      Лицензия <span className="text-red-400">*</span>
+                      {t('clinic.licenseRequired')} <span className="text-red-400">*</span>
                     </label>
                     <div
                       onClick={() => !isUploadingLicense && licenseInputRef.current?.click()}
@@ -663,12 +685,12 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                       {formData.licenseDocument ? (
                         <div className="text-center p-2">
                           <span className="text-2xl">✅</span>
-                          <p className="text-[9px] font-black text-green-600 mt-1 uppercase">Загружено</p>
+                          <p className="text-[9px] font-black text-green-600 mt-1 uppercase">{t('clinic.uploaded')}</p>
                         </div>
                       ) : (
                         <>
                           <span className="text-2xl mb-1">📄</span>
-                          <span className="text-[9px] font-black text-orange-400 uppercase text-center leading-tight px-2">Ваш пропуск к верификации</span>
+                          <span className="text-[9px] font-black text-orange-400 uppercase text-center leading-tight px-2">{t('clinic.licenseHint')}</span>
                         </>
                       )}
                       {isUploadingLicense && (
@@ -684,14 +706,14 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                 {/* Password */}
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                    Пароль для входа
+                    {t('auth.registerPassword')}
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Минимум 8 символов"
+                      placeholder={t('auth.passwordPlaceholder')}
                       className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition font-medium text-slate-800 placeholder-slate-300"
                     />
                     <button
@@ -713,13 +735,19 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   </div>
                 </div>
 
+                {submitError && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-2xl field-appear">
+                    {submitError}
+                  </div>
+                )}
+
                 {/* Buttons */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => goToStep(2)}
                     className="py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 active:scale-95 transition"
                   >
-                    ← Назад
+                    {t('common.prev')}
                   </button>
                   <button
                     onClick={handleSubmit}
@@ -730,14 +758,14 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                       boxShadow:   (!isLoading && formData.licenseDocument) ? '0 8px 24px rgba(37,99,235,0.35)' : 'none',
                     }}
                   >
-                    {isLoading ? <><Spinner /> Отправка…</> : 'Подать заявку →'}
+                    {isLoading ? <><Spinner /> {t('auth.submitting')}</> : t('clinic.submitApplication')}
                   </button>
                 </div>
 
                 <p className="text-center text-[10px] text-slate-400 font-medium">
-                  Нажимая «Подать заявку», вы соглашаетесь с{' '}
+                  {t('clinic.agreement')}{' '}
                   <Link href={`/${lang}/editorial`} className="underline hover:text-blue-600 transition">
-                    редакционной политикой
+                    {t('nav.editorialPolicy')}
                   </Link>
                 </p>
               </>
@@ -747,11 +775,11 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest pb-4">
-          <Link href={`/${lang}/about`} className="hover:text-blue-600 transition">О портале</Link>
+          <Link href={`/${lang}/about`} className="hover:text-blue-600 transition">{t('nav.aboutUs')}</Link>
           <span>·</span>
           <a href="https://t.me/duxturcom" target="_blank" className="hover:text-blue-600 transition">Telegram</a>
           <span>·</span>
-          <Link href={`/${lang}/editorial`} className="hover:text-blue-600 transition">Редполитика</Link>
+          <Link href={`/${lang}/editorial`} className="hover:text-blue-600 transition">{t('nav.editorialPolicy')}</Link>
         </div>
       </div>
 
