@@ -10,9 +10,11 @@ import {
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
+import dynamic from 'next/dynamic';
 import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn'; 
 import PlacesSection from './_components/PlacesSection';
+
+const AdminAIAssistantWrapper = dynamic(() => import('./AdminAIAssistantWrapper').then(m => m.AdminAIAssistantWrapper), { ssr: false });
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();

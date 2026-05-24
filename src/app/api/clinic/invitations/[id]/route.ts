@@ -4,6 +4,7 @@ import Clinic from '@/models/Clinic';
 import Doctor from '@/models/Doctor';
 import ClinicInvitation from '@/models/ClinicInvitation';
 import { auth } from '@/auth';
+import { sendMessageToAdmin } from '@/lib/telegram';
 
 export async function PATCH(
   request: NextRequest,
@@ -40,6 +41,11 @@ export async function PATCH(
     }
 
     if (action === 'accept') {
+      // Security: Check if doctor is already linked to another clinic
+      if (doctor.clinicId) {
+        return NextResponse.json({ error: 'Doctor is already linked to another clinic' }, { status: 400 });
+      }
+
       invitation.status = 'accepted';
       await invitation.save();
 
@@ -50,6 +56,16 @@ export async function PATCH(
       await Doctor.findByIdAndUpdate(doctor._id, {
         $set: { clinicId: invitation.clinicId }
       });
+
+      // Notify through Telegram (optional, but requested in plan)
+      const clinic = await Clinic.findById(invitation.clinicId);
+      if (clinic) {
+        const message = `👨‍⚕️ <b>Доктор принял приглашение!</b>\n\n` +
+          `Доктор: ${doctor.name}\n` +
+          `Клиника: ${clinic.name?.ru || 'Ваша клиника'}\n` +
+          `Теперь он отображается в списке врачей клиники.`;
+        sendMessageToAdmin(message); // Using admin as fallback for now
+      }
     } else {
       invitation.status = 'declined';
       await invitation.save();

@@ -30,7 +30,12 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
     const body = await req.json();
-    const result = await updateClinicProfile((clinic as any)._id.toString(), body);
+
+    // Whitelist allowed fields to prevent overwriting sensitive data like status or userId
+    const { name, description, address, phone, phone2, email, website, telegram, whatsapp, instagram, workingHours, logo, coverImage, photos } = body;
+    const updateData = { name, description, address, phone, phone2, email, website, telegram, whatsapp, instagram, workingHours, logo, coverImage, photos };
+
+    const result = await updateClinicProfile((clinic as any)._id.toString(), updateData, session.user?.id);
     if (result.success) return NextResponse.json({ success: true });
     return NextResponse.json({ error: result.error }, { status: 400 });
   } catch (error: any) {

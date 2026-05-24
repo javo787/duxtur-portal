@@ -19,6 +19,7 @@ const PlaceSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   workingHours: String,
   doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 PlaceSchema.index({ city: 1, type: 1 });

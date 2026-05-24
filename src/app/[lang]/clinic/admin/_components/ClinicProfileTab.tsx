@@ -1,15 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useT } from '@/i18n';
 import { Field, Textarea, SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
+import { translateFieldAction } from '@/app/actions/clinic';
+import { CATEGORIES } from '@/lib/doctor-constants';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
   { ssr: false }
 );
+
+const Schedule = dynamic(
+  () => import('@/app/[lang]/admin/_components/_profile-sections/Schedule'),
+  { ssr: false }
+);
+
+const LANGUAGES = [
+  { id: 'ru', label: '🇷🇺 RU' },
+  { id: 'uz', label: '🇺🇿 UZ' },
+  { id: 'tg', label: '🇹🇯 TJ' },
+  { id: 'kk', label: '🇰🇿 KK' },
+  { id: 'ky', label: '🇰🇬 KY' },
+];
 
 export default function ClinicProfileTab({ lang, clinic }: { lang: string, clinic: any }) {
   const { t } = useT(lang);
@@ -17,6 +33,8 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [activeLangTab, setActiveLangTab] = useState('ru');
+  const [translating, setTranslating] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -36,6 +54,32 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
     }
   };
 
+  const handleAutoTranslate = async () => {
+    if (!profile.description?.ru) return;
+    setTranslating(true);
+    const res = await translateFieldAction(profile.description.ru);
+    if (res.success && res.translations) {
+      setProfile({
+        ...profile,
+        description: res.translations
+      });
+    }
+    setTranslating(false);
+  };
+
+  const completionScore = useMemo(() => {
+    let score = 0;
+    if (profile.logo) score += 15;
+    if (profile.coverImage) score += 10;
+    if (profile.name?.ru) score += 15;
+    if (profile.description?.ru) score += 15;
+    if (profile.phone) score += 10;
+    if (profile.address) score += 10;
+    if (profile.city) score += 10;
+    if (profile.specialties?.length > 0) score += 15;
+    return score;
+  }, [profile]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -50,7 +94,27 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8 pb-20">
+      {/* Completion Banner */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative">
+         <div className="flex items-center justify-between mb-4">
+           <h3 className="font-black text-slate-900">{t('common.completion')}: {completionScore}%</h3>
+           <Link
+             href={`/${lang}/clinic/${profile.slug}`}
+             target="_blank"
+             className="text-xs font-bold text-blue-600 hover:underline"
+           >
+             {t('clinic.viewPublicProfile')} ↗
+           </Link>
+         </div>
+         <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all duration-1000"
+              style={{ width: `${completionScore}%` }}
+            />
+         </div>
+      </div>
+
       {/* Images Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
@@ -70,15 +134,89 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
       </div>
 
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
-        <SectionHeader title={t('clinic.overview')} />
-        <Field label="Название (RU)" value={profile.name.ru} onChange={v => setProfile({ ...profile, name: { ...profile.name, ru: v } })} />
-        <Textarea label="Описание (RU)" value={profile.description.ru} onChange={v => setProfile({ ...profile, description: { ...profile.description, ru: v } })} />
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <SectionHeader title={t('clinic.overview')} />
+          <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+             {LANGUAGES.map(l => (
+               <button
+                 key={l.id}
+                 onClick={() => setActiveLangTab(l.id)}
+                 className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${
+                   activeLangTab === l.id ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'
+                 }`}
+               >
+                 {l.label}
+               </button>
+             ))}
+          </div>
+        </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <Field
+          label={`${t('clinic.clinicName')} (${activeLangTab.toUpperCase()})`}
+          value={profile.name[activeLangTab] || ''}
+          onChange={v => setProfile({ ...profile, name: { ...profile.name, [activeLangTab]: v } })}
+        />
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+               {t('doctor.bio')} ({activeLangTab.toUpperCase()})
+            </label>
+            {activeLangTab === 'ru' && (
+              <button
+                onClick={handleAutoTranslate}
+                disabled={translating || !profile.description?.ru}
+                className="text-[10px] font-black text-blue-600 uppercase tracking-wider hover:underline disabled:opacity-50"
+              >
+                {translating ? t('common.translating') : t('common.translateToAll')}
+              </button>
+            )}
+          </div>
+          <textarea
+            value={profile.description[activeLangTab] || ''}
+            onChange={e => setProfile({ ...profile, description: { ...profile.description, [activeLangTab]: e.target.value } })}
+            rows={5}
+            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition text-sm leading-relaxed"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <Field label={t('auth.registerPhone')} value={profile.phone} onChange={v => setProfile({ ...profile, phone: v })} />
            <Field label="Email" value={profile.email} onChange={v => setProfile({ ...profile, email: v })} />
         </div>
       </div>
+
+      {/* Specialties */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
+        <SectionHeader title={t('clinic.specialties')} />
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(CATEGORIES).map(([key, cfg]) => {
+            const isSelected = profile.specialties?.includes(key);
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  const current = profile.specialties || [];
+                  const next = isSelected ? current.filter((k: string) => k !== key) : [...current, key];
+                  setProfile({ ...profile, specialties: next });
+                }}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'
+                }`}
+              >
+                {cfg.icon} {(cfg.labels as any)[lang] || cfg.labels.ru}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <Schedule
+        profile={{ schedule: profile.workingHours }}
+        setProfile={(p) => setProfile({ ...profile, workingHours: p.schedule })}
+      />
 
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
         <SectionHeader title={t('clinic.address')} />

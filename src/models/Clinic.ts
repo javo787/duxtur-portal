@@ -39,7 +39,15 @@ const ClinicSchema = new mongoose.Schema({
     lat: { type: Number },
     lng: { type: Number },
     type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number] }, // [lng, lat]
+    coordinates: {
+      type: [Number],
+      validate: {
+        validator: function(v: number[]) {
+          return v.length === 2;
+        },
+        message: 'Coordinates must be exactly 2 numbers [lng, lat]'
+      }
+    }, // [lng, lat]
   },
   phone: { type: String, default: '' },
   phone2: { type: String, default: '' },

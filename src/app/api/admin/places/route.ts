@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
 
-    const places = await Place.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
-    const total = await Place.countDocuments();
+    const places = await Place.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+    const total = await Place.countDocuments({ isDeleted: { $ne: true } });
 
     return NextResponse.json({ places, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error: any) {
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest) {
       const id = searchParams.get('id');
       if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-      await Place.findByIdAndDelete(id);
+      await Place.findByIdAndUpdate(id, { isDeleted: true });
       return NextResponse.json({ success: true });
     } catch (error: any) {
       return NextResponse.json({ error: error.message }, { status: 500 });
