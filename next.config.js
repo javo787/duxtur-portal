@@ -61,33 +61,9 @@ const nextConfig = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://duxtur-portal.vercel.app',
   },
 
-  // Webpack Configuration
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        react: {
-          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-          name: 'react-vendor',
-          priority: 20,
-          reuseExistingChunk: true,
-        },
-        leaflet: {
-          test: /[\\/]node_modules[\\/]leaflet[\\/]/,
-          name: 'leaflet-vendor',
-          priority: 15,
-          reuseExistingChunk: true,
-        },
-        ui: {
-          test: /[\\/]node_modules[\\/](@radix-ui|framer-motion)[\\/]/,
-          name: 'ui-vendor',
-          priority: 10,
-          reuseExistingChunk: true,
-        },
-      };
-    }
-    return config;
-  },
+  // Turbopack Configuration (Next.js 16 default)
+  // Empty config allows Turbopack to work with existing structure
+  turbopack: {},
 };
 
 module.exports = nextConfig;
