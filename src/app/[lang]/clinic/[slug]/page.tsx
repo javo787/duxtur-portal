@@ -6,6 +6,7 @@ import { getT } from '@/i18n';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import ClinicHero from './_components/ClinicHero';
 import ClinicTabs from './_components/ClinicTabs';
+import ClinicViewTracker from '@/components/ClinicViewTracker';
 
 export const revalidate = 21600; // 6 hours
 
@@ -89,6 +90,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
+      <ClinicViewTracker slug={slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ClinicHero clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">

@@ -51,9 +51,25 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
 
           {/* Actions */}
           <div className="flex gap-2 mb-2">
-             <a href={`tel:${clinic.phone}`} className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl transition shadow-xl"><span className="text-xl">📞</span></a>
-             <a href={`https://wa.me/${clinic.whatsapp}`} target="_blank" className="p-4 bg-green-500 hover:bg-green-600 rounded-2xl transition shadow-xl"><span className="text-xl">💬</span></a>
-             <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition shadow-2xl shadow-blue-500/20">{t('clinic.book')}</button>
+             {clinic.phone && (
+               <a href={`tel:${clinic.phone}`} className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl transition shadow-xl" title={clinic.phone}><span className="text-xl">📞</span></a>
+             )}
+             {clinic.whatsapp && (
+               <a href={`https://wa.me/${clinic.whatsapp}`} target="_blank" className="p-4 bg-green-500 hover:bg-green-600 rounded-2xl transition shadow-xl"><span className="text-xl">💬</span></a>
+             )}
+             <button
+               onClick={() => {
+                 const firstDoc = clinic.doctorIds?.[0];
+                 if (firstDoc?._id) {
+                    window.dispatchEvent(new CustomEvent('open-booking', { detail: { doctorId: firstDoc._id } }));
+                 } else {
+                    alert(t('clinic.book'));
+                 }
+               }}
+               className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition shadow-2xl shadow-blue-500/20"
+             >
+                {t('clinic.book')}
+             </button>
           </div>
         </div>
       </div>

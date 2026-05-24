@@ -115,20 +115,21 @@ export async function registerClinic(formData: any) {
   }
 }
 
-export async function updateClinicProfile(id: string, data: any) {
+export async function updateClinicProfile(id: string, data: any, userId?: string) {
   try {
     if (!id || !id.match(/^[a-f\d]{24}$/i)) {
       return { success: false, error: 'Invalid clinic ID' };
     }
     await dbConnect();
-    const session = await auth();
-    if (!session || (session.user as any)?.role !== 'clinic') {
-       throw new Error('Unauthorized');
-    }
 
     const clinic = await Clinic.findById(id);
-    if (!clinic || clinic.userId.toString() !== session.user?.id) {
-       throw new Error('Clinic not found or access denied');
+    if (!clinic) {
+       throw new Error('Clinic not found');
+    }
+
+    // If userId is provided, verify ownership
+    if (userId && clinic.userId.toString() !== userId) {
+       throw new Error('Access denied');
     }
 
     // Auto-translate name and description if they changed in RU
@@ -144,6 +145,17 @@ export async function updateClinicProfile(id: string, data: any) {
     return { success: true };
   } catch (error: any) {
     console.error('Update Clinic Error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function translateFieldAction(text: string) {
+  try {
+    const session = await auth();
+    if (!session) throw new Error('Unauthorized');
+    const result = await translateText(text);
+    return { success: true, translations: result };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 }

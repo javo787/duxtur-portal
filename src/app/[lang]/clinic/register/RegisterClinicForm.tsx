@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
+import { signIn } from 'next-auth/react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { ALLOWED_CITIES, CLINIC_TYPES } from '@/lib/clinic-constants';
 import { getT } from '@/i18n';
+
+const AUTOSAVE_KEY = 'duxtur_clinic_reg_draft';
+const AUTOSAVE_INTERVAL = 30_000;
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
@@ -130,24 +134,42 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const [submitError, setSubmitError]         = useState<string | null>(null);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name:       '',
-    type:       'clinic',
-    phone:      '',
-    email:      '',
-    ownerName:  '',
-    city:       ALLOWED_CITIES[0],
-    address:    '',
-    coordinates: { lat: 0, lng: 0 },
-    logo:        '',
-    licenseDocument: '',
-    password:   '',
+  const [formData, setFormData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch {}
+      }
+    }
+    return {
+      name:       '',
+      type:       'clinic',
+      phone:      '',
+      email:      '',
+      ownerName:  '',
+      city:       ALLOWED_CITIES[0],
+      address:    '',
+      coordinates: { lat: 0, lng: 0 },
+      logo:        '',
+      licenseDocument: '',
+      password:   '',
+    };
   });
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
     if (submitError) setSubmitError(null);
   };
+
+  // Autosave
+  const autosave = useCallback(() => {
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    const timer = setInterval(autosave, AUTOSAVE_INTERVAL);
+    return () => clearInterval(timer);
+  }, [autosave]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -182,6 +204,21 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const handleLicenseUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Security validation
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      setSubmitError(t('auth.invalidFileType') || 'Invalid file type. Only PDF and images are allowed.');
+      return;
+    }
+
+    if (file.size > maxSize) {
+      setSubmitError(t('auth.fileTooLarge') || 'File is too large. Max 5MB.');
+      return;
+    }
+
     setIsUploadingLicense(true);
     setSubmitError(null);
     const fd = new FormData();
@@ -194,6 +231,13 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
   // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    // Basic email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setSubmitError(t('auth.invalidEmail') || 'Invalid email format');
+      return;
+    }
+
     if (!formData.name || !formData.email || !formData.password || !formData.licenseDocument) {
       setSubmitError(t('auth.uploadFirst'));
       return;
@@ -207,8 +251,18 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
         body:    JSON.stringify(formData),
       });
       const data = await res.json();
-      if (res.ok) setIsSuccess(true);
-      else setSubmitError(data.error || t('common.error'));
+      if (res.ok) {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        // Automatic login
+        await signIn('credentials', {
+          email: formData.email,
+          password: formData.password,
+          redirect: false
+        });
+        setIsSuccess(true);
+      } else {
+        setSubmitError(data.error || t('common.error'));
+      }
     } catch {
       setSubmitError(t('common.error'));
     } finally {
@@ -649,28 +703,45 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                         />
                       </div>
 
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setIsMapOpen(true)}
-                        className={`w-full p-6 md:p-8 rounded-[32px] border-2 border-dashed flex items-center justify-center gap-5 transition-all ${
-                          formData.coordinates.lat
-                            ? 'border-green-200 bg-green-50/50 text-green-700'
-                            : 'border-slate-200 bg-slate-50/50 text-slate-400'
-                        }`}
-                      >
-                        <span className="text-4xl">{formData.coordinates.lat ? '📍' : '🗺️'}</span>
-                        <div className="text-left">
-                          <p className="font-black text-base uppercase tracking-wider leading-tight">
-                            {formData.coordinates.lat ? t('doctor.routeBuilt') : t('clinic.markOnMap')}
-                          </p>
-                          {formData.coordinates.lat && (
-                            <p className="text-xs font-bold opacity-70 mt-1">
-                              {formData.coordinates.lat.toFixed(4)}, {formData.coordinates.lng.toFixed(4)}
+                      <div className="space-y-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setIsMapOpen(true)}
+                          className={`w-full p-6 md:p-8 rounded-[32px] border-2 border-dashed flex items-center justify-center gap-5 transition-all ${
+                            formData.coordinates.lat
+                              ? 'border-green-200 bg-green-50/50 text-green-700'
+                              : 'border-slate-200 bg-slate-50/50 text-slate-400'
+                          }`}
+                        >
+                          <span className="text-4xl">{formData.coordinates.lat ? '📍' : '🗺️'}</span>
+                          <div className="text-left">
+                            <p className="font-black text-base uppercase tracking-wider leading-tight">
+                              {formData.coordinates.lat ? t('doctor.routeBuilt') : t('clinic.markOnMap')}
                             </p>
-                          )}
-                        </div>
-                      </motion.button>
+                            {formData.coordinates.lat && (
+                              <p className="text-xs font-bold opacity-70 mt-1">
+                                {formData.coordinates.lat.toFixed(4)}, {formData.coordinates.lng.toFixed(4)}
+                              </p>
+                            )}
+                          </div>
+                        </motion.button>
+
+                        {formData.coordinates.lat !== 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="rounded-[32px] overflow-hidden border border-slate-200 h-40 relative group"
+                          >
+                             <img
+                               src={`https://staticmap.openstreetmap.de/staticmap.php?center=${formData.coordinates.lat},${formData.coordinates.lng}&zoom=15&size=600x300&markers=${formData.coordinates.lat},${formData.coordinates.lng},red-pushpin`}
+                               alt="Map preview"
+                               className="w-full h-full object-cover"
+                             />
+                             <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                          </motion.div>
+                        )}
+                      </div>
 
                       {/* Mobile Preview (Visible only on mobile/tablet) */}
                       <div className="lg:hidden space-y-4">
@@ -706,6 +777,19 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   {/* ══ STEP 3 ══ */}
                   {step === 3 && (
                     <>
+                      <div className="space-y-4">
+                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                          {t('clinic.previewTitle')}
+                        </label>
+                        <ClinicPreviewCard
+                          name={formData.name}
+                          type={formData.type}
+                          city={formData.city}
+                          logo={formData.logo}
+                          t={t}
+                        />
+                      </div>
+
                       <div className="p-5 md:p-6 rounded-[32px] bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-2xl shadow-blue-900/20">
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-4">
                           {t('clinic.afterVerificationTitle')}

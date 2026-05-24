@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
+import ViewLog from '@/models/ViewLog';
 import { cookies } from 'next/headers';
 
 export async function POST(
@@ -26,6 +27,16 @@ export async function POST(
     if (!clinic) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
+
+    // Логируем просмотр в аналитику
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await ViewLog.findOneAndUpdate(
+      { entityId: clinic._id, entityType: 'clinic', date: today },
+      { $inc: { count: 1 } },
+      { upsert: true }
+    ).catch(err => console.error('Clinic ViewLog update error:', err));
 
     // Устанавливаем куку на 24 часа
     cookieStore.set(cookieName, 'true', {
