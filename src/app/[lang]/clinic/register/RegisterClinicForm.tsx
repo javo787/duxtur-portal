@@ -11,6 +11,7 @@ import { getT } from '@/i18n';
 
 const AUTOSAVE_KEY = 'duxtur_clinic_reg_draft';
 const AUTOSAVE_INTERVAL = 30_000;
+const AUTOSAVE_EXPIRY_DAYS = 7;
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
@@ -134,36 +135,164 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const [submitError, setSubmitError]         = useState<string | null>(null);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
+  const [lastSaved, setLastSaved] = useState<number | null>(null);
+
+  const initialData = {
+    name:       '',
+    type:       'clinic',
+    phone:      '',
+    email:      '',
+    ownerName:  '',
+    city:       ALLOWED_CITIES[0],
+    address:    '',
+    coordinates: { lat: 0, lng: 0 },
+    logo:        '',
+    licenseDocument: '',
+    password:   '',
+  };
+
+  const [mapPreviewLoading, setMapPreviewLoading] = useState(false);
+  const [mapPreviewError, setMapPreviewError] = useState(false);
+  const [mapPreviewUrl, setMapPreviewUrl] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // IndexedDB Cache logic for map preview
+  const getCachedMap = useCallback(async (key: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('map-cache', 1);
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const transaction = db.transaction('previews', 'readonly');
+        const store = transaction.objectStore('previews');
+        const getReq = store.get(key);
+        getReq.onsuccess = () => {
+          if (getReq.result && (Date.now() - getReq.result.timestamp < 7 * 24 * 60 * 60 * 1000)) {
+            resolve(getReq.result.url);
+          } else {
+            resolve(null);
+          }
+        };
+        getReq.onerror = () => resolve(null);
+      };
+      request.onerror = () => resolve(null);
+    });
+  }, []);
+
+  const cacheMap = useCallback(async (key: string, url: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        const request = indexedDB.open('map-cache', 1);
+        request.onsuccess = (e: any) => {
+          const db = e.target.result;
+          const transaction = db.transaction('previews', 'readwrite');
+          const store = transaction.objectStore('previews');
+          store.put({ url: base64data, timestamp: Date.now() }, key);
+        };
+      };
+      reader.readAsDataURL(blob);
+    } catch (e) {
+      console.warn('Failed to cache map image blob:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const request = indexedDB.open('map-cache', 1);
+    request.onupgradeneeded = (e: any) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('previews')) {
+        db.createObjectStore('previews');
+      }
+    };
+  }, []);
+
   const [formData, setFormData] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(AUTOSAVE_KEY);
       if (saved) {
-        try { return JSON.parse(saved); } catch {}
+        try {
+          const { data, timestamp } = JSON.parse(saved);
+          const ageInDays = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
+          if (ageInDays < AUTOSAVE_EXPIRY_DAYS) {
+            return data;
+          } else {
+            localStorage.removeItem(AUTOSAVE_KEY);
+          }
+        } catch {}
       }
     }
-    return {
-      name:       '',
-      type:       'clinic',
-      phone:      '',
-      email:      '',
-      ownerName:  '',
-      city:       ALLOWED_CITIES[0],
-      address:    '',
-      coordinates: { lat: 0, lng: 0 },
-      logo:        '',
-      licenseDocument: '',
-      password:   '',
-    };
+    return initialData;
   });
+
+  useEffect(() => {
+    if (formData.coordinates.lat === 0) return;
+    const key = `map_${formData.coordinates.lat}_${formData.coordinates.lng}`;
+    const primaryUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${formData.coordinates.lat},${formData.coordinates.lng}&zoom=15&size=600x300&markers=${formData.coordinates.lat},${formData.coordinates.lng},red-pushpin`;
+
+    const loadMap = async () => {
+      const cached = await getCachedMap(key);
+      if (cached) {
+        setMapPreviewUrl(cached);
+        setMapPreviewLoading(false);
+        setMapPreviewError(false);
+      } else {
+        setMapPreviewUrl(primaryUrl);
+      }
+    };
+    loadMap();
+  }, [formData.coordinates, getCachedMap]);
+
+  // Load timestamp on mount if draft exists
+  useEffect(() => {
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    if (saved) {
+      try {
+        const { timestamp } = JSON.parse(saved);
+        setLastSaved(timestamp);
+      } catch {}
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
     if (submitError) setSubmitError(null);
+    if (field === 'coordinates' && value.lat !== 0) {
+      setMapPreviewLoading(true);
+      setMapPreviewError(false);
+    }
+  };
+
+  const discardDraft = () => {
+    if (confirm(t('common.confirm') || 'Are you sure?')) {
+      localStorage.removeItem(AUTOSAVE_KEY);
+      setFormData(initialData);
+      setLastSaved(null);
+      setStep(1);
+    }
   };
 
   // Autosave
   const autosave = useCallback(() => {
-    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(formData));
+    const timestamp = Date.now();
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ data: formData, timestamp }));
+    setLastSaved(timestamp);
   }, [formData]);
 
   useEffect(() => {
@@ -553,6 +682,23 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
             </div>
 
             <div className="p-6 md:p-10">
+              {lastSaved && (
+                <div className="mb-6 flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-500">💾</span>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      {t('clinic.draftSaved') || 'Draft saved'}: {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={discardDraft}
+                    className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                  >
+                    {t('clinic.discardDraft') || 'Discard Draft'}
+                  </button>
+                </div>
+              )}
+
               <AnimatePresence mode="wait">
                 <motion.div
                   key={step}
@@ -733,12 +879,49 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             animate={{ opacity: 1, scale: 1 }}
                             className="rounded-[32px] overflow-hidden border border-slate-200 h-40 relative group"
                           >
-                             <img
-                               src={`https://staticmap.openstreetmap.de/staticmap.php?center=${formData.coordinates.lat},${formData.coordinates.lng}&zoom=15&size=600x300&markers=${formData.coordinates.lat},${formData.coordinates.lng},red-pushpin`}
-                               alt="Map preview"
-                               className="w-full h-full object-cover"
-                             />
-                             <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                            {mapPreviewLoading && (
+                              <div className="absolute inset-0 bg-slate-50 animate-pulse flex items-center justify-center z-10">
+                                <Spinner dark />
+                              </div>
+                            )}
+
+                            {mapPreviewError ? (
+                              <div className="absolute inset-0 bg-slate-100 flex flex-col items-center justify-center gap-2">
+                                <svg width="600" height="300" viewBox="0 0 600 300" className="w-full h-full">
+                                  <rect width="600" height="300" fill="#f8fafc"/>
+                                  <text x="300" y="140" textAnchor="middle" fontSize="16" fill="#94a3b8" fontWeight="bold">📍 {formData.coordinates.lat.toFixed(4)}, {formData.coordinates.lng.toFixed(4)}</text>
+                                  <text x="300" y="170" textAnchor="middle" fontSize="12" fill="#cbd5e1">{t('common.error') || 'Map Error'}</text>
+                                </svg>
+                                <button
+                                  onClick={() => { setMapPreviewError(false); setMapPreviewLoading(true); }}
+                                  className="absolute bottom-4 bg-white/80 backdrop-blur px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm border border-slate-200 hover:bg-white"
+                                >
+                                  {t('common.retry') || 'Retry'}
+                                </button>
+                              </div>
+                            ) : (
+                              <img
+                                src={mapPreviewUrl || ''}
+                                alt="Map preview"
+                                className="w-full h-full object-cover"
+                                onLoad={() => {
+                                  setMapPreviewLoading(false);
+                                  // Only cache if it's a remote URL, not a cached base64 or fallback
+                                  if (mapPreviewUrl && mapPreviewUrl.startsWith('http')) {
+                                    const key = `map_${formData.coordinates.lat}_${formData.coordinates.lng}`;
+                                    cacheMap(key, mapPreviewUrl);
+                                  }
+                                }}
+                                onError={() => { setMapPreviewLoading(false); setMapPreviewError(true); }}
+                              />
+                            )}
+
+                            {!isOnline && (
+                              <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg z-20">
+                                Offline
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none" />
                           </motion.div>
                         )}
                       </div>

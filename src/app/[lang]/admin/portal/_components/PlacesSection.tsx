@@ -6,8 +6,10 @@ import AddPlaceModal from './AddPlaceModal';
 export default function PlacesSection() {
   const [places, setPlaces] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [deletedCount, setDeletedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
 
   const fetchPlaces = async () => {
     setLoading(true);
@@ -16,6 +18,7 @@ export default function PlacesSection() {
       const data = await res.json();
       setPlaces(data.places || []);
       setTotal(data.total || 0);
+      setDeletedCount(data.deletedCount || 0);
     } catch (error) {
       console.error(error);
     } finally {
@@ -37,15 +40,46 @@ export default function PlacesSection() {
     }
   };
 
+  const handleCleanup = async () => {
+    if (!confirm(`Начать очистку? Будут удалены записи старше 90 дней (${deletedCount} в корзине)`)) return;
+    setCleaning(true);
+    try {
+      const res = await fetch('/api/admin/places/cleanup', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Удалено записей: ${data.deletedCount}`);
+        fetchPlaces();
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCleaning(false);
+    }
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-extrabold text-white">🗺 Места</h2>
-          {total > 0 && (
-            <span className="bg-blue-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
-              {total}
-            </span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-extrabold text-white">🗺 Места</h2>
+            {total > 0 && (
+              <span className="bg-blue-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
+                {total}
+              </span>
+            )}
+          </div>
+          {deletedCount > 0 && (
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+              В корзине: <span className="text-red-400">{deletedCount}</span>
+              <button
+                onClick={handleCleanup}
+                disabled={cleaning}
+                className="ml-2 text-blue-400 hover:underline disabled:opacity-50"
+              >
+                {cleaning ? 'Очистка...' : 'Очистить (90дн)'}
+              </button>
+            </p>
           )}
         </div>
         <button

@@ -33,10 +33,18 @@ Rules:
 
 Text to translate: "${text.replace(/"/g, "'")}"`;
 
-  try {
-    const response = await generateContent(prompt);
+  const MAX_RETRIES = 3;
+  const TIMEOUT_MS = 5000;
 
-    const start = response.indexOf('{');
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const response = await generateContent(prompt, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      const start = response.indexOf('{');
     const end   = response.lastIndexOf('}');
     if (start === -1 || end === -1 || end <= start) {
       throw new Error('No JSON object found in AI response');
@@ -45,21 +53,32 @@ Text to translate: "${text.replace(/"/g, "'")}"`;
     const parsed: MultilingualObject = JSON.parse(response.substring(start, end + 1));
 
     // Validate all 5 keys exist
-    const keys: (keyof MultilingualObject)[] = ['ru', 'uz', 'kk', 'ky', 'tg'];
-    for (const key of keys) {
-      if (!parsed[key] || typeof parsed[key] !== 'string') {
-        parsed[key] = text; // graceful fallback per key
+      const keys: (keyof MultilingualObject)[] = ['ru', 'uz', 'kk', 'ky', 'tg'];
+      for (const key of keys) {
+        if (!parsed[key] || typeof parsed[key] !== 'string') {
+          parsed[key] = text; // graceful fallback per key
+        }
       }
+
+      console.log(`[TRANSLATION] "${text}" → ru:"${parsed.ru}" tg:"${parsed.tg}"`);
+      return parsed;
+
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      console.error(`[TRANSLATION SERVICE] Attempt ${attempt} failed:`, error.message || error);
+
+      if (attempt === MAX_RETRIES) {
+        console.error('[TRANSLATION SERVICE] Final attempt failed. Falling back to original text.');
+        return { ru: text, uz: text, kk: text, ky: text, tg: text };
+      }
+
+      // Exponential backoff
+      await new Promise(r => setTimeout(r, Math.pow(2, attempt - 1) * 1000));
     }
-
-    console.log(`[TRANSLATION] "${text}" → ru:"${parsed.ru}" tg:"${parsed.tg}"`);
-    return parsed;
-
-  } catch (error) {
-    console.error('[TRANSLATION SERVICE] Error translating:', text, error);
-    // Fallback: put original text in all languages
-    return { ru: text, uz: text, kk: text, ky: text, tg: text };
   }
+
+  // Should never reach here due to the loop and return in attempt === MAX_RETRIES
+  return { ru: text, uz: text, kk: text, ky: text, tg: text };
 }
 
 /**
