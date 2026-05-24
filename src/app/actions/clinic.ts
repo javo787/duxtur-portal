@@ -153,9 +153,30 @@ export async function translateFieldAction(text: string) {
   try {
     const session = await auth();
     if (!session) throw new Error('Unauthorized');
+
     const result = await translateText(text);
+
+    // Check if translation actually succeeded or returned fallback
+    const isFallback = result.uz === text && result.tg === text && text.length > 0;
+
+    if (isFallback) {
+      console.warn(`[TRANSLATION ACTION] Translation for "${text.substring(0, 20)}..." returned fallback.`);
+      return {
+        success: true,
+        isPartial: true,
+        translations: result,
+        warning: 'Translation service unavailable, using original text'
+      };
+    }
+
     return { success: true, translations: result };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('[TRANSLATION ACTION] Error:', error);
+    return {
+      success: true,
+      isPartial: true,
+      translations: { ru: text, uz: text, tg: text, kk: text, ky: text },
+      warning: 'Translation failed, using original text'
+    };
   }
 }

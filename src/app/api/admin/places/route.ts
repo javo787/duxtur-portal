@@ -50,8 +50,9 @@ export async function GET(req: NextRequest) {
 
     const places = await Place.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
     const total = await Place.countDocuments({ isDeleted: { $ne: true } });
+    const deletedCount = await Place.countDocuments({ isDeleted: true });
 
-    return NextResponse.json({ places, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json({ places, total, deletedCount, page, totalPages: Math.ceil(total / limit) });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -69,7 +70,7 @@ export async function DELETE(req: NextRequest) {
       const id = searchParams.get('id');
       if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-      await Place.findByIdAndUpdate(id, { isDeleted: true });
+      await Place.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() });
       return NextResponse.json({ success: true });
     } catch (error: any) {
       return NextResponse.json({ error: error.message }, { status: 500 });

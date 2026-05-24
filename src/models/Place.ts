@@ -20,9 +20,11 @@ const PlaceSchema = new mongoose.Schema({
   workingHours: String,
   doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
   isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 PlaceSchema.index({ city: 1, type: 1 });
 PlaceSchema.index({ 'coordinates.coordinates': '2dsphere' });
+PlaceSchema.index({ isDeleted: 1, deletedAt: 1 });
 
 export default mongoose.models.Place || mongoose.model('Place', PlaceSchema);

@@ -13,9 +13,9 @@ export const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash"
 });
 
-export async function generateContent(prompt: string) {
+export async function generateContent(prompt: string, options?: { signal?: AbortSignal }) {
     try {
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(prompt, { signal: options?.signal } as any);
         return result.response.text();
     } catch (error) {
         console.error("--- [AI SERVICE] Error generating content:", error);

@@ -35,6 +35,7 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [activeLangTab, setActiveLangTab] = useState('ru');
   const [translating, setTranslating] = useState(false);
+  const [translationWarning, setTranslationWarning] = useState<string | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -57,12 +58,16 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
   const handleAutoTranslate = async () => {
     if (!profile.description?.ru) return;
     setTranslating(true);
+    setTranslationWarning(null);
     const res = await translateFieldAction(profile.description.ru);
     if (res.success && res.translations) {
       setProfile({
         ...profile,
         description: res.translations
       });
+      if (res.isPartial) {
+        setTranslationWarning(res.warning || 'Translation service unavailable');
+      }
     }
     setTranslating(false);
   };
@@ -178,6 +183,11 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
             rows={5}
             className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition text-sm leading-relaxed"
           />
+          {translationWarning && activeLangTab !== 'ru' && (
+            <p className="text-[10px] text-amber-600 font-bold px-1">
+              ⚠️ {translationWarning}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
