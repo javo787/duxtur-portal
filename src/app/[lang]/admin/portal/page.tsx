@@ -12,7 +12,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn'; 
 import PlacesSection from './_components/PlacesSection';
-import AdminAIAssistantWrapper from './AdminAIAssistantWrapper';
+import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();
