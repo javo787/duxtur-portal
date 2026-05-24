@@ -65,7 +65,7 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
         ...profile,
         description: res.translations
       });
-      if (res.isPartial) {
+      if (res.translations.didFallback) {
         setTranslationWarning(res.warning || 'Translation service unavailable');
       }
     }

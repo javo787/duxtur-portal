@@ -15,6 +15,7 @@ export const model = genAI.getGenerativeModel({
 
 export async function generateContent(prompt: string, options?: { signal?: AbortSignal }) {
     try {
+        // Fallback for environment without AbortSignal support in SDK or custom handling
         const result = await model.generateContent(prompt, { signal: options?.signal } as any);
         return result.response.text();
     } catch (error) {

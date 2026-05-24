@@ -6,6 +6,7 @@ export interface MultilingualObject {
   kk: string;
   ky: string;
   tg: string;
+  didFallback?: boolean;
 }
 
 /**
@@ -34,11 +35,22 @@ Rules:
 Text to translate: "${text.replace(/"/g, "'")}"`;
 
   const MAX_RETRIES = 3;
-  const TIMEOUT_MS = 5000;
+
+  const getOptimalTimeout = (): number => {
+    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+      const connection = (navigator as any).connection;
+      if (connection.effectiveType === '4g') return 3000;
+      if (connection.effectiveType === '3g') return 5000;
+      return 8000;
+    }
+    return 5000; // Default for server-side or non-supporting browsers
+  };
+
+  const timeout = getOptimalTimeout();
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
       const response = await generateContent(prompt, { signal: controller.signal });
@@ -55,13 +67,13 @@ Text to translate: "${text.replace(/"/g, "'")}"`;
     // Validate all 5 keys exist
       const keys: (keyof MultilingualObject)[] = ['ru', 'uz', 'kk', 'ky', 'tg'];
       for (const key of keys) {
-        if (!parsed[key] || typeof parsed[key] !== 'string') {
-          parsed[key] = text; // graceful fallback per key
+        if (!(parsed as any)[key] || typeof (parsed as any)[key] !== 'string') {
+          (parsed as any)[key] = text; // graceful fallback per key
         }
       }
 
       console.log(`[TRANSLATION] "${text}" → ru:"${parsed.ru}" tg:"${parsed.tg}"`);
-      return parsed;
+      return { ...parsed, didFallback: false };
 
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -69,7 +81,7 @@ Text to translate: "${text.replace(/"/g, "'")}"`;
 
       if (attempt === MAX_RETRIES) {
         console.error('[TRANSLATION SERVICE] Final attempt failed. Falling back to original text.');
-        return { ru: text, uz: text, kk: text, ky: text, tg: text };
+        return { ru: text, uz: text, kk: text, ky: text, tg: text, didFallback: true };
       }
 
       // Exponential backoff
