@@ -10,6 +10,7 @@ export default function PlacesSection() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [cleanupLogs, setCleanupLogs] = useState<any[]>([]);
 
   const fetchPlaces = async () => {
     setLoading(true);
@@ -26,8 +27,19 @@ export default function PlacesSection() {
     }
   };
 
+  const fetchCleanupLogs = async () => {
+    try {
+      const res = await fetch('/api/admin/places/cleanup');
+      const data = await res.json();
+      setCleanupLogs(data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchPlaces();
+    fetchCleanupLogs();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -49,6 +61,7 @@ export default function PlacesSection() {
       if (res.ok) {
         alert(`Удалено записей: ${data.deletedCount}`);
         fetchPlaces();
+        fetchCleanupLogs();
       }
     } catch (error) {
       console.error(error);
@@ -137,6 +150,25 @@ export default function PlacesSection() {
           </div>
         )}
       </div>
+
+      {cleanupLogs.length > 0 && (
+        <div className="mt-8 bg-gray-950/50 p-6 rounded-3xl border border-gray-800">
+          <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">История очистки</h3>
+          <div className="space-y-3">
+            {cleanupLogs.map((log) => (
+              <div key={log._id} className="flex items-center justify-between text-[10px] font-bold">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-500">{new Date(log.performedAt).toLocaleString('ru')}</span>
+                  <span className={`px-2 py-0.5 rounded uppercase ${log.performedBy === 'cron' ? 'bg-purple-900/40 text-purple-400' : 'bg-blue-900/40 text-blue-400'}`}>
+                    {log.performedBy}
+                  </span>
+                </div>
+                <span className="text-emerald-400">-{log.deletedCount} записей</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <AddPlaceModal
         isOpen={isModalOpen}

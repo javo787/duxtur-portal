@@ -8,10 +8,11 @@ import { signIn } from 'next-auth/react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { ALLOWED_CITIES, CLINIC_TYPES } from '@/lib/clinic-constants';
 import { getT } from '@/i18n';
+import { getCachedMap, cacheMap } from '@/lib/indexeddb-cache';
 
 const AUTOSAVE_KEY = 'duxtur_clinic_reg_draft';
 const AUTOSAVE_INTERVAL = 30_000;
-const AUTOSAVE_EXPIRY_DAYS = 7;
+const AUTOSAVE_EXPIRY_DAYS = parseInt(process.env.NEXT_PUBLIC_DRAFT_TTL_DAYS || '7');
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
@@ -153,6 +154,8 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
   const [mapPreviewLoading, setMapPreviewLoading] = useState(false);
   const [mapPreviewError, setMapPreviewError] = useState(false);
+  const [isCaching, setIsCaching] = useState(false);
+  const [isCached, setIsCached] = useState(false);
   const [mapPreviewUrl, setMapPreviewUrl] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -165,61 +168,6 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // IndexedDB Cache logic for map preview
-  const getCachedMap = useCallback(async (key: string): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const request = indexedDB.open('map-cache', 1);
-      request.onsuccess = (e: any) => {
-        const db = e.target.result;
-        const transaction = db.transaction('previews', 'readonly');
-        const store = transaction.objectStore('previews');
-        const getReq = store.get(key);
-        getReq.onsuccess = () => {
-          if (getReq.result && (Date.now() - getReq.result.timestamp < 7 * 24 * 60 * 60 * 1000)) {
-            resolve(getReq.result.url);
-          } else {
-            resolve(null);
-          }
-        };
-        getReq.onerror = () => resolve(null);
-      };
-      request.onerror = () => resolve(null);
-    });
-  }, []);
-
-  const cacheMap = useCallback(async (key: string, url: string) => {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) return;
-      const blob = await response.blob();
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result;
-        const request = indexedDB.open('map-cache', 1);
-        request.onsuccess = (e: any) => {
-          const db = e.target.result;
-          const transaction = db.transaction('previews', 'readwrite');
-          const store = transaction.objectStore('previews');
-          store.put({ url: base64data, timestamp: Date.now() }, key);
-        };
-      };
-      reader.readAsDataURL(blob);
-    } catch (e) {
-      console.warn('Failed to cache map image blob:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const request = indexedDB.open('map-cache', 1);
-    request.onupgradeneeded = (e: any) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('previews')) {
-        db.createObjectStore('previews');
-      }
     };
   }, []);
 
@@ -247,17 +195,26 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     const primaryUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${formData.coordinates.lat},${formData.coordinates.lng}&zoom=15&size=600x300&markers=${formData.coordinates.lat},${formData.coordinates.lng},red-pushpin`;
 
     const loadMap = async () => {
-      const cached = await getCachedMap(key);
+      const cached = await getCachedMap(key, 7);
       if (cached) {
         setMapPreviewUrl(cached);
         setMapPreviewLoading(false);
         setMapPreviewError(false);
+        setIsCached(true);
       } else {
         setMapPreviewUrl(primaryUrl);
+        setIsCached(false);
       }
     };
     loadMap();
-  }, [formData.coordinates, getCachedMap]);
+  }, [formData.coordinates]);
+
+  const getExpiryWarning = useCallback((savedTime: number) => {
+    const ageInDays = (Date.now() - savedTime) / (1000 * 60 * 60 * 24);
+    if (ageInDays > AUTOSAVE_EXPIRY_DAYS - 1) return t('clinic.draftExpiresToday') || 'Draft expires today';
+    if (ageInDays > AUTOSAVE_EXPIRY_DAYS - 2) return t('clinic.draftExpiresTomorrow') || 'Draft expires tomorrow';
+    return null;
+  }, [t]);
 
   // Load timestamp on mount if draft exists
   useEffect(() => {
@@ -269,6 +226,8 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
       } catch {}
     }
   }, []);
+
+  const expiryWarning = lastSaved ? getExpiryWarning(lastSaved) : null;
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -683,12 +642,20 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
             <div className="p-6 md:p-10">
               {lastSaved && (
-                <div className="mb-6 flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-blue-500">💾</span>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      {t('clinic.draftSaved') || 'Draft saved'}: {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                <div className={`mb-6 flex items-center justify-between p-4 rounded-2xl border ${expiryWarning ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-500">💾</span>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        {t('clinic.draftSaved') || 'Draft saved'}: {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    {expiryWarning && (
+                      <div className="flex items-center gap-1.5 px-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        <p className="text-[9px] font-black text-amber-600 uppercase tracking-wider">{expiryWarning}</p>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={discardDraft}
@@ -904,12 +871,14 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                                 src={mapPreviewUrl || ''}
                                 alt="Map preview"
                                 className="w-full h-full object-cover"
-                                onLoad={() => {
+                                onLoad={async () => {
                                   setMapPreviewLoading(false);
-                                  // Only cache if it's a remote URL, not a cached base64 or fallback
                                   if (mapPreviewUrl && mapPreviewUrl.startsWith('http')) {
+                                    setIsCaching(true);
                                     const key = `map_${formData.coordinates.lat}_${formData.coordinates.lng}`;
-                                    cacheMap(key, mapPreviewUrl);
+                                    const success = await cacheMap(key, mapPreviewUrl);
+                                    setIsCaching(false);
+                                    if (success) setIsCached(true);
                                   }
                                 }}
                                 onError={() => { setMapPreviewLoading(false); setMapPreviewError(true); }}
@@ -919,6 +888,19 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             {!isOnline && (
                               <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg z-20">
                                 Offline
+                              </div>
+                            )}
+
+                            {isCaching && (
+                              <div className="absolute top-3 left-3 bg-blue-500/80 backdrop-blur text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg z-20 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                Caching...
+                              </div>
+                            )}
+
+                            {isCached && isOnline && (
+                              <div className="absolute top-3 left-3 bg-emerald-500/80 backdrop-blur text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg z-20">
+                                Cached ✓
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors pointer-events-none" />

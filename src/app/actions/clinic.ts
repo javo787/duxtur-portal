@@ -156,10 +156,7 @@ export async function translateFieldAction(text: string) {
 
     const result = await translateText(text);
 
-    // Check if translation actually succeeded or returned fallback
-    const isFallback = result.uz === text && result.tg === text && text.length > 0;
-
-    if (isFallback) {
+    if (result.didFallback) {
       console.warn(`[TRANSLATION ACTION] Translation for "${text.substring(0, 20)}..." returned fallback.`);
       return {
         success: true,
@@ -175,7 +172,7 @@ export async function translateFieldAction(text: string) {
     return {
       success: true,
       isPartial: true,
-      translations: { ru: text, uz: text, tg: text, kk: text, ky: text },
+      translations: { ru: text, uz: text, tg: text, kk: text, ky: text, didFallback: true },
       warning: 'Translation failed, using original text'
     };
   }
