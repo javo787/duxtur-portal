@@ -21,6 +21,14 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
       </div>
 
       <div className="absolute inset-0 flex items-end">
+        {/* Profile Badge */}
+        <div className="absolute top-24 left-4 md:left-8 z-10">
+           <div className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('clinic.profile')}</span>
+           </div>
+        </div>
+
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
           {/* Logo */}
           <div className="relative w-32 h-32 md:w-44 md:h-44 bg-white rounded-3xl p-1 shadow-2xl shrink-0">
