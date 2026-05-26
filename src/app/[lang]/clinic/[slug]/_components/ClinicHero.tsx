@@ -8,7 +8,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
   const { t } = useT(lang);
 
   return (
-    <section className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
+    <section className="relative h-[450px] md:h-[600px] w-full overflow-hidden">
       {/* Cover Image */}
       <div className="absolute inset-0">
         <Image
@@ -18,7 +18,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
       </div>
 
       <div className="absolute inset-0 flex items-end">
@@ -30,9 +30,9 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
            </div>
         </div>
 
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-12 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
           {/* Logo */}
-          <div className="relative w-32 h-32 md:w-44 md:h-44 bg-white rounded-[2.5rem] p-1 shadow-2xl shrink-0 group">
+          <div className="relative w-32 h-32 md:w-48 md:h-48 bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-1 shadow-2xl shrink-0 group border border-white/40">
             <div className="relative w-full h-full rounded-[2.2rem] overflow-hidden text-slate-800">
                <Image src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover group-hover:scale-110 transition duration-700" />
             </div>
@@ -45,26 +45,28 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
 
           {/* Info */}
           <div className="flex-1 text-center md:text-left text-white mb-2">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
-               <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest">{t('clinic.type_' + clinic.type)}</span>
-               <span className="px-3 py-1 bg-blue-500 rounded-full text-[10px] font-black uppercase tracking-widest">📍 {clinic.city}</span>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-4">
+               <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest">{t('clinic.type_' + clinic.type)}</span>
+               <span className="px-3 py-1 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">📍 {clinic.city}</span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tight">{(clinic.name as any)[lang] || (clinic.name as any).ru}</h1>
+            <h1 className="text-3xl md:text-6xl font-black mb-3 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70">
+              {(clinic.name as any)[lang] || (clinic.name as any).ru}
+            </h1>
             <div className="flex items-center justify-center md:justify-start gap-4">
-               <div className="flex text-amber-400">
+               <div className="flex text-amber-400 text-lg">
                  {Array.from({ length: 5 }).map((_, i) => <span key={i}>{i < Math.round(clinic.rating.avg) ? '★' : '☆'}</span>)}
-                 <span className="ml-2 text-white/80 font-bold text-sm">{clinic.rating.avg} ({clinic.rating.count})</span>
+                 <span className="ml-2 text-white font-bold text-sm">{clinic.rating.avg} <span className="text-white/60">({clinic.rating.count})</span></span>
                </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-3 mb-2 w-full md:w-auto">
              {clinic.phone && (
-               <a href={`tel:${clinic.phone}`} className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl transition shadow-xl" title={clinic.phone}><span className="text-xl">📞</span></a>
+               <a href={`tel:${clinic.phone}`} className="flex-1 md:flex-none p-4 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl transition shadow-xl text-center" title={clinic.phone}><span className="text-xl">📞</span></a>
              )}
              {clinic.whatsapp && (
-               <a href={`https://wa.me/${clinic.whatsapp}`} target="_blank" className="p-4 bg-green-500 hover:bg-green-600 rounded-2xl transition shadow-xl"><span className="text-xl">💬</span></a>
+               <a href={`https://wa.me/${clinic.whatsapp}`} target="_blank" className="flex-1 md:flex-none p-4 bg-green-500/90 hover:bg-green-500 rounded-2xl transition shadow-xl text-center"><span className="text-xl">💬</span></a>
              )}
              <button
                onClick={() => {
@@ -78,7 +80,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
                     }, 500);
                   }
                }}
-               className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition shadow-2xl shadow-blue-500/20"
+               className="flex-[2] md:flex-none px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 shadow-2xl shadow-blue-600/30"
              >
                 {t('clinic.book')}
              </button>
