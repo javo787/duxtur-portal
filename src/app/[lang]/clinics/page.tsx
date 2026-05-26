@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { getT, T } from '@/i18n';
 import type { Metadata } from 'next';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
-import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
+import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
 
 export const revalidate = 3600; // 1 hour
 
@@ -106,15 +106,23 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       {/* Hero */}
-      <section className="bg-slate-900 pt-32 pb-20 px-4">
-         <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">{t('clinic.findClinic')}</h1>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-6">{t('home.heroSubtitle')}</p>
+      <section className="bg-slate-900 pt-32 pb-24 px-4 relative overflow-hidden">
+         {/* Decorative blobs */}
+         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] -z-10 animate-float-slow" />
+         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] -z-10 animate-float-delayed" />
 
-            <div className="flex justify-center mb-10">
+         <div className="max-w-7xl mx-auto text-center relative z-10">
+            <h1 className="text-4xl md:text-7xl font-black mb-6 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60">
+              {t('clinic.findClinic')}
+            </h1>
+            <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-medium">
+              {t('home.heroSubtitle')}
+            </p>
+
+            <div className="flex justify-center mb-12">
               <Link
                 href={`/${lang}/clinic/register`}
-                className="text-blue-400 font-bold hover:text-blue-300 transition flex items-center gap-2 group"
+                className="px-6 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-blue-400 font-bold hover:bg-white/10 hover:text-blue-300 transition flex items-center gap-2 group"
               >
                 {t('clinic.registerClinic')}
                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,11 +131,60 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
               </Link>
             </div>
 
-            {/* Filters placeholder */}
-            <form method="GET" className="max-w-3xl mx-auto bg-white/10 backdrop-blur-xl p-2 rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row gap-2">
-               <input name="q" defaultValue={filters.q} className="flex-1 bg-transparent px-6 py-4 text-white outline-none placeholder:text-slate-500 font-bold" placeholder={t('map.filterCity')} />
-               <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 transition">{t('common.search')}</button>
+            {/* Search Form */}
+            <form method="GET" className="max-w-3xl mx-auto bg-white/5 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-white/10 flex flex-col md:flex-row gap-2 shadow-2xl mb-12">
+               <div className="flex-1 flex items-center px-6 gap-3">
+                 <span className="text-xl">🔍</span>
+                 <input
+                    name="q"
+                    defaultValue={filters.q}
+                    className="w-full bg-transparent py-4 text-white outline-none placeholder:text-slate-500 font-bold"
+                    placeholder={t('map.filterCity')}
+                 />
+               </div>
+               <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition shadow-lg shadow-blue-600/20">
+                 {t('common.search')}
+               </button>
             </form>
+
+            {/* Quick Filters */}
+            <div className="max-w-4xl mx-auto">
+               <div className="flex flex-col gap-4">
+                  {/* Cities */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2">
+                    {ALLOWED_CITIES.map(city => (
+                      <Link
+                        key={city}
+                        href={`/${lang}/clinics?city=${city}`}
+                        className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                          filters.city === city
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {city}
+                      </Link>
+                    ))}
+                  </div>
+                  {/* Types */}
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2">
+                    {CLINIC_TYPES.map(type => (
+                      <Link
+                        key={type.id}
+                        href={`/${lang}/clinics?type=${type.id}`}
+                        className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+                          filters.type === type.id
+                          ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <span className="mr-2">{type.emoji}</span>
+                        {t('clinic.type_' + type.id)}
+                      </Link>
+                    ))}
+                  </div>
+               </div>
+            </div>
          </div>
       </section>
 

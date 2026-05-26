@@ -7,6 +7,7 @@ import ClinicServices from './ClinicServices';
 import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
+import { motion } from 'framer-motion';
 
 export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string }) {
   const { t } = useT(lang);
@@ -24,16 +25,23 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
   return (
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar bg-slate-200/50 p-1.5 rounded-3xl w-fit sticky top-20 z-20 backdrop-blur-md">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-[2rem] w-fit sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
         {tabs.map(tab => (
           <button
             key={tab.id}
             data-tab-id={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'
+            className={`relative px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap z-10 ${
+              activeTab === tab.id ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
+            {activeTab === tab.id && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-white shadow-sm rounded-2xl -z-10"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
             {tab.label}
           </button>
         ))}
@@ -46,63 +54,69 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
              <div className="lg:col-span-2 space-y-8">
                 {/* Quote Section */}
                 {((clinic.quote as any)?.[lang] || (clinic.quote as any)?.ru) && (
-                  <div className="bg-blue-600 p-10 md:p-14 rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-200">
-                    <span className="absolute top-8 left-8 text-6xl opacity-20 font-serif">“</span>
-                    <p className="text-xl md:text-2xl font-black italic leading-relaxed relative z-10">
+                  <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 md:p-20 rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-500/30">
+                    <span className="absolute top-8 left-8 text-8xl opacity-10 font-serif">“</span>
+                    <p className="text-xl md:text-3xl font-black italic leading-relaxed relative z-10 tracking-tight">
                       {(clinic.quote as any)[lang] || (clinic.quote as any).ru}
                     </p>
-                    <div className="mt-8 flex items-center gap-3">
-                      <div className="w-10 h-1 bg-white/30 rounded-full" />
+                    <div className="mt-10 flex items-center gap-4">
+                      <div className="w-12 h-1 bg-white/30 rounded-full" />
                       <p className="text-xs font-black uppercase tracking-widest text-blue-100">{t('clinic.chiefQuote')}</p>
                     </div>
+                    {/* Decorative element */}
+                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
                   </div>
                 )}
 
-                <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.about')}</h2>
-                   <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">{(clinic.description as any)[lang] || (clinic.description as any).ru}</p>
+                <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                   <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.about')}</h2>
+                   <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
+                      {(clinic.description as any)[lang] || (clinic.description as any).ru}
+                   </p>
                 </div>
 
                 {/* History Section */}
                 {((clinic.history as any)?.[lang] || (clinic.history as any)?.ru) && (
-                  <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.history')}</h2>
-                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">{(clinic.history as any)[lang] || (clinic.history as any).ru}</p>
+                  <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                    <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.history')}</h2>
+                    <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
+                      {(clinic.history as any)[lang] || (clinic.history as any).ru}
+                    </p>
                   </div>
                 )}
 
-                <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.specialties')}</h2>
+                <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                   <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.specialties')}</h2>
                    <div className="flex flex-wrap gap-2">
                       {clinic.specialties.map((s: string) => (
-                        <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-wider">{s}</span>
+                        <span key={s} className="px-5 py-2.5 bg-blue-50/50 text-blue-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-blue-100/50">{s}</span>
                       ))}
                    </div>
                 </div>
              </div>
 
              <div className="space-y-8">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <h2 className="text-sm font-black text-slate-400 mb-6 uppercase tracking-widest">{t('clinic.workingHours')}</h2>
-                   <div className="space-y-3">
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                   <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.workingHours')}</h2>
+                   <div className="space-y-4">
                       {['mon','tue','wed','thu','fri','sat','sun'].map((day) => (
                         <div key={day} className="flex justify-between items-center text-sm font-bold">
                            <span className="text-slate-400 uppercase tracking-tighter w-10">
                              {new Date(2024, 0, (['sun','mon','tue','wed','thu','fri','sat'].indexOf(day))).toLocaleDateString(lang, { weekday: 'short' })}
                            </span>
-                           <div className="h-px flex-1 mx-4 bg-slate-50" />
+                           <div className="h-px flex-1 mx-4 bg-slate-100" />
                            {clinic.workingHours?.[day]?.isWorking ? (
-                             <span className="text-slate-700">{clinic.workingHours[day].open} – {clinic.workingHours[day].close}</span>
+                             <span className="text-slate-900 font-black">{clinic.workingHours[day].open} – {clinic.workingHours[day].close}</span>
                            ) : (
-                             <span className="text-red-400">{t('doctor.dayOff')}</span>
+                             <span className="text-red-400 font-black">{t('doctor.dayOff')}</span>
                            )}
                         </div>
                       ))}
                    </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                   <h2 className="text-sm font-black text-slate-400 mb-6 uppercase tracking-widest">{t('clinic.contacts')}</h2>
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                   <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.contacts')}</h2>
                    <div className="space-y-4">
                       <div>
                          <p className="text-[10px] font-black text-slate-300 uppercase mb-1">{t('clinic.address')}</p>
