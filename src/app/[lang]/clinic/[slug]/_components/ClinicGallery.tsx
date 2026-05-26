@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function ClinicGallery({ photos }: { photos: string[] }) {
   if (!photos || photos.length === 0) {
@@ -15,7 +16,7 @@ export default function ClinicGallery({ photos }: { photos: string[] }) {
       {photos.map((photo, i) => (
         <div key={i} className="relative aspect-square rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow group cursor-zoom-in">
           <Image
-            src={photo}
+            src={getOptimizedCloudinaryUrl(photo, { width: 600, height: 600, crop: 'fill' })}
             alt={`Gallery photo ${i + 1}`}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"

@@ -10,7 +10,6 @@ export default function ClinicDoctorsTab({ lang, clinicId }: { lang: string, cli
   const [doctors, setDoctors] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviteSlug, setInviteSlug] = useState('');
   const [inviting, setInviting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -69,7 +68,7 @@ export default function ClinicDoctorsTab({ lang, clinicId }: { lang: string, cli
   };
 
   const handleInvite = async (slug?: string) => {
-    const targetSlug = slug || inviteSlug;
+    const targetSlug = slug || searchQuery;
     if (!targetSlug) return;
     setInviting(true);
     const sanitizedSlug = targetSlug.trim().toLowerCase();
@@ -80,7 +79,6 @@ export default function ClinicDoctorsTab({ lang, clinicId }: { lang: string, cli
         body: JSON.stringify({ clinicId, doctorSlug: sanitizedSlug })
       });
       if (res.ok) {
-        setInviteSlug('');
         setSearchQuery('');
         setShowSuggestions(false);
         fetchData();

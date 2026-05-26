@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ClinicInvitation from '@/models/ClinicInvitation';
-import Clinic from '@/models/Clinic';
 import Doctor from '@/models/Doctor';
+import User from '@/models/User';
 import { auth } from '@/auth';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session || (session.user as any)?.role !== 'doctor') {
@@ -14,7 +14,12 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const doctor = await Doctor.findOne({ userId: session.user?.id });
+    const user = await User.findOne({ email: session.user?.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const doctor = await Doctor.findOne({ userId: user._id });
     if (!doctor) {
       return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
     }
@@ -23,8 +28,8 @@ export async function GET(request: NextRequest) {
       doctorId: doctor._id
     }).populate({
       path: 'clinicId',
-      model: Clinic,
-      select: 'name logo city type slug'
+      model: 'Clinic',
+      select: 'name logo city type slug doctorIds'
     }).sort({ createdAt: -1 });
 
     return NextResponse.json(invitations, { status: 200 });

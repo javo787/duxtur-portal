@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useT } from '@/i18n';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string }) {
   const { t } = useT(lang);
@@ -11,7 +12,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
       {/* Cover Image */}
       <div className="absolute inset-0">
         <Image
-          src={clinic.coverImage || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1600'}
+          src={getOptimizedCloudinaryUrl(clinic.coverImage, { width: 1600, height: 800, crop: 'fill' }) || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1600'}
           alt=""
           fill
           className="object-cover"
@@ -33,7 +34,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
           {/* Logo */}
           <div className="relative w-32 h-32 md:w-44 md:h-44 bg-white rounded-3xl p-1 shadow-2xl shrink-0">
             <div className="relative w-full h-full rounded-[1.4rem] overflow-hidden text-slate-800">
-               <Image src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover" />
+               <Image src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover" />
             </div>
             {clinic.status === 'approved' && (
               <div className="absolute -top-3 -right-3 bg-blue-600 text-white p-2 rounded-2xl shadow-lg" title={t('clinic.verified')}>
