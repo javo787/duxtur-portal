@@ -71,6 +71,8 @@ const ClinicSchema = new mongoose.Schema({
     price: { type: Number, default: 0 },
     currency: { type: String, default: 'TJS' }
   }],
+  quote: MultilingualString,
+  history: MultilingualString,
   insurance: { type: [String], default: [] },
   amenities: { type: [String], default: [] },
   doctorIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }],
