@@ -1,6 +1,10 @@
+import { getT } from '@/i18n';
+
 export default function ClinicServices({ services, lang }: { services: any[], lang: string }) {
+  const t = getT(lang);
+
   if (!services || services.length === 0) {
-    return <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">No services listed yet</div>;
+    return <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">{t('common.noResults')}</div>;
   }
 
   return (
@@ -8,8 +12,8 @@ export default function ClinicServices({ services, lang }: { services: any[], la
       <table className="w-full text-left border-collapse">
          <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <tr>
-               <th className="px-8 py-5">Service</th>
-               <th className="px-8 py-5 text-right">Price</th>
+               <th className="px-8 py-5">{t('clinic.services')}</th>
+               <th className="px-8 py-5 text-right">{t('clinic.price')}</th>
             </tr>
          </thead>
          <tbody className="divide-y divide-slate-50 text-slate-800">

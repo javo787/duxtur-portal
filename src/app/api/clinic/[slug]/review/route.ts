@@ -2,8 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import Review from '@/models/Review';
+import Doctor from '@/models/Doctor';
 import { auth } from '@/auth';
 import { rateLimit } from '@/lib/rate-limit';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+    await dbConnect();
+
+    const clinic = await Clinic.findOne({ slug });
+    if (!clinic) {
+      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
+    }
+
+    const reviews = await Review.find({ clinicId: clinic._id, isVerified: true })
+      .populate({ path: 'doctorId', model: Doctor, select: 'name' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json(reviews);
+  } catch (error) {
+    console.error('Clinic reviews fetch error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
 export async function POST(
   request: NextRequest,

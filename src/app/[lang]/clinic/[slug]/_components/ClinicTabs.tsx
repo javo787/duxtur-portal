@@ -5,6 +5,7 @@ import { useT } from '@/i18n';
 import ClinicDoctors from './ClinicDoctors';
 import ClinicServices from './ClinicServices';
 import ClinicGallery from './ClinicGallery';
+import ClinicReviews from './ClinicReviews';
 
 export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string }) {
   const { t } = useT(lang);
@@ -95,7 +96,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
         {activeTab === 'doctors' && <ClinicDoctors doctors={clinic.doctorIds} lang={lang} />}
         {activeTab === 'services' && <ClinicServices services={clinic.services} lang={lang} />}
         {activeTab === 'gallery' && <ClinicGallery photos={clinic.photos} />}
-        {activeTab === 'reviews' && <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">Reviews section coming soon</div>}
+        {activeTab === 'reviews' && <ClinicReviews slug={clinic.slug} lang={lang} />}
       </div>
     </div>
   );

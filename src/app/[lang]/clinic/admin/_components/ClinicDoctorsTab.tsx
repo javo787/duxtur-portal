@@ -162,7 +162,7 @@ export default function ClinicDoctorsTab({ lang, clinicId }: { lang: string, cli
                          <img src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} className="w-10 h-10 rounded-xl object-cover" alt="" />
                          <div>
                             <p className="font-bold text-slate-900 text-sm">{doc.name}</p>
-                            <p className="text-[10px] text-blue-600 font-black uppercase">{doc.specialty?.ru}</p>
+                            <p className="text-[10px] text-blue-600 font-black uppercase">{doc.specialty?.[lang] || doc.specialty?.ru}</p>
                          </div>
                          <div className="ml-auto flex items-center gap-1.5 text-amber-500 font-bold text-xs">
                            ⭐ {doc.reviewAvg || 0}

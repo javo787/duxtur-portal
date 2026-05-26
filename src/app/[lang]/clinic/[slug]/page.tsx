@@ -81,7 +81,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
     breadcrumb: buildBreadcrumbJsonLd([
       { name: 'Duxtur.org', url: `/${lang}` },
       { name: t('clinic.title'), url: `/${lang}/clinics` },
-      { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `clinic/${slug}` },
+      { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `/${lang}/clinic/${slug}` },
     ]),
   };
 

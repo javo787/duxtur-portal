@@ -42,7 +42,9 @@ export default function ClinicCard({ clinic, lang }: { clinic: any, lang: string
          <div className="flex items-center gap-1 text-xs font-bold text-slate-400 mb-4">
             <span className="text-amber-400 text-sm">★</span>
             <span className="text-slate-900">{clinic.rating.avg}</span>
-            <span>({clinic.rating.count})</span>
+            <span>
+               {clinic.rating.count > 0 ? `(${clinic.rating.count})` : t('doctor.noReviews')}
+            </span>
             <span className="mx-1 opacity-20">•</span>
             <span>{clinic.doctorIds?.length || 0} {t('common.doctors')}</span>
          </div>
