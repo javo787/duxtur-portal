@@ -57,19 +57,35 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
   };
 
   const handleAutoTranslate = async () => {
-    if (!profile.description?.ru) return;
+    if (!profile.description?.ru && !profile.quote?.ru && !profile.history?.ru) return;
     setTranslating(true);
     setTranslationWarning(null);
-    const res = await translateFieldAction(profile.description.ru);
-    if (res.success && res.translations) {
-      setProfile({
-        ...profile,
-        description: res.translations
-      });
-      if (res.translations.didFallback) {
-        setTranslationWarning(res.warning || 'Translation service unavailable');
+
+    const nextProfile = { ...profile };
+
+    if (profile.description?.ru) {
+      const res = await translateFieldAction(profile.description.ru);
+      if (res.success && res.translations) {
+        nextProfile.description = res.translations;
+        if (res.translations.didFallback) setTranslationWarning('Some translations used fallback');
       }
     }
+
+    if (profile.quote?.ru) {
+      const res = await translateFieldAction(profile.quote.ru);
+      if (res.success && res.translations) {
+        nextProfile.quote = res.translations;
+      }
+    }
+
+    if (profile.history?.ru) {
+      const res = await translateFieldAction(profile.history.ru);
+      if (res.success && res.translations) {
+        nextProfile.history = res.translations;
+      }
+    }
+
+    setProfile(nextProfile);
     setTranslating(false);
   };
 
@@ -171,7 +187,7 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
             {activeLangTab === 'ru' && (
               <button
                 onClick={handleAutoTranslate}
-                disabled={translating || !profile.description?.ru}
+                disabled={translating || (!profile.description?.ru && !profile.quote?.ru && !profile.history?.ru)}
                 className="text-[10px] font-black text-blue-600 uppercase tracking-wider hover:underline disabled:opacity-50"
               >
                 {translating ? t('common.translating') : t('common.translateToAll')}
@@ -179,9 +195,35 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
             )}
           </div>
           <textarea
-            value={profile.description[activeLangTab] || ''}
+            value={profile.description?.[activeLangTab] || ''}
             onChange={e => setProfile({ ...profile, description: { ...profile.description, [activeLangTab]: e.target.value } })}
             rows={5}
+            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition text-sm leading-relaxed"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+             {t('clinic.quote')} ({activeLangTab.toUpperCase()})
+          </label>
+          <textarea
+            value={profile.quote?.[activeLangTab] || ''}
+            onChange={e => setProfile({ ...profile, quote: { ...profile.quote, [activeLangTab]: e.target.value } })}
+            rows={2}
+            placeholder={t('clinic.quotePlaceholder')}
+            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition text-sm leading-relaxed"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+             {t('clinic.history')} ({activeLangTab.toUpperCase()})
+          </label>
+          <textarea
+            value={profile.history?.[activeLangTab] || ''}
+            onChange={e => setProfile({ ...profile, history: { ...profile.history, [activeLangTab]: e.target.value } })}
+            rows={4}
+            placeholder={t('clinic.historyPlaceholder')}
             className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:border-blue-500 transition text-sm leading-relaxed"
           />
           {translationWarning && activeLangTab !== 'ru' && (

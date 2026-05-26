@@ -32,13 +32,13 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
 
         <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
           {/* Logo */}
-          <div className="relative w-32 h-32 md:w-44 md:h-44 bg-white rounded-3xl p-1 shadow-2xl shrink-0">
-            <div className="relative w-full h-full rounded-[1.4rem] overflow-hidden text-slate-800">
-               <Image src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover" />
+          <div className="relative w-32 h-32 md:w-44 md:h-44 bg-white rounded-[2.5rem] p-1 shadow-2xl shrink-0 group">
+            <div className="relative w-full h-full rounded-[2.2rem] overflow-hidden text-slate-800">
+               <Image src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover group-hover:scale-110 transition duration-700" />
             </div>
             {clinic.status === 'approved' && (
-              <div className="absolute -top-3 -right-3 bg-blue-600 text-white p-2 rounded-2xl shadow-lg" title={t('clinic.verified')}>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              <div className="absolute -top-2 -right-2 bg-blue-600 text-white p-2.5 rounded-2xl shadow-lg border-4 border-white" title={t('clinic.verified')}>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
               </div>
             )}
           </div>
@@ -68,14 +68,17 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
              )}
              <button
                onClick={() => {
-                 const firstDoc = clinic.doctorIds?.[0];
-                 if (firstDoc?._id) {
-                    window.dispatchEvent(new CustomEvent('open-booking', { detail: { doctorId: firstDoc._id } }));
-                 } else {
-                    alert(t('clinic.book'));
-                 }
+                  const el = document.getElementById('clinic-tabs-container');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                    // Give it a bit of time for smooth scroll to finish before switching tab
+                    setTimeout(() => {
+                      const tabBtn = document.querySelector('[data-tab-id="booking"]') as HTMLButtonElement;
+                      if (tabBtn) tabBtn.click();
+                    }, 500);
+                  }
                }}
-               className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition shadow-2xl shadow-blue-500/20"
+               className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition shadow-2xl shadow-blue-500/20"
              >
                 {t('clinic.book')}
              </button>

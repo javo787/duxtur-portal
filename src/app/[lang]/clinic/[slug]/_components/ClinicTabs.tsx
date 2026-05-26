@@ -6,6 +6,7 @@ import ClinicDoctors from './ClinicDoctors';
 import ClinicServices from './ClinicServices';
 import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
+import ClinicBookingWidget from './ClinicBookingWidget';
 
 export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string }) {
   const { t } = useT(lang);
@@ -13,6 +14,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
 
   const tabs = [
     { id: 'overview', label: t('clinic.overview') },
+    { id: 'booking', label: t('booking.title') },
     { id: 'doctors', label: t('clinic.doctors') },
     { id: 'services', label: t('clinic.services') },
     { id: 'reviews', label: t('clinic.reviews') },
@@ -20,12 +22,13 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar bg-slate-200/50 p-1.5 rounded-3xl w-fit sticky top-20 z-20 backdrop-blur-md">
         {tabs.map(tab => (
           <button
             key={tab.id}
+            data-tab-id={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
               activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'
@@ -41,10 +44,32 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-slate-800">
              <div className="lg:col-span-2 space-y-8">
+                {/* Quote Section */}
+                {((clinic.quote as any)?.[lang] || (clinic.quote as any)?.ru) && (
+                  <div className="bg-blue-600 p-10 md:p-14 rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-200">
+                    <span className="absolute top-8 left-8 text-6xl opacity-20 font-serif">“</span>
+                    <p className="text-xl md:text-2xl font-black italic leading-relaxed relative z-10">
+                      {(clinic.quote as any)[lang] || (clinic.quote as any).ru}
+                    </p>
+                    <div className="mt-8 flex items-center gap-3">
+                      <div className="w-10 h-1 bg-white/30 rounded-full" />
+                      <p className="text-xs font-black uppercase tracking-widest text-blue-100">{t('clinic.chiefQuote')}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
                    <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.about')}</h2>
                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">{(clinic.description as any)[lang] || (clinic.description as any).ru}</p>
                 </div>
+
+                {/* History Section */}
+                {((clinic.history as any)?.[lang] || (clinic.history as any)?.ru) && (
+                  <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.history')}</h2>
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">{(clinic.history as any)[lang] || (clinic.history as any).ru}</p>
+                  </div>
+                )}
 
                 <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
                    <h2 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tight">{t('clinic.specialties')}</h2>
@@ -93,6 +118,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
           </div>
         )}
 
+        {activeTab === 'booking' && <ClinicBookingWidget doctors={clinic.doctorIds} lang={lang} />}
         {activeTab === 'doctors' && <ClinicDoctors doctors={clinic.doctorIds} lang={lang} />}
         {activeTab === 'services' && <ClinicServices services={clinic.services} lang={lang} />}
         {activeTab === 'gallery' && <ClinicGallery photos={clinic.photos} />}

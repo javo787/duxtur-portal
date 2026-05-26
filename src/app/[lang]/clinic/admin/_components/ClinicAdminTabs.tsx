@@ -7,6 +7,7 @@ import ClinicProfileTab from './ClinicProfileTab';
 import ClinicDoctorsTab from './ClinicDoctorsTab';
 import ClinicAppointmentsTab from './ClinicAppointmentsTab';
 import ClinicReviewsTab from './ClinicReviewsTab';
+import ClinicMarketingTab from './ClinicMarketingTab';
 
 export default function ClinicAdminTabs({ lang, clinic, stats }: { lang: string, clinic: any, stats: any }) {
   const { t } = useT(lang);
@@ -18,6 +19,7 @@ export default function ClinicAdminTabs({ lang, clinic, stats }: { lang: string,
     { id: 'doctors', label: t('clinic.doctors'), icon: '👨‍⚕️' },
     { id: 'appointments', label: t('booking.title'), icon: '📅' },
     { id: 'reviews', label: t('clinic.reviews'), icon: '⭐' },
+    { id: 'marketing', label: t('clinic.marketing'), icon: '🚀' },
   ];
 
   return (
@@ -60,6 +62,7 @@ export default function ClinicAdminTabs({ lang, clinic, stats }: { lang: string,
         {activeTab === 'doctors' && <ClinicDoctorsTab lang={lang} clinicId={clinic._id} />}
         {activeTab === 'appointments' && <ClinicAppointmentsTab lang={lang} clinicId={clinic._id} />}
         {activeTab === 'reviews' && <ClinicReviewsTab lang={lang} clinicId={clinic._id} />}
+        {activeTab === 'marketing' && <ClinicMarketingTab lang={lang} slug={clinic.slug} />}
       </div>
     </div>
   );
