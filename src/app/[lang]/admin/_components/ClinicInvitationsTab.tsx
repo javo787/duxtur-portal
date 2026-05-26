@@ -135,7 +135,7 @@ export function ClinicInvitationsTab({ lang }: { lang: string }) {
                             📍 {inv.clinicId.city}
                         </span>
                         <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                            👨‍⚕️ {inv.clinicId.doctorCount || 0} врачей
+                            👨‍⚕️ {inv.clinicId.doctorIds?.length || inv.clinicId.doctorCount || 0} врачей
                         </span>
                     </div>
                     {/* Specialty tags */}

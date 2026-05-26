@@ -26,3 +26,17 @@ export function generateSlug(name: string): string {
     .replace(/--+/g, '-').replace(/^-+|-+$/g, '')
     .substring(0, 60) + '-' + Date.now().toString().slice(-6);
 }
+
+export function getOptimizedCloudinaryUrl(url: string, options: { width?: number, height?: number, crop?: string } = {}): string {
+  if (!url || !url.includes('cloudinary.com')) return url;
+
+  const parts = url.split('/upload/');
+  if (parts.length !== 2) return url;
+
+  const transformations = ['f_auto', 'q_auto'];
+  if (options.width) transformations.push(`w_${options.width}`);
+  if (options.height) transformations.push(`h_${options.height}`);
+  if (options.crop) transformations.push(`c_${options.crop}`);
+
+  return `${parts[0]}/upload/${transformations.join(',')}/${parts[1]}`;
+}

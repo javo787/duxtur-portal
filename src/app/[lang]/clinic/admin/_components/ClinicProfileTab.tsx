@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { useT } from '@/i18n';
-import { Field, Textarea, SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
+import { Field, SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { translateFieldAction } from '@/app/actions/clinic';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import { CATEGORIES } from '@/lib/doctor-constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -125,14 +126,14 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
         <div className="space-y-2">
            <SectionHeader title={t('clinic.uploadLogo')} />
            <div className="relative h-40 bg-slate-100 rounded-3xl overflow-hidden border-2 border-dashed border-slate-200 flex items-center justify-center group">
-             {profile.logo ? <img src={profile.logo} className="w-full h-full object-cover" /> : uploading === 'logo' ? <Spinner /> : <span className="text-3xl">📸</span>}
+             {profile.logo ? <img src={getOptimizedCloudinaryUrl(profile.logo, { width: 400, height: 400, crop: 'fill' })} alt="Logo" className="w-full h-full object-cover" /> : uploading === 'logo' ? <Spinner /> : <span className="text-3xl">📸</span>}
              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleUpload(e, 'logo')} />
            </div>
         </div>
         <div className="space-y-2">
            <SectionHeader title={t('clinic.uploadCover')} />
            <div className="relative h-40 bg-slate-100 rounded-3xl overflow-hidden border-2 border-dashed border-slate-200 flex items-center justify-center group">
-             {profile.coverImage ? <img src={profile.coverImage} className="w-full h-full object-cover" /> : uploading === 'coverImage' ? <Spinner /> : <span className="text-3xl">🖼️</span>}
+             {profile.coverImage ? <img src={getOptimizedCloudinaryUrl(profile.coverImage, { width: 800, height: 400, crop: 'fill' })} alt="Cover" className="w-full h-full object-cover" /> : uploading === 'coverImage' ? <Spinner /> : <span className="text-3xl">🖼️</span>}
              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleUpload(e, 'coverImage')} />
            </div>
         </div>
@@ -237,6 +238,64 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
         <button onClick={() => setShowMapPicker(true)} className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-500 font-bold hover:bg-slate-50 transition text-slate-800">
           📍 {t('doctors.onMap')}
         </button>
+      </div>
+
+      {/* Gallery Section */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
+        <SectionHeader title={t('clinic.gallery')} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {profile.photos?.map((photo: string, index: number) => (
+            <div key={index} className="relative aspect-square bg-slate-100 rounded-3xl overflow-hidden group">
+              <img src={getOptimizedCloudinaryUrl(photo, { width: 400, height: 400, crop: 'fill' })} alt={`Gallery ${index}`} className="w-full h-full object-cover" />
+              <button
+                onClick={() => {
+                  const next = [...profile.photos];
+                  next.splice(index, 1);
+                  setProfile({ ...profile, photos: next });
+                }}
+                className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <div className="relative aspect-square bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-slate-100 transition-colors cursor-pointer group">
+            {uploading === 'gallery' ? (
+              <Spinner />
+            ) : (
+              <>
+                <span className="text-3xl group-hover:scale-110 transition-transform">📸</span>
+                <span className="text-[10px] font-black uppercase text-slate-400">{t('common.upload')}</span>
+              </>
+            )}
+            <input
+              type="file"
+              multiple
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files) return;
+                setUploading('gallery');
+                try {
+                  const uploadPromises = Array.from(files).map(async (file) => {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const res = await uploadImageToCloudinary(fd);
+                    return res.success ? res.url : null;
+                  });
+                  const results = await Promise.all(uploadPromises);
+                  const successfulUploads = results.filter((url): url is string => !!url);
+                  setProfile({
+                    ...profile,
+                    photos: [...(profile.photos || []), ...successfulUploads]
+                  });
+                } finally {
+                  setUploading(null);
+                }
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <button
