@@ -138,6 +138,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 
   const [lastSaved, setLastSaved] = useState<number | null>(null);
 
+  const [claimCandidates, setClaimCandidates] = useState<Record<string, any>[]>([]);
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
+
   const initialData = {
     name:       '',
     type:       'clinic',
@@ -230,7 +234,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const expiryWarning = lastSaved ? getExpiryWarning(lastSaved) : null;
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+    setFormData((prev: Record<string, any>) => ({ ...prev, [field]: value }));
     if (submitError) setSubmitError(null);
     if (field === 'coordinates' && value.lat !== 0) {
       setMapPreviewLoading(true);
@@ -269,7 +273,32 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const goToStep = (n: 1 | 2 | 3) => {
+  const checkExistingClinics = async () => {
+    if (!formData.name || !formData.city) return;
+    setIsCheckingExisting(true);
+    try {
+      const res = await fetch('/api/clinic/check-existing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          city: formData.city,
+        }),
+      });
+      const data = await res.json();
+      setClaimCandidates(data.candidates || []);
+    } catch (error) {
+      console.error('Error checking existing clinics:', error);
+    } finally {
+      setIsCheckingExisting(false);
+    }
+  };
+
+  const goToStep = async (n: 1 | 2 | 3) => {
+    if (step === 1 && n === 2) {
+      await checkExistingClinics();
+    }
     setStep(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -336,7 +365,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
       const res  = await fetch('/api/clinic/register', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(formData),
+        body:    JSON.stringify({
+          ...formData,
+          claimClinicId: selectedClaimId
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -678,6 +710,59 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                   {/* ══ STEP 1 ══ */}
                   {step === 1 && (
                     <>
+                      {claimCandidates.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-5 bg-blue-50 border-2 border-blue-200 rounded-[24px] space-y-3"
+                        >
+                          <p className="text-[11px] font-black text-blue-700 uppercase tracking-widest">
+                            🔍 {t('clinic.foundExisting') || 'Мы нашли похожие клиники в базе'}
+                          </p>
+                          <p className="text-xs text-slate-500 font-medium">
+                            {t('clinic.claimHint') || 'Если ваша клиника уже есть — выберите её и мы привяжем ваш аккаунт к существующему профилю'}
+                          </p>
+                          {claimCandidates.map((c) => (
+                            <motion.div
+                              key={c._id}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setSelectedClaimId(
+                                selectedClaimId === c._id ? null : c._id
+                              )}
+                              className={`p-4 rounded-[18px] border-2 cursor-pointer transition-all ${
+                                selectedClaimId === c._id
+                                  ? 'border-blue-600 bg-blue-600/10'
+                                  : 'border-slate-200 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">🏥</span>
+                                <div>
+                                  <p className="font-black text-slate-900 text-sm">{c.name?.ru}</p>
+                                  <p className="text-xs text-slate-500">{c.address} · {c.phone}</p>
+                                </div>
+                                {selectedClaimId === c._id && (
+                                  <span className="ml-auto text-blue-600">✓</span>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                          <motion.div
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setSelectedClaimId(null)}
+                            className={`p-4 rounded-[18px] border-2 cursor-pointer transition-all ${
+                              selectedClaimId === null
+                                ? 'border-slate-400 bg-slate-50'
+                                : 'border-slate-200 bg-white'
+                            }`}
+                          >
+                            <p className="text-sm font-black text-slate-600">
+                              ➕ {t('clinic.isNewClinic') || 'Нет, это новая клиника'}
+                            </p>
+                          </motion.div>
+                        </motion.div>
+                      )}
+
                       <div className="space-y-2">
                         <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
                           {t('clinic.clinicName')}
@@ -730,9 +815,10 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => goToStep(2)}
-                        className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-black text-lg transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-3"
+                        disabled={isCheckingExisting}
+                        className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-black text-lg transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-3 disabled:opacity-50"
                       >
-                        {t('clinic.nextAddress')}
+                        {isCheckingExisting ? <Spinner /> : t('clinic.nextAddress')}
                       </motion.button>
                     </>
                   )}
@@ -965,8 +1051,8 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
                             t('clinic.afterVerification2'),
                             t('clinic.afterVerification3'),
                             t('clinic.afterVerification4'),
-                          ].map((item, i) => (
-                            <div key={i} className="flex items-center gap-3">
+                          ].map((item) => (
+                            <div key={item} className="flex items-center gap-3">
                               <div className="w-1.5 h-1.5 rounded-full bg-blue-300" />
                               <p className="text-xs font-black tracking-tight">{item}</p>
                             </div>

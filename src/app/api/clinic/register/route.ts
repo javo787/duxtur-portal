@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const result = await registerClinic(body);
 
     if (result.success) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, clinicId: result.clinicId });
     } else {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
