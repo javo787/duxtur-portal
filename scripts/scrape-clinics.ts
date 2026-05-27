@@ -3,19 +3,83 @@ import dbConnect from '../src/lib/mongodb';
 import Clinic from '../src/models/Clinic';
 import { generateSlug } from '../src/lib/utils';
 import { translateText } from '../src/lib/translation-service';
+import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
 
-const SGAI_API_KEY = process.env.SGAI_API_KEY;
+// ── Cloudinary config ──────────────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
 
-if (!SGAI_API_KEY) {
-  console.error('SGAI_API_KEY is not defined in environment variables');
+const SGAI_API_KEY = process.env.SGAI_API_KEY!;
+
+// ── Загрузить лого с ydoc на Cloudinary ───────────────────────────────────
+async function uploadLogoFromUrl(imageUrl: string, clinicSlug: string): Promise<string> {
+  try {
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      folder: 'duxtur/clinics/logos',
+      public_id: `clinic-${clinicSlug}`,
+      overwrite: false,
+      transformation: [{ width: 400, height: 400, crop: 'fill', quality: 'auto' }],
+    });
+    return result.secure_url;
+  } catch (e) {
+    console.warn(`  ⚠️  Лого не загрузилось: ${imageUrl}`);
+    return '';
+  }
 }
 
-async function extractFromUrl(url: string, prompt: string) {
-  if (!SGAI_API_KEY) return null;
+// ── Геокодирование через Nominatim (бесплатно) ────────────────────────────
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const query = encodeURIComponent(`${address}, Душанбе, Таджикистан`);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
+      { headers: { 'User-Agent': 'duxtur.org medical portal' } }
+    );
+    const data = await res.json();
+    if (data?.[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
+// ── Скрапинг листинга ydoc ────────────────────────────────────────────────
+async function scrapeYdocListing(): Promise<any[]> {
+  const res = await fetch('https://v2-api.scrapegraphai.com/api/extract', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'SGAI-APIKEY': SGAI_API_KEY,
+    },
+    body: JSON.stringify({
+      url: 'https://ydoc.tj/dushanbe/top/medcentr/',
+      prompt: `
+        Extract all medical clinics from this page as a JSON array.
+        For each clinic return:
+        - name: string (Russian, e.g. "Клиника «Vedanta»")
+        - address: string (street address)
+        - logoUrl: string (full URL of the clinic photo/logo image)
+        - profileUrl: string (full URL to the clinic profile page on ydoc.tj)
+        - doctorCount: number
+        - reviewCount: number
+        Return ONLY a JSON array, no extra text.
+      `,
+    }),
+  });
+  const data = await res.json();
+  return Array.isArray(data.result) ? data.result : [];
+}
+
+// ── Скрапинг страницы клиники для телефона ────────────────────────────────
+async function scrapeClinicDetail(profileUrl: string): Promise<{ phone?: string; website?: string }> {
   try {
     const res = await fetch('https://v2-api.scrapegraphai.com/api/extract', {
       method: 'POST',
@@ -23,109 +87,112 @@ async function extractFromUrl(url: string, prompt: string) {
         'Content-Type': 'application/json',
         'SGAI-APIKEY': SGAI_API_KEY,
       },
-      body: JSON.stringify({ url, prompt }),
+      body: JSON.stringify({
+        url: profileUrl,
+        prompt: `
+          Extract from this clinic page:
+          - phone: string (phone number)
+          - website: string (website URL if present)
+          Return only JSON object.
+        `,
+      }),
     });
     const data = await res.json();
-    return data.result;
-  } catch (error) {
-    console.error(`Error extracting from ${url}:`, error);
-    return null;
+    return data.result || {};
+  } catch {
+    return {};
   }
 }
 
-async function scrape2GIS() {
-  const url = 'https://2gis.tj/dushanbe/search/клиника';
-  const prompt = `
-    Extract all medical clinics from this page.
-    For each clinic return JSON array with fields:
-    name (string, Russian),
-    address (string),
-    phone (string),
-    type (one of: clinic, hospital, dental_clinic, diagnostic_center, polyclinic),
-    workingHours (object with open and close time if available).
-    Return only JSON array, no extra text.
-  `;
-  return await extractFromUrl(url, prompt);
-}
-
-async function scrapeYdoc() {
-  const url = 'https://ydoc.tj/clinics';
-  const prompt = `
-    Extract all clinics listed on this page.
-    For each return JSON array:
-    name (Russian), address, phone, website, specialties (array of strings).
-    Return only JSON array.
-  `;
-  return await extractFromUrl(url, prompt);
-}
-
-interface RawClinic {
-  name: string;
-  address?: string;
-  phone?: string;
-  type?: string;
-  specialties?: string[];
-  source: string;
-}
-
+// ── Главная функция ───────────────────────────────────────────────────────
 async function importClinics() {
-  try {
-    await dbConnect();
-    console.log('Connected to MongoDB');
+  await dbConnect();
+  console.log('✅ MongoDB подключён\n');
 
-    const [clinics2gis, clinicsYdoc] = await Promise.all([
-      scrape2GIS(),
-      scrapeYdoc(),
-    ]);
+  console.log('🔍 Скрапим ydoc.tj...');
+  const clinics = await scrapeYdocListing();
+  console.log(`📋 Найдено клиник: ${clinics.length}\n`);
 
-    const all: RawClinic[] = [
-      ...(Array.isArray(clinics2gis) ? clinics2gis.map((c) => ({ ...c, source: '2gis' })) : []),
-      ...(Array.isArray(clinicsYdoc) ? clinicsYdoc.map((c) => ({ ...c, source: 'ydoc' })) : []),
-    ];
+  let imported = 0;
+  let skipped = 0;
 
-    let imported = 0;
-    let skipped = 0;
+  for (const raw of clinics) {
+    console.log(`\n─── ${raw.name} ───`);
 
-    for (const raw of all) {
-      try {
-        const slug = generateSlug(raw.name);
+    const slug = generateSlug(raw.name);
 
-        // Пропускаем дубликаты
-        const exists = await Clinic.findOne({ slug });
-        if (exists) {
-          skipped++;
-          continue;
-        }
+    const exists = await Clinic.findOne({ slug });
+    if (exists) {
+      console.log(`  ⏭️  Уже существует`);
+      skipped++;
+      continue;
+    }
 
-        const translatedName = await translateText(raw.name);
+    // 1. Переводим название
+    const translatedName = await translateText(raw.name);
 
-        await Clinic.create({
-          userId: null,
-          name: translatedName,
-          slug,
-          phone: raw.phone || '',
-          address: raw.address || '',
-          city: 'Душанбе',
-          type: raw.type || 'clinic',
-          specialties: raw.specialties || [],
-          status: 'pre_imported',
-          importSource: raw.source,
-          importedAt: new Date(),
-        });
+    // 2. Загружаем лого на Cloudinary
+    let logoUrl = '';
+    if (raw.logoUrl) {
+      console.log(`  🖼️  Загружаем лого...`);
+      logoUrl = await uploadLogoFromUrl(raw.logoUrl, slug);
+    }
 
-        imported++;
-        console.log(`✅ ${raw.name}`);
-      } catch (e) {
-        console.error(`❌ ${raw.name}:`, e);
+    // 3. Геокодируем адрес
+    let coordinates = undefined;
+    if (raw.address) {
+      console.log(`  📍 Геокодируем: ${raw.address}`);
+      const geo = await geocodeAddress(raw.address);
+      if (geo) {
+        coordinates = {
+          lat: geo.lat,
+          lng: geo.lng,
+          type: 'Point' as const,
+          coordinates: [geo.lng, geo.lat],
+        };
+        console.log(`     → ${geo.lat}, ${geo.lng}`);
       }
     }
 
-    console.log(`\nГотово: импортировано ${imported}, пропущено ${skipped}`);
-    process.exit(0);
-  } catch (error) {
-    console.error('Import failed:', error);
-    process.exit(1);
+    // 4. Получаем телефон со страницы клиники (опционально — тратит кредиты)
+    // Раскомментируй если хочешь телефоны:
+    // let details = {};
+    // if (raw.profileUrl) {
+    //   console.log(`  📞 Получаем телефон...`);
+    //   details = await scrapeClinicDetail(raw.profileUrl);
+    // }
+
+    // 5. Сохраняем в MongoDB
+    await Clinic.create({
+      userId: null,
+      name: translatedName,
+      slug,
+      address: raw.address || '',
+      city: 'Душанбе',
+      logo: logoUrl,
+      type: 'clinic',
+      status: 'pre_imported',
+      coordinates,
+      importSource: 'ydoc',
+      importedAt: new Date(),
+      // phone: (details as any).phone || '',
+      // website: (details as any).website || '',
+    });
+
+    console.log(`  ✅ Импортировано`);
+    imported++;
+
+    // Небольшая пауза между запросами
+    await new Promise(r => setTimeout(r, 500));
   }
+
+  console.log(`\n════════════════════════════════`);
+  console.log(`✅ Импортировано: ${imported}`);
+  console.log(`⏭️  Пропущено:    ${skipped}`);
+  process.exit(0);
 }
 
-importClinics();
+importClinics().catch(err => {
+  console.error('Критическая ошибка:', err);
+  process.exit(1);
+});
