@@ -6,11 +6,11 @@ import User from '@/models/User';
 import Clinic from '@/models/Clinic';
 import bcrypt from 'bcryptjs';
 import { translateText } from '@/lib/translation-service';
-import { stripHtml, generateSlug } from '@/lib/utils';
+import { generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
 
-export async function registerClinic(formData: any) {
+export async function registerClinic(formData: Record<string, any>) {
   await dbConnect();
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -27,7 +27,8 @@ export async function registerClinic(formData: any) {
       address,
       coordinates,
       logo,
-      licenseDocument
+      licenseDocument,
+      claimClinicId
     } = formData;
 
     if (!email || !password || !name || !licenseDocument) {
@@ -49,31 +50,41 @@ export async function registerClinic(formData: any) {
       name: ownerName || name,
     }], { session });
 
-    const translatedName = await translateText(name);
+    let clinicId: string;
 
-    const geoCoordinates = (coordinates?.lat && coordinates?.lng)
-      ? { lat: coordinates.lat, lng: coordinates.lng, type: 'Point' as const, coordinates: [coordinates.lng, coordinates.lat] }
-      : undefined;
+    if (claimClinicId) {
+      const existingClinic = await Clinic.findById(claimClinicId).session(session);
 
-    try {
-      await Clinic.create([{
-        userId: newUser[0]._id,
-        name: translatedName,
-        slug: generateSlug(name),
-        email,
-        phone,
-        type,
-        city,
-        address,
-        coordinates: geoCoordinates,
-        logo,
-        licenseDocument,
-        status: 'pending',
-      }], { session });
-    } catch (err: any) {
-      if (err.code === 11000 && err.keyPattern?.slug) {
-        // Retry once with a new slug
-        await Clinic.create([{
+      if (!existingClinic || existingClinic.status !== 'pre_imported') {
+        await session.abortTransaction();
+        return { success: false, error: 'Клиника не найдена или уже занята.' };
+      }
+
+      await Clinic.findByIdAndUpdate(
+        claimClinicId,
+        {
+          $set: {
+            userId: newUser[0]._id,
+            status: 'pending',
+            licenseDocument,
+            // Update fields if they were provided during registration and were empty in pre_imported
+            ...(existingClinic.phone ? {} : { phone }),
+            ...(existingClinic.address ? {} : { address }),
+            ...(existingClinic.logo ? {} : { logo }),
+            ...(existingClinic.email ? {} : { email }),
+          }
+        },
+        { session }
+      );
+      clinicId = claimClinicId;
+    } else {
+      const translatedName = await translateText(name);
+      const geoCoordinates = (coordinates?.lat && coordinates?.lng)
+        ? { lat: coordinates.lat, lng: coordinates.lng, type: 'Point' as const, coordinates: [coordinates.lng, coordinates.lat] }
+        : undefined;
+
+      try {
+        const created = await Clinic.create([{
           userId: newUser[0]._id,
           name: translatedName,
           slug: generateSlug(name),
@@ -87,8 +98,29 @@ export async function registerClinic(formData: any) {
           licenseDocument,
           status: 'pending',
         }], { session });
-      } else {
-        throw err;
+        clinicId = created[0]._id.toString();
+      } catch (err: any) {
+        if (err.code === 11000 && err.keyPattern?.slug) {
+          // Retry once with a new slug (wait a bit to ensure timestamp suffix is different)
+          await new Promise(resolve => setTimeout(resolve, 10));
+          const created = await Clinic.create([{
+            userId: newUser[0]._id,
+            name: translatedName,
+            slug: generateSlug(name),
+            email,
+            phone,
+            type,
+            city,
+            address,
+            coordinates: geoCoordinates,
+            logo,
+            licenseDocument,
+            status: 'pending',
+          }], { session });
+          clinicId = created[0]._id.toString();
+        } else {
+          throw err;
+        }
       }
     }
 
@@ -101,21 +133,22 @@ export async function registerClinic(formData: any) {
       `📍 Город: ${city}\n` +
       `📞 Тел: ${phone}\n` +
       `✉️ Email: ${email}\n` +
-      `📂 [Лицензия](${licenseDocument})`;
+      `📂 [Лицензия](${licenseDocument})\n` +
+      `${claimClinicId ? '🔗 Клейм существующего профиля' : '🆕 Новая клиника'}`;
 
     sendMessageToAdmin(message);
 
-    return { success: true };
+    return { success: true, clinicId };
   } catch (error: any) {
     await session.abortTransaction();
     console.error('Clinic Reg Error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   } finally {
     await session.endSession();
   }
 }
 
-export async function updateClinicProfile(id: string, data: any, userId?: string) {
+export async function updateClinicProfile(id: string, data: Record<string, any>, userId?: string) {
   try {
     if (!id || !id.match(/^[a-f\d]{24}$/i)) {
       return { success: false, error: 'Invalid clinic ID' };
@@ -145,7 +178,7 @@ export async function updateClinicProfile(id: string, data: any, userId?: string
     return { success: true };
   } catch (error: any) {
     console.error('Update Clinic Error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 

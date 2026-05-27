@@ -15,7 +15,7 @@ const WorkingHoursSchema = {
 };
 
 const ClinicSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
   name: MultilingualString,
   slug: { type: String, unique: true, required: true },
   description: MultilingualString,
@@ -26,9 +26,15 @@ const ClinicSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'banned'],
+    enum: ['pending', 'approved', 'rejected', 'banned', 'pre_imported'],
     default: 'pending'
   },
+  importSource: {
+    type: String,
+    enum: ['2gis', 'ydoc', 'manual'],
+    default: 'manual'
+  },
+  importedAt: { type: Date },
   logo: { type: String, default: '' },
   coverImage: { type: String, default: '' },
   photos: { type: [String], default: [] },
@@ -89,7 +95,14 @@ const ClinicSchema = new mongoose.Schema({
 
 ClinicSchema.index({ 'coordinates.coordinates': '2dsphere' });
 ClinicSchema.index(
-  { 'name.ru': 'text', 'name.uz': 'text', 'description.ru': 'text' },
+  {
+    'name.ru': 'text',
+    'name.uz': 'text',
+    'name.tg': 'text',
+    'name.kk': 'text',
+    'name.ky': 'text',
+    'description.ru': 'text'
+  },
   { default_language: 'russian' }
 );
 ClinicSchema.index({ slug: 1 });

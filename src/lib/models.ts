@@ -2,3 +2,4 @@
 import '@/models/User';
 import '@/models/Doctor';
 import '@/models/Article';
+import '@/models/Clinic';
