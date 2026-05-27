@@ -138,11 +138,11 @@ async function scrapeYdocListing(): Promise<RawClinic[]> {
 
   const data = await res.json();
 
-  if (!Array.isArray(data.result)) {
-    throw new Error(`Неожиданный ответ от SGAI: ${JSON.stringify(data)}`);
-  }
-
-  return data.result;
+  const items = data.result ?? data.json?.items;
+if (!Array.isArray(items)) {
+  throw new Error(`Неожиданный ответ от SGAI: ${JSON.stringify(data)}`);
+}
+return items;
 }
 
 // ── Главная функция импорта ───────────────────────────────────────────────────
