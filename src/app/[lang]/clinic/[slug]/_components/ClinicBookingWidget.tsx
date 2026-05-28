@@ -24,18 +24,18 @@ export default function ClinicBookingWidget({ doctors, lang }: { doctors: Doctor
   if (!doctors || doctors.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-      <div className="p-8 border-b border-slate-50">
+    <div className="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="p-5 md:p-8 border-b border-slate-50">
         <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t('booking.title')}</h2>
         <p className="text-sm text-slate-400 font-bold mt-1 uppercase tracking-wider">{t('clinic.selectDoctorTime')}</p>
       </div>
 
       <div className="divide-y divide-slate-50">
         {doctors.map((doc) => (
-          <div key={doc._id} className="p-6 hover:bg-slate-50/50 transition-colors">
+          <div key={doc._id} className="p-4 md:p-6 hover:bg-slate-50/50 transition-colors">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Doctor Info */}
-              <div className="flex items-center gap-4 min-w-[240px]">
+              <div className="flex items-center gap-4 min-w-0 md:min-w-[240px]">
                 <div className="relative w-16 h-16 rounded-2xl overflow-hidden shrink-0">
                   <Image
                     src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
@@ -64,7 +64,7 @@ export default function ClinicBookingWidget({ doctors, lang }: { doctors: Doctor
                   return (
                     <div
                       key={i}
-                      className={`flex-shrink-0 w-24 p-3 rounded-2xl border flex flex-col items-center gap-1 transition-all ${
+                      className={`flex-shrink-0 w-20 md:w-24 p-2 md:p-3 rounded-2xl border flex flex-col items-center gap-1 transition-all ${
                         isWorking ? 'bg-white border-slate-100' : 'bg-slate-50 border-transparent opacity-40'
                       }`}
                     >

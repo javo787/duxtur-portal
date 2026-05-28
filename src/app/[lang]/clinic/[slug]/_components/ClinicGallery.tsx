@@ -14,7 +14,7 @@ export default function ClinicGallery({ photos }: { photos: string[] }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {photos.map((photo, i) => (
-        <div key={i} className="relative aspect-square rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow group cursor-zoom-in">
+        <div key={i} className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow group cursor-zoom-in">
           <Image
             src={getOptimizedCloudinaryUrl(photo, { width: 600, height: 600, crop: 'fill' })}
             alt={`Gallery photo ${i + 1}`}

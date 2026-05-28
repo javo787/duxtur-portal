@@ -17,7 +17,7 @@ export default function ClinicServices({ services, lang }: { services: any[], la
       {/* Mobile View: Cards */}
       <div className="grid grid-cols-1 gap-3 md:hidden">
         {services.map((s, i) => (
-          <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
+          <div key={i} className="bg-white p-3 xs:p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
             <div>
               <p className="text-sm font-black text-slate-800 leading-tight">{s.name[lang] || s.name.ru}</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{t('clinic.services')}</p>
