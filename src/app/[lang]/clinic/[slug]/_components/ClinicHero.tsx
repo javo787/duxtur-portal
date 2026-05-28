@@ -30,10 +30,10 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
            </div>
         </div>
 
-        <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-12 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-8 md:pb-12 flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
           {/* Logo */}
-          <div className="relative w-32 h-32 md:w-48 md:h-48 bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-1 shadow-2xl shrink-0 group border border-white/40">
-            <div className="relative w-full h-full rounded-[2.2rem] overflow-hidden text-slate-800">
+          <div className="relative w-28 h-28 md:w-48 md:h-48 bg-white/90 backdrop-blur-xl rounded-3xl md:rounded-[2.5rem] p-1 shadow-2xl shrink-0 group border border-white/40">
+            <div className="relative w-full h-full rounded-2xl md:rounded-[2.2rem] overflow-hidden text-slate-800">
                <Image src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={(clinic.name as any)[lang] || (clinic.name as any).ru} fill className="object-cover group-hover:scale-110 transition duration-700" />
             </div>
             {clinic.status === 'approved' && (
@@ -49,7 +49,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
                <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest">{t('clinic.type_' + clinic.type)}</span>
                <span className="px-3 py-1 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">📍 {clinic.city}</span>
             </div>
-            <h1 className="text-3xl md:text-6xl font-black mb-3 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70">
+            <h1 className="text-2xl xs:text-3xl md:text-6xl font-black mb-3 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70">
               {(clinic.name as any)[lang] || (clinic.name as any).ru}
             </h1>
             <div className="flex items-center justify-center md:justify-start gap-4">
@@ -61,7 +61,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mb-2 w-full md:w-auto">
+          <div className="flex gap-2 mb-2 w-full md:w-auto">
              {clinic.phone && (
                <a href={`tel:${clinic.phone}`} className="flex-1 md:flex-none p-4 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl transition shadow-xl text-center" title={clinic.phone}><span className="text-xl">📞</span></a>
              )}

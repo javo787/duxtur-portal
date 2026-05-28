@@ -25,13 +25,13 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
   return (
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-[2rem] w-fit sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
         {tabs.map(tab => (
           <button
             key={tab.id}
             data-tab-id={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`relative px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap z-10 ${
+            className={`relative px-4 md:px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap z-10 ${
               activeTab === tab.id ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -54,9 +54,9 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
              <div className="lg:col-span-2 space-y-8">
                 {/* Quote Section */}
                 {((clinic.quote as any)?.[lang] || (clinic.quote as any)?.ru) && (
-                  <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-10 md:p-20 rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-500/30">
+                  <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 md:p-20 rounded-3xl md:rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-500/30">
                     <span className="absolute top-8 left-8 text-8xl opacity-10 font-serif">“</span>
-                    <p className="text-xl md:text-3xl font-black italic leading-relaxed relative z-10 tracking-tight">
+                    <p className="text-lg md:text-3xl font-black italic leading-relaxed relative z-10 tracking-tight">
                       {(clinic.quote as any)[lang] || (clinic.quote as any).ru}
                     </p>
                     <div className="mt-10 flex items-center gap-4">
@@ -68,7 +68,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
                   </div>
                 )}
 
-                <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                <div className="bg-white p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
                    <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.about')}</h2>
                    <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
                       {(clinic.description as any)[lang] || (clinic.description as any).ru}
@@ -77,7 +77,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
 
                 {/* History Section */}
                 {((clinic.history as any)?.[lang] || (clinic.history as any)?.ru) && (
-                  <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                  <div className="bg-white p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
                     <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.history')}</h2>
                     <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
                       {(clinic.history as any)[lang] || (clinic.history as any).ru}
@@ -85,7 +85,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
                   </div>
                 )}
 
-                <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                <div className="bg-white p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
                    <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.specialties')}</h2>
                    <div className="flex flex-wrap gap-2">
                       {clinic.specialties.map((s: string) => (
@@ -96,7 +96,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
              </div>
 
              <div className="space-y-8">
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/50 shadow-sm">
                    <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.workingHours')}</h2>
                    <div className="space-y-4">
                       {['mon','tue','wed','thu','fri','sat','sun'].map((day) => (
@@ -115,7 +115,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
                    </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-200/50 shadow-sm">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/50 shadow-sm">
                    <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.contacts')}</h2>
                    <div className="space-y-4">
                       <div>
