@@ -12,7 +12,7 @@ export default function ClinicDoctors({ doctors, lang }: { doctors: any[], lang:
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {doctors.map((doc: any) => (
-        <Link key={doc._id} href={`/${lang}/doctor/${doc.slug || doc._id}`} className="bg-white p-4 md:p-6 rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-900/5 hover:-translate-y-2 transition-all duration-500 group">
+        <Link key={doc._id} href={`/${lang}/doctor/${doc.slug || doc._id}`} className="bg-white p-3 xs:p-4 md:p-6 rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-900/5 hover:-translate-y-2 transition-all duration-500 group">
            <div className="flex items-center gap-4 text-slate-800">
               <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-500">
                  <Image src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt={doc.name} fill className="object-cover" />

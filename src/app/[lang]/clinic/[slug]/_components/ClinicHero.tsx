@@ -61,7 +61,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 mb-2 w-full md:w-auto">
+          <div className="flex gap-2 xs:gap-3 mb-2 w-full md:w-auto">
              {clinic.phone && (
                <a href={`tel:${clinic.phone}`} className="flex-1 md:flex-none p-4 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl transition shadow-xl text-center" title={clinic.phone}><span className="text-xl">📞</span></a>
              )}
