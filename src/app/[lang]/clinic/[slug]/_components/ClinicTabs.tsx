@@ -25,7 +25,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
   return (
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
         {tabs.map(tab => (
           <button
             key={tab.id}
