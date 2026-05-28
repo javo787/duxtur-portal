@@ -3,6 +3,7 @@ import Clinic from '@/models/Clinic';
 import ClinicCard from './_components/ClinicCard';
 import Link from 'next/link';
 import { getT, T } from '@/i18n';
+import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
 import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
@@ -102,7 +103,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-20 text-slate-800">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       {/* Hero */}
@@ -230,6 +231,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
            </>
          )}
       </section>
+      <HomeFooter lang={lang} />
     </div>
   );
 }

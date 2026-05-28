@@ -49,7 +49,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
                <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest">{t('clinic.type_' + clinic.type)}</span>
                <span className="px-3 py-1 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">📍 {clinic.city}</span>
             </div>
-            <h1 className="text-2xl xs:text-3xl md:text-6xl font-black mb-3 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70">
+            <h1 className="text-2xl xs:text-3xl md:text-6xl font-black mb-3 tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-br from-white to-white/70 break-words">
               {(clinic.name as any)[lang] || (clinic.name as any).ru}
             </h1>
             <div className="flex items-center justify-center md:justify-start gap-4">
@@ -61,7 +61,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: any, lang: string
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 xs:gap-3 mb-2 w-full md:w-auto">
+          <div className="flex flex-wrap gap-2 xs:gap-3 mb-2 w-full md:w-auto">
              {clinic.phone && (
                <a href={`tel:${clinic.phone}`} className="flex-1 md:flex-none p-4 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl transition shadow-xl text-center" title={clinic.phone}><span className="text-xl">📞</span></a>
              )}

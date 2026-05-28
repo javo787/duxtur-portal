@@ -7,6 +7,7 @@ import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import ClinicHero from './_components/ClinicHero';
 import ClinicTabs from './_components/ClinicTabs';
 import ClinicViewTracker from '@/components/ClinicViewTracker';
+import HomeFooter from '@/components/home/HomeFooter';
 
 export const revalidate = 21600; // 6 hours
 
@@ -96,6 +97,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
         <ClinicTabs clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
       </div>
+      <HomeFooter lang={lang} />
     </div>
   );
 }
