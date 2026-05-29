@@ -8,10 +8,12 @@ import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
 import { motion } from 'framer-motion';
+import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
 export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string }) {
   const { t } = useT(lang);
   const [activeTab, setActiveTab] = useState('overview');
+  const { visible: headerVisible } = useScrollVisibility();
 
   const tabs = [
     { id: 'overview', label: t('clinic.overview') },
@@ -25,7 +27,11 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
   return (
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/70 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky top-20 z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20">
+      <div
+        className={`flex gap-1.5 overflow-x-auto no-scrollbar bg-white/95 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20 transition-all duration-300 ${
+          headerVisible ? 'top-[72px]' : 'top-4'
+        }`}
+      >
         {tabs.map(tab => (
           <button
             key={tab.id}
