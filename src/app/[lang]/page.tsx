@@ -1,5 +1,5 @@
 import { getDictionary } from '@/get-dictionary';
-import { Locale } from '@/i18n-config';
+import { Locale } from '@/i18n';
 import type { Metadata } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
@@ -13,12 +13,12 @@ import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 
-type Props = { params: Promise<{ lang: Locale }> };
+type Props = { params: Promise<{ lang: string }> };
 
 export const revalidate = 3600; // ISR — обновление главной каждый час
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { lang } = await params;
+  const { lang } = (await params) as { lang: Locale };
   const dict = await getDictionary(lang);
   return {
     title: dict.meta_title,
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function Home(props: Props) {
-  const { lang } = await props.params;
+  const { lang } = (await props.params) as { lang: Locale };
   const dict = await getDictionary(lang);
 
   await dbConnect();
