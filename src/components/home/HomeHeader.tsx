@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useSession, signOut } from 'next-auth/react';
 
 export default function HomeHeader({ lang }: { lang: string }) {
@@ -68,6 +69,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
 
         {/* Right actions */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <LanguageSwitcher />
 
           {session ? (
