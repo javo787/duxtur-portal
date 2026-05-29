@@ -53,11 +53,11 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
            <div className="flex items-center gap-1 text-xs font-bold text-slate-400 mb-4">
               <span className="text-amber-400 text-sm">★</span>
               <span className="text-slate-900 dark:text-slate-200">{clinic.rating.avg}</span>
-              <span className="opacity-70 dark:opacity-50">
+              <span className="opacity-70 dark:opacity-60">
                  {clinic.rating.count > 0 ? `(${clinic.rating.count})` : t('doctor.noReviews')}
               </span>
-              <span className="mx-1 opacity-20 dark:opacity-10">•</span>
-              <span className="opacity-70 dark:opacity-50">{clinic.doctorIds?.length || 0} {t('common.doctors')}</span>
+              <span className="mx-1 opacity-20 dark:opacity-20">•</span>
+              <span className="opacity-70 dark:opacity-60">{clinic.doctorIds?.length || 0} {t('common.doctors')}</span>
            </div>
 
            <div className="flex flex-wrap gap-1.5 mt-auto">
