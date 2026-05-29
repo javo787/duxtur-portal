@@ -11,8 +11,8 @@ import HomeFooter from '@/components/home/HomeFooter';
 
 export const revalidate = 21600; // 6 hours
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: Locale }> }): Promise<Metadata> {
-  const { slug, lang } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
+  const { slug, lang } = (await params) as { slug: string; lang: Locale };
   await dbConnect();
   const clinic = await Clinic.findOne({ slug, status: 'approved' }).lean();
   if (!clinic) return { title: 'Клиника не найдена' };
@@ -32,8 +32,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ClinicProfilePage({ params }: { params: Promise<{ slug: string; lang: Locale }> }) {
-  const { slug, lang } = await params;
+export default async function ClinicProfilePage({ params }: { params: Promise<{ slug: string; lang: string }> }) {
+  const { slug, lang } = (await params) as { slug: string; lang: Locale };
   await dbConnect();
 
   const clinic = await Clinic.findOne({ slug, status: 'approved' })

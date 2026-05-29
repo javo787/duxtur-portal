@@ -11,8 +11,8 @@ import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicD
 
 export const revalidate = 3600; // 1 hour
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: Locale }> }): Promise<Metadata> {
-  const { lang } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = (await params) as { lang: Locale };
   return {
     title: `${T('clinic.title', lang)} — Duxtur.org`,
     description: T('meta.description', lang),
@@ -20,10 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: Loc
 }
 
 export default async function ClinicsDirectoryPage({ params, searchParams }: {
-  params: Promise<{ lang: Locale }>,
+  params: Promise<{ lang: string }>,
   searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string }>
 }) {
-  const { lang } = await params;
+  const { lang } = (await params) as { lang: Locale };
   const filters = await searchParams;
   const t = getT(lang);
 

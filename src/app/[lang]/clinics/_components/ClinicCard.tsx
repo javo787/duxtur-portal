@@ -66,7 +66,7 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
                    {s}
                 </span>
               ))}
-              {clinic.specialties?.length > 3 && (
+              {clinic.specialties && clinic.specialties.length > 3 && (
                 <span className="px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg text-[9px] font-bold">
                    +{clinic.specialties.length - 3}
                 </span>
