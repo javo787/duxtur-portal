@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSession, signOut } from 'next-auth/react';
 import { Locale } from '@/i18n';
+import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
 interface ExtendedUser {
   name?: string | null;
@@ -18,16 +19,10 @@ interface ExtendedUser {
 export default function HomeHeader({ lang }: { lang: Locale }) {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const { visible, scrolled } = useScrollVisibility();
 
   const role = (session?.user as ExtendedUser)?.role;
   const isDoctor = role === 'doctor' || role === 'portal_admin';
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 12);
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
 
   const navLinks = [
     { href: `/${lang}/blog`, label: 'Статьи' },
@@ -39,10 +34,16 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
+        visible ? 'translate-y-0' : '-translate-y-full'
+      } ${
         scrolled
           ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-md shadow-slate-200/20 dark:shadow-slate-950/50'
           : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md'
       } border-b border-slate-100 dark:border-white/5`}
+          ? 'bg-white/95 backdrop-blur-xl shadow-md shadow-slate-200/20'
+          : 'bg-white/90 backdrop-blur-md'
+      } border-b border-slate-100`}
+      aria-hidden={!visible}
     >
       {/* accent line */}
       <div className="h-[2px] brand-line" />
@@ -59,6 +60,14 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
             />
           </div>
           <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          <Image
+            src="/logo.png"
+            alt="Duxtur logo"
+            width={36}
+            height={36}
+            className="rounded-xl object-contain group-hover:opacity-90 transition"
+          />
+          <span className="text-xl font-extrabold text-gray-900 tracking-tight">
             duxtur<span className="text-blue-600">.org</span>
           </span>
         </Link>

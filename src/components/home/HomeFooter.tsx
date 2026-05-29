@@ -1,6 +1,8 @@
 
 import Link from 'next/link';
 import { getT, Locale } from '@/i18n';
+import Image from 'next/image';
+import { getT } from '@/i18n';
 
 export default function HomeFooter({ lang }: { lang: Locale }) {
   const year = new Date().getFullYear();
@@ -19,6 +21,14 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
                 </svg>
               </div>
               <span className="font-display font-bold text-[18px] text-slate-900 dark:text-white tracking-[-0.03em]">
+              <Image
+                src="/logo.png"
+                alt="Duxtur logo"
+                width={32}
+                height={32}
+                className="rounded-lg object-contain group-hover:opacity-90 transition"
+              />
+              <span className="font-display font-bold text-[18px] text-slate-900 tracking-[-0.03em]">
                 duxtur<span className="text-blue-600">.org</span>
               </span>
             </Link>
