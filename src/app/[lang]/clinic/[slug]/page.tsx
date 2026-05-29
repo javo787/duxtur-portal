@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getT } from '@/i18n';
+import { getT, Locale } from '@/i18n';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import ClinicHero from './_components/ClinicHero';
 import ClinicTabs from './_components/ClinicTabs';
@@ -11,7 +11,7 @@ import HomeFooter from '@/components/home/HomeFooter';
 
 export const revalidate = 21600; // 6 hours
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: Locale }> }): Promise<Metadata> {
   const { slug, lang } = await params;
   await dbConnect();
   const clinic = await Clinic.findOne({ slug, status: 'approved' }).lean();
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ClinicProfilePage({ params }: { params: Promise<{ slug: string; lang: string }> }) {
+export default async function ClinicProfilePage({ params }: { params: Promise<{ slug: string; lang: Locale }> }) {
   const { slug, lang } = await params;
   await dbConnect();
 

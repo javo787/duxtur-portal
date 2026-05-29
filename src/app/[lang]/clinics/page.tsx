@@ -11,7 +11,7 @@ import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicD
 
 export const revalidate = 3600; // 1 hour
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ lang: Locale }> }): Promise<Metadata> {
   const { lang } = await params;
   return {
     title: `${T('clinic.title', lang)} — Duxtur.org`,

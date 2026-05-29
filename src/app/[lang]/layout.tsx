@@ -3,6 +3,7 @@ import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
 import { auth } from '@/auth';
 import { BASE_URL } from "@/lib/seo";
+import { Locale } from "@/i18n";
 
 export async function generateMetadata() {
   return {
@@ -33,7 +34,7 @@ export default async function LangLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ lang: string }>;
+  params: Promise<{ lang: Locale }>;
 }) {
   const { lang } = await params;
   const session = await auth();

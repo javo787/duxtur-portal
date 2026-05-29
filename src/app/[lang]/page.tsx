@@ -1,5 +1,5 @@
 import { getDictionary } from '@/get-dictionary';
-import { Locale } from '@/i18n-config';
+import { Locale } from '@/i18n';
 import type { Metadata } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
