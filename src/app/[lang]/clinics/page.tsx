@@ -3,11 +3,11 @@ import Clinic from '@/models/Clinic';
 import ClinicCard from './_components/ClinicCard';
 import ClinicFilters from './_components/ClinicFilters';
 import Link from 'next/link';
-import { getT, T } from '@/i18n';
+import { getT, T, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
 import { buildBreadcrumbJsonLd } from '@/lib/seo';
-import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
+import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicDocument } from '@/lib/clinic-constants';
 
 export const revalidate = 3600; // 1 hour
 
@@ -20,12 +20,12 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 export default async function ClinicsDirectoryPage({ params, searchParams }: {
-  params: Promise<{ lang: string }>,
+  params: Promise<{ lang: Locale }>,
   searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string }>
 }) {
   const { lang } = await params;
   const filters = await searchParams;
-  const t = getT(lang as any);
+  const t = getT(lang);
 
   const page = Math.max(1, parseInt(filters.page || '1', 10));
   const limit = 20;
@@ -110,17 +110,11 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
       {/* Hero */}
       <section className="bg-white dark:bg-slate-950 pt-32 pb-24 px-4 relative overflow-hidden transition-colors duration-500">
          {/* Warm background gradient */}
-         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-amber-50/40 via-white to-white dark:from-slate-900/40 dark:via-slate-950 dark:to-slate-950" />
+         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-amber-50/40 via-white to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950" />
 
          {/* Decorative blobs */}
-         <div
-           className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-slow opacity-30 dark:opacity-20"
-           style={{ background: 'radial-gradient(circle, oklch(0.70 0.16 75 / 0.4), transparent 70%)' }}
-         />
-         <div
-           className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-delayed opacity-30 dark:opacity-20"
-           style={{ background: 'radial-gradient(circle, oklch(0.45 0.08 255 / 0.4), transparent 70%)' }}
-         />
+         <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-slow opacity-30 dark:opacity-20 bg-amber-200/40 dark:bg-blue-900/20" />
+         <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-delayed opacity-30 dark:opacity-20 bg-blue-200/40 dark:bg-indigo-900/20" />
 
          <div className="max-w-7xl mx-auto text-center relative z-10">
             <h1 className="text-4xl md:text-7xl font-bold mb-6 tracking-tight font-display text-slate-900 dark:text-white">
@@ -162,7 +156,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
             <div className="max-w-4xl mx-auto">
                <ClinicFilters
                   cities={ALLOWED_CITIES}
-                  types={CLINIC_TYPES as any}
+                  types={CLINIC_TYPES}
                   currentCity={filters.city}
                   currentType={filters.type}
                   lang={lang}
@@ -174,14 +168,14 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 -mt-10 relative z-10">
          {clinics.length === 0 ? (
-           <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] text-center text-slate-400 dark:text-slate-500 border border-slate-100 dark:border-white/5 shadow-2xl">
+           <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] text-center text-slate-400 dark:text-slate-400 border border-slate-100 dark:border-white/5 shadow-2xl transition-colors duration-500">
               <p className="text-6xl mb-4">🔍</p>
-              <p className="text-xl font-black text-slate-900">{t('common.noResults')}</p>
+              <p className="text-xl font-black text-slate-900 dark:text-white">{t('common.noResults')}</p>
            </div>
          ) : (
            <>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {clinics.map((clinic: any) => (
+                {clinics.map((clinic: ClinicDocument) => (
                   <ClinicCard key={clinic._id.toString()} clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
                 ))}
              </div>

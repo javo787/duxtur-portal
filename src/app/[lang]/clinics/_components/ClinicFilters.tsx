@@ -2,14 +2,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ClinicType } from '@/lib/clinic-constants';
-import { useT } from '@/i18n';
-
-interface ClinicTypeOption {
-  id: ClinicType;
-  emoji: string;
-  label: string;
-}
+import { ClinicTypeOption } from '@/lib/clinic-constants';
+import { useT, Locale } from '@/i18n';
 
 export default function ClinicFilters({
   cities,
@@ -18,11 +12,11 @@ export default function ClinicFilters({
   currentType,
   lang
 }: {
-  cities: string[],
-  types: ClinicTypeOption[],
+  cities: readonly string[] | string[],
+  types: readonly ClinicTypeOption[] | ClinicTypeOption[],
   currentCity?: string,
   currentType?: string,
-  lang: string
+  lang: Locale
 }) {
   const { t } = useT(lang);
 

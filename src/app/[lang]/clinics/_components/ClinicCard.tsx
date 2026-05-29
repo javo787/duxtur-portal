@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { getT } from '@/i18n';
+import { getT, Locale } from '@/i18n';
 import { motion } from 'framer-motion';
+import { ClinicDocument } from '@/lib/clinic-constants';
 
-export default function ClinicCard({ clinic, lang }: { clinic: any, lang: string }) {
-  const t = getT(lang as any);
+export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, lang: Locale }) {
+  const t = getT(lang);
 
-  const name = (clinic.name as any)[lang] || (clinic.name as any).ru;
+  const name = clinic.name[lang as keyof typeof clinic.name] || clinic.name.ru;
 
   return (
     <motion.div

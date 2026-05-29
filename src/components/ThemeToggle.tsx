@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
+/**
+ * ThemeToggle Component
+ *
+ * Provides a button to toggle between light and dark themes.
+ * Persistence: Saves the user preference in `localStorage` under the key 'theme'.
+ * Sync: Observes system preference (prefers-color-scheme) if no saved preference exists.
+ * Implementation: Toggles the '.dark' class on the document's root element (html).
+ */
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
 
@@ -10,15 +18,21 @@ export default function ThemeToggle() {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme) {
       setTheme(savedTheme);
+      // Immediate sync to avoid waiting for the next effect in case of fast hydration
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark');
+      document.documentElement.classList.add('dark');
     } else {
       setTheme('light');
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    if (theme) {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
   }, [theme]);
 
   const toggleTheme = () => {
