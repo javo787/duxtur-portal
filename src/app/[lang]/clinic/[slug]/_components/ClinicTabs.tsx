@@ -10,7 +10,36 @@ import ClinicBookingWidget from './ClinicBookingWidget';
 import { motion } from 'framer-motion';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
-export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string }) {
+interface MultilingualString {
+  ru?: string;
+  uz?: string;
+  tg?: string;
+  kk?: string;
+  ky?: string;
+}
+
+interface Clinic {
+  name: MultilingualString;
+  slug: string;
+  description: MultilingualString;
+  quote?: MultilingualString;
+  history?: MultilingualString;
+  specialties: string[];
+  workingHours?: Record<string, { open: string; close: string; isWorking: boolean }>;
+  address: string;
+  phone: string;
+  photos: string[];
+  doctorIds: any[];
+  services: any[];
+  rating: { avg: number; count: number };
+}
+
+const HEADER_HEIGHT = 64; // px
+const STICKY_GAP = 8; // px
+const TAB_OFFSET_VISIBLE = HEADER_HEIGHT + STICKY_GAP;
+const TAB_OFFSET_HIDDEN = 16; // px
+
+export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: string }) {
   const { t } = useT(lang);
   const [activeTab, setActiveTab] = useState('overview');
   const { visible: headerVisible } = useScrollVisibility();
@@ -28,9 +57,8 @@ export default function ClinicTabs({ clinic, lang }: { clinic: any, lang: string
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
       <div
-        className={`flex gap-1.5 overflow-x-auto no-scrollbar bg-white/95 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20 transition-all duration-300 ${
-          headerVisible ? 'top-[72px]' : 'top-4'
-        }`}
+        className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/95 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20 transition-all duration-300"
+        style={{ top: headerVisible ? `${TAB_OFFSET_VISIBLE}px` : `${TAB_OFFSET_HIDDEN}px` }}
       >
         {tabs.map(tab => (
           <button

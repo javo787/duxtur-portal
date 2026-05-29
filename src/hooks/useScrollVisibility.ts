@@ -1,27 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
+/**
+ * Hook to track scroll visibility for smart sticky elements.
+ * @param offset Scroll distance after which the element can hide.
+ * @param threshold Minimum scroll delta to trigger visibility change.
+ */
 export function useScrollVisibility(offset = 100, threshold = 10) {
-  const [visible, setVisible] = useState(true);
-  const [scrolled, setScrolled] = useState(false);
+  const [state, setState] = useState({ visible: true, scrolled: false });
+  const lastYRef = useRef(0);
 
   useEffect(() => {
-    let lastY = window.scrollY;
-    const fn = () => {
+    // Initialization
+    lastYRef.current = window.scrollY;
+
+    const handleScroll = () => {
       const currentY = window.scrollY;
-      setScrolled(currentY > 12);
+      const isScrolled = currentY > 12;
+      let isVisible = state.visible;
 
-      if (currentY > lastY + threshold && currentY > offset) {
-        setVisible(false);
-      } else if (currentY < lastY - threshold) {
-        setVisible(true);
+      // Smart sticky logic: hide on scroll down, show on scroll up
+      if (currentY > lastYRef.current + threshold && currentY > offset) {
+        isVisible = false;
+      } else if (currentY < lastYRef.current - threshold) {
+        isVisible = true;
       }
-      lastY = currentY;
-    };
-    window.addEventListener('scroll', fn, { passive: true });
-    return () => window.removeEventListener('scroll', fn);
-  }, [offset, threshold]);
 
-  return { visible, scrolled };
+      // Batch updates if values changed
+      if (isVisible !== state.visible || isScrolled !== state.scrolled) {
+        setState({ visible: isVisible, scrolled: isScrolled });
+      }
+
+      lastYRef.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [offset, threshold, state.visible, state.scrolled]);
+
+  return state;
 }

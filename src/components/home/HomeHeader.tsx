@@ -31,6 +31,7 @@ export default function HomeHeader({ lang }: { lang: string }) {
           ? 'bg-white/95 backdrop-blur-xl shadow-md shadow-slate-200/20'
           : 'bg-white/90 backdrop-blur-md'
       } border-b border-slate-100`}
+      aria-hidden={!visible}
     >
       {/* accent line */}
       <div className="h-[2px] brand-line" />
