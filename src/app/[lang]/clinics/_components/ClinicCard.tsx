@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { getT, Locale } from '@/i18n';
 import { motion } from 'framer-motion';
 import { ClinicDocument } from '@/lib/clinic-constants';
+import { isClinicOpen } from '@/lib/clinic-utils';
 
 export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, lang: Locale }) {
   const t = getT(lang);
@@ -36,6 +37,19 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
                <Image src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" fill className="object-cover" />
              </div>
           </div>
+
+          {/* Open/Closed Badge */}
+          <div className="absolute top-4 right-4">
+            {isClinicOpen(clinic.workingHours) ? (
+              <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                {t('clinic.openNow')}
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-slate-900/60 backdrop-blur-md text-white/80 text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                {t('clinic.closed')}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="p-5 sm:p-6 flex flex-col flex-1">
@@ -43,7 +57,9 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
               <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-[9px] font-black uppercase tracking-wider">
                  {t('clinic.type_' + clinic.type)}
               </span>
-              <span className="text-[10px] font-bold text-slate-400">📍 {clinic.city}</span>
+              <span className="text-[10px] font-bold text-slate-400 line-clamp-1">
+                📍 {clinic.city}{clinic.district ? `, ${clinic.district}` : clinic.address ? `, ${clinic.address}` : ''}
+              </span>
            </div>
 
            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1 mb-2 font-display">

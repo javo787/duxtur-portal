@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function ClinicsDirectoryPage({ params, searchParams }: {
   params: Promise<{ lang: string }>,
-  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string }>
+  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string, sort?: string }>
 }) {
   const { lang } = (await params) as { lang: Locale };
   const filters = await searchParams;
@@ -60,20 +60,24 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
      query.$text = { $search: sanitizedQ };
   }
 
+  // Sorting logic
+  let sortStage: any = { 'rating.avg': -1 };
+  if (filters.sort === 'reviews') sortStage = { 'rating.count': -1 };
+  if (filters.sort === 'doctors') sortStage = { 'doctorCount': -1 };
+
   const [clinics, total] = await Promise.all([
     Clinic.aggregate([
       { $match: query },
-      { $sort: { 'rating.avg': -1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
       {
         $addFields: {
           doctorCount: { $size: { $ifNull: ["$doctorIds", []] } }
         }
       },
+      { $sort: sortStage },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
       {
         $project: {
-          doctorIds: 0,
           userId: 0,
           licenseNumber: 0,
           licenseDocument: 0,
@@ -92,14 +96,21 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
     { name: t('clinic.title'), url: `/${lang}/clinics` },
   ]);
 
-  // Helper to build pagination URL
-  const buildPageUrl = (p: number) => {
+  // Helper to build search URL with current filters
+  const buildSearchUrl = (newParams: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
     if (filters.city) params.set('city', filters.city);
     if (filters.type) params.set('type', filters.type);
     if (filters.specialty) params.set('specialty', filters.specialty);
     if (filters.q) params.set('q', filters.q);
-    params.set('page', p.toString());
+    if (filters.sort) params.set('sort', filters.sort);
+    if (filters.page) params.set('page', filters.page);
+
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value === undefined) params.delete(key);
+      else params.set(key, value.toString());
+    });
+
     return `/${lang}/clinics?${params.toString()}`;
   };
 
@@ -144,13 +155,24 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
                     name="q"
                     defaultValue={filters.q}
                     className="w-full bg-transparent py-4 text-slate-900 dark:text-white outline-none placeholder:text-slate-400 font-medium"
-                    placeholder={t('map.filterCity')}
+                    placeholder={t('search.placeholder')}
                  />
                </div>
                <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition shadow-lg shadow-blue-600/20">
                  {t('common.search')}
                </button>
             </form>
+
+            {(filters.city || filters.type || filters.specialty || filters.q) && (
+              <div className="mb-8">
+                <Link
+                  href={`/${lang}/clinics`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition"
+                >
+                  ✕ {t('doctors.resetFilters')}
+                </Link>
+              </div>
+            )}
 
             {/* Quick Filters */}
             <div className="max-w-4xl mx-auto">
@@ -159,6 +181,9 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
                   types={CLINIC_TYPES}
                   currentCity={filters.city}
                   currentType={filters.type}
+                  currentSpecialty={filters.specialty}
+                  currentQ={filters.q}
+                  currentSort={filters.sort}
                   lang={lang}
                />
             </div>
@@ -167,6 +192,32 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 -mt-10 relative z-10">
+         <div className="flex justify-end mb-6">
+            <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex items-center gap-3">
+               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('doctors.sortBy')}</span>
+               <div className="flex gap-4">
+                  <Link
+                    href={buildSearchUrl({ sort: undefined, page: 1 })}
+                    className={`text-sm font-bold transition ${!filters.sort ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  >
+                    {t('doctors.rating')}
+                  </Link>
+                  <Link
+                    href={buildSearchUrl({ sort: 'reviews', page: 1 })}
+                    className={`text-sm font-bold transition ${filters.sort === 'reviews' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  >
+                    {t('blog.ratings')}
+                  </Link>
+                  <Link
+                    href={buildSearchUrl({ sort: 'doctors', page: 1 })}
+                    className={`text-sm font-bold transition ${filters.sort === 'doctors' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                  >
+                    {t('common.doctors')}
+                  </Link>
+               </div>
+            </div>
+         </div>
+
          {clinics.length === 0 ? (
            <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] text-center text-slate-400 dark:text-slate-400 border border-slate-100 dark:border-white/5 shadow-2xl transition-colors duration-500">
               <p className="text-6xl mb-4">🔍</p>
@@ -185,7 +236,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
                <div className="mt-12 flex justify-center gap-2 pb-12">
                  {page > 1 && (
                    <Link
-                     href={buildPageUrl(page - 1)}
+                     href={buildSearchUrl({ page: page - 1 })}
                      className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
                    >
                      {t('common.prev')}
@@ -196,7 +247,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
                  </div>
                  {page < totalPages && (
                    <Link
-                     href={buildPageUrl(page + 1)}
+                     href={buildSearchUrl({ page: page + 1 })}
                      className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
                    >
                      {t('common.next')}
