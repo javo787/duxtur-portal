@@ -1,8 +1,6 @@
-
 import Link from 'next/link';
 import { getT, Locale } from '@/i18n';
 import Image from 'next/image';
-import { getT } from '@/i18n';
 
 export default function HomeFooter({ lang }: { lang: Locale }) {
   const year = new Date().getFullYear();
@@ -15,12 +13,6 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href={`/${lang}`} className="inline-flex items-center gap-3 mb-5 group">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <span className="font-display font-bold text-[18px] text-slate-900 dark:text-white tracking-[-0.03em]">
               <Image
                 src="/logo.png"
                 alt="Duxtur logo"
@@ -28,7 +20,7 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
                 height={32}
                 className="rounded-lg object-contain group-hover:opacity-90 transition"
               />
-              <span className="font-display font-bold text-[18px] text-slate-900 tracking-[-0.03em]">
+              <span className="font-display font-bold text-[18px] text-slate-900 dark:text-white tracking-[-0.03em]">
                 duxtur<span className="text-blue-600">.org</span>
               </span>
             </Link>
@@ -46,12 +38,12 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
 
           {/* Читателям */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-slate-200 mb-4">{t('home.footerForReaders')}</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-white mb-4">{t('home.footerForReaders')}</h4>
             <ul className="space-y-3">
               {[
                 { href: `/${lang}/blog`, label: t('nav.allArticles') },
                 { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
-                { href: `/${lang}/clinics`, label: 'Клиники' },
+                { href: `/${lang}/clinics`, label: t('clinic.title') },
                 { href: `/${lang}/authors`, label: t('nav.authors') },
                 { href: `/${lang}/search`, label: t('common.search') },
               ].map((link) => (
@@ -66,7 +58,7 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
 
           {/* Врачам */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-slate-200 mb-4">{t('home.footerForDoctors')}</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-white mb-4">{t('home.footerForDoctors')}</h4>
             <ul className="space-y-3">
               {[
                 { href: `/${lang}/register`, label: t('nav.becomeAuthor') },
@@ -84,7 +76,7 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
 
           {/* О портале */}
           <div>
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-slate-200 mb-4">{t('home.footerAbout')}</h4>
+            <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 dark:text-white mb-4">{t('home.footerAbout')}</h4>
             <ul className="space-y-3">
               {[
                 { href: `/${lang}/about`, label: t('nav.aboutUs'), external: false },

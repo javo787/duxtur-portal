@@ -27,6 +27,22 @@ export interface ClinicRating {
   count: number;
 }
 
+export interface WorkingHoursDay {
+  open: string;
+  close: string;
+  isWorking: boolean;
+}
+
+export interface ClinicWorkingHours {
+  mon?: WorkingHoursDay;
+  tue?: WorkingHoursDay;
+  wed?: WorkingHoursDay;
+  thu?: WorkingHoursDay;
+  fri?: WorkingHoursDay;
+  sat?: WorkingHoursDay;
+  sun?: WorkingHoursDay;
+}
+
 export interface MultilingualName {
   ru: string;
   uz?: string;
@@ -47,6 +63,23 @@ export interface ClinicDocument {
   doctorIds?: string[];
   doctorCount?: number;
   specialties?: string[];
+  address?: string;
+  district?: string;
+  workingHours?: ClinicWorkingHours;
 }
 
 export const ALLOWED_CLINIC_TYPES: ClinicType[] = CLINIC_TYPES.map(t => t.id);
+
+export const COMMON_SPECIALTIES = [
+  { id: 'cardiology',    label: 'Кардиология' },
+  { id: 'neurology',     label: 'Неврология' },
+  { id: 'dentistry',     label: 'Стоматология' },
+  { id: 'pediatrics',    label: 'Педиатрия' },
+  { id: 'dermatology',   label: 'Дерматология' },
+  { id: 'ophthalmology', label: 'Офтальмология' },
+  { id: 'surgery',       label: 'Хирургия' },
+  { id: 'gynecology',    label: 'Гинекология' },
+  { id: 'ultrasound',    label: 'УЗИ' },
+  { id: 'mri',           label: 'МРТ' },
+  { id: 'tests',         label: 'Анализы' }
+];
