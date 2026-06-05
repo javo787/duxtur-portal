@@ -609,5 +609,6 @@ export const ru = {
     specialty_ultrasound: 'УЗИ',
     specialty_mri: 'МРТ',
     specialty_tests: 'Анализы',
+    found: 'Найдено: {count} клиник',
   },
 } as const

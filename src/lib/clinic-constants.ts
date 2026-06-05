@@ -71,15 +71,15 @@ export interface ClinicDocument {
 export const ALLOWED_CLINIC_TYPES: ClinicType[] = CLINIC_TYPES.map(t => t.id);
 
 export const COMMON_SPECIALTIES = [
-  { id: 'cardiology',    label: 'Кардиология' },
-  { id: 'neurology',     label: 'Неврология' },
-  { id: 'dentistry',     label: 'Стоматология' },
-  { id: 'pediatrics',    label: 'Педиатрия' },
-  { id: 'dermatology',   label: 'Дерматология' },
-  { id: 'ophthalmology', label: 'Офтальмология' },
-  { id: 'surgery',       label: 'Хирургия' },
-  { id: 'gynecology',    label: 'Гинекология' },
-  { id: 'ultrasound',    label: 'УЗИ' },
-  { id: 'mri',           label: 'МРТ' },
-  { id: 'tests',         label: 'Анализы' }
+  { id: 'cardiology',    label: 'Кардиология',    emoji: '❤️' },
+  { id: 'neurology',     label: 'Неврология',     emoji: '🧠' },
+  { id: 'dentistry',     label: 'Стоматология',   emoji: '🦷' },
+  { id: 'pediatrics',    label: 'Педиатрия',      emoji: '👶' },
+  { id: 'dermatology',   label: 'Дерматология',   emoji: '✨' },
+  { id: 'ophthalmology', label: 'Офтальмология',  emoji: '👁️' },
+  { id: 'surgery',       label: 'Хирургия',       emoji: '🔪' },
+  { id: 'gynecology',    label: 'Гинекология',    emoji: '🤰' },
+  { id: 'ultrasound',    label: 'УЗИ',            emoji: '🌊' },
+  { id: 'mri',           label: 'МРТ',            emoji: '🧲' },
+  { id: 'tests',         label: 'Анализы',        emoji: '🧪' }
 ];

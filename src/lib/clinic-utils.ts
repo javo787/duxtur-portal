@@ -1,3 +1,5 @@
+import { ClinicWorkingHours } from './clinic-constants';
+
 /**
  * Logic to determine if a clinic is open based on its working hours.
  * Note: This currently uses the server's local time during SSR.

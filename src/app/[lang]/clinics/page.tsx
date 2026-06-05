@@ -148,15 +148,23 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
             </div>
 
             {/* Search Form */}
-            <form method="GET" className="max-w-3xl mx-auto bg-white dark:bg-slate-900/50 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-slate-200 dark:border-white/10 flex flex-col md:flex-row gap-2 shadow-2xl mb-12 shadow-slate-200/50 dark:shadow-none">
-               <div className="flex-1 flex items-center px-6 gap-3">
-                 <span className="text-xl">🔍</span>
+            <form method="GET" className="max-w-3xl mx-auto bg-white dark:bg-slate-900 p-2 rounded-[2.5rem] border border-slate-200 dark:border-white/10 flex flex-col md:flex-row gap-2 shadow-2xl mb-12 shadow-slate-200/50 dark:shadow-none focus-within:border-blue-500/50 dark:focus-within:border-blue-400/50 transition-all duration-300">
+               <div className="flex-1 flex items-center px-6 gap-3 group">
+                 <span className="text-xl group-focus-within:scale-110 transition-transform">🔍</span>
                  <input
                     name="q"
                     defaultValue={filters.q}
                     className="w-full bg-transparent py-4 text-slate-900 dark:text-white outline-none placeholder:text-slate-400 font-medium"
                     placeholder={t('search.placeholder')}
                  />
+                 {filters.q && (
+                    <Link
+                      href={buildSearchUrl({ q: undefined, page: 1 })}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-400 transition-colors"
+                    >
+                      ✕
+                    </Link>
+                 )}
                </div>
                <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition shadow-lg shadow-blue-600/20">
                  {t('common.search')}
@@ -164,10 +172,10 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
             </form>
 
             {(filters.city || filters.type || filters.specialty || filters.q) && (
-              <div className="mb-8">
+              <div className="mb-8 flex justify-center gap-4 flex-wrap">
                 <Link
                   href={`/${lang}/clinics`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-full text-xs font-black uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-900/20 transition shadow-xl shadow-red-500/5"
                 >
                   ✕ {t('doctors.resetFilters')}
                 </Link>
@@ -192,25 +200,32 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
       {/* Grid */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 -mt-10 relative z-10">
-         <div className="flex justify-end mb-6">
-            <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm flex items-center gap-3">
-               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('doctors.sortBy')}</span>
-               <div className="flex gap-4">
+         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center gap-3 group">
+               <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+               <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter">
+                  {t('clinic.found').replace('{count}', total.toString())}
+               </span>
+            </div>
+
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center gap-6 overflow-x-auto max-w-full">
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">{t('doctors.sortBy')}</span>
+               <div className="flex gap-6 items-center">
                   <Link
                     href={buildSearchUrl({ sort: undefined, page: 1 })}
-                    className={`text-sm font-bold transition ${!filters.sort ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${!filters.sort ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                   >
                     {t('doctors.rating')}
                   </Link>
                   <Link
                     href={buildSearchUrl({ sort: 'reviews', page: 1 })}
-                    className={`text-sm font-bold transition ${filters.sort === 'reviews' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${filters.sort === 'reviews' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                   >
                     {t('blog.ratings')}
                   </Link>
                   <Link
                     href={buildSearchUrl({ sort: 'doctors', page: 1 })}
-                    className={`text-sm font-bold transition ${filters.sort === 'doctors' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${filters.sort === 'doctors' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
                   >
                     {t('common.doctors')}
                   </Link>
