@@ -40,9 +40,6 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
           ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-md shadow-slate-200/20 dark:shadow-slate-950/50'
           : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md'
       } border-b border-slate-100 dark:border-white/5`}
-          ? 'bg-white/95 backdrop-blur-xl shadow-md shadow-slate-200/20'
-          : 'bg-white/90 backdrop-blur-md'
-      } border-b border-slate-100`}
       aria-hidden={!visible}
     >
       {/* accent line */}
