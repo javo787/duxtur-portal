@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Clinic from '@/models/Clinic';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { translateText } from '@/lib/translation-service';
 import { generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';

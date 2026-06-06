@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let isClinicOwner = false;
     if ((session.user as any)?.role === 'clinic') {
       const clinic = await Clinic.findOne({ userId: session.user.id });
-      if (clinic && clinic.doctorIds.some((dId: any) => dId.toString() === appointment.doctorId.toString())) {
+      if (clinic && clinic.doctorIds?.some((dId: any) => dId.toString() === appointment.doctorId.toString())) {
         isClinicOwner = true;
       }
     }
