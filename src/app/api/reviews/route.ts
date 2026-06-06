@@ -49,6 +49,7 @@ export async function POST(request: Request) {
 
     const review = await Review.create({
       doctorId,
+      clinicId: doctor.clinicId || undefined,
       patientId: (session.user as any).id,
       rating,
       text,

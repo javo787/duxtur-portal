@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import Doctor from '@/models/Doctor';
+import Clinic from '@/models/Clinic';
 import { auth } from '@/auth';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,8 +23,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const doctor = await Doctor.findOne({ userId: session.user.id });
     const isDoctor = doctor && appointment.doctorId.toString() === doctor._id.toString();
 
-    if (!isPatient && !isDoctor) {
+    // Check if user is the clinic owner of the doctor
+    let isClinicOwner = false;
+    if ((session.user as any)?.role === 'clinic') {
+      const clinic = await Clinic.findOne({ userId: session.user.id });
+      if (clinic && clinic.doctorIds.some((dId: any) => dId.toString() === appointment.doctorId.toString())) {
+        isClinicOwner = true;
+      }
+    }
+
+    if (!isPatient && !isDoctor && !isClinicOwner) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Clinic admins can only change status to 'confirmed', 'cancelled', or 'completed'
+    if (isClinicOwner && !isDoctor && !isPatient) {
+      const allowedClinicStatuses = ['confirmed', 'cancelled', 'completed'];
+      if (!allowedClinicStatuses.includes(status)) {
+        return NextResponse.json({ error: 'Clinic admins can only change status to Confirmed, Cancelled, or Completed' }, { status: 400 });
+      }
     }
 
     // Patient can ONLY cancel

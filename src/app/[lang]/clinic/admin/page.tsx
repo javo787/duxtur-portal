@@ -26,7 +26,7 @@ export default async function ClinicAdminPage({ params }: { params: Promise<{ la
 
   // Fetch stats for Overview
   const [appointmentsCount, reviewsCount, doctorsCount, pendingInvitationsCount] = await Promise.all([
-    Appointment.countDocuments({ clinicId: clinic._id }),
+    Appointment.countDocuments({ doctorId: { $in: clinic.doctorIds || [] } }),
     Review.countDocuments({ clinicId: clinic._id, isVerified: true }),
     Doctor.countDocuments({ clinicId: clinic._id }),
     ClinicInvitation.countDocuments({ clinicId: clinic._id, status: 'pending' }),

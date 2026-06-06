@@ -57,6 +57,10 @@ export async function PATCH(
         $set: { clinicId: invitation.clinicId }
       });
 
+      // Recalculate clinic stats
+      const { recalculateClinicRating } = await import('@/app/actions/clinic');
+      await recalculateClinicRating(invitation.clinicId.toString());
+
       // Notify through Telegram (optional, but requested in plan)
       const clinic = await Clinic.findById(invitation.clinicId);
       if (clinic) {

@@ -300,6 +300,13 @@ export async function approveReview(reviewId: string) {
     });
   }
 
+  // Recalculate clinic stats
+  const clinicId = review.clinicId || doctor?.clinicId;
+  if (clinicId) {
+    const { recalculateClinicRating } = await import('./clinic');
+    await recalculateClinicRating(clinicId.toString());
+  }
+
   revalidatePath('/admin/portal');
   if (doctor?.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
 }
@@ -312,6 +319,7 @@ export async function deleteReview(reviewId: string) {
 
   const doctorId = review.doctorId;
   const wasVerified = review.isVerified;
+  const reviewClinicId = review.clinicId;
 
   await Review.findByIdAndDelete(reviewId);
 
@@ -330,6 +338,13 @@ export async function deleteReview(reviewId: string) {
         reviewAvg: avg,
       });
       if (doctor.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
+    }
+
+    // Recalculate clinic stats
+    const clinicId = reviewClinicId || doctor?.clinicId;
+    if (clinicId) {
+      const { recalculateClinicRating } = await import('./clinic');
+      await recalculateClinicRating(clinicId.toString());
     }
   }
 

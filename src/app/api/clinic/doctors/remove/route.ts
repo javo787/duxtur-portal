@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
       $set: { clinicId: null }
     });
 
+    // Recalculate clinic stats
+    const { recalculateClinicRating } = await import('@/app/actions/clinic');
+    await recalculateClinicRating(clinicId);
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

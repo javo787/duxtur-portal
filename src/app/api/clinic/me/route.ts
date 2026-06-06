@@ -32,8 +32,17 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
 
     // Whitelist allowed fields to prevent overwriting sensitive data like status or userId
-    const { name, description, address, phone, phone2, email, website, telegram, whatsapp, instagram, workingHours, logo, coverImage, photos } = body;
-    const updateData = { name, description, address, phone, phone2, email, website, telegram, whatsapp, instagram, workingHours, logo, coverImage, photos };
+    const {
+      name, description, quote, history, address, city, coordinates, specialties,
+      phone, phone2, email, website, telegram, whatsapp, instagram,
+      workingHours, logo, coverImage, photos
+    } = body;
+
+    const updateData = {
+      name, description, quote, history, address, city, coordinates, specialties,
+      phone, phone2, email, website, telegram, whatsapp, instagram,
+      workingHours, logo, coverImage, photos
+    };
 
     const result = await updateClinicProfile((clinic as any)._id.toString(), updateData, session.user?.id);
     if (result.success) return NextResponse.json({ success: true });

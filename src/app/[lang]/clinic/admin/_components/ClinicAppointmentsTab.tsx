@@ -10,7 +10,8 @@ export default function ClinicAppointmentsTab({ lang, clinicId }: { lang: string
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
+  const fetchAppointments = (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     fetch('/api/clinic/appointments')
       .then(res => res.json())
       .then(data => {
@@ -21,7 +22,30 @@ export default function ClinicAppointmentsTab({ lang, clinicId }: { lang: string
         console.error(e);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchAppointments(true);
   }, []);
+
+  const updateStatus = async (id: string, status: string, cancelReason?: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, cancelReason })
+      });
+      if (res.ok) {
+        fetchAppointments(false);
+      } else {
+        const data = await res.json();
+        alert(`Ошибка: ${data.error || 'Не удалось обновить статус'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Произошла ошибка при обновлении статуса');
+    }
+  };
 
   const filtered = appointments.filter(a => statusFilter === 'all' || a.status === statusFilter);
 
@@ -92,9 +116,41 @@ export default function ClinicAppointmentsTab({ lang, clinicId }: { lang: string
                   <p className="font-black text-slate-900">{app.patientName}</p>
                   <p className="text-sm text-slate-500 font-bold">{app.patientPhone}</p>
                </div>
-               <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Doctor</p>
-                  <p className="text-sm font-bold text-slate-700">{app.doctorId.name}</p>
+               <div className="flex flex-col md:items-end gap-2 text-right">
+                  <div>
+                     <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Doctor</p>
+                     <p className="text-sm font-bold text-slate-700">{app.doctorId?.name}</p>
+                  </div>
+
+                  {app.status !== 'completed' && app.status !== 'cancelled' && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {app.status === 'pending' && (
+                        <button
+                          onClick={() => updateStatus(app._id, 'confirmed')}
+                          className="px-2.5 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+                        >
+                          {t('booking.confirm') || 'Confirm'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => updateStatus(app._id, 'completed')}
+                        className="px-2.5 py-1.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+                      >
+                        {t('booking.complete') || 'Complete'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const reason = prompt(t('booking.cancelReasonPrompt') || 'Reason for cancellation?');
+                          if (reason !== null) {
+                            updateStatus(app._id, 'cancelled', reason);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+                      >
+                        {t('booking.cancel') || 'Cancel'}
+                      </button>
+                    </div>
+                  )}
                </div>
             </div>
           ))}

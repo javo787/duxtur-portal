@@ -210,3 +210,41 @@ export async function translateFieldAction(text: string) {
     };
   }
 }
+
+export async function recalculateClinicRating(clinicId: string) {
+  await dbConnect();
+  const clinic = await Clinic.findById(clinicId);
+  if (!clinic) return;
+
+  const Review = (await import('@/models/Review')).default;
+
+  const allReviews = await Review.find({
+    $or: [
+      { clinicId: clinic._id },
+      { doctorId: { $in: clinic.doctorIds || [] } }
+    ],
+    isVerified: true
+  });
+
+  const count = allReviews.length;
+  const sum = allReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
+  const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
+
+  await Clinic.findByIdAndUpdate(clinicId, {
+    'rating.avg': avg,
+    'rating.count': count
+  });
+
+  try {
+    const { revalidatePath } = await import('next/cache');
+    if (clinic.slug) {
+      revalidatePath(`/ru/clinic/${clinic.slug}`);
+      revalidatePath(`/uz/clinic/${clinic.slug}`);
+      revalidatePath(`/tj/clinic/${clinic.slug}`);
+      revalidatePath(`/kk/clinic/${clinic.slug}`);
+      revalidatePath(`/ky/clinic/${clinic.slug}`);
+    }
+  } catch (e) {
+    console.error('Revalidation error:', e);
+  }
+}
