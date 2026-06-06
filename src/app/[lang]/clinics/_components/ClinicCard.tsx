@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getT, Locale } from '@/i18n';
 import { motion } from 'framer-motion';
-import { ClinicDocument } from '@/lib/clinic-constants';
+import { ClinicDocument, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
 import { isClinicOpen } from '@/lib/clinic-utils';
 
 export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, lang: Locale }) {
@@ -41,7 +41,8 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
           {/* Open/Closed Badge */}
           <div className="absolute top-4 right-4">
             {isClinicOpen(clinic.workingHours) ? (
-              <span className="px-3 py-1 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 {t('clinic.openNow')}
               </span>
             ) : (
@@ -52,7 +53,9 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
           </div>
         </div>
 
-        <div className="p-5 sm:p-6 flex flex-col flex-1">
+        <div className="p-5 sm:p-6 flex flex-col flex-1 relative">
+           {/* View Profile Hover CTA */}
+           <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
            <div className="flex items-center gap-2 mb-3">
               <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-[9px] font-black uppercase tracking-wider">
                  {t('clinic.type_' + clinic.type)}
@@ -77,11 +80,17 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
            </div>
 
            <div className="flex flex-wrap gap-1.5 mt-auto">
-              {clinic.specialties?.slice(0, 3).map((s: string) => (
-                <span key={s} className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-[9px] font-bold uppercase tracking-tight group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                   {s}
-                </span>
-              ))}
+              {clinic.specialties?.slice(0, 3).map((s: string) => {
+                // Find ID of specialty for translation
+                const specialtyId = COMMON_SPECIALTIES.find(cs => cs.label === s)?.id || s;
+                const localizedSpecialty = t('clinic.specialty_' + specialtyId);
+
+                return (
+                  <span key={s} className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg text-[9px] font-bold uppercase tracking-tight group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                     {localizedSpecialty === 'clinic.specialty_' + specialtyId ? s : localizedSpecialty}
+                  </span>
+                );
+              })}
               {clinic.specialties && clinic.specialties.length > 3 && (
                 <span className="px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg text-[9px] font-bold">
                    +{clinic.specialties.length - 3}

@@ -111,12 +111,13 @@ export default function ClinicFilters({
             <Link
               key={specialty.id}
               href={buildUrl({ specialty: currentSpecialty === specialty.label ? undefined : specialty.label, page: '1' })}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
+              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2 ${
                 currentSpecialty === specialty.label
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
+              <span>{specialty.emoji}</span>
               {t('clinic.specialty_' + specialty.id)}
             </Link>
           ))}
