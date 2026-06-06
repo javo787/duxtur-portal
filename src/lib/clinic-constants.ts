@@ -27,6 +27,22 @@ export interface ClinicRating {
   count: number;
 }
 
+export interface WorkingHoursDay {
+  open: string;
+  close: string;
+  isWorking: boolean;
+}
+
+export interface ClinicWorkingHours {
+  mon?: WorkingHoursDay;
+  tue?: WorkingHoursDay;
+  wed?: WorkingHoursDay;
+  thu?: WorkingHoursDay;
+  fri?: WorkingHoursDay;
+  sat?: WorkingHoursDay;
+  sun?: WorkingHoursDay;
+}
+
 export interface MultilingualName {
   ru: string;
   uz?: string;
@@ -47,6 +63,23 @@ export interface ClinicDocument {
   doctorIds?: string[];
   doctorCount?: number;
   specialties?: string[];
+  address?: string;
+  district?: string;
+  workingHours?: ClinicWorkingHours;
 }
 
 export const ALLOWED_CLINIC_TYPES: ClinicType[] = CLINIC_TYPES.map(t => t.id);
+
+export const COMMON_SPECIALTIES = [
+  { id: 'cardiology',    label: 'Кардиология',    emoji: '❤️' },
+  { id: 'neurology',     label: 'Неврология',     emoji: '🧠' },
+  { id: 'dentistry',     label: 'Стоматология',   emoji: '🦷' },
+  { id: 'pediatrics',    label: 'Педиатрия',      emoji: '👶' },
+  { id: 'dermatology',   label: 'Дерматология',   emoji: '✨' },
+  { id: 'ophthalmology', label: 'Офтальмология',  emoji: '👁️' },
+  { id: 'surgery',       label: 'Хирургия',       emoji: '🔪' },
+  { id: 'gynecology',    label: 'Гинекология',    emoji: '🤰' },
+  { id: 'ultrasound',    label: 'УЗИ',            emoji: '🌊' },
+  { id: 'mri',           label: 'МРТ',            emoji: '🧲' },
+  { id: 'tests',         label: 'Анализы',        emoji: '🧪' }
+];

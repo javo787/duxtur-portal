@@ -25,10 +25,10 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
   const isDoctor = role === 'doctor' || role === 'portal_admin';
 
   const navLinks = [
-    { href: `/${lang}/blog`, label: 'Статьи' },
+    { href: `/${lang}/blog`,    label: 'Статьи'      },
     { href: `/${lang}/doctors`, label: 'Найти врача' },
-    { href: `/${lang}/clinics`, label: 'Клиники' },
-    { href: `/${lang}/search`, label: 'Поиск' },
+    { href: `/${lang}/clinics`, label: 'Клиники'     },
+    { href: `/${lang}/search`,  label: 'Поиск'       },
   ];
 
   return (
@@ -40,18 +40,16 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
           ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-md shadow-slate-200/20 dark:shadow-slate-950/50'
           : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md'
       } border-b border-slate-100 dark:border-white/5`}
-          ? 'bg-white/95 backdrop-blur-xl shadow-md shadow-slate-200/20'
-          : 'bg-white/90 backdrop-blur-md'
-      } border-b border-slate-100`}
       aria-hidden={!visible}
     >
-      {/* accent line */}
+      {/* Accent line */}
       <div className="h-[2px] brand-line" />
 
-      <div className="max-w-7xl mx-auto px-5 h-[64px] flex items-center justify-between">
-        {/* Logo */}
+      <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
+
+        {/* ── Logo ── */}
         <Link href={`/${lang}`} className="flex items-center gap-2.5 group">
-          <div className="relative w-9 h-9">
+          <div className="relative w-9 h-9 shrink-0">
             <Image
               src="/logo.png"
               alt="Duxtur logo"
@@ -60,19 +58,11 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
             />
           </div>
           <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-          <Image
-            src="/logo.png"
-            alt="Duxtur logo"
-            width={36}
-            height={36}
-            className="rounded-xl object-contain group-hover:opacity-90 transition"
-          />
-          <span className="text-xl font-extrabold text-gray-900 tracking-tight">
             duxtur<span className="text-blue-600">.org</span>
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* ── Desktop nav ── */}
         <nav className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
@@ -86,7 +76,7 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
           ))}
         </nav>
 
-        {/* Right actions */}
+        {/* ── Right actions ── */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <LanguageSwitcher />
@@ -124,7 +114,13 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
                 href={`/${lang}/register`}
                 className="hidden md:flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Я врач
@@ -138,16 +134,16 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
             className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             aria-label="Меню"
           >
-            <div className="w-5 flex flex-col gap-1.5 transition-all duration-200">
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all ${menuOpen ? 'opacity-0' : ''}`} />
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all ${menuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
+            <div className="w-5 flex flex-col gap-1.5">
+              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
+              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
             </div>
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ── */}
       <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-80' : 'max-h-0'}`}>
         <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
           {navLinks.map((link) => (
@@ -160,6 +156,7 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
               {link.label}
             </Link>
           ))}
+
           <div className="pt-3 border-t border-slate-100 dark:border-white/5 mt-3 flex flex-col gap-2">
             {session ? (
               isDoctor ? (
@@ -178,10 +175,7 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      signOut();
-                      setMenuOpen(false);
-                    }}
+                    onClick={() => { signOut(); setMenuOpen(false); }}
                     className="flex items-center justify-center py-2.5 text-[14px] font-medium text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition"
                   >
                     Выйти
