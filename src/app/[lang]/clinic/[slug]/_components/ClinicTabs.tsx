@@ -7,6 +7,7 @@ import ClinicServices from './ClinicServices';
 import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
+import ClinicRating from './ClinicRating';
 import { motion } from 'framer-motion';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
@@ -130,6 +131,11 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
              </div>
 
              <div className="space-y-8">
+                <div className="space-y-4">
+                  <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest px-2">{t('doctor.reviewRating')}</h2>
+                  <ClinicRating avg={clinic.rating?.avg || 0} count={clinic.rating?.count || 0} lang={lang} />
+                </div>
+
                 <div className="bg-white p-4 xs:p-6 rounded-3xl border border-slate-200/50 shadow-sm">
                    <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.workingHours')}</h2>
                    <div className="space-y-4">
@@ -170,7 +176,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
         {activeTab === 'doctors' && <ClinicDoctors doctors={clinic.doctorIds} lang={lang} />}
         {activeTab === 'services' && <ClinicServices services={clinic.services} lang={lang} />}
         {activeTab === 'gallery' && <ClinicGallery photos={clinic.photos} />}
-        {activeTab === 'reviews' && <ClinicReviews slug={clinic.slug} lang={lang} />}
+        {activeTab === 'reviews' && <ClinicReviews slug={clinic.slug} lang={lang} rating={clinic.rating} />}
       </div>
     </div>
   );

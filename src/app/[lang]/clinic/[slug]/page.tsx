@@ -42,6 +42,11 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
 
   if (!clinic) notFound();
 
+  // Ensure rating exists even if not in DB document (for lean)
+  if (!clinic.rating) {
+    clinic.rating = { avg: 0, count: 0 };
+  }
+
   const t = getT(lang);
 
   // Build JSON-LD MedicalClinic schema

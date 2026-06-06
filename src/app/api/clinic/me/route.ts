@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     await dbConnect();
-    const clinic = await Clinic.findOne({ userId: session.user?.id }).lean();
+    const clinic = await Clinic.findOne({ userId: session.user?.id }).lean() as { _id: any };
     if (!clinic) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest) {
       workingHours, logo, coverImage, photos
     };
 
-    const result = await updateClinicProfile((clinic as any)._id.toString(), updateData, session.user?.id);
+    const result = await updateClinicProfile(clinic._id.toString(), updateData, session.user?.id);
     if (result.success) return NextResponse.json({ success: true });
     return NextResponse.json({ error: result.error }, { status: 400 });
   } catch (error: any) {
