@@ -7,8 +7,6 @@ import ClinicServices from './ClinicServices';
 import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
-import ClinicRating from './ClinicRating';
-import { motion } from 'framer-motion';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
 interface MultilingualString {
@@ -58,7 +56,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
     <div className="space-y-8" id="clinic-tabs-container">
       {/* Tab Switcher */}
       <div
-        className="flex gap-1.5 overflow-x-auto no-scrollbar bg-white/95 backdrop-blur-xl p-1.5 rounded-2xl md:rounded-[2rem] w-fit max-w-full sticky z-20 border border-slate-200/50 shadow-xl shadow-slate-200/20 transition-all duration-300"
+        className="flex gap-1 overflow-x-auto no-scrollbar bg-white sticky z-20 border-b border-slate-200 shadow-sm transition-all duration-300 -mx-4 md:-mx-8 px-4 md:px-8"
         style={{ top: headerVisible ? `${TAB_OFFSET_VISIBLE}px` : `${TAB_OFFSET_HIDDEN}px` }}
       >
         {tabs.map(tab => (
@@ -66,17 +64,12 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
             key={tab.id}
             data-tab-id={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`relative px-4 md:px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap z-10 ${
-              activeTab === tab.id ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900'
+            className={`relative px-4 md:px-6 py-4 text-[13px] font-semibold uppercase tracking-wide transition-all whitespace-nowrap border-b-2 ${
+              activeTab === tab.id
+                ? 'text-blue-600 border-blue-600'
+                : 'text-slate-500 hover:text-slate-900 border-transparent'
             }`}
           >
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-white shadow-sm rounded-2xl -z-10"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
-            )}
             {tab.label}
           </button>
         ))}
@@ -103,68 +96,118 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                   </div>
                 )}
 
-                <div className="bg-white p-4 xs:p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
-                   <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.about')}</h2>
-                   <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
+                <div className="bg-[#f8faff] p-8 rounded-xl border-l-4 border-blue-600 shadow-sm">
+                   <h2 className="text-[13px] font-bold text-[#94a3b8] mb-4 uppercase tracking-[0.12em]">{t('clinic.about')}</h2>
+                   <p className="text-[15px] leading-[1.7] text-[#374151] whitespace-pre-wrap">
                       {(clinic.description as any)[lang] || (clinic.description as any).ru}
                    </p>
                 </div>
 
                 {/* History Section */}
                 {((clinic.history as any)?.[lang] || (clinic.history as any)?.ru) && (
-                  <div className="bg-white p-4 xs:p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
-                    <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.history')}</h2>
-                    <p className="text-slate-600/90 leading-relaxed whitespace-pre-wrap font-medium tracking-tight text-lg">
+                  <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
+                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-4 uppercase tracking-[0.12em]">{t('clinic.history')}</h2>
+                    <p className="text-[15px] leading-[1.7] text-[#374151] whitespace-pre-wrap">
                       {(clinic.history as any)[lang] || (clinic.history as any).ru}
                     </p>
                   </div>
                 )}
 
-                <div className="bg-white p-4 xs:p-6 md:p-12 rounded-3xl md:rounded-[3rem] border border-slate-200/50 shadow-sm">
-                   <h2 className="text-xl font-black text-slate-900 mb-8 uppercase tracking-tight font-display">{t('clinic.specialties')}</h2>
+                <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
+                   <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.specialties')}</h2>
                    <div className="flex flex-wrap gap-2">
                       {clinic.specialties.map((s: string) => (
-                        <span key={s} className="px-5 py-2.5 bg-blue-50/50 text-blue-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-blue-100/50">{s}</span>
+                        <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wide">
+                          {s}
+                        </span>
                       ))}
                    </div>
                 </div>
              </div>
 
              <div className="space-y-8">
+                {/* Premium Trust Signals Sidebar */}
                 <div className="space-y-4">
-                  <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest px-2">{t('doctor.reviewRating')}</h2>
-                  <ClinicRating avg={clinic.rating?.avg || 0} count={clinic.rating?.count || 0} lang={lang} />
-                </div>
-
-                <div className="bg-white p-4 xs:p-6 rounded-3xl border border-slate-200/50 shadow-sm">
-                   <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.workingHours')}</h2>
-                   <div className="space-y-4">
-                      {['mon','tue','wed','thu','fri','sat','sun'].map((day) => (
-                        <div key={day} className="flex justify-between items-center text-sm font-bold">
-                           <span className="text-slate-400 uppercase tracking-tighter w-10">
-                             {new Date(2024, 0, (['sun','mon','tue','wed','thu','fri','sat'].indexOf(day))).toLocaleDateString(lang, { weekday: 'short' })}
-                           </span>
-                           <div className="h-px flex-1 mx-4 bg-slate-100" />
-                           {clinic.workingHours?.[day]?.isWorking ? (
-                             <span className="text-slate-900 font-black">{clinic.workingHours[day].open} – {clinic.workingHours[day].close}</span>
-                           ) : (
-                             <span className="text-red-400 font-black">{t('doctor.dayOff')}</span>
-                           )}
+                   <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6">
+                      {/* Rating Trust Card */}
+                      <div className="text-center pb-6 border-b border-slate-50">
+                        <div className="text-4xl font-black text-slate-900 mb-1">
+                          {clinic.rating?.avg?.toFixed(1) || '0.0'} <span className="text-lg text-slate-300 font-medium">/ 5</span>
                         </div>
-                      ))}
+                        <div className="flex justify-center text-amber-400 text-lg mb-2">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i}>{i < Math.round(clinic.rating?.avg || 0) ? '★' : '☆'}</span>
+                          ))}
+                        </div>
+                        <div className="text-[13px] font-bold text-slate-400 uppercase tracking-wider">
+                          {clinic.rating?.count || 0} {t('blog.ratings')}
+                        </div>
+                      </div>
+
+                      {/* Verified Badge Card */}
+                      <div className="flex items-center gap-4 group">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-blue-600 group-hover:text-white">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{t('clinic.verified')}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{t('doctor.diplomaVerified')}</p>
+                        </div>
+                      </div>
+
+                      {/* Doctor Count */}
+                      <div className="flex items-center gap-4 group">
+                        <div className="w-12 h-12 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center shrink-0">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{t('common.doctors')}: {clinic.doctorIds?.length || 0}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{t('home.authorsSubtitle')}</p>
+                        </div>
+                      </div>
+
+                      {/* Founded Date */}
+                      {(clinic as any).createdAt && (
+                        <div className="flex items-center gap-4 group border-t border-slate-50 pt-6">
+                           <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.12em]">
+                             {t('common.since')} {new Date((clinic as any).createdAt).getFullYear()}
+                           </div>
+                        </div>
+                      )}
                    </div>
                 </div>
 
-                <div className="bg-white p-4 xs:p-6 rounded-3xl border border-slate-200/50 shadow-sm">
-                   <h2 className="text-sm font-black text-slate-400 mb-8 uppercase tracking-widest">{t('clinic.contacts')}</h2>
+                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                   <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.workingHours')}</h2>
+                   <div className="space-y-1">
+                      {['mon','tue','wed','thu','fri','sat','sun'].map((day) => {
+                        const isToday = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase() === day;
+                        return (
+                          <div key={day} className={`flex justify-between items-center px-3 py-2 rounded-lg text-sm ${isToday ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-600'}`}>
+                             <span className="uppercase w-10">
+                               {new Date(2024, 0, (['sun','mon','tue','wed','thu','fri','sat'].indexOf(day))).toLocaleDateString(lang, { weekday: 'short' })}
+                             </span>
+                             {clinic.workingHours?.[day]?.isWorking ? (
+                               <span>{clinic.workingHours[day].open} – {clinic.workingHours[day].close}</span>
+                             ) : (
+                               <span className="text-red-400 font-medium">{t('doctor.dayOff')}</span>
+                             )}
+                          </div>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                   <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.contacts')}</h2>
                    <div className="space-y-4">
                       <div>
-                         <p className="text-[10px] font-black text-slate-300 uppercase mb-1">{t('clinic.address')}</p>
-                         <p className="text-sm font-bold text-slate-700">{clinic.address}</p>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('clinic.address')}</p>
+                         <p className="text-sm font-bold text-[#374151]">{clinic.address}</p>
                       </div>
                       <div>
-                         <p className="text-[10px] font-black text-slate-300 uppercase mb-1">{t('auth.registerPhone')}</p>
-                         <p className="text-sm font-bold text-slate-700">{clinic.phone}</p>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('auth.registerPhone')}</p>
+                         <p className="text-sm font-bold text-[#374151]">{clinic.phone}</p>
                       </div>
                    </div>
                 </div>
