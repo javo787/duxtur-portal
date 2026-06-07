@@ -10,11 +10,11 @@ import ClinicBookingWidget from './ClinicBookingWidget';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 
 interface MultilingualString {
-  ru?: string;
-  uz?: string;
-  tg?: string;
-  kk?: string;
-  ky?: string;
+  ru: string;
+  uz: string;
+  tg: string;
+  kk: string;
+  ky: string;
 }
 
 interface Clinic {
@@ -28,9 +28,10 @@ interface Clinic {
   address: string;
   phone: string;
   photos: string[];
-  doctorIds: any[];
-  services: any[];
+  doctorIds: { _id: string; name: string }[];
+  services: { name: MultilingualString; price: number; currency: string }[];
   rating: { avg: number; count: number };
+  createdAt?: string;
 }
 
 const HEADER_HEIGHT = 64; // px
@@ -81,11 +82,11 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-slate-800">
              <div className="lg:col-span-2 space-y-8">
                 {/* Quote Section */}
-                {((clinic.quote as any)?.[lang] || (clinic.quote as any)?.ru) && (
+                {(clinic.quote?.[lang as keyof MultilingualString] || clinic.quote?.ru) && (
                   <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-4 xs:p-6 md:p-20 rounded-3xl md:rounded-[3rem] text-white relative overflow-hidden shadow-2xl shadow-blue-500/30">
                     <span className="absolute top-8 left-8 text-8xl opacity-10 font-serif">“</span>
                     <p className="text-lg xs:text-xl md:text-3xl font-black italic leading-relaxed relative z-10 tracking-tight">
-                      {(clinic.quote as any)[lang] || (clinic.quote as any).ru}
+                      {clinic.quote?.[lang as keyof MultilingualString] || clinic.quote?.ru}
                     </p>
                     <div className="mt-10 flex items-center gap-4">
                       <div className="w-12 h-1 bg-white/30 rounded-full" />
@@ -99,16 +100,16 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                 <div className="bg-[#f8faff] p-8 rounded-xl border-l-4 border-blue-600 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-4 uppercase tracking-[0.12em]">{t('clinic.about')}</h2>
                    <p className="text-[15px] leading-[1.7] text-[#374151] whitespace-pre-wrap">
-                      {(clinic.description as any)[lang] || (clinic.description as any).ru}
+                      {clinic.description[lang as keyof MultilingualString] || clinic.description.ru}
                    </p>
                 </div>
 
                 {/* History Section */}
-                {((clinic.history as any)?.[lang] || (clinic.history as any)?.ru) && (
+                {(clinic.history?.[lang as keyof MultilingualString] || clinic.history?.ru) && (
                   <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                     <h2 className="text-[13px] font-bold text-[#94a3b8] mb-4 uppercase tracking-[0.12em]">{t('clinic.history')}</h2>
                     <p className="text-[15px] leading-[1.7] text-[#374151] whitespace-pre-wrap">
-                      {(clinic.history as any)[lang] || (clinic.history as any).ru}
+                      {clinic.history[lang as keyof MultilingualString] || clinic.history.ru}
                     </p>
                   </div>
                 )}
@@ -167,10 +168,10 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                       </div>
 
                       {/* Founded Date */}
-                      {(clinic as any).createdAt && (
+                      {clinic.createdAt && (
                         <div className="flex items-center gap-4 group border-t border-slate-50 pt-6">
                            <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.12em]">
-                             {t('common.since')} {new Date((clinic as any).createdAt).getFullYear()}
+                             {t('common.since')} {new Date(clinic.createdAt).getFullYear()}
                            </div>
                         </div>
                       )}
