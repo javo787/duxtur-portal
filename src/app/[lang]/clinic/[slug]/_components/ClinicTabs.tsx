@@ -114,16 +114,18 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                   </div>
                 )}
 
-                <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
-                   <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.specialties')}</h2>
-                   <div className="flex flex-wrap gap-2">
-                      {clinic.specialties.map((s: string) => (
-                        <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wide">
-                          {s}
-                        </span>
-                      ))}
-                   </div>
-                </div>
+                {clinic.specialties?.length > 0 && (
+                  <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
+                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.specialties')}</h2>
+                    <div className="flex flex-wrap gap-2">
+                        {clinic.specialties.map((s: string) => (
+                          <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wide">
+                            {s}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
              </div>
 
              <div className="space-y-8">
