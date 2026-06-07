@@ -28,7 +28,7 @@ interface Clinic {
   address: string;
   phone: string;
   photos: string[];
-  doctorIds: { _id: string; name: string }[];
+  doctorIds: any[];
   services: { name: MultilingualString; price: number; currency: string }[];
   rating: { avg: number; count: number };
   createdAt?: string;
