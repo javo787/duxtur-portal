@@ -4,10 +4,12 @@
 >
 > Многоязычный портал с инструментами для публикации проверенных врачами статей, профилей докторов, записи к врачам и управления клиниками.
 
-[![Live](https://img.shields.io/badge/Live-duxtur.org-blue)](https://duxtur.org) 
-[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/) 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org) 
-[![MongoDB](https://img.shields.io/badge/MongoDB-9-47A248)](https://www.mongodb.com/) 
+git pull origin main
+
+[![Live](https://img.shields.io/badge/Live-duxtur.org-blue)](https://duxtur.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-9-47A248)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
@@ -39,23 +41,24 @@
 
 ### ✨ Ключевые особенности
 
-| Функция | Описание |
-|---------|---------|
-| 🌍 **5 языков** | Русский, Узбекский, Таджикский, Казахский, Кыргызский |
-| 🔍 **Полнотекстовый поиск** | MongoDB text indexes для быстрого поиска врачей и статей |
-| 📍 **Геолокация** | Карты Leaflet с кластеризацией врачей по городам |
-| 📅 **Система записей** | Управление расписанием врачей, различные типы консультаций |
-| ✅ **E-E-A-T верификация** | Проверка статей по Google E-E-A-T критериям |
-| 🤖 **AI помощник** | Claude AI для админов, Gemini для генерации контента |
-| 📱 **Рецепты и PDF** | Генерация рецептов, визиток, конвертация в PDF |
-| 💬 **Telegram интеграция** | Уведомления о записях через Telegram бот |
-| 🎨 **Персонализация** | Врачи могут кастомизировать свои визитки и профили |
+| Функция                     | Описание                                                   |
+| --------------------------- | ---------------------------------------------------------- |
+| 🌍 **5 языков**             | Русский, Узбекский, Таджикский, Казахский, Кыргызский      |
+| 🔍 **Полнотекстовый поиск** | MongoDB text indexes для быстрого поиска врачей и статей   |
+| 📍 **Геолокация**           | Карты Leaflet с кластеризацией врачей по городам           |
+| 📅 **Система записей**      | Управление расписанием врачей, различные типы консультаций |
+| ✅ **E-E-A-T верификация**  | Проверка статей по Google E-E-A-T критериям                |
+| 🤖 **AI помощник**          | Claude AI для админов, Gemini для генерации контента       |
+| 📱 **Рецепты и PDF**        | Генерация рецептов, визиток, конвертация в PDF             |
+| 💬 **Telegram интеграция**  | Уведомления о записях через Telegram бот                   |
+| 🎨 **Персонализация**       | Врачи могут кастомизировать свои визитки и профили         |
 
 ---
 
 ## 💻 Стек технологий
 
 ### Frontend
+
 - **Next.js 16** — React фреймворк, SSR/SSG, App Router
 - **React 19** — UI библиотека
 - **TypeScript 5** — типизация
@@ -65,18 +68,21 @@
 - **React-PDF/html2canvas** — экспорт в PDF
 
 ### Backend
+
 - **Next.js API Routes** — REST API
 - **MongoDB + Mongoose** — база данных
 - **NextAuth v5** — аутентификация (credentials + Google OAuth)
 - **Resend** — Email доставка
 
 ### AI & External Services
+
 - **Claude 3.5 Sonnet** (Anthropic) — AI помощник для администраторов
 - **Google Gemini** — генерация медицинского контента
 - **Cloudinary** — облачное хранилище изображений
 - **Telegram Bot API** — push-уведомления
 
 ### DevOps
+
 - **Vercel** — хостинг и CI/CD
 - **ESLint** — линтинг кода
 - **Next.js Image Optimization** — оптимизация картинок
@@ -124,6 +130,7 @@
 ### Модели данных
 
 #### User
+
 ```typescript
 {
   email: string,           // Уникальный
@@ -138,6 +145,7 @@
 ```
 
 #### Doctor
+
 ```typescript
 {
   userId: ObjectId,        // Связь с User
@@ -150,33 +158,34 @@
   coordinates: GeoPoint,   // Для геолокации
   image: string,           // URL фото
   status: 'pending' | 'approved' | 'rejected' | 'banned',
-  
+
   // Консультации
   consultationTypes: ['in_person' | 'online' | 'home_visit'][],
   schedule: {              // День недели
     mon: { open: '09:00', close: '18:00', isWorking: true },
     // ...
   },
-  
+
   // Соцсети
   telegram: string,        // Ник или ID
   instagram: string,
   whatsapp: string,
-  
+
   // Статистика
   reviewCount: number,
   reviewAvg: number,
   profileViews: number,
-  
+
   // Визитка врача (кастомизация)
   accentColor: string,     // Цвет темы
   cardTheme: 'dark' | 'light',
-  
+
   verificationLevel: 'basic' | 'verified' | 'premium',
 }
 ```
 
 #### Article
+
 ```typescript
 {
   slug: string,            // URL-friendly
@@ -186,36 +195,37 @@
   causes: { ru, uz, ... },
   diagnosis_treatment: { ru, uz, ... },
   prevention: { ru, uz, ... },
-  
+
   // Дополнительные секции
   section1_title: { ru, uz, ... },
   section1_content: { ru, uz, ... },
   // ... (section2 - section5)
-  
+
   category: 'cardiology' | 'neurology' | 'dentistry' | ... | 'general',
-  
+
   authorId: ObjectId,      // Врач-автор
   image: string,           // Cover image
-  
+
   // E-E-A-T
   aiGenerated: boolean,
   isVerified: boolean,
   reviewedBy: string,
   reviewedAt: Date,
   lastMedicalReview: Date,
-  
+
   // Статистика
   views: number,
   ratingSum: number,
   ratingCount: number,
   likesUp: number,
   likesDown: number,
-  
+
   references: string[],    // Ссылки на источники
 }
 ```
 
 #### Appointment
+
 ```typescript
 {
   doctorId: ObjectId,
@@ -332,7 +342,7 @@ npx tsx src/scripts/create-indexes.ts
 db.doctors.createIndex({
   name: "text",
   "specialty.ru": "text",
-  city: "text"
+  city: "text",
 });
 
 // Articles search index
@@ -340,7 +350,7 @@ db.articles.createIndex({
   "title.ru": "text",
   "title.uz": "text",
   "overview.ru": "text",
-  "overview.uz": "text"
+  "overview.uz": "text",
   // ... остальные языки
 });
 
@@ -361,62 +371,62 @@ npm run seed
 
 ### Аутентификация
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| POST | `/api/auth/register` | Регистрация пользователя |
-| POST | `/api/auth/forgot-password` | Запрос на восстановление пароля |
-| POST | `/api/auth/reset-password` | Сброс пароля по токену |
-| GET | `/api/auth/callback/google` | Google OAuth callback |
-| POST | `/api/auth/signout` | Выход из системы |
+| Метод | Маршрут                     | Описание                        |
+| ----- | --------------------------- | ------------------------------- |
+| POST  | `/api/auth/register`        | Регистрация пользователя        |
+| POST  | `/api/auth/forgot-password` | Запрос на восстановление пароля |
+| POST  | `/api/auth/reset-password`  | Сброс пароля по токену          |
+| GET   | `/api/auth/callback/google` | Google OAuth callback           |
+| POST  | `/api/auth/signout`         | Выход из системы                |
 
 ### Врачи
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| GET | `/api/doctor/search` | Поиск врачей (полнотекстовый) |
-| GET | `/api/doctor/[slug]` | Получить профиль врача |
-| POST | `/api/doctor/register` | Регистрация врача (требует документы) |
-| GET | `/api/doctor/schedule?doctorId=X&date=YYYY-MM-DD` | Доступные слоты врача |
-| PATCH | `/api/doctor/[id]` | Обновить профиль врача (авторизация) |
-| GET | `/api/doctor/map` | Получить координаты врачей для карты |
+| Метод | Маршрут                                           | Описание                              |
+| ----- | ------------------------------------------------- | ------------------------------------- |
+| GET   | `/api/doctor/search`                              | Поиск врачей (полнотекстовый)         |
+| GET   | `/api/doctor/[slug]`                              | Получить профиль врача                |
+| POST  | `/api/doctor/register`                            | Регистрация врача (требует документы) |
+| GET   | `/api/doctor/schedule?doctorId=X&date=YYYY-MM-DD` | Доступные слоты врача                 |
+| PATCH | `/api/doctor/[id]`                                | Обновить профиль врача (авторизация)  |
+| GET   | `/api/doctor/map`                                 | Получить координаты врачей для карты  |
 
 ### Статьи
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| GET | `/api/articles/search` | Поиск статей |
-| GET | `/api/articles/[slug]` | Получить статью |
-| POST | `/api/articles` | Создать статью (авторизованный врач) |
-| PATCH | `/api/articles/[id]` | Обновить статью |
-| POST | `/api/articles/[id]/rate` | Оценить статью (1-5 звезд) |
-| GET | `/api/articles/category/[category]` | Статьи по категории |
+| Метод | Маршрут                             | Описание                             |
+| ----- | ----------------------------------- | ------------------------------------ |
+| GET   | `/api/articles/search`              | Поиск статей                         |
+| GET   | `/api/articles/[slug]`              | Получить статью                      |
+| POST  | `/api/articles`                     | Создать статью (авторизованный врач) |
+| PATCH | `/api/articles/[id]`                | Обновить статью                      |
+| POST  | `/api/articles/[id]/rate`           | Оценить статью (1-5 звезд)           |
+| GET   | `/api/articles/category/[category]` | Статьи по категории                  |
 
 ### Записи на приём
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| POST | `/api/appointments` | Создать запись (авторизованный пациент) |
-| GET | `/api/appointments` | Получить мои записи |
-| PATCH | `/api/appointments/[id]` | Обновить запись |
-| DELETE | `/api/appointments/[id]` | Отменить запись |
-| GET | `/api/appointments/doctor/[doctorId]` | Записи врача на день |
+| Метод  | Маршрут                               | Описание                                |
+| ------ | ------------------------------------- | --------------------------------------- |
+| POST   | `/api/appointments`                   | Создать запись (авторизованный пациент) |
+| GET    | `/api/appointments`                   | Получить мои записи                     |
+| PATCH  | `/api/appointments/[id]`              | Обновить запись                         |
+| DELETE | `/api/appointments/[id]`              | Отменить запись                         |
+| GET    | `/api/appointments/doctor/[doctorId]` | Записи врача на день                    |
 
 ### Админ панель
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| POST | `/api/admin/approve-doctor` | Одобрить врача (admin_portal) |
-| GET | `/api/admin/doctors` | Список врачей на модерацию |
-| POST | `/api/admin/chat` | AI помощник (Anthropic Claude) |
-| GET | `/api/admin/analytics` | Статистика платформы |
+| Метод | Маршрут                     | Описание                       |
+| ----- | --------------------------- | ------------------------------ |
+| POST  | `/api/admin/approve-doctor` | Одобрить врача (admin_portal)  |
+| GET   | `/api/admin/doctors`        | Список врачей на модерацию     |
+| POST  | `/api/admin/chat`           | AI помощник (Anthropic Claude) |
+| GET   | `/api/admin/analytics`      | Статистика платформы           |
 
 ### Клиники
 
-| Метод | Маршрут | Описание |
-|-------|---------|---------|
-| GET | `/api/clinic/[id]` | Профиль клиники |
-| PATCH | `/api/clinic/[id]` | Обновить профиль клиники (авторизация) |
-| POST | `/api/clinic/[id]/doctors` | Добавить врача в клинику |
+| Метод | Маршрут                    | Описание                               |
+| ----- | -------------------------- | -------------------------------------- |
+| GET   | `/api/clinic/[id]`         | Профиль клиники                        |
+| PATCH | `/api/clinic/[id]`         | Обновить профиль клиники (авторизация) |
+| POST  | `/api/clinic/[id]/doctors` | Добавить врача в клинику               |
 
 ---
 
@@ -433,25 +443,25 @@ npm run seed
 ### Роли пользователей
 
 ```typescript
-type Role = 'patient' | 'doctor' | 'portal_admin' | 'clinic';
+type Role = "patient" | "doctor" | "portal_admin" | "clinic";
 ```
 
 **Доступ по ролям:**
 
-| Роль | Доступ |
-|------|---------|
-| `patient` | Запись на прием, просмотр профилей, рейтинги |
-| `doctor` | Свой профиль, расписание, статьи, записи пациентов |
+| Роль           | Доступ                                             |
+| -------------- | -------------------------------------------------- |
+| `patient`      | Запись на прием, просмотр профилей, рейтинги       |
+| `doctor`       | Свой профиль, расписание, статьи, записи пациентов |
 | `portal_admin` | Модерация врачей, контента, AI помощник, аналитика |
-| `clinic` | Управление врачами клиники, аналитика клиники |
+| `clinic`       | Управление врачами клиники, аналитика клиники      |
 
 ### Middleware авторизации
 
 ```typescript
 // src/auth.config.ts
 // Защита маршрутов через callbacks.authorized()
-if (pathname.includes('/admin/portal')) {
-  if (!isLoggedIn || role !== 'portal_admin') {
+if (pathname.includes("/admin/portal")) {
+  if (!isLoggedIn || role !== "portal_admin") {
     return Response.redirect(new URL(`/${lang}/login`, nextUrl));
   }
 }
@@ -461,13 +471,13 @@ if (pathname.includes('/admin/portal')) {
 
 ## 🌍 Поддерживаемые языки
 
-| Код | Язык | Статус |
-|-----|------|---------|
-| `ru` | Русский | ✅ Основной |
-| `uz` | Узбекский | ✅ Полный |
-| `tg` | Таджикский | ✅ Полный |
-| `kk` | Казахский | ✅ Полный |
-| `ky` | Кыргызский | ✅ Полный |
+| Код  | Язык       | Статус      |
+| ---- | ---------- | ----------- |
+| `ru` | Русский    | ✅ Основной |
+| `uz` | Узбекский  | ✅ Полный   |
+| `tg` | Таджикский | ✅ Полный   |
+| `kk` | Казахский  | ✅ Полный   |
+| `ky` | Кыргызский | ✅ Полный   |
 
 **Локализация:**
 
