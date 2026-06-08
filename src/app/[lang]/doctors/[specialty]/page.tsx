@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates } from '@/lib/seo';
+import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { DoctorsSortSelect } from '../_components/DoctorsSortSelect';
@@ -38,9 +38,17 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
   title += ` — Duxtur.org`;
 
+  const descriptions: Record<string, string> = {
+    ru: `Лучшие специалисты в категории ${specLabel}. Запись на прием, отзывы, цены на Duxtur.org.`,
+    uz: `${specLabel} toifasidagi eng yaxshi mutaxassislar. Duxtur.org saytida qabulga yozilish, sharhlar va narxlar.`,
+    tg: `Беҳтарин мутахассисон дар категорияи ${specLabel}. Сабти ном барои қабул, фикру мулоҳизаҳо ва нархҳо дар Duxtur.org.`,
+    kk: `${specLabel} санатындағы үздік мамандар. Duxtur.org сайтында қабылдауға жазылу, пікірлер және бағалар.`,
+    ky: `${specLabel} категориясындагы мыкты адистер. Duxtur.org сайтында кабыл алууга жазылуу, сын-пикирлер жана баалар.`,
+  };
+
   return {
     title,
-    description: `Лучшие специалисты в категории ${specLabel}. Запись на прием, отзывы, цены на Duxtur.org.`,
+    description: descriptions[lang] || descriptions.ru,
     alternates: buildAlternates(`doctors/${specialty}`, lang),
   };
 }
@@ -53,10 +61,8 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
 
   await dbConnect();
 
-  const cities: string[] = await Doctor.distinct('city', { status: 'approved' });
-
   // Query
-  const query: any = { status: 'approved', 'specialty.ru': specLabelRu };
+  const query: Record<string, any> = { status: 'approved', 'specialty.ru': specLabelRu };
   if (sp.city) query.city = new RegExp(sp.city, 'i');
   if (sp.type) query.consultationTypes = sp.type;
 
@@ -71,18 +77,53 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
   const skip = (page - 1) * limit;
 
   const [doctors, total] = await Promise.all([
-    Doctor.find(query).sort(sort).skip(skip).limit(limit).lean(),
+    Doctor.find(query).sort(sort).skip(skip).limit(limit).lean() as Promise<any[]>,
     Doctor.countDocuments(query),
   ]);
 
-  const totalPages = Math.ceil(total / limit);
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
   const specLabel = CATEGORY_LABELS[specialty]?.[lang] || CATEGORY_LABELS[specialty]?.ru;
 
+  // Structured Data
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: specLabel,
+    itemListElement: doctors.map((doc: any, index: number) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Physician',
+        name: doc.name,
+        url: `${BASE_URL}/${lang}/doctor/${doc.slug || doc._id}`,
+        image: doc.image || undefined,
+        jobTitle: t(doc.specialty),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: doc.city,
+        }
+      }
+    }))
+  };
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Duxtur.org', url: `/${lang}` },
+    { name: L('title'), url: `/${lang}/doctors` },
+    { name: specLabel, url: `/${lang}/doctors/${specialty}` },
+  ]);
+
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="bg-white border-b border-slate-100 pt-8 md:pt-12 pb-10 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 md:px-5 text-center">
           <nav className="flex items-center justify-center gap-1.5 text-xs text-slate-400 mb-4">
