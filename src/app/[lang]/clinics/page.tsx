@@ -6,16 +6,18 @@ import Link from 'next/link';
 import { getT, T, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
-import { buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicDocument } from '@/lib/clinic-constants';
 
 export const revalidate = 3600; // 1 hour
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = (await params) as { lang: Locale };
+  const t = getT(lang);
   return {
     title: `${T('clinic.title', lang)} — Duxtur.org`,
-    description: T('meta.description', lang),
+    description: t('home.heroSubtitle'),
+    alternates: buildAlternates('clinics', lang),
   };
 }
 
@@ -91,6 +93,29 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
   const totalPages = Math.ceil(total / limit);
 
+  // Structured Data
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: t('clinic.title'),
+    itemListElement: clinics.map((clinic: any, index: number) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'MedicalClinic',
+        name: clinic.name[lang] || clinic.name.ru,
+        url: `${BASE_URL}/${lang}/clinics/${clinic.slug}`,
+        image: clinic.logo || clinic.coverImage || undefined,
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: clinic.city,
+          streetAddress: clinic.address,
+        },
+        telephone: clinic.phone || undefined,
+      }
+    }))
+  };
+
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: t('nav.home'), url: `/${lang}` },
     { name: t('clinic.title'), url: `/${lang}/clinics` },
@@ -116,6 +141,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-500">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       {/* Hero */}

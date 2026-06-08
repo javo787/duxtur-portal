@@ -77,9 +77,9 @@ export default function DoctorHero({
               </svg>
               {specialtyLabel}
             </div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-tight truncate">
+            <p className="text-xl font-black text-white tracking-tight leading-tight truncate">
               {doctor.name}
-            </h1>
+            </p>
             {doctor.workplace && (
               <p className="text-blue-200/60 text-[11px] mt-0.5 truncate">{doctor.workplace}</p>
             )}
