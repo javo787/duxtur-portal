@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTheme } from '@/hooks/useTheme';
 
 if (typeof window !== 'undefined') {
   // @ts-ignore
@@ -27,8 +28,10 @@ export default function LocationPickerModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const theme = useTheme();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const [selectedLat, setSelectedLat] = useState(initialLat);
   const [selectedLng, setSelectedLng] = useState(initialLng);
@@ -42,12 +45,14 @@ export default function LocationPickerModal({
       zoomControl: true,
     });
 
-    L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`, {
+    const tiles = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/${theme === 'dark' ? 'dark-v11' : 'light-v11'}/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`, {
       attribution: '&copy; <a href="https://www.mapbox.com">Mapbox</a> &copy; <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
       tileSize: 512,
       zoomOffset: -1,
       maxZoom: 22,
     }).addTo(map);
+
+    tileLayerRef.current = tiles;
 
     const marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
 
@@ -71,6 +76,15 @@ export default function LocationPickerModal({
       mapRef.current = null;
     };
   }, [initialLat, initialLng]);
+
+  useEffect(() => {
+    if (tileLayerRef.current) {
+      const style = theme === 'dark' ? 'dark-v11' : 'light-v11';
+      tileLayerRef.current.setUrl(
+        `https://api.mapbox.com/styles/v1/mapbox/${style}/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
+      );
+    }
+  }, [theme]);
 
   const handleConfirm = () => {
     onConfirm(selectedLat, selectedLng);

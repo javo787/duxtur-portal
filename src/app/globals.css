@@ -118,6 +118,11 @@
   --sidebar-ring: oklch(0.55 0.14 255);
 }
 
+.dark img:not([src*="logo"]) {
+  filter: brightness(0.85) contrast(1.1);
+  transition: filter 0.5s ease-in-out;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -126,6 +131,15 @@
     @apply bg-background text-foreground;
     font-family: var(--font-inter), system-ui, sans-serif;
     font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  /* Modern Interactive States */
+  button, a {
+    @apply transition-all duration-200;
+  }
+
+  .dark button:hover, .dark a:hover {
+    filter: brightness(1.1);
   }
   h1, h2, h3 {
     font-family: var(--font-fraunces), Georgia, serif;
