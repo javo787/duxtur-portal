@@ -10,7 +10,7 @@ export default function ClinicMarketingTab({ lang, slug }: { lang: string, slug:
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const badgeUrl = `${baseUrl}/api/clinic/${slug}/badge`;
-  const profileUrl = `${baseUrl}/${lang}/clinic/${slug}`;
+  const profileUrl = `${baseUrl}/${lang}/clinics/${slug}`;
 
   const embedCode = `<a href="${profileUrl}" target="_blank">
   <img src="${badgeUrl}" alt="Verified by Duxtur.org" width="240" height="80" />

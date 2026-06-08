@@ -238,11 +238,11 @@ export async function recalculateClinicRating(clinicId: string) {
   try {
     const { revalidatePath } = await import('next/cache');
     if (clinic.slug) {
-      revalidatePath(`/ru/clinic/${clinic.slug}`);
-      revalidatePath(`/uz/clinic/${clinic.slug}`);
-      revalidatePath(`/tj/clinic/${clinic.slug}`);
-      revalidatePath(`/kk/clinic/${clinic.slug}`);
-      revalidatePath(`/ky/clinic/${clinic.slug}`);
+      revalidatePath(`/ru/clinics/${clinic.slug}`);
+      revalidatePath(`/uz/clinics/${clinic.slug}`);
+      revalidatePath(`/tj/clinics/${clinic.slug}`);
+      revalidatePath(`/kk/clinics/${clinic.slug}`);
+      revalidatePath(`/ky/clinics/${clinic.slug}`);
     }
   } catch (e) {
     console.error('Revalidation error:', e);

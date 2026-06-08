@@ -6,6 +6,7 @@ import { getT, Locale } from '@/i18n';
 import { motion } from 'framer-motion';
 import { ClinicDocument, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
 import { isClinicOpen } from '@/lib/clinic-utils';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, lang: Locale }) {
   const t = getT(lang);
@@ -20,11 +21,11 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
       transition={{ duration: 0.4 }}
       className="h-full"
     >
-      <Link href={`/${lang}/clinic/${clinic.slug}`} className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full">
+      <Link href={`/${lang}/clinics/${clinic.slug}`} className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full">
         {/* Cover */}
         <div className="relative aspect-video w-full overflow-hidden">
           <Image
-            src={clinic.coverImage || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800'}
+            src={getOptimizedCloudinaryUrl((clinic.coverImage || clinic.logo) as string, { width: 800, height: 450, crop: 'fill' }) || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800'}
             alt={name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-1000"
@@ -34,7 +35,12 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
           {/* Logo Overlay */}
           <div className="absolute bottom-4 left-4 w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl p-0.5 shadow-xl group-hover:scale-110 transition-transform duration-500">
              <div className="relative w-full h-full rounded-[0.8rem] overflow-hidden">
-               <Image src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" fill className="object-cover" />
+               <Image
+                src={getOptimizedCloudinaryUrl(clinic.logo as string, { width: 200, height: 200, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                alt=""
+                fill
+                className="object-cover"
+               />
              </div>
           </div>
 

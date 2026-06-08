@@ -246,7 +246,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
                     <Link
-                      href={`/${lang}/clinic/${clinic.slug}`}
+                        href={`/${lang}/clinics/${clinic.slug}`}
                       target="_blank"
                       className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-700 hover:bg-gray-600 text-white transition text-center"
                     >
