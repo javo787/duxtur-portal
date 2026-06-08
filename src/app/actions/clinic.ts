@@ -167,11 +167,17 @@ export async function updateClinicProfile(id: string, data: Record<string, any>,
 
     // Auto-translate name and description if they changed in RU
     const updateData = { ...data };
-    if (data.name?.ru && data.name.ru !== clinic.name.ru) {
-       updateData.name = await translateText(data.name.ru);
+
+    // Handle Name translation
+    const incomingNameRu = typeof data.name === 'string' ? data.name : data.name?.ru;
+    if (incomingNameRu && incomingNameRu !== clinic.name?.ru) {
+      updateData.name = await translateText(incomingNameRu);
     }
-    if (data.description?.ru && data.description.ru !== clinic.description.ru) {
-       updateData.description = await translateText(data.description.ru);
+
+    // Handle Description translation
+    const incomingDescRu = typeof data.description === 'string' ? data.description : data.description?.ru;
+    if (incomingDescRu && incomingDescRu !== clinic.description?.ru) {
+      updateData.description = await translateText(incomingDescRu);
     }
 
     await Clinic.findByIdAndUpdate(id, { $set: updateData }, { runValidators: true });

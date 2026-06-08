@@ -83,22 +83,15 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
       }
     };
 
-    // bio, workplace, education
-    addFieldForTranslation(
-      'bio',
-      typeof data.bio === 'string' ? data.bio : undefined,
-      doctor.bio?.ru,
-    );
-    addFieldForTranslation(
-      'workplace',
-      typeof data.workplace === 'string' ? data.workplace : undefined,
-      doctor.workplace?.ru,
-    );
-    addFieldForTranslation(
-      'education',
-      typeof data.education === 'string' ? data.education : undefined,
-      doctor.education?.ru,
-    );
+    // bio, workplace, education – handle both string and object with .ru
+    const incomingBioRu = typeof data.bio === 'string' ? data.bio : (data.bio as any)?.ru;
+    addFieldForTranslation('bio', incomingBioRu, doctor.bio?.ru);
+
+    const incomingWorkplaceRu = typeof data.workplace === 'string' ? data.workplace : (data.workplace as any)?.ru;
+    addFieldForTranslation('workplace', incomingWorkplaceRu, doctor.workplace?.ru);
+
+    const incomingEducationRu = typeof data.education === 'string' ? data.education : (data.education as any)?.ru;
+    addFieldForTranslation('education', incomingEducationRu, doctor.education?.ru);
 
     // specialty – может быть строкой или объектом с ru
     const incomingSpecialtyRu =
