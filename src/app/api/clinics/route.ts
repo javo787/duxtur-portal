@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const query: any = { status: 'approved' };
+    const query: any = { status: { $in: ['approved', 'pre_imported'] } };
     if (city) query.city = city;
     if (type) query.type = type;
     if (specialty) query.specialties = specialty;
