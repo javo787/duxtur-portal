@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { fromPin } from '@/lib/coordinates';
+import { useTheme } from '@/hooks/useTheme';
 
 if (typeof window !== 'undefined') {
   // @ts-ignore
@@ -124,8 +125,10 @@ export default function MapInner({
   targetDoctor = null,
   onClearRoute,
 }: MapInnerProps) {
+  const theme = useTheme();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<L.MarkerClusterGroup | null>(null);
   const markerMapRef = useRef<Map<string, L.Marker>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
@@ -177,12 +180,14 @@ export default function MapInner({
             preferCanvas: true,
         });
 
-        L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`, {
+        const tiles = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/${theme === 'dark' ? 'dark-v11' : 'light-v11'}/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`, {
             attribution: '&copy; <a href="https://www.mapbox.com">Mapbox</a> &copy; <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
             tileSize: 512,
             zoomOffset: -1,
             maxZoom: 22,
         }).addTo(map);
+
+        tileLayerRef.current = tiles;
 
         // @ts-ignore
         if (L.markerClusterGroup) {
@@ -298,6 +303,16 @@ useEffect(() => {
       mapRef.current.setZoom(zoom);
     }
   }, [zoom]);
+
+  // ── Theme sync (Map tiles) ──────────────────────────────────────────────
+  useEffect(() => {
+    if (tileLayerRef.current) {
+      const style = theme === 'dark' ? 'dark-v11' : 'light-v11';
+      tileLayerRef.current.setUrl(
+        `https://api.mapbox.com/styles/v1/mapbox/${style}/tiles/{z}/{x}/{y}@2x?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
+      );
+    }
+  }, [theme]);
 
   // ── Center on user when location first becomes available ────────────
 const hasCenteredOnUser = useRef(false);

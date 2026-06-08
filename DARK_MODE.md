@@ -27,14 +27,17 @@ We use `oklch()` for all core variables. OKLCH is perceptually uniform, making i
 - [x] **Deep Navy Palette**: Replaced generic dark grays with a professional navy-tinted system.
 - [x] **Semantic Migration**: Updated core layout components (`HomeHeader`, `HomeFooter`) to use CSS variables.
 - [x] **Glassmorphism Refinement**: Adjusted header and overlay blurs to look more natural on dark surfaces.
-- [x] **Automatic System Sync**: Implementation in `LangLayout.tsx` handles `prefers-color-scheme` automatically while respecting manual overrides.
+- [x] **Automatic System Sync**: Implementation in `[lang]/layout.tsx` handles `prefers-color-scheme` automatically while respecting manual overrides.
+- [x] **Dynamic Maps**: Mapbox tiles now transition between `light-v11` and `dark-v11` styles dynamically when the theme changes.
+- [x] **Image Dimming**: Implemented a global filter (`brightness(0.85)`) for images in dark mode to reduce eye strain, excluding logos.
+- [x] **Interactive States**: Global hover/active states refined for dark mode using brightness adjustments.
+- [x] **Icon Audit**: Refined key hero illustrations and icons to use theme-aware colors (variables and `currentColor`).
 
 ## Future Roadmap (To-Do)
 
-- [ ] **Image Dimming**: Implement a global filter to slightly reduce brightness/contrast of large medical photos in dark mode.
-- [ ] **Interactive States**: Fine-tune `:hover` and `:active` states for buttons to use specific navy-tinted overlays.
-- [ ] **Dynamic Maps**: Ensure Mapbox/Leaflet tiles transition to a dark-mode variant when the theme changes.
-- [ ] **Icon Audit**: Review all medical icons to ensure they don't lose detail on dark backgrounds.
+- [ ] **Third-party Widgets Audit**: Ensure external widgets (like Telegram login) don't clash with the dark navy aesthetic.
+- [ ] **Content-specific Dimming**: Fine-tune image dimming for specific high-contrast medical diagrams if needed.
+- [ ] **PDF Export Theme**: Ensure PDF generation (e.g., for recipes or clinic profiles) uses a print-friendly light theme regardless of the UI state.
 
 ---
-*Last Updated: February 2024*
+*Last Updated: March 2024*
