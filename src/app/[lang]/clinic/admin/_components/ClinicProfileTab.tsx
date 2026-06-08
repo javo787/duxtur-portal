@@ -122,7 +122,7 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
          <div className="flex items-center justify-between mb-4">
            <h3 className="font-black text-slate-900">{t('common.completion')}: {completionScore}%</h3>
            <Link
-             href={`/${lang}/clinic/${profile.slug}`}
+             href={`/${lang}/clinics/${profile.slug}`}
              target="_blank"
              className="text-xs font-bold text-blue-600 hover:underline"
            >

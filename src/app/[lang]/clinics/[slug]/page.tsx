@@ -14,7 +14,7 @@ export const revalidate = 21600; // 6 hours
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
   const { slug, lang } = (await params) as { slug: string; lang: Locale };
   await dbConnect();
-  const clinic = await Clinic.findOne({ slug, status: 'approved' }).lean();
+  const clinic = await Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } }).lean();
   if (!clinic) return { title: 'Клиника не найдена' };
 
   const name = (clinic.name as any)[lang] || (clinic.name as any).ru;
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${name} — ${t('clinic.type_' + clinic.type)} | Duxtur.org`,
     description: desc.substring(0, 160),
-    alternates: buildAlternates(`clinic/${slug}`, lang),
+    alternates: buildAlternates(`clinics/${slug}`, lang),
     openGraph: {
       type: 'website',
       images: [clinic.coverImage || clinic.logo || `${BASE_URL}/og-default.png`],
@@ -36,7 +36,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   const { slug, lang } = (await params) as { slug: string; lang: Locale };
   await dbConnect();
 
-  const clinic = await Clinic.findOne({ slug, status: 'approved' })
+  const clinic = await Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })
     .populate('doctorIds', 'name image specialty slug experience reviewAvg reviewCount')
     .lean();
 
@@ -62,7 +62,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
     '@type': 'MedicalClinic',
     name: (clinic.name as any)[lang] || (clinic.name as any).ru,
     description: (clinic.description as any)?.[lang] || (clinic.description as any)?.ru,
-    url: `${BASE_URL}/${lang}/clinic/${slug}`,
+    url: `${BASE_URL}/${lang}/clinics/${slug}`,
     image: clinic.coverImage || clinic.logo,
     telephone: clinic.phone,
     address: {
@@ -87,7 +87,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
     breadcrumb: buildBreadcrumbJsonLd([
       { name: 'Duxtur.org', url: `/${lang}` },
       { name: t('clinic.title'), url: `/${lang}/clinics` },
-      { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `/${lang}/clinic/${slug}` },
+      { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `/${lang}/clinics/${slug}` },
     ]),
   };
 
