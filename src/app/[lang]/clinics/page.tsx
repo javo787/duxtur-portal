@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getT, T, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
-import { buildAlternates, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicDocument } from '@/lib/clinic-constants';
 
 export const revalidate = 3600; // 1 hour
