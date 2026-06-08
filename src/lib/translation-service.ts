@@ -36,17 +36,7 @@ Text to translate: "${text.replace(/"/g, "'")}"`;
 
   const MAX_RETRIES = 3;
 
-  const getOptimalTimeout = (): number => {
-    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
-      const connection = (navigator as any).connection;
-      if (connection.effectiveType === '4g') return 3000;
-      if (connection.effectiveType === '3g') return 5000;
-      return 8000;
-    }
-    return 5000; // Default for server-side or non-supporting browsers
-  };
-
-  const timeout = getOptimalTimeout();
+  const timeout = 30000; // Increased timeout to 30s for server-side AI generation
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
