@@ -37,8 +37,8 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
         visible ? 'translate-y-0' : '-translate-y-full'
       } ${
         scrolled
-          ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-md shadow-slate-200/20 dark:shadow-slate-950/50'
-          : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md'
+          ? 'bg-white/95 dark:bg-background/95 backdrop-blur-xl shadow-md shadow-slate-200/20 dark:shadow-slate-950/50'
+          : 'bg-white/90 dark:bg-background/90 backdrop-blur-md'
       } border-b border-slate-100 dark:border-white/5`}
       aria-hidden={!visible}
     >
@@ -145,7 +145,7 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
 
       {/* ── Mobile menu ── */}
       <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-80' : 'max-h-0'}`}>
-        <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
+        <div className="bg-white dark:bg-card border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
           {navLinks.map((link) => (
             <Link
               key={link.href}
