@@ -1,5 +1,3 @@
-'use client';
-
 interface FAQSectionProps {
   sections: { id: string; title: string; content: string }[];
   lang: string;

@@ -92,7 +92,10 @@ const DoctorSchema = new mongoose.Schema({
 DoctorSchema.index({ city: 1 });
 DoctorSchema.index({ 'specialty.ru': 1 });
 DoctorSchema.index({ status: 1 });
-DoctorSchema.index({ reviewAvg: -1 });
+DoctorSchema.index({ reviewAvg: -1, reviewCount: -1 });
+DoctorSchema.index({ experience: -1 });
+DoctorSchema.index({ 'priceRange.min': 1 });
+DoctorSchema.index({ createdAt: -1 });
 DoctorSchema.index({ 'coordinates.coordinates': '2dsphere' });
 DoctorSchema.index({ name: 'text', 'specialty.ru': 'text', city: 'text' });
 

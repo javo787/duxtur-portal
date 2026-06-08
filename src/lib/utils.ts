@@ -28,15 +28,23 @@ export function generateSlug(name: string): string {
 }
 
 export function getOptimizedCloudinaryUrl(url: string, options: { width?: number, height?: number, crop?: string } = {}): string {
-  if (!url || !url.includes('cloudinary.com')) return url;
+  if (!url || !url.includes('cloudinary.com') || url.includes('/upload/f_auto,q_auto')) return url;
 
   const parts = url.split('/upload/');
   if (parts.length !== 2) return url;
 
   const transformations = ['f_auto', 'q_auto'];
-  if (options.width) transformations.push(`w_${options.width}`);
-  if (options.height) transformations.push(`h_${options.height}`);
+  if (options.width) {
+    // Round to nearest 100 to improve cache hit ratio
+    const roundedWidth = Math.ceil(options.width / 100) * 100;
+    transformations.push(`w_${roundedWidth}`);
+  }
+  if (options.height) {
+    const roundedHeight = Math.ceil(options.height / 100) * 100;
+    transformations.push(`h_${roundedHeight}`);
+  }
   if (options.crop) transformations.push(`c_${options.crop}`);
+  else if (options.width || options.height) transformations.push('c_fill');
 
   return `${parts[0]}/upload/${transformations.join(',')}/${parts[1]}`;
 }

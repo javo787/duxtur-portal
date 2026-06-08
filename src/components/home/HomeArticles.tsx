@@ -2,6 +2,7 @@ import Link from 'next/link';
 import FadeIn from '@/components/FadeIn';
 import Image from 'next/image';
 import { getT } from '@/i18n';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function HomeArticles({
   lang,
@@ -73,11 +74,12 @@ export default function HomeArticles({
             <div className="rounded-2xl overflow-hidden border border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 md:grid md:grid-cols-[3fr_2fr] shadow-sm hover:shadow-lg">
               <div className="h-64 md:h-[380px] overflow-hidden relative">
                 <Image
-                  src={featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900'}
+                  src={getOptimizedCloudinaryUrl(featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900', { width: 800 })}
                   alt={dbT(featured.title)}
                   fill
+                  priority
                   className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 800px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-900/10 via-transparent to-transparent" />
               </div>
@@ -134,11 +136,11 @@ export default function HomeArticles({
                   >
                     <div className="h-44 overflow-hidden relative flex-shrink-0">
                       <Image
-                        src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
+                        src={getOptimizedCloudinaryUrl(article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400', { width: 400 })}
                         alt={dbT(article.title)}
                         fill
                         className="object-cover group-hover:scale-[1.06] transition-transform duration-600 ease-out"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                       />
                       <div className="absolute top-3 left-3">
                         <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-amber-800">

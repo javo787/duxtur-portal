@@ -90,7 +90,12 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const skip = (page - 1) * limit;
 
   const [doctors, total] = await Promise.all([
-    Doctor.find(query).sort(sort).skip(skip).limit(limit).lean(),
+    Doctor.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select('name specialty experience city image slug status reviewAvg reviewCount priceRange consultationTypes')
+      .lean(),
     Doctor.countDocuments(query),
   ]);
 

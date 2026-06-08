@@ -54,7 +54,9 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
               src="/logo.png"
               alt="Duxtur logo"
               fill
+              priority
               className="rounded-xl object-contain group-hover:opacity-90 transition"
+              sizes="36px"
             />
           </div>
           <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">

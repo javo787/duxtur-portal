@@ -63,16 +63,16 @@ const [articles, authors, categoryAgg] = await Promise.all([
   })
     .sort({ createdAt: -1 })
     .limit(9)
-    .populate('authorId')
+    .populate('authorId', 'name specialty image slug')
     .lean(),
  
-  Doctor.find({ status: 'approved' }).limit(6).lean(),
+  Doctor.find({ status: 'approved' }).limit(6).select('name specialty image slug').lean(),
  
   // Считаем количество статей по каждой категории одним запросом
   Article.aggregate([
     { $match: { category: { $in: CATEGORIES } } },
     { $group: { _id: '$category', count: { $sum: 1 } } },
-  ]),
+  ]).read('secondaryPreferred'),
 ]).catch(() => [[], [], []]);
  
 // Превращаем массив [{ _id: 'cardiology', count: 5 }, ...] в объект
