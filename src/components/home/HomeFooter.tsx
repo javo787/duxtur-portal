@@ -7,7 +7,7 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
   const t = getT(lang);
 
   return (
-    <footer className="border-t border-slate-200 dark:border-white/5 bg-white dark:bg-slate-950 transition-colors duration-500">
+    <footer className="border-t border-slate-200 dark:border-white/5 bg-white dark:bg-background transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-5 pt-14 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12">
           {/* Brand */}
