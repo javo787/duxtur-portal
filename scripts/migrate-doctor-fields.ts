@@ -17,7 +17,7 @@ if (!MONGODB_URI) throw new Error('Set MONGODB_URI in env');
 if (!GOOGLE_AI_KEY) throw new Error('Set GOOGLE_AI_KEY in env');
 
 const genAI = new GoogleGenerativeAI(GOOGLE_AI_KEY.replace(/["']/g, '').trim());
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 async function translateText(text: string) {
   if (!text?.trim()) return { ru: '', uz: '', kk: '', ky: '', tg: '' };
