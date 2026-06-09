@@ -7,6 +7,42 @@ import UI from '@/dictionaries/doctor-translations';
 import { getT } from '@/i18n';
 import DoctorsPageContent from './_components/DoctorsPageContent';
 
+// Helper function to determine the best index to use based on query and sort
+function determineBestIndex(query: any, sort: any): any {
+  // If we have a geospatial query, use the 2dsphere index
+  if (query.coordinates?. $geoWithin) {
+    return { 'coordinates.coordinates': '2dsphere' };
+  }
+
+  // If sorting by rating, use the review index
+  if (sort.reviewAvg || sort.reviewCount) {
+    return { reviewAvg: -1, reviewCount: -1 };
+  }
+
+  // If sorting by price, use the price index
+  if (sort['priceRange.min']) {
+    return { 'priceRange.min': 1 };
+  }
+
+  // If sorting by experience, use the experience index
+  if (sort.experience) {
+    return { experience: -1 };
+  }
+
+  // If filtering by city, use the city index
+  if (query.city) {
+    return { city: 1 };
+  }
+
+  // If filtering by specialty, use the specialty index
+  if (query['specialty.ru']) {
+    return { 'specialty.ru': 1 };
+  }
+
+  // Default to createdAt index for newest first
+  return { createdAt: -1 };
+}
+
 type Props = {
   params: Promise<{ lang: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -92,11 +128,12 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const [doctors, total] = await Promise.all([
     Doctor.find(query)
       .sort(sort)
+      .hint(determineBestIndex(query, sort))
       .skip(skip)
       .limit(limit)
       .select('name specialty experience city image slug status reviewAvg reviewCount priceRange consultationTypes')
       .lean(),
-    Doctor.countDocuments(query),
+    Doctor.countDocuments(query).hint({ _id: 1 }),
   ]);
 
   const totalPages = Math.ceil(total / limit);

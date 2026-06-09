@@ -4,17 +4,18 @@
 import mongoose from 'mongoose';
 
 const ArticleSchema = new mongoose.Schema({
-  slug: { 
-    type: String, 
-    required: [true, 'Slug is required'], 
-    unique: true, 
-    index: true 
+  slug: {
+    type: String,
+    required: [true, 'Slug is required'],
+    unique: true,
+    index: true
   },
   image: { type: String, required: false },
-  authorId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  authorId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Doctor',
-    required: true
+    required: true,
+    index: true  // Add index for faster lookups by author
   },
   isVerified: { type: Boolean, default: false },
 

@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         { $text: { $search: q } },
         { score: { $meta: "textScore" } }
       )
+      .hint({ $**: 'text' }) // Hint to use the text index
       .sort({ score: { $meta: "textScore" } })
       .limit(10)
       .populate('authorId', 'name image specialty slug')
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
         { status: 'approved', $text: { $search: q } },
         { score: { $meta: "textScore" } }
       )
+      .hint({ $**: 'text' }) // Hint to use the text index
       .sort({ score: { $meta: "textScore" } })
       .limit(10)
       .lean();
