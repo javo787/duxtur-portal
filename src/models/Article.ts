@@ -67,6 +67,7 @@ const ArticleSchema = new mongoose.Schema({
   likesDown:   { type: Number, default: 0 },
 }, { timestamps: true });
 
+ArticleSchema.index({ createdAt: -1 });
 
 ArticleSchema.index({
   'title.ru': 'text', 'title.uz': 'text', 'title.tg': 'text', 'title.kk': 'text', 'title.ky': 'text',

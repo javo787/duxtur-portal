@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getT } from '@/i18n';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function HomeAuthors({
   lang,
@@ -47,10 +48,11 @@ export default function HomeAuthors({
             >
               <div className="relative mb-3.5 w-14 h-14">
                 <Image
-                  src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                  src={getOptimizedCloudinaryUrl(doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png', { width: 100, height: 100 })}
                   alt={doc.name}
                   fill
                   className="rounded-xl object-cover border-2 border-slate-100"
+                  sizes="56px"
                 />
                 <div className="absolute -bottom-1 -right-1 w-[18px] h-[18px] rounded-full border-2 border-white bg-emerald-500 flex items-center justify-center">
                   <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
