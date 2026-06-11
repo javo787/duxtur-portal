@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useT } from '@/i18n';
-import { getOptimizedCloudinaryUrl } from '@/lib/utils';
+import { getOptimizedCloudinaryUrl, cn } from '@/lib/utils';
 
 interface MultilingualString {
   ru: string;
@@ -50,15 +50,20 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
   return (
     <section className="relative w-full overflow-hidden bg-white">
       {/* Cover Image container */}
-      <div className="relative h-[320px] md:h-[480px] w-full">
+      <div className={cn(
+        "relative h-[320px] md:h-[480px] w-full overflow-hidden",
+        !clinic.coverImage && "bg-slate-50 dark:bg-slate-900"
+      )}>
         <Image
           src={
-            getOptimizedCloudinaryUrl(clinic.coverImage, { width: 1600, height: 800, crop: 'fill' }) ||
+            getOptimizedCloudinaryUrl((clinic.coverImage || clinic.logo), { width: 1600, height: 800, crop: clinic.coverImage ? 'fill' : 'limit' }) ||
             'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1600'
           }
           alt=""
           fill
-          className="object-cover"
+          className={cn(
+            clinic.coverImage ? "object-cover" : "object-contain p-12 md:p-24"
+          )}
           priority
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1600';
@@ -69,13 +74,13 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
         <div className="absolute bottom-0 left-0 right-0 bg-black/45 backdrop-blur-xl p-5 md:p-8">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10">
             {/* Logo iOS-style card */}
-            <div className="relative w-20 h-20 md:w-28 md:h-28 bg-white rounded-[20px] shadow-xl p-0.5 shrink-0 overflow-hidden">
+            <div className="relative w-20 h-20 md:w-28 md:h-28 bg-white rounded-[20px] shadow-xl p-1.5 shrink-0 overflow-hidden">
               <div className="relative w-full h-full rounded-[18px] overflow-hidden">
                 <Image
-                  src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'fill' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
+                  src={getOptimizedCloudinaryUrl(clinic.logo, { width: 400, height: 400, crop: 'limit' }) || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                   alt={name}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png';
                   }}

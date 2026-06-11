@@ -33,8 +33,8 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
   const limit = 20;
 
   // Validation
-  let validatedCity = filters.city;
-  if (validatedCity && !ALLOWED_CITIES.includes(validatedCity)) {
+  let validatedCity = filters.city?.trim();
+  if (validatedCity && !ALLOWED_CITIES.some(c => c.toLowerCase() === validatedCity?.toLowerCase())) {
     validatedCity = undefined;
   }
 
@@ -55,7 +55,9 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
   await dbConnect();
 
   const query: any = { status: { $in: ['approved', 'pre_imported'] } };
-  if (validatedCity) query.city = validatedCity;
+  if (validatedCity) {
+    query.city = { $regex: new RegExp('^' + validatedCity + '$', 'i') };
+  }
   if (validatedType) query.type = validatedType;
   if (validatedSpecialty) query.specialties = validatedSpecialty;
   if (sanitizedQ) {
