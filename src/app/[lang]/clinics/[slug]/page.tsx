@@ -63,12 +63,16 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
     name: (clinic.name as any)[lang] || (clinic.name as any).ru,
     description: (clinic.description as any)?.[lang] || (clinic.description as any)?.ru,
     url: `${BASE_URL}/${lang}/clinics/${slug}`,
+    logo: clinic.logo,
     image: clinic.coverImage || clinic.logo,
     telephone: clinic.phone,
     address: {
       '@type': 'PostalAddress',
       streetAddress: clinic.address,
       addressLocality: clinic.city,
+      addressCountry: clinic.city === 'Ташкент' || clinic.city === 'Самарканд' ? 'UZ' :
+                      clinic.city === 'Алматы' || clinic.city === 'Астана' ? 'KZ' :
+                      clinic.city === 'Бишкек' ? 'KG' : 'TJ'
     },
     openingHours,
     aggregateRating: clinic.rating?.count > 0 ? {
@@ -76,6 +80,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       ratingValue: clinic.rating.avg,
       reviewCount: clinic.rating.count,
       bestRating: 5,
+      worstRating: 1
     } : undefined,
     medicalSpecialty: clinic.specialties,
     employee: (clinic.doctorIds as any[])?.map((doc: any) => ({
@@ -89,6 +94,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       { name: t('clinic.title'), url: `/${lang}/clinics` },
       { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `/${lang}/clinics/${slug}` },
     ]),
+    priceRange: '$$',
   };
 
   // Remove undefined fields

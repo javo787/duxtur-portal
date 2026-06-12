@@ -45,7 +45,7 @@ export default function ClinicFilters({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" role="search" aria-label={t('doctors.filters')}>
       {/* Cities */}
       <div className="relative">
         <motion.div
@@ -58,6 +58,8 @@ export default function ClinicFilters({
             <Link
               key={city}
               href={buildUrl({ city: currentCity === city ? undefined : city, page: '1' })}
+              aria-label={`${city}${currentCity === city ? ` (${t('common.selected')})` : ''}`}
+              aria-pressed={currentCity === city}
               className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
                 currentCity === city
                 ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
@@ -84,13 +86,15 @@ export default function ClinicFilters({
             <Link
               key={type.id}
               href={buildUrl({ type: currentType === type.id ? undefined : type.id, page: '1' })}
+              aria-label={`${t('clinic.type_' + type.id)}${currentType === type.id ? ` (${t('common.selected')})` : ''}`}
+              aria-pressed={currentType === type.id}
               className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
                 currentType === type.id
                 ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span className="mr-2">{type.emoji}</span>
+              <span className="mr-2" aria-hidden="true">{type.emoji}</span>
               {t('clinic.type_' + type.id)}
             </Link>
           ))}
@@ -111,13 +115,15 @@ export default function ClinicFilters({
             <Link
               key={specialty.id}
               href={buildUrl({ specialty: currentSpecialty === specialty.label ? undefined : specialty.label, page: '1' })}
+              aria-label={`${t('clinic.specialty_' + specialty.id)}${currentSpecialty === specialty.label ? ` (${t('common.selected')})` : ''}`}
+              aria-pressed={currentSpecialty === specialty.label}
               className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2 ${
                 currentSpecialty === specialty.label
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                 : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <span>{specialty.emoji}</span>
+              <span aria-hidden="true">{specialty.emoji}</span>
               {t('clinic.specialty_' + specialty.id)}
             </Link>
           ))}

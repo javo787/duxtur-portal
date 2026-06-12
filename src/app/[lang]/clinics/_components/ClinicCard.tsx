@@ -8,7 +8,15 @@ import { ClinicDocument, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
 import { isClinicOpen } from '@/lib/clinic-utils';
 import { getOptimizedCloudinaryUrl, cn } from '@/lib/utils';
 
-export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, lang: Locale }) {
+export default function ClinicCard({
+  clinic,
+  lang,
+  priority = false
+}: {
+  clinic: ClinicDocument,
+  lang: Locale,
+  priority?: boolean
+}) {
   const t = getT(lang);
 
   const name = clinic.name[lang as keyof typeof clinic.name] || clinic.name.ru;
@@ -21,7 +29,11 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
       transition={{ duration: 0.4 }}
       className="h-full"
     >
-      <Link href={`/${lang}/clinics/${clinic.slug}`} className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full">
+      <Link
+        href={`/${lang}/clinics/${clinic.slug}`}
+        aria-label={`${t('clinic.profile')}: ${name}`}
+        className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full"
+      >
         {/* Cover */}
         <div className={cn(
           "relative aspect-video w-full overflow-hidden",
@@ -31,6 +43,8 @@ export default function ClinicCard({ clinic, lang }: { clinic: ClinicDocument, l
             src={getOptimizedCloudinaryUrl((clinic.coverImage || clinic.logo) as string, { width: 800, height: 450, crop: clinic.coverImage ? 'fill' : 'limit' }) || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800'}
             alt={name}
             fill
+            priority={priority}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             className={cn(
               "transition-transform duration-1000",
               clinic.coverImage ? "object-cover group-hover:scale-105" : "object-contain p-12"
