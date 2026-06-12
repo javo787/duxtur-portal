@@ -7,7 +7,9 @@ import { getT, T, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
-import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, CLINIC_TYPES, ClinicType, ClinicDocument } from '@/lib/clinic-constants';
+import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
+import { sanitizeSearchParams } from '@/lib/validation';
+import { buildClinicQuery, buildClinicSort } from '@/lib/clinic-query';
 
 export const revalidate = 3600; // 1 hour
 
@@ -26,48 +28,17 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
   searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string, sort?: string }>
 }) {
   const { lang } = (await params) as { lang: Locale };
-  const filters = await searchParams;
+  const rawParams = await searchParams;
+  const filters = sanitizeSearchParams(rawParams);
   const t = getT(lang);
 
-  const page = Math.max(1, parseInt(filters.page || '1', 10));
+  const page = filters.page;
   const limit = 20;
-
-  // Validation
-  let validatedCity = filters.city?.trim();
-  if (validatedCity && !ALLOWED_CITIES.some(c => c.toLowerCase() === validatedCity?.toLowerCase())) {
-    validatedCity = undefined;
-  }
-
-  let validatedType = filters.type;
-  if (validatedType && !ALLOWED_CLINIC_TYPES.includes(validatedType as ClinicType)) {
-    validatedType = undefined;
-  }
-
-  let validatedSpecialty = filters.specialty;
-  if (validatedSpecialty && validatedSpecialty.length > 100) validatedSpecialty = undefined;
-
-  // Sanitization of q
-  let sanitizedQ = '';
-  if (filters.q) {
-    sanitizedQ = filters.q.slice(0, 100).replace(/[^\p{L}\p{N}\s]/gu, '');
-  }
 
   await dbConnect();
 
-  const query: any = { status: { $in: ['approved', 'pre_imported'] } };
-  if (validatedCity) {
-    query.city = { $regex: new RegExp('^' + validatedCity + '$', 'i') };
-  }
-  if (validatedType) query.type = validatedType;
-  if (validatedSpecialty) query.specialties = validatedSpecialty;
-  if (sanitizedQ) {
-     query.$text = { $search: sanitizedQ };
-  }
-
-  // Sorting logic
-  let sortStage: any = { 'rating.avg': -1 };
-  if (filters.sort === 'reviews') sortStage = { 'rating.count': -1 };
-  if (filters.sort === 'doctors') sortStage = { 'doctorCount': -1 };
+  const query = buildClinicQuery(filters);
+  const sortStage = buildClinicSort(filters.sort);
 
   const [clinics, total] = await Promise.all([
     Clinic.aggregate([
@@ -131,7 +102,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
     if (filters.specialty) params.set('specialty', filters.specialty);
     if (filters.q) params.set('q', filters.q);
     if (filters.sort) params.set('sort', filters.sort);
-    if (filters.page) params.set('page', filters.page);
+    if (filters.page) params.set('page', filters.page.toString());
 
     Object.entries(newParams).forEach(([key, value]) => {
       if (value === undefined) params.delete(key);
@@ -268,9 +239,14 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
            </div>
          ) : (
            <>
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {clinics.map((clinic: ClinicDocument) => (
-                  <ClinicCard key={clinic._id.toString()} clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" role="list">
+                {clinics.map((clinic: ClinicDocument, index: number) => (
+                  <ClinicCard
+                    key={clinic._id.toString()}
+                    clinic={JSON.parse(JSON.stringify(clinic))}
+                    lang={lang}
+                    priority={index < 4}
+                  />
                 ))}
              </div>
 

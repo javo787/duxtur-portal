@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import { rateLimit } from '@/lib/rate-limit';
-import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, ClinicType } from '@/lib/clinic-constants';
+import { sanitizeSearchParams } from '@/lib/validation';
+import { buildClinicQuery } from '@/lib/clinic-query';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,40 +14,23 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const city = searchParams.get('city');
-    const type = searchParams.get('type');
-    const specialty = searchParams.get('specialty');
-    const q = searchParams.get('q');
 
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const rawParams = {
+      city: searchParams.get('city') || undefined,
+      type: searchParams.get('type') || undefined,
+      specialty: searchParams.get('specialty') || undefined,
+      q: searchParams.get('q') || undefined,
+      page: searchParams.get('page') || undefined,
+      sort: searchParams.get('sort') || undefined,
+    };
+
+    const filters = sanitizeSearchParams(rawParams);
+    const page = filters.page;
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
-
-    // Validation
-    if (city && !ALLOWED_CITIES.includes(city)) {
-       return NextResponse.json({ error: 'Invalid city' }, { status: 400 });
-    }
-    if (type && !ALLOWED_CLINIC_TYPES.includes(type as ClinicType)) {
-       return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
-    }
-    if (specialty && specialty.length > 100) {
-      return NextResponse.json({ error: 'Invalid specialty' }, { status: 400 });
-    }
-
-    // Sanitization of q
-    let sanitizedQ = '';
-    if (q) {
-      sanitizedQ = q.slice(0, 100).replace(/[^\p{L}\p{N}\s]/gu, '');
-    }
 
     await dbConnect();
 
-    const query: any = { status: { $in: ['approved', 'pre_imported'] } };
-    if (city) query.city = city;
-    if (type) query.type = type;
-    if (specialty) query.specialties = specialty;
-    if (sanitizedQ) {
-      query.$text = { $search: sanitizedQ };
-    }
+    const query = buildClinicQuery(filters);
 
     const pipeline: any[] = [
       { $match: query },
