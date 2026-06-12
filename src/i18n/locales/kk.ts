@@ -614,5 +614,6 @@ export const kk = {
     specialty_mri: 'МРТ',
     specialty_tests: 'Анализдер',
     found: 'Табылды: {count} клиника',
+    notFound: 'Клиника табылмады',
   },
 } as const

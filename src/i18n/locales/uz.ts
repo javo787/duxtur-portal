@@ -614,5 +614,6 @@ export const uz = {
     specialty_mri: 'MRT',
     specialty_tests: 'Tahlillar',
     found: 'Topildi: {count} ta klinika',
+    notFound: 'Klinika topilmadi',
   },
 } as const

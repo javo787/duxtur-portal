@@ -8,18 +8,25 @@ import ClinicHero from './_components/ClinicHero';
 import ClinicTabs from './_components/ClinicTabs';
 import ClinicViewTracker from '@/components/ClinicViewTracker';
 import HomeFooter from '@/components/home/HomeFooter';
+import { cache } from 'react';
 
 export const revalidate = 21600; // 6 hours
 
+const getClinic = cache(async (slug: string) => {
+  await dbConnect();
+  return Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })
+    .populate('doctorIds', 'name image specialty slug experience reviewAvg reviewCount')
+    .lean();
+});
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; lang: string }> }): Promise<Metadata> {
   const { slug, lang } = (await params) as { slug: string; lang: Locale };
-  await dbConnect();
-  const clinic = await Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } }).lean();
-  if (!clinic) return { title: 'Клиника не найдена' };
+  const clinic = await getClinic(slug);
+  const t = getT(lang);
+  if (!clinic) return { title: t('clinic.notFound') };
 
   const name = (clinic.name as any)[lang] || (clinic.name as any).ru;
   const desc = (clinic.description as any)[lang] || (clinic.description as any).ru || '';
-  const t = getT(lang);
 
   return {
     title: `${name} — ${t('clinic.type_' + clinic.type)} | Duxtur.org`,
@@ -34,11 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ClinicProfilePage({ params }: { params: Promise<{ slug: string; lang: string }> }) {
   const { slug, lang } = (await params) as { slug: string; lang: Locale };
-  await dbConnect();
-
-  const clinic = await Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })
-    .populate('doctorIds', 'name image specialty slug experience reviewAvg reviewCount')
-    .lean();
+  const clinic = await getClinic(slug);
 
   if (!clinic) notFound();
 
@@ -50,14 +53,19 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   const t = getT(lang);
 
   // Build JSON-LD MedicalClinic schema
-  const openingHours = Object.entries(clinic.workingHours || {})
-    .filter(([_, v]: any) => v.isWorking)
-    .map(([day, v]: any) => {
-      const dayMap: Record<string, string> = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
-      return `${dayMap[day]} ${v.open}-${v.close}`;
-    });
+  let openingHours: string[] = [];
+  if (clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
+    openingHours = Object.entries(clinic.workingHours)
+      .filter(([_, v]: any) => v && v.isWorking)
+      .map(([day, v]: any) => {
+        const dayMap: Record<string, string> = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
+        const shortDay = day.toLowerCase().substring(0, 3);
+        return dayMap[shortDay] ? `${dayMap[shortDay]} ${v.open}-${v.close}` : null;
+      })
+      .filter((v): v is string => v !== null);
+  }
 
-  const jsonLd = {
+  const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': 'MedicalClinic',
     name: (clinic.name as any)[lang] || (clinic.name as any).ru,
@@ -82,11 +90,11 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       bestRating: 5,
       worstRating: 1
     } : undefined,
-    medicalSpecialty: clinic.specialties,
+    medicalSpecialty: clinic.specialties?.length ? clinic.specialties : undefined,
     employee: (clinic.doctorIds as any[])?.map((doc: any) => ({
       '@type': 'Person',
       name: doc.name,
-      jobTitle: doc.specialty?.[lang] || doc.specialty?.ru,
+      jobTitle: (doc.specialty && typeof doc.specialty === 'object') ? (doc.specialty[lang] || doc.specialty.ru) : doc.specialty,
       url: `${BASE_URL}/${lang}/doctor/${doc.slug}`,
     })),
     breadcrumb: buildBreadcrumbJsonLd([
