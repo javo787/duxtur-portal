@@ -112,4 +112,21 @@ ClinicSchema.index({ status: 1 });
 ClinicSchema.index({ city: 1 });
 ClinicSchema.index({ status: 1, city: 1, type: 1, specialties: 1, 'rating.avg': -1 });
 
+// Clean string fields before validation
+ClinicSchema.pre('validate', function(this: any, next: any) {
+  if (this.logo && typeof this.logo === 'string') {
+    this.logo = this.logo
+      .replace(/[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0604\u070F\u17B4\u17B5\u200C-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/g, '')
+      .trim();
+  }
+
+  if (this.city && typeof this.city === 'string') {
+    this.city = this.city
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      .trim();
+  }
+
+  next();
+});
+
 export default mongoose.models.Clinic || mongoose.model('Clinic', ClinicSchema);

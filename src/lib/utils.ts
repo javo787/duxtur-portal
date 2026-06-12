@@ -28,9 +28,16 @@ export function generateSlug(name: string): string {
 }
 
 export function getOptimizedCloudinaryUrl(url: string, options: { width?: number, height?: number, crop?: string } = {}): string {
-  if (!url || !url.includes('cloudinary.com') || url.includes('/upload/f_auto,q_auto')) return url;
+  if (!url) return url;
 
-  const parts = url.split('/upload/');
+  // Clean URL from invisible characters and trim
+  const cleanedUrl = url
+    .replace(/[\u0000-\u001F\u007F-\u009F\u00AD\u0600-\u0604\u070F\u17B4\u17B5\u200C-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/g, '')
+    .trim();
+
+  if (!cleanedUrl || !cleanedUrl.includes('cloudinary.com') || cleanedUrl.includes('/upload/f_auto,q_auto')) return cleanedUrl;
+
+  const parts = cleanedUrl.split('/upload/');
   if (parts.length !== 2) return url;
 
   const transformations = ['f_auto', 'q_auto'];

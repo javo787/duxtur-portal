@@ -23,7 +23,8 @@ export function sanitizeSearchParams(params: ClinicSearchParams) {
 
   // City: trim and check against allowed list (case-insensitive)
   if (params.city) {
-    const trimmedCity = params.city.trim();
+    // Clean from invisible characters and trim
+    const trimmedCity = params.city.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
     if (ALLOWED_CITIES.some(c => c.toLowerCase() === trimmedCity.toLowerCase())) {
       sanitized.city = trimmedCity;
     }
