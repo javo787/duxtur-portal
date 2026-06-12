@@ -10,7 +10,16 @@ export interface ClinicSearchParams {
 }
 
 export function sanitizeSearchParams(params: ClinicSearchParams) {
-  const sanitized: Record<string, string | number> = {};
+  const sanitized: {
+    city?: string;
+    type?: string;
+    specialty?: string;
+    q?: string;
+    page: number;
+    sort?: string;
+  } = {
+    page: 1
+  };
 
   // City: trim and check against allowed list (case-insensitive)
   if (params.city) {

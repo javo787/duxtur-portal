@@ -1,5 +1,3 @@
-import { FilterQuery } from 'mongoose';
-
 export interface ClinicFilters {
   city?: string;
   type?: string;
@@ -9,7 +7,7 @@ export interface ClinicFilters {
 }
 
 export function buildClinicQuery(filters: ClinicFilters) {
-  const query: FilterQuery<Record<string, unknown>> = {
+  const query: any = {
     status: { $in: ['approved', 'pre_imported'] }
   };
 
@@ -33,14 +31,12 @@ export function buildClinicQuery(filters: ClinicFilters) {
   return query;
 }
 
-export function buildClinicSort(sort?: string) {
-  let sortStage: Record<string, number> = { 'rating.avg': -1 };
-
+export function buildClinicSort(sort?: string): Record<string, 1 | -1> {
   if (sort === 'reviews') {
-    sortStage = { 'rating.count': -1 };
+    return { 'rating.count': -1 };
   } else if (sort === 'doctors') {
-    sortStage = { 'doctorCount': -1 };
+    return { 'doctorCount': -1 };
   }
 
-  return sortStage;
+  return { 'rating.avg': -1 };
 }
