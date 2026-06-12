@@ -120,7 +120,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
                    </>
                  ) : (
                    <span className="text-blue-200 text-sm font-bold bg-blue-900/40 px-4 py-1.5 rounded-full">
-                     Новая клиника — оставьте первый отзыв
+                     {t('clinic.noReviewsYet')}
                    </span>
                  )}
                </div>

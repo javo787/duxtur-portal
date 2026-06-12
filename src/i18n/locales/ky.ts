@@ -615,5 +615,7 @@ export const ky = {
     specialty_tests: 'Анализдер',
     found: 'Табылды: {count} клиника',
     notFound: 'Клиника табылган жок',
+    noReviewsYet: 'Жаңы клиника — биринчи пикириңизди калтырыңыз',
+    noDoctorsYet: 'Клиниканын дарыгерлери али көрсөтүлө элек',
   },
 } as const

@@ -1,12 +1,17 @@
 import Image from 'next/image';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
+import { useT } from '@/i18n';
+import { useParams } from 'next/navigation';
 
 export default function ClinicGallery({ photos }: { photos: string[] }) {
+  const { lang } = useParams() as { lang: string };
+  const { t } = useT(lang);
+
   if (!photos || photos.length === 0) {
     return (
       <div className="bg-white rounded-[2.5rem] p-20 text-center text-slate-400 border border-slate-100 shadow-sm">
         <p className="text-5xl mb-4">📸</p>
-        <p className="font-bold uppercase tracking-widest text-xs">No photos in gallery yet</p>
+        <p className="font-bold uppercase tracking-widest text-xs">{t('clinic.noPhotos')}</p>
       </div>
     );
   }

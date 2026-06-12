@@ -83,7 +83,7 @@ export default function ClinicBookingWidget({ doctors, lang }: { doctors: Doctor
                           {doc.schedule[dayKey].open}
                         </button>
                       ) : (
-                        <span className="mt-1 text-[10px] font-bold text-slate-300 uppercase">OFF</span>
+                        <span className="mt-1 text-[10px] font-bold text-slate-300 uppercase">{t('doctor.dayOff')}</span>
                       )}
                     </div>
                   );
