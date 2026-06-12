@@ -125,9 +125,9 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       <ClinicViewTracker slug={slug} />
       {/* dangerouslySetInnerHTML is safe here as jsonLd is a strictly constructed server-side object (audit point 12) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ClinicHero clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
+      <ClinicHero clinic={clinic} lang={lang} />
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
-        <ClinicTabs clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
+        <ClinicTabs clinic={clinic} lang={lang} />
       </div>
       <HomeFooter lang={lang} />
     </div>

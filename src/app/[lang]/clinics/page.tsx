@@ -1,5 +1,3 @@
-import dbConnect from '@/lib/mongodb';
-import Clinic from '@/models/Clinic';
 import ClinicCard from './_components/ClinicCard';
 import ClinicFilters from './_components/ClinicFilters';
 import Link from 'next/link';
@@ -9,17 +7,24 @@ import type { Metadata } from 'next';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
-import { buildClinicQuery, buildClinicSort } from '@/lib/clinic-query';
+import { getClinics } from '@/lib/clinic-service';
 
 export const revalidate = 3600; // 1 hour
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: {
+  params: Promise<{ lang: string }>,
+  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string, sort?: string }>
+}): Promise<Metadata> {
   const { lang } = (await params) as { lang: Locale };
+  const rawParams = await searchParams;
+  const filters = sanitizeSearchParams(rawParams);
   const t = getT(lang);
+  const title = T('clinic.title', lang) || T('clinic.title', 'ru');
+
   return {
-    title: `${T('clinic.title', lang)} — Duxtur.org`,
+    title: `${title} — Duxtur.org`,
     description: t('home.heroSubtitle'),
-    alternates: buildAlternates('clinics', lang),
+    alternates: buildAlternates('clinics', lang, filters),
   };
 }
 
@@ -35,34 +40,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
   const page = filters.page;
   const limit = 20;
 
-  await dbConnect();
-
-  const query = buildClinicQuery(filters);
-  const sortStage = buildClinicSort(filters.sort);
-
-  const [clinics, total] = await Promise.all([
-    Clinic.aggregate([
-      { $match: query },
-      {
-        $addFields: {
-          doctorCount: { $size: { $ifNull: ["$doctorIds", []] } }
-        }
-      },
-      { $sort: sortStage },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $project: {
-          userId: 0,
-          licenseNumber: 0,
-          licenseDocument: 0,
-          updatedAt: 0,
-          __v: 0
-        }
-      }
-    ]),
-    Clinic.countDocuments(query)
-  ]);
+  const { clinics, total } = await getClinics({ ...filters, limit });
 
   const totalPages = Math.ceil(total / limit);
 
@@ -71,7 +49,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: t('clinic.title'),
-    itemListElement: clinics.map((clinic: any, index: number) => ({
+    itemListElement: clinics.map((clinic: ClinicDocument, index: number) => ({
       '@type': 'ListItem',
       position: index + 1,
       item: {
@@ -106,7 +84,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
     Object.entries(newParams).forEach(([key, value]) => {
       if (value === undefined) params.delete(key);
-      else params.set(key, value.toString());
+      else params.set(key, String(value));
     });
 
     return `/${lang}/clinics?${params.toString()}`;
@@ -174,6 +152,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
               <div className="mb-8 flex justify-center gap-4 flex-wrap">
                 <Link
                   href={`/${lang}/clinics`}
+                  aria-label={t('doctors.resetFilters')}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                 >
                   ✕ {t('doctors.resetFilters')}
@@ -243,7 +222,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
                 {clinics.map((clinic: ClinicDocument, index: number) => (
                   <ClinicCard
                     key={clinic._id.toString()}
-                    clinic={JSON.parse(JSON.stringify(clinic))}
+                    clinic={clinic}
                     lang={lang}
                     priority={index < 4}
                   />
