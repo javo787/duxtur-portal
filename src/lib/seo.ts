@@ -10,20 +10,33 @@ function buildUrl(lang: string, path: string) {
   return `${BASE_URL}/${lang}${pathPart}`;
 }
 
-export function buildAlternates(path: string, currentLang = "ru") {
+export function buildAlternates(path: string, currentLang = "ru", filters?: Record<string, string | number | undefined>) {
+  // Build query string if filters are provided
+  let queryString = "";
+  if (filters) {
+    const params = new URLSearchParams();
+    // Only include significant filters for SEO
+    if (filters.city) params.set('city', filters.city);
+    if (filters.type) params.set('type', filters.type);
+    if (filters.specialty) params.set('specialty', filters.specialty);
+
+    const qs = params.toString();
+    if (qs) queryString = `?${qs}`;
+  }
+
   // Контролируем, что canonical всегда указывает на текущую языковую версию
-  const canonical = buildUrl(currentLang, path);
+  const canonical = buildUrl(currentLang, path) + queryString;
 
   // Собираем список альтернативных версий (hreflang)
   const languages: Record<string, string> = {};
 
   // Добавляем все поддерживаемые языки
   for (const lang of LANGS) {
-    languages[lang] = buildUrl(lang, path);
+    languages[lang] = buildUrl(lang, path) + queryString;
   }
 
   // Добавляем x-default, указывающий на русскую версию как на основную
-  languages['x-default'] = buildUrl('ru', path);
+  languages['x-default'] = buildUrl('ru', path) + queryString;
 
   return {
     canonical,

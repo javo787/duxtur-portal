@@ -101,7 +101,9 @@ ClinicSchema.index(
     'name.tg': 'text',
     'name.kk': 'text',
     'name.ky': 'text',
-    'description.ru': 'text'
+    'description.ru': 'text',
+    'specialties': 'text',
+    'address': 'text'
   },
   { default_language: 'russian' }
 );

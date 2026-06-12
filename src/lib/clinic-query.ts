@@ -6,14 +6,16 @@ export interface ClinicFilters {
   sort?: string;
 }
 
+import { escapeRegExp } from './utils/string';
+
 export function buildClinicQuery(filters: ClinicFilters) {
-  const query: any = {
+  const query: Record<string, any> = {
     status: { $in: ['approved', 'pre_imported'] }
   };
 
   if (filters.city) {
     // Case-insensitive match for city
-    query.city = { $regex: new RegExp('^' + filters.city + '$', 'i') };
+    query.city = { $regex: new RegExp('^' + escapeRegExp(filters.city) + '$', 'i') };
   }
 
   if (filters.type) {

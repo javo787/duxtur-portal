@@ -34,17 +34,18 @@ export function sanitizeSearchParams(params: ClinicSearchParams) {
     sanitized.type = params.type;
   }
 
-  // Specialty: trim and limit length
+  // Specialty: trim and limit length (using Array.from for accurate multi-byte length)
   if (params.specialty) {
     const trimmedSpecialty = params.specialty.trim();
-    if (trimmedSpecialty.length > 0 && trimmedSpecialty.length <= 100) {
+    const len = Array.from(trimmedSpecialty).length;
+    if (len > 0 && len <= 100) {
       sanitized.specialty = trimmedSpecialty;
     }
   }
 
-  // Q: limit length and sanitize characters
+  // Q: limit length and sanitize characters (allowing safe punctuation like hyphens and apostrophes)
   if (params.q) {
-    sanitized.q = params.q.slice(0, 100).replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+    sanitized.q = params.q.slice(0, 100).replace(/[^\p{L}\p{N}\s\-']/gu, '').trim();
   }
 
   // Page: ensure it's a positive integer

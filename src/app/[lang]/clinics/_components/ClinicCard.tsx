@@ -102,7 +102,7 @@ export default function ClinicCard({
                  {clinic.rating.count > 0 ? `(${clinic.rating.count})` : t('doctor.noReviews')}
               </span>
               <span className="mx-1 opacity-20 dark:opacity-20">•</span>
-              <span className="opacity-70 dark:opacity-60">{clinic.doctorIds?.length || 0} {t('common.doctors')}</span>
+              <span className="opacity-70 dark:opacity-60">{clinic.doctorCount ?? clinic.doctorIds?.length ?? 0} {t('common.doctors')}</span>
            </div>
 
            <div className="flex flex-wrap gap-1.5 mt-auto">
