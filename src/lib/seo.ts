@@ -16,9 +16,9 @@ export function buildAlternates(path: string, currentLang = "ru", filters?: Reco
   if (filters) {
     const params = new URLSearchParams();
     // Only include significant filters for SEO
-    if (filters.city) params.set('city', filters.city);
-    if (filters.type) params.set('type', filters.type);
-    if (filters.specialty) params.set('specialty', filters.specialty);
+    if (filters.city) params.set('city', String(filters.city));
+    if (filters.type) params.set('type', String(filters.type));
+    if (filters.specialty) params.set('specialty', String(filters.specialty));
 
     const qs = params.toString();
     if (qs) queryString = `?${qs}`;

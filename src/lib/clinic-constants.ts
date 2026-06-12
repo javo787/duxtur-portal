@@ -65,6 +65,7 @@ export interface ClinicDocument {
   specialties?: string[];
   address?: string;
   district?: string;
+  phone?: string;
   workingHours?: ClinicWorkingHours;
 }
 
