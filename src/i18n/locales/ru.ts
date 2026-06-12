@@ -614,5 +614,6 @@ export const ru = {
     specialty_mri: 'МРТ',
     specialty_tests: 'Анализы',
     found: 'Найдено: {count} клиник',
+    notFound: 'Клиника не найдена',
   },
 } as const

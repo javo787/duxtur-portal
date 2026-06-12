@@ -614,5 +614,6 @@ export const tg = {
     specialty_mri: 'МРТ',
     specialty_tests: 'Таҳлилҳо',
     found: 'Ёфт шуд: {count} клиника',
+    notFound: 'Клиника ёфт нашуд',
   },
 } as const
