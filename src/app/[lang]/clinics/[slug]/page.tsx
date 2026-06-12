@@ -10,7 +10,7 @@ import ClinicViewTracker from '@/components/ClinicViewTracker';
 import HomeFooter from '@/components/home/HomeFooter';
 import { cache } from 'react';
 
-export const revalidate = 21600; // 6 hours
+export const revalidate = 3600; // 1 hour
 
 const getClinic = cache(async (slug: string) => {
   await dbConnect();
@@ -44,6 +44,11 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   const clinic = await getClinic(slug);
 
   if (!clinic) notFound();
+
+  // Filter out any potential null doctor references (audit point 11)
+  if (clinic.doctorIds) {
+    clinic.doctorIds = (clinic.doctorIds as any[]).filter(Boolean);
+  }
 
   // Ensure rating exists even if not in DB document (for lean)
   if (!clinic.rating) {
@@ -83,6 +88,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
                       clinic.city === 'Бишкек' ? 'KG' : 'TJ'
     },
     openingHours,
+    // aggregateRating is only added if there are actual reviews (audit point 7)
     aggregateRating: clinic.rating?.count > 0 ? {
       '@type': 'AggregateRating',
       ratingValue: clinic.rating.avg,
@@ -90,6 +96,12 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       bestRating: 5,
       worstRating: 1
     } : undefined,
+    sameAs: [
+      clinic.website,
+      clinic.telegram && `https://t.me/${clinic.telegram.replace('@', '')}`,
+      clinic.instagram && `https://instagram.com/${clinic.instagram.replace('@', '')}`,
+      clinic.whatsapp && `https://wa.me/${clinic.whatsapp.replace(/\D/g, '')}`
+    ].filter(Boolean),
     medicalSpecialty: clinic.specialties?.length ? clinic.specialties : undefined,
     employee: (clinic.doctorIds as any[])?.map((doc: any) => ({
       '@type': 'Person',
@@ -111,6 +123,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <ClinicViewTracker slug={slug} />
+      {/* dangerouslySetInnerHTML is safe here as jsonLd is a strictly constructed server-side object (audit point 12) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ClinicHero clinic={JSON.parse(JSON.stringify(clinic))} lang={lang} />
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">

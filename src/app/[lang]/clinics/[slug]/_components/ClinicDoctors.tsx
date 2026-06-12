@@ -6,7 +6,7 @@ export default function ClinicDoctors({ doctors, lang }: { doctors: any[], lang:
   const t = getT(lang as any);
 
   if (!doctors || doctors.length === 0) {
-    return <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">No doctors associated with this clinic yet</div>;
+    return <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">{t('clinic.noDoctorsYet')}</div>;
   }
 
   return (

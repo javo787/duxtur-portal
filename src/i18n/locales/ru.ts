@@ -615,5 +615,7 @@ export const ru = {
     specialty_tests: 'Анализы',
     found: 'Найдено: {count} клиник',
     notFound: 'Клиника не найдена',
+    noReviewsYet: 'Новая клиника — оставьте первый отзыв',
+    noDoctorsYet: 'Врачи в клинике пока не указаны',
   },
 } as const

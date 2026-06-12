@@ -615,5 +615,7 @@ export const uz = {
     specialty_tests: 'Tahlillar',
     found: 'Topildi: {count} ta klinika',
     notFound: 'Klinika topilmadi',
+    noReviewsYet: 'Yangi klinika — birinchi fikringizni qoldiring',
+    noDoctorsYet: 'Klinika shifokorlari hali ko\'rsatilmagan',
   },
 } as const
