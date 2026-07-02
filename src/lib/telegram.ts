@@ -1,20 +1,28 @@
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
-export async function notifyAdminNewDoctor(doctorName: string, phone: string, specialty: string, diplomaUrl: string) {
+export async function notifyAdminNewDoctor(
+  doctorName: string,
+  phone: string,
+  specialty: string,
+  diplomaUrl: string,
+  isClaim: boolean = false,
+  importSourceUrl: string = ''
+) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_CHAT_ID) {
     console.warn("Telegram токен не найден, уведомление не отправлено.");
     return;
   }
 
   const message = `
-🚨 <b>Новая заявка врача!</b>
+${isClaim ? '⚠️ <b>ЗАЯВЛЕН СУЩЕСТВУЮЩИЙ ПРОФИЛЬ (CLAIM)</b>' : '🚨 <b>Новая заявка врача!</b>'}
 
 👨‍⚕️ <b>Имя:</b> ${doctorName}
 💼 <b>Спец:</b> ${specialty}
 📞 <b>Тел:</b> ${phone}
 
 📄 <a href="${diplomaUrl}">Посмотреть диплом</a>
+${isClaim && importSourceUrl ? `🔗 <a href="${importSourceUrl}">Оригинал (Scraped)</a>` : ''}
 
 <i>Зайдите в админку, чтобы одобрить.</i>
 `;

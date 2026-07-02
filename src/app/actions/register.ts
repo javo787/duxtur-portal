@@ -4,9 +4,20 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { notifyAdminNewDoctor } from '@/lib/telegram';
-import { createDoctor } from '@/lib/db-doctor';
+import { createDoctor, findSimilarPreImportedDoctors, claimDoctorProfile } from '@/lib/db-doctor';
 import { translateText } from '@/lib/translation-service';
+import Doctor from '@/models/Doctor';
 import { stripHtml, generateSlug } from '@/lib/utils';
+
+export async function checkForExistingDoctorProfile(name: string, specialty: string) {
+  try {
+    const candidates = await findSimilarPreImportedDoctors(name, specialty);
+    return { success: true, candidates };
+  } catch (error: any) {
+    console.error('Check Error:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 export async function registerDoctor(formData: FormData) {
   try {
@@ -18,6 +29,7 @@ export async function registerDoctor(formData: FormData) {
     const password         = formData.get('password') as string;
     const specialty        = stripHtml(formData.get('specialty') as string);
     const documentImageUrl = formData.get('documentImageUrl') as string;
+    const claimDoctorId    = formData.get('claimDoctorId') as string;
 
     if (!email || !password || !name || !documentImageUrl) {
       return { success: false, error: 'Заполните все поля и загрузите диплом!' };
@@ -39,18 +51,33 @@ export async function registerDoctor(formData: FormData) {
     // Автоматический перевод специальности
     const translatedSpecialty = await translateText(specialty);
 
-    await createDoctor({
-      userId:        newUser._id,
-      name,
-      slug:          generateSlug(name),
-      phone,
-      specialty:     translatedSpecialty,
-      documentImage: documentImageUrl,
-      status:        'pending',
-      image:         'https://cdn-icons-png.flaticon.com/512/3774/3774299.png',
-    });
+    if (claimDoctorId) {
+      const existingDoctor = await Doctor.findOne({ _id: claimDoctorId, status: 'pre_imported' });
+      if (!existingDoctor) {
+        return { success: false, error: 'Профиль уже занят или не существует.' };
+      }
 
-    notifyAdminNewDoctor(name, phone, specialty, documentImageUrl);
+      await claimDoctorProfile(claimDoctorId, {
+        userId: newUser._id,
+        phone,
+        documentImage: documentImageUrl,
+      });
+
+      notifyAdminNewDoctor(name, phone, specialty, documentImageUrl, true, existingDoctor.importSourceUrl);
+    } else {
+      await createDoctor({
+        userId:        newUser._id,
+        name,
+        slug:          generateSlug(name),
+        phone,
+        specialty:     translatedSpecialty,
+        documentImage: documentImageUrl,
+        status:        'pending',
+        image:         'https://cdn-icons-png.flaticon.com/512/3774/3774299.png',
+      });
+
+      notifyAdminNewDoctor(name, phone, specialty, documentImageUrl);
+    }
 
     return { success: true };
   } catch (error: any) {

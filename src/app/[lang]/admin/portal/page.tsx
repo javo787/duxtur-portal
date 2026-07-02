@@ -87,17 +87,35 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
               {pendingDoctors.map((doc: any) => (
                 <div key={doc._id} className="bg-gray-900 p-6 rounded-2xl border border-yellow-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
                   {/* Диплом */}
-                  <a href={doc.documentImage} target="_blank" rel="noopener noreferrer"
-                    className="w-full md:w-44 h-28 bg-gray-800 rounded-xl overflow-hidden shrink-0 relative group block">
-                    <img src={doc.documentImage} alt="Диплом" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs font-bold">
-                      🔍 Открыть
-                    </div>
-                  </a>
+                  <div className="flex flex-col gap-2">
+                    <a href={doc.documentImage} target="_blank" rel="noopener noreferrer"
+                      className="w-full md:w-44 h-28 bg-gray-800 rounded-xl overflow-hidden shrink-0 relative group block">
+                      <img src={doc.documentImage} alt="Диплом" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs font-bold">
+                        🔍 Открыть
+                      </div>
+                    </a>
+                    {doc.isClaimed && doc.importSourceUrl && (
+                      <a
+                        href={doc.importSourceUrl}
+                        target="_blank"
+                        className="text-[10px] text-blue-400 hover:underline font-bold text-center bg-blue-900/20 py-1 rounded"
+                      >
+                        🔗 Источник (Scraped)
+                      </a>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div>
-                        <h3 className="text-lg font-bold text-white">{doc.name}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold text-white">{doc.name}</h3>
+                          {doc.isClaimed && (
+                            <span className="bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                              ⚠️ Claimed
+                            </span>
+                          )}
+                        </div>
                         <p className="text-blue-400 text-sm">{doc.specialty?.ru || '—'}</p>
                       </div>
                       <span className="bg-yellow-900/50 text-yellow-400 text-xs font-bold px-3 py-1 rounded-full border border-yellow-700">

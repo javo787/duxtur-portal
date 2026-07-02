@@ -80,6 +80,14 @@ export default async function DoctorProfilePage({ params }: Props) {
     $or: [{ slug: id }, ...(id.match(/^[a-f\d]{24}$/i) ? [{ _id: id }] : [])],
   }).lean();
 
+  if (!doctor || (doctor.status === 'pre_imported' && doctor.isClaimed === false)) {
+    // We might want to allow viewing pre_imported profiles but definitely not bookable.
+    // The requirement says "Ensure pre_imported (unclaimed) doctor profiles are NOT publicly bookable".
+    // I already added the check for BookingButton.
+    // If we want to hide the profile completely if unclaimed and pre_imported:
+    // if (!doctor) notFound();
+  }
+
   if (!doctor) notFound();
 
   const Review = (await import('@/models/Review')).default;
@@ -297,6 +305,21 @@ export default async function DoctorProfilePage({ params }: Props) {
             lang={lang}
             doctorUrl={doctorUrl}
           />
+
+          {/* ── КНОПКА ЗАПИСИ (МОБИЛЬ) ── */}
+          {doctor.acceptsNewPatients !== false && doctor.status === 'approved' && (
+            <div className="rounded-2xl overflow-hidden mt-4">
+              <BookingButton
+                doctor={{
+                  id: doctor._id.toString(),
+                  name: doctor.name,
+                  schedule: doctor.schedule,
+                  consultationTypes: doctor.consultationTypes
+                }}
+                lang={lang}
+              />
+            </div>
+          )}
         </div>
 
         {/* Статьи */}
@@ -521,7 +544,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
             <ContactDoctorButton doctor={doctor} lang={lang} />
 
-            {doctor.acceptsNewPatients !== false && (
+            {doctor.acceptsNewPatients !== false && doctor.status === 'approved' && (
               <BookingButton
                 doctor={{
                   id: doctor._id.toString(),
