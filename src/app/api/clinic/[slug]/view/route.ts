@@ -1,13 +1,19 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import ViewLog from '@/models/ViewLog';
 import { cookies } from 'next/headers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   try {
     const { slug } = await params;
     const cookieStore = await cookies();
@@ -49,6 +55,6 @@ export async function POST(
     return NextResponse.json({ views: clinic.profileViews }, { status: 200 });
   } catch (error) {
     console.error('Clinic view increment error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
@@ -6,7 +7,7 @@ import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') || 'anonymous';
-  const { success } = rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
   if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   try {
@@ -70,6 +71,6 @@ export async function GET(req: NextRequest) {
       totalDoctors: doctors.length
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

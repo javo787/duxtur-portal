@@ -91,9 +91,16 @@ export default function ClinicCard({
               </span>
            </div>
 
-           <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1 mb-2 font-display">
-             {name}
-           </h3>
+           <div className="flex flex-col gap-0.5 mb-2">
+             <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1 font-display">
+               {name}
+             </h3>
+             {(clinic as any).dataSource === 'scraped' && (
+               <span className="text-[10px] font-medium text-slate-400">
+                 {t('clinic.unverified')}
+               </span>
+             )}
+           </div>
 
            <div className="flex items-center gap-1 text-xs font-bold text-slate-400 mb-4">
               <span className="text-amber-400 text-sm">★</span>

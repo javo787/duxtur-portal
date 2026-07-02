@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || 'anonymous';
-  const { success } = rateLimit(ip, 3, 60 * 1000); // 3 per minute
+  const { success } = await rateLimit(ip, 3, 60 * 1000); // 3 per minute
   if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   const session = await auth();
@@ -60,6 +61,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, review });
   } catch (error: any) {
     console.error('Review submission error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

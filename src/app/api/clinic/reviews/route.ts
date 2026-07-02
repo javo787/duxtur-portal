@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
@@ -23,6 +24,6 @@ export async function GET(request: NextRequest) {
       .lean();
     return NextResponse.json(reviews);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

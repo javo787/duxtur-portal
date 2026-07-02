@@ -1,10 +1,15 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import Doctor from '@/models/Doctor';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get('secret');
+  const secretFromHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+  const secretFromQuery = req.nextUrl.searchParams.get('secret');
+  const secret = secretFromHeader || secretFromQuery;
+
   if (secret !== process.env.TELEGRAM_BOT_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -14,6 +19,11 @@ export async function POST(req: NextRequest) {
     const { message, callback_query } = body;
     const text = message?.text;
     const chatId = message?.chat?.id || callback_query?.from?.id;
+
+    if (chatId) {
+      const { success } = await rateLimit(`telegram_${chatId}`, 30, 60 * 1000); // 30 per minute per chatId
+      if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
 
     await dbConnect();
 
@@ -37,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
-    console.error(error);
+    Sentry.captureException(error); console.error(error);
     return NextResponse.json({ ok: true }); // Always return 200 to Telegram
   }
 }

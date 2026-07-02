@@ -34,6 +34,11 @@ const ClinicSchema = new mongoose.Schema({
     enum: ['2gis', 'ydoc', 'manual'],
     default: 'manual'
   },
+  dataSource: {
+    type: String,
+    enum: ['scraped', 'self_registered', 'admin_verified'],
+    default: 'self_registered'
+  },
   importedAt: { type: Date },
   logo: { type: String, default: '' },
   coverImage: { type: String, default: '' },

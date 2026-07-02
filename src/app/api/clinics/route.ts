@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
@@ -8,7 +9,7 @@ import { buildClinicQuery } from '@/lib/clinic-query';
 export async function GET(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || 'anonymous';
-    const { success } = rateLimit(ip, 30, 60 * 1000);
+    const { success } = await rateLimit(ip, 30, 60 * 1000);
     if (!success) {
       return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
     }
@@ -75,6 +76,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Clinics fetch error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

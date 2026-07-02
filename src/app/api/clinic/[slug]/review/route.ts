@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
@@ -27,7 +28,7 @@ export async function GET(
     return NextResponse.json(reviews);
   } catch (error) {
     console.error('Clinic reviews fetch error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -42,7 +43,7 @@ export async function POST(
     }
 
     const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    const limitResult = rateLimit(ip, 3, 60 * 1000); // 3 per minute
+    const limitResult = await rateLimit(ip, 3, 60 * 1000); // 3 per minute
     if (!limitResult.success) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
@@ -73,6 +74,6 @@ export async function POST(
     return NextResponse.json(review, { status: 201 });
   } catch (error) {
     console.error('Clinic review error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -83,6 +83,7 @@ const ClinicSchema = new mongoose.Schema({
     coordinates: { type: [Number] },
   },
   importSource:    { type: String, default: 'ydoc' },
+  dataSource:      { type: String, default: 'scraped' },
   importedAt:      { type: Date },
   rating:          { avg: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
   profileViews:    { type: Number, default: 0 },
@@ -334,6 +335,7 @@ async function main() {
         status:       'pre_imported',
         ...(coordinates ? { coordinates } : {}),
         importSource: 'ydoc',
+        dataSource:   'scraped',
         importedAt:   new Date(),
         rating:       { avg: 0, count: raw.reviewCount || 0 },
       });

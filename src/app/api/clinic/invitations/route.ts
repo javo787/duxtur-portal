@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ClinicInvitation from '@/models/ClinicInvitation';
@@ -39,6 +40,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(invitations, { status: 200 });
   } catch (error) {
     console.error('Clinic invitations fetch error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

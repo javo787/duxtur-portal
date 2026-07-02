@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
@@ -5,8 +6,13 @@ import Doctor from '@/models/Doctor';
 import User from '@/models/User';
 import ClinicInvitation from '@/models/ClinicInvitation';
 import { auth } from '@/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = await rateLimit(ip, 5, 60 * 60 * 1000); // 5 per hour
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   try {
     const session = await auth();
     if (!session || (session.user as any)?.role !== 'clinic') {
@@ -36,6 +42,6 @@ export async function POST(request: NextRequest) {
     const invitation = await ClinicInvitation.create({ clinicId: clinic._id, doctorId: doctor._id, status: 'pending' });
     return NextResponse.json(invitation, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

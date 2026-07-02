@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useT } from '@/i18n';
 import { getOptimizedCloudinaryUrl, cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ interface ClinicData {
   phone?: string;
   whatsapp?: string;
   rating: { avg: number; count: number };
+  dataSource?: string;
 }
 
 export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang: string }) {
@@ -96,9 +98,16 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
                </div>
 
                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
-                 <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight break-words max-w-full">
-                   {name}
-                 </h1>
+                 <div className="flex flex-col items-center md:items-start">
+                   <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight break-words max-w-full">
+                     {name}
+                   </h1>
+                   {clinic.dataSource === 'scraped' && (
+                     <span className="text-xs md:text-sm font-medium text-white/50 mt-1">
+                       {t('clinic.unverified')}
+                     </span>
+                   )}
+                 </div>
                  {clinic.status === 'approved' && (
                    <div className="bg-blue-600 text-white p-1.5 rounded-full shadow-lg" title={t('clinic.verified')}>
                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
@@ -140,12 +149,22 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
                    </a>
                  )}
                </div>
-               <button
-                 onClick={scrollToBooking}
-                 className="flex-1 md:flex-none px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[14px] font-extrabold text-sm md:text-base uppercase tracking-widest transition-all active:scale-95 shadow-2xl shadow-blue-600/30 min-w-[180px]"
-               >
-                 {t('clinic.book')}
-               </button>
+               <div className="flex flex-col gap-2 flex-1 md:flex-none">
+                 <button
+                   onClick={scrollToBooking}
+                   className="w-full px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[14px] font-extrabold text-sm md:text-base uppercase tracking-widest transition-all active:scale-95 shadow-2xl shadow-blue-600/30 min-w-[180px]"
+                 >
+                   {t('clinic.book')}
+                 </button>
+                 {clinic.dataSource === 'scraped' && (
+                   <Link
+                     href={`/${lang}/clinic/register?claim=${clinic.slug}`}
+                     className="w-full text-center px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl text-[10px] md:text-xs font-bold transition-all active:scale-95"
+                   >
+                     {t('clinic.claimClinic')}
+                   </Link>
+                 )}
+               </div>
             </div>
           </div>
         </div>
