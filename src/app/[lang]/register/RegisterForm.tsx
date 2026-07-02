@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { registerDoctor } from '@/app/actions/register';
+import { useState, useRef, useEffect } from 'react';
+import { registerDoctor, checkForExistingDoctorProfile } from '@/app/actions/register';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -51,6 +51,31 @@ export default function RegisterForm({ lang }: { lang: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState('');
 
+  // MATCHING
+  const [name, setName] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [isCheckingMatches, setIsCheckingMatches] = useState(false);
+
+  useEffect(() => {
+    const checkMatches = async () => {
+      if (name.length > 3) {
+        setIsCheckingMatches(true);
+        const res = await checkForExistingDoctorProfile(name, specialty);
+        if (res.success) {
+          setCandidates(res.candidates || []);
+        }
+        setIsCheckingMatches(false);
+      } else {
+        setCandidates([]);
+      }
+    };
+
+    const timer = setTimeout(checkMatches, 600);
+    return () => clearTimeout(timer);
+  }, [name, specialty]);
+
   const handleDiplomaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -85,6 +110,9 @@ export default function RegisterForm({ lang }: { lang: string }) {
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.set('documentImageUrl', diplomaUrl);
+    if (selectedCandidateId) {
+      formData.set('claimDoctorId', selectedCandidateId);
+    }
     const result = await registerDoctor(formData);
     setIsLoading(false);
     if (result.success) setIsSuccess(true);
@@ -208,9 +236,15 @@ export default function RegisterForm({ lang }: { lang: string }) {
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   ФИО врача
                 </label>
-                <input name="name" type="text" required
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Иванов Иван Иванович"
-                  className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition text-slate-800 placeholder-slate-300" />
+                  className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition text-slate-800 placeholder-slate-300"
+                />
               </div>
 
               {/* Специальность + Телефон */}
@@ -219,9 +253,15 @@ export default function RegisterForm({ lang }: { lang: string }) {
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                     Специальность
                   </label>
-                  <input name="specialty" type="text" required
+                  <input
+                    name="specialty"
+                    type="text"
+                    required
+                    value={specialty}
+                    onChange={(e) => setSpecialty(e.target.value)}
                     placeholder="Кардиолог"
-                    className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition text-slate-800 placeholder-slate-300" />
+                    className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition text-slate-800 placeholder-slate-300"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -277,6 +317,58 @@ export default function RegisterForm({ lang }: { lang: string }) {
                 </div>
                 <PasswordStrength password={password} />
               </div>
+
+              {/* MATCHING PROMPT */}
+              {candidates.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🤔</span>
+                    <p className="text-xs font-black text-amber-900 uppercase tracking-wider">Это ваш профиль?</p>
+                  </div>
+                  <p className="text-xs text-amber-800 mb-4 font-medium">Мы нашли похожие профили, которые уже есть на портале. Если один из них ваш — выберите его, чтобы сохранить статистику.</p>
+
+                  <div className="space-y-2">
+                    {candidates.map((doc) => (
+                      <button
+                        key={doc._id}
+                        type="button"
+                        onClick={() => setSelectedCandidateId(selectedCandidateId === doc._id ? null : doc._id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border-2 text-left ${
+                          selectedCandidateId === doc._id
+                            ? 'bg-white border-blue-500 shadow-md ring-2 ring-blue-100'
+                            : 'bg-white/50 border-white hover:border-amber-200'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                          <img src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate">{doc.name}</p>
+                          <p className="text-[10px] text-slate-500 font-medium truncate">
+                            {doc.specialty?.ru || 'Врач'} • {doc.clinicName || 'Клиника'}
+                          </p>
+                        </div>
+                        {selectedCandidateId === doc._id && (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCandidateId(null)}
+                      className={`w-full p-2 text-center text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                        !selectedCandidateId ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Это не я, создать новый профиль
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* ДИПЛОМ */}
               <div>

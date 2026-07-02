@@ -9,10 +9,17 @@ const MultilingualString = {
 };
 
 const DoctorSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: function(this: any) { return this.status !== 'pre_imported'; }
+  },
   name: { type: String, required: true },
   slug: { type: String, unique: true },
-  phone: { type: String, required: true },
+  phone: {
+    type: String,
+    required: function(this: any) { return this.status !== 'pre_imported'; }
+  },
   specialty: MultilingualString,
   experience: { type: Number, default: 0 },
   workplace: MultilingualString,
@@ -21,8 +28,15 @@ const DoctorSchema = new mongoose.Schema({
   bio: MultilingualString,
   sameAs: { type: [String], default: [] },
   image: { type: String },
-  documentImage: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'approved', 'rejected', 'banned'], default: 'pending' },
+  documentImage: {
+    type: String,
+    required: function(this: any) { return this.status !== 'pre_imported'; }
+  },
+  status: {
+    type: String,
+    enum: ['pre_imported', 'pending', 'approved', 'rejected', 'banned'],
+    default: 'pending'
+  },
   languages: [String],
   price: { type: Number, default: 0 },
 
@@ -87,6 +101,12 @@ const DoctorSchema = new mongoose.Schema({
   // Analytics
   profileViews: { type: Number, default: 0 },
   contactClicks: { type: Number, default: 0 },
+
+  // Import info
+  importSourceUrl: { type: String, default: '' },
+  importedAt: { type: Date },
+  isClaimed: { type: Boolean, default: false },
+  claimedAt: { type: Date },
 }, { timestamps: true });
 
 DoctorSchema.index({ city: 1 });
