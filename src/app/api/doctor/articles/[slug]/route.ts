@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
 import User from '@/models/User';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(
   _req: Request,
@@ -26,9 +27,13 @@ export async function GET(
 }
 
 export async function PATCH(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   const { slug } = await params;
   const session = await auth();
   if (!session?.user) return NextResponse.json(null, { status: 401 });

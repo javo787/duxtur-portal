@@ -1,8 +1,10 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import { auth } from '@/auth';
 import { updateClinicProfile } from '@/app/actions/clinic';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,11 +16,15 @@ export async function GET(req: NextRequest) {
     const clinic = await Clinic.findOne({ userId: session.user?.id }).lean();
     return NextResponse.json(clinic);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   try {
     const session = await auth();
     if (!session || (session.user as any)?.role !== 'clinic') {
@@ -48,6 +54,6 @@ export async function PATCH(req: NextRequest) {
     if (result.success) return NextResponse.json({ success: true });
     return NextResponse.json({ error: result.error }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signIn } from 'next-auth/react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
@@ -114,7 +115,17 @@ function ClinicPreviewCard({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RegisterClinicForm({ lang }: { lang: string }) {
+  return (
+    <Suspense fallback={null}>
+      <RegisterClinicFormContent lang={lang} />
+    </Suspense>
+  );
+}
+
+function RegisterClinicFormContent({ lang }: { lang: string }) {
   const t = getT(lang);
+  const searchParams = useSearchParams();
+  const claimSlug = searchParams.get('claim');
 
   const STEPS = [
     { num: 1, icon: '🏥', title: t('clinic.registerStep1'), subtitle: t('clinic.aboutClinicSub') },
@@ -141,6 +152,30 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
   const [claimCandidates, setClaimCandidates] = useState<Record<string, any>[]>([]);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isCheckingExisting, setIsCheckingExisting] = useState(false);
+
+  // Auto-load claimed clinic if slug is provided
+  useEffect(() => {
+    if (claimSlug && claimCandidates.length === 0) {
+      const fetchClaimed = async () => {
+        try {
+          const res = await fetch(`/api/clinic/check-existing`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: claimSlug, city: formData.city }), // fuzzy search will likely find it
+          });
+          const data = await res.json();
+          const target = data.candidates?.find((c: any) => c.slug === claimSlug);
+          if (target) {
+            setClaimCandidates(data.candidates);
+            setSelectedClaimId(target._id);
+          }
+        } catch (err) {
+          console.error('Failed to pre-load claimed clinic', err);
+        }
+      };
+      fetchClaimed();
+    }
+  }, [claimSlug]);
 
   const initialData = {
     name:       '',

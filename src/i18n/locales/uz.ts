@@ -617,5 +617,7 @@ export const uz = {
     notFound: 'Klinika topilmadi',
     noReviewsYet: 'Yangi klinika — birinchi fikringizni qoldiring',
     noDoctorsYet: 'Klinika shifokorlari hali ko\'rsatilmagan',
+    unverified: 'Profil tasdiqlanmagan',
+    claimClinic: 'Bu sizning klinikangizmi? Profilni tasdiqlang',
   },
 } as const

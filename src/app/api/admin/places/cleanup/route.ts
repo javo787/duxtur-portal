@@ -1,14 +1,20 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Place from '@/models/Place';
 import CleanupLog from '@/models/CleanupLog';
 import { auth } from '@/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Simple in-memory lock for race condition prevention (per-instance)
 // For multi-instance deployments, use Redis.
 let isCleanupRunning = false;
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+  const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
+  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+
   try {
     const session = await auth();
     const isCron = req.headers.get('x-vercel-cron') === 'true';
@@ -62,7 +68,7 @@ export async function POST(req: NextRequest) {
       isCleanupRunning = false;
     }
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -81,6 +87,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(logs);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

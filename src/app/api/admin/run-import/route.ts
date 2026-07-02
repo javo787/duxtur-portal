@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 // src/app/api/admin/run-import/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,6 +15,6 @@ export async function GET(req: NextRequest) {
     const result = await importClinics();
     return NextResponse.json(result);
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    Sentry.captureException(e); console.error(e); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
