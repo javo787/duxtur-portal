@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { CATEGORY_LABELS, SPECIALTY_ICONS } from '@/lib/doctor-constants';
+import { Activity, Building2, Video, Home } from 'lucide-react';
 
 interface DoctorCardProps {
   doctor: any;
@@ -10,6 +11,12 @@ interface DoctorCardProps {
 }
 
 const fallbackImage = '/images/doctor-placeholder.png';
+
+const CONSULT_TYPE_CONFIG: Record<string, { icon: typeof Building2; label: string; bg: string; text: string }> = {
+  in_person: { icon: Building2, label: 'Очно', bg: 'bg-blue-50', text: 'text-blue-600' },
+  online: { icon: Video, label: 'Онлайн', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  home_visit: { icon: Home, label: 'На дому', bg: 'bg-amber-50', text: 'text-amber-600' },
+};
 
 export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
   const specialtyRu = doctor.specialty?.ru || '';
@@ -24,34 +31,34 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
   const languages = doctor.languages || [];
 
   return (
-    <article className="group relative bg-white rounded-2xl border border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden flex flex-col">
+    <article className="group relative bg-white rounded-[1.25rem] border border-slate-100/80 shadow-card hover:shadow-card-hover card-hover-lift overflow-hidden flex flex-col">
 
       {/* Семантическая ссылка на весь профиль — для a11y и "Открыть в новой вкладке" */}
       <Link
         href={profileUrl}
-        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        className="absolute inset-0 z-10 rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         aria-label={`Профиль врача ${doctor.name}`}
         tabIndex={0}
       />
 
       {/* Акцентная полоса при hover */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 to-amber-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 to-amber-400 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
 
       {/* Верхняя часть */}
       <div className="p-5 pb-3 flex gap-4 items-start">
 
         {/* Фото */}
-        <div className="relative flex-shrink-0 w-[60px] h-[60px]">
+        <div className="relative flex-shrink-0 w-16 h-16">
           <Image
             src={doctor.image || fallbackImage}
             alt={`Фото врача ${doctor.name}`}
             fill
-            sizes="60px"
-            className="rounded-xl object-cover border border-slate-100"
+            sizes="64px"
+            className="rounded-xl object-cover ring-2 ring-white shadow-sm"
           />
           {doctor.status === 'approved' && (
             <div
-              className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center"
+              className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-sm"
               title="Верифицирован"
               aria-label="Верифицированный специалист"
             >
@@ -64,9 +71,9 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
 
         {/* Имя, специальность, рейтинг */}
         <div className="flex-1 min-w-0">
-          {/* Бейдж специальности — text-xs вместо text-[10px] */}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 mb-1.5">
-            <span aria-hidden="true">{icon}</span>
+          {/* Бейдж специальности */}
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 mb-1.5">
+            <Activity className="w-3 h-3" />
             {t(doctor.specialty)}
           </span>
 
@@ -80,7 +87,7 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
                 {[1,2,3,4,5].map(s => (
                   <svg
                     key={s}
-                    className={`w-3 h-3 ${s <= Math.round(doctor.reviewAvg) ? 'text-amber-400' : 'text-slate-200'}`}
+                    className={`w-4 h-4 ${s <= Math.round(doctor.reviewAvg) ? 'text-amber-400' : 'text-slate-200'}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -124,7 +131,7 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
             <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-sm text-slate-600">{doctor.experience} {L('years_exp')}</span>
+            <span className="text-sm text-slate-600"><span className="font-medium text-slate-800">{doctor.experience}</span> {L('years_exp')}</span>
           </div>
         )}
 
@@ -134,34 +141,34 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-sm font-semibold text-slate-800">
-              {L('from')} {doctor.priceRange.min} {doctor.priceRange.currency || 'TJS'}
+              {L('from')} <span className="text-emerald-600">{doctor.priceRange.min}</span> {doctor.priceRange.currency || 'TJS'}
             </span>
           </div>
         )}
       </div>
 
-      {/* Теги консультаций — text-xs, без border */}
+      {/* Теги консультаций — с lucide иконками */}
       {consultTypes.length > 0 && (
         <div className="px-5 pb-3 flex flex-wrap gap-1.5">
-          {consultTypes.map((type: string) => (
-            <span
-              key={type}
-              title={
-                type === 'in_person' ? 'Приём в клинике'
-                : type === 'online' ? 'Онлайн-консультация'
-                : 'Выезд на дом'
-              }
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
-                type === 'online'
-                  ? 'bg-emerald-50 text-emerald-600'
-                  : type === 'home_visit'
-                  ? 'bg-amber-50 text-amber-600'
-                  : 'bg-blue-50 text-blue-600'
-              }`}
-            >
-              {type === 'in_person' ? '🏥 Очно' : type === 'online' ? '💻 Онлайн' : '🏠 На дому'}
-            </span>
-          ))}
+          {consultTypes.map((type: string) => {
+            const config = CONSULT_TYPE_CONFIG[type];
+            if (!config) return null;
+            const Icon = config.icon;
+            return (
+              <span
+                key={type}
+                title={
+                  type === 'in_person' ? 'Приём в клинике'
+                  : type === 'online' ? 'Онлайн-консультация'
+                  : 'Выезд на дом'
+                }
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${config.bg} ${config.text}`}
+              >
+                <Icon className="w-3 h-3" />
+                {config.label}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -172,7 +179,7 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
       <div className="relative z-20 px-4 py-3 grid grid-cols-2 gap-2 mt-auto">
         <Link
           href={profileUrl}
-          className="flex items-center justify-center py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+          className="flex items-center justify-center py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition btn-spring"
           tabIndex={0}
         >
           {L('view_profile')}
@@ -181,7 +188,7 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
           <ContactDoctorButton
             doctor={doctor}
             lang={lang}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-100"
+            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-blue-600 active:from-blue-800 active:to-blue-700 transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-blue-100 btn-spring"
           />
         </div>
       </div>

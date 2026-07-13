@@ -91,27 +91,29 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
   const articleWord = t('common.articles');
 
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-5">
-        <div className="flex items-end justify-between mb-8">
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Section header with decorative line */}
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-1.5">
+            <p className="text-blue-600 font-semibold text-sm mb-2">
               {t('home.categoriesTitle')}
             </p>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h2 className="font-display text-3xl font-bold text-slate-900 tracking-tight">
               {dict.cat_title ?? t('home.categoriesTitle')}
             </h2>
+            <div className="section-accent-line" />
           </div>
           <Link
             href={`/${lang}/blog`}
-            className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-slate-600 border-b border-slate-300 hover:border-slate-800 transition-colors pb-0.5 group"
+            className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors pb-0.5 group"
           >
             {t('home.categoriesAllArticles')}
             <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {CATEGORIES.map(({ slug, color, Icon, labels }, index) => {
             const label = labels[lang as keyof typeof labels] || labels.ru;
             const count = categoryCounts[slug] ?? 0;
@@ -130,23 +132,24 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
               >
                 <Link
                   href={`/${lang}/blog?category=${slug}`}
-                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-white 
-                             border border-slate-100 
-                             shadow-[0_1px_3px_rgba(0,0,0,0.03),0_4px_12px_rgba(0,0,0,0.04)]
-                             hover:shadow-[0_12px_30px_rgba(0,0,0,0.07)]
-                             hover:-translate-y-1 transition-all duration-300 ease-out"
+                  className="group flex flex-col items-center gap-3 p-5 rounded-2xl 
+                             category-card-gradient
+                             border border-slate-100/80 
+                             card-hover-lift"
                 >
-                  <Icon className="w-10 h-10 text-slate-600 group-hover:text-slate-800 group-hover:scale-110 transition-all duration-300" />
+                  <div className="category-icon-wrap mb-1">
+                    <Icon className="w-7 h-7 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" />
+                  </div>
                   <p className="text-[13px] font-medium text-slate-700 text-center leading-tight 
                                 group-hover:text-slate-900 transition-colors">
                     {label}
                   </p>
                   {count > 0 ? (
-                    <span className={`text-[11px] font-semibold px-3 py-0.5 rounded-full border ${ACCENT_COLORS[color]}`}>
+                    <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${ACCENT_COLORS[color]}`}>
                       {count} {articleWord}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-slate-300">—</span>
+                    <span className="text-[11px] text-slate-300 font-medium bg-slate-100 px-2.5 py-0.5 rounded-full">—</span>
                   )}
                 </Link>
               </motion.div>

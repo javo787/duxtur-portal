@@ -20,9 +20,9 @@ export default function HomeArticles({
   if (articles.length === 0) {
     return (
       <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-5 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <FadeIn>
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-blue-100">
+            <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
               <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
               </svg>
@@ -44,24 +44,25 @@ export default function HomeArticles({
   const [featured, ...rest] = articles;
 
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-5">
+    <section className="py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <FadeIn>
           <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 mb-2">
+              <p className="text-blue-600 font-semibold text-sm mb-2">
                 {t('home.articlesTitle')}
               </p>
               <h2 className="font-display text-[28px] font-bold text-slate-900 tracking-tight leading-none">
                 {dict.blog_title}
               </h2>
+              <div className="section-accent-line" />
             </div>
             <Link
               href={`/${lang}/blog`}
-              className="flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 border-b border-blue-300 hover:border-blue-600 transition-colors pb-0.5"
+              className="flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 hover:text-blue-700 transition-colors pb-0.5 group"
             >
               {t('nav.allArticles')}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
@@ -71,7 +72,7 @@ export default function HomeArticles({
         {/* Featured article */}
         <FadeIn delay={80}>
           <Link href={`/${lang}/blog/${featured.slug}`} className="group block mb-10">
-            <div className="rounded-2xl overflow-hidden border border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 md:grid md:grid-cols-[3fr_2fr] shadow-sm hover:shadow-lg">
+            <div className="rounded-[1.5rem] overflow-hidden border border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 md:grid md:grid-cols-[3fr_2fr] shadow-card hover:shadow-card-hover card-hover-lift">
               <div className="h-64 md:h-[380px] overflow-hidden relative">
                 <Image
                   src={getOptimizedCloudinaryUrl(featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900', { width: 800 })}
@@ -81,17 +82,17 @@ export default function HomeArticles({
                   className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 800px"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/10 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
               </div>
-              <div className="p-9 flex flex-col justify-between bg-white">
+              <div className="p-8 md:p-9 flex flex-col justify-between bg-gradient-to-br from-white to-slate-50/30">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1.5 rounded-full mb-6 bg-amber-100 text-amber-800">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1.5 rounded-full mb-5 bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     {dict.blog_verified}
                   </span>
-                  <h3 className="font-display text-[22px] md:text-[26px] font-semibold text-slate-900 group-hover:text-slate-800 transition leading-[1.25] line-clamp-3 mb-4" style={{ letterSpacing: '-0.025em' }}>
+                  <h3 className="font-display text-[22px] md:text-[26px] font-semibold text-slate-900 group-hover:text-blue-700 transition leading-[1.25] line-clamp-3 mb-4" style={{ letterSpacing: '-0.025em' }}>
                     {dbT(featured.title)}
                   </h3>
                 </div>
@@ -101,7 +102,7 @@ export default function HomeArticles({
                       src={featured.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                       alt={featured.authorId?.name || 'Doctor'}
                       fill
-                      className="rounded-xl object-cover border-2 border-slate-100"
+                      className="rounded-xl object-cover ring-2 ring-white shadow-sm"
                     />
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-amber-500" />
                   </div>
@@ -109,7 +110,7 @@ export default function HomeArticles({
                     <p className="text-[13.5px] font-semibold text-slate-900 truncate">
                       {featured.authorId?.name || 'Dr. Expert'}
                     </p>
-                    <p className="text-[12px] font-normal truncate text-blue-600">
+                    <p className="text-[12px] font-medium truncate text-blue-600">
                       {dbT(featured.authorId?.specialty) || 'Врач'}
                     </p>
                   </div>
@@ -132,7 +133,7 @@ export default function HomeArticles({
               <FadeIn key={article._id} delay={i * 55} direction="up">
                 <Link href={`/${lang}/blog/${article.slug}`} className="group block h-full">
                   <div
-                    className="rounded-xl overflow-hidden border bg-white h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-slate-100"
+                    className="rounded-2xl overflow-hidden border bg-white h-full flex flex-col shadow-card hover:shadow-card-hover card-hover-lift border-slate-100"
                   >
                     <div className="h-44 overflow-hidden relative flex-shrink-0">
                       <Image
@@ -142,9 +143,10 @@ export default function HomeArticles({
                         className="object-cover group-hover:scale-[1.06] transition-transform duration-600 ease-out"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                       />
-                      <div className="absolute top-3 left-3">
-                        <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-amber-800">
-                          <svg className="w-2.5 h-2.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-3">
+                        <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-emerald-700 border border-emerald-100">
+                          <svg className="w-2.5 h-2.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           {dict.blog_verified}
@@ -152,7 +154,7 @@ export default function HomeArticles({
                       </div>
                     </div>
                     <div className="p-5 flex flex-col flex-1">
-                      <h3 className="font-display text-[14.5px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors leading-snug line-clamp-2 flex-1 mb-4" style={{ letterSpacing: '-0.015em' }}>
+                      <h3 className="font-display text-[14.5px] font-semibold text-slate-800 group-hover:text-blue-700 transition-colors leading-snug line-clamp-2 flex-1 mb-4" style={{ letterSpacing: '-0.015em' }}>
                         {dbT(article.title)}
                       </h3>
                       <div className="pt-3.5 border-t border-slate-50 flex items-center gap-2.5">
@@ -183,7 +185,7 @@ export default function HomeArticles({
           <div className="text-center">
             <Link
               href={`/${lang}/blog`}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl border border-slate-200 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 active:scale-95"
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl border border-slate-200 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 btn-spring"
             >
               {t('home.articlesViewAll')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
