@@ -43,7 +43,12 @@ Refactor the current single-file script into a shared pipeline so every new sour
 
 1. **Source Adapter** (`scripts/parsers/<source>.ts` — `ydoc.ts`, `twogis.ts`, `atsmu-bases.ts`, ...) → returns `RawClinic[]` / `RawDoctor[]`.
 2. **Normalizer** → maps raw fields to the canonical shape, strips control characters (reuse the invisible-character cleaner already in `Clinic.ts`'s `pre('validate')` hook).
-3. **Deduplicator** → replace the current exact-match check (`Clinic.findOne({ 'name.ru': raw.name })`) with fuzzy matching via `string-similarity` — already a project dependency, already used in `db-doctor.ts` — matching on name + city + address proximity so near-duplicates ("Клиника Мед-Сервис" vs "Мед Сервис клиника") don't both get imported.
+3. **Deduplicator** → replace the current exact-match check (`Clinic.findOne({ 'name.ru': raw.name })`) with `matchEntityByName()` from `src/lib/entityMatching.ts` — a Levenshtein-based confidence-tiered matcher ported directly from SalesTracker's `src/utils/productMatching.ts` (same problem shape: resolve a fuzzy real-world name against an existing catalog/DB). Candidates should be scoped to the same city before scoring. Behavior per tier:
+   - `exact` / `fuzzy_confident` → same entity, skip re-import (don't create a duplicate `pre_imported` record)
+   - `ambiguous` (2+ close candidates, or one candidate below the confident threshold) → don't guess — log it for manual review instead of silently importing or silently skipping
+   - `none` → genuinely new, import as `pre_imported`
+
+   **Follow-up worth scoping as its own task:** `findSimilarPreImportedDoctors` in `db-doctor.ts` (used by the claim flow) currently does a flat `score > 0.6` threshold and always returns top 3 — it doesn't distinguish "almost certainly you" from "maybe one of these." Upgrading it to the same tiered logic would let the registration UI show "is this you? confirm" for a confident single match vs. a real picker only when there's genuine ambiguity, instead of treating both cases the same way. Not done in this pass since it touches a shipped, user-facing flow — flagging for a dedicated Jules task with its own review.
 4. **Enrichment** → the existing `translateName()`, `geocode()`, `uploadLogo()` helpers are reusable as-is.
 5. **Writer** → upsert via the `Clinic` / `Doctor` mongoose models, always `status: 'pre_imported'`.
 
