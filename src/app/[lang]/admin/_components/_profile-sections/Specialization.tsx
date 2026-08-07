@@ -46,7 +46,59 @@ export default function Specialization({ profile, setProfile }: Props) {
             placeholder="Русский, Тоҷикӣ, O'zbek, English"
           />
         </div>
+        <div className="md:col-span-2">
+          <ExpertiseTagsField profile={profile} setProfile={setProfile} />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function ExpertiseTagsField({ profile, setProfile }: Props) {
+  const tags: any[] = profile.expertiseTags || [];
+  const values = tags.map((t) => (typeof t === 'string' ? t : strField(t)));
+
+  return (
+    <div>
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+        🎯 Направления и процедуры
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {values.map((tag, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-xs font-bold"
+          >
+            {tag}
+            <button
+              onClick={() => {
+                const next = [...tags];
+                next.splice(i, 1);
+                setProfile((p: any) => ({ ...p, expertiseTags: next }));
+              }}
+              className="text-blue-400 hover:text-blue-700"
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+      <input
+        type="text"
+        placeholder="Например: ЭКГ, УЗИ сердца — Enter, чтобы добавить"
+        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8 focus:bg-white"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const value = (e.target as HTMLInputElement).value.trim();
+            if (value) {
+              setProfile((p: any) => ({ ...p, expertiseTags: [...tags, value] }));
+              (e.target as HTMLInputElement).value = '';
+            }
+          }
+        }}
+      />
+      <p className="text-[11px] text-slate-400 mt-1.5">Конкретные процедуры и услуги — переводятся автоматически</p>
     </div>
   );
 }

@@ -84,6 +84,50 @@ export default function AppointmentsPricing({ profile, setProfile }: Props) {
             type="number"
           />
         </div>
+
+        {/* Способы оплаты */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+            Способы оплаты
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { id: 'cash', label: '💵 Наличные' },
+              { id: 'card', label: '💳 Карта' },
+              { id: 'insurance', label: '🩺 Страховка' },
+              { id: 'installment', label: '📆 Рассрочка' },
+            ].map((method) => {
+              const methods: string[] = profile.paymentMethods || ['cash'];
+              const active = methods.includes(method.id);
+              return (
+                <button
+                  key={method.id}
+                  onClick={() => {
+                    const next = active ? methods.filter((m) => m !== method.id) : [...methods, method.id];
+                    setProfile((p: any) => ({ ...p, paymentMethods: next.length ? next : ['cash'] }));
+                  }}
+                  className={`px-4 py-2 rounded-xl border-2 text-sm font-bold transition-all
+                    ${active ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 text-slate-500 hover:border-slate-200'}`}
+                >
+                  {method.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Страховые компании */}
+        <Field
+          icon="🩺"
+          label="Страховые компании (через запятую, необязательно)"
+          value={(profile.insuranceProviders || []).join(', ')}
+          onChange={(v) =>
+            setProfile((p: any) => ({
+              ...p,
+              insuranceProviders: v.split(',').map((s: string) => s.trim()).filter(Boolean),
+            }))
+          }
+        />
       </div>
     </div>
   );

@@ -107,6 +107,49 @@ const DoctorSchema = new mongoose.Schema({
   importedAt: { type: Date },
   isClaimed: { type: Boolean, default: false },
   claimedAt: { type: Date },
+
+  // ─── Премиум-профиль ───
+
+  // Фото рабочего места/кабинета (Cloudinary URLs)
+  gallery: { type: [String], default: [] },
+
+  // Видео-визитка: прямая ссылка на видео (Cloudinary) либо на YouTube/Instagram
+  videoIntro: { type: String, default: '' },
+
+  // Награды, сертификаты, членства в проф. сообществах, публикации
+  achievements: {
+    type: [{
+      type: {
+        type: String,
+        enum: ['award', 'certification', 'membership', 'publication'],
+        default: 'award',
+      },
+      title: MultilingualString,
+      issuer: { type: String, default: '' },
+      year: { type: Number },
+    }],
+    default: [],
+  },
+
+  // Направления/процедуры — отдельно от общей специальности
+  expertiseTags: { type: [MultilingualString], default: [] },
+
+  // Персональные вопросы-ответы от врача (дополняют авто-сгенерированные)
+  faq: {
+    type: [{
+      question: MultilingualString,
+      answer: MultilingualString,
+    }],
+    default: [],
+  },
+
+  // Способы оплаты и страховые компании
+  paymentMethods: {
+    type: [String],
+    enum: ['cash', 'card', 'insurance', 'installment'],
+    default: ['cash'],
+  },
+  insuranceProviders: { type: [String], default: [] },
 }, { timestamps: true });
 
 DoctorSchema.index({ city: 1 });

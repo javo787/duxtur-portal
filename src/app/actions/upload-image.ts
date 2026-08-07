@@ -7,22 +7,36 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30 MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
-export async function uploadImageToCloudinary(formData: FormData) {
+/**
+ * @param formData  форма с полем "file"
+ * @param folder    папка в Cloudinary (по умолчанию 'clinics' — для обратной совместимости
+ *                   с уже существующими вызовами: аватары врачей, фото клиник и т.д.)
+ */
+export async function uploadImageToCloudinary(formData: FormData, folder: string = 'clinics') {
   try {
     const file = formData.get('file') as File;
     if (!file) {
       return { success: false, error: 'Файл не выбран' };
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+
+    if (!isVideo && !isImage) {
       return { success: false, error: 'Недопустимый формат файла' };
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return { success: false, error: 'Файл слишком большой' };
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        error: isVideo ? 'Видео слишком большое (макс. 30 МБ)' : 'Файл слишком большой',
+      };
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -30,7 +44,7 @@ export async function uploadImageToCloudinary(formData: FormData) {
 
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: 'clinics' },
+        { folder, resource_type: isVideo ? 'video' : 'image' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result!);

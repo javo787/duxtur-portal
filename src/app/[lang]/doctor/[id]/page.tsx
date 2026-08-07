@@ -19,6 +19,11 @@ import DoctorViewTracker from '@/components/DoctorViewTracker';
 import ReviewModal from './_components/ReviewModal';
 import BookingButton from './_components/BookingButton';
 import ReviewList from './_components/ReviewList';
+import DoctorGallery from './_components/DoctorGallery';
+import VideoIntro from './_components/VideoIntro';
+import AchievementsSection from './_components/AchievementsSection';
+import DoctorFAQ from './_components/DoctorFAQ';
+import PaymentInsuranceBadges from './_components/PaymentInsuranceBadges';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -107,6 +112,55 @@ export default async function DoctorProfilePage({ params }: Props) {
   const workplaceLabel = dbT(doctor.workplace);
   const educationLabel = dbT(doctor.education);
   const bioLabel = dbT(doctor.bio);
+
+  const expertiseTagLabels: string[] = (doctor.expertiseTags || []).map((tag: any) => dbT(tag)).filter(Boolean);
+
+  const achievementsLabels = (doctor.achievements || []).map((a: any) => ({
+    type: a.type || 'award',
+    title: dbT(a.title),
+    issuer: a.issuer || '',
+    year: a.year,
+  })).filter((a: any) => a.title);
+
+  const customFaq = (doctor.faq || [])
+    .map((f: any) => ({ question: dbT(f.question), answer: dbT(f.answer) }))
+    .filter((f: any) => f.question && f.answer);
+
+  const paymentLabels: Record<string, string> = {
+    cash: t('doctor.paymentCash'),
+    card: t('doctor.paymentCard'),
+    insurance: t('doctor.paymentInsurance'),
+    installment: t('doctor.paymentInstallment'),
+  };
+
+  const dynamicFaq: { question: string; answer: string }[] = [];
+  const paymentMethodsList: string[] = doctor.paymentMethods?.length ? doctor.paymentMethods : ['cash'];
+  dynamicFaq.push({
+    question: t('doctor.faqQPayment'),
+    answer: paymentMethodsList.map((m: string) => paymentLabels[m] || m).join(', '),
+  });
+  dynamicFaq.push({
+    question: t('doctor.faqQInsurance'),
+    answer: doctor.insuranceProviders?.length
+      ? `${t('doctor.faqInsuranceYes')} ${doctor.insuranceProviders.join(', ')}`
+      : t('doctor.faqInsuranceNo'),
+  });
+  if (doctor.consultationTypes?.length) {
+    dynamicFaq.push({
+      question: t('doctor.faqQOnline'),
+      answer: doctor.consultationTypes.includes('online') ? t('doctor.faqOnlineYes') : t('doctor.faqOnlineNo'),
+    });
+  }
+  dynamicFaq.push({
+    question: t('doctor.faqQFirstVisit'),
+    answer: t('doctor.faqAFirstVisit'),
+  });
+  dynamicFaq.push({
+    question: t('doctor.faqQNewPatients'),
+    answer: doctor.acceptsNewPatients !== false ? t('doctor.faqNewPatientsYes') : t('doctor.faqNewPatientsNo'),
+  });
+
+  const faqItems = [...customFaq, ...dynamicFaq];
 
   const doctorUrl = `${BASE_URL}/${lang}/doctor/${doctor.slug || doctor._id}`;
 
@@ -320,10 +374,68 @@ export default async function DoctorProfilePage({ params }: Props) {
               />
             </div>
           )}
+
+          {expertiseTagLabels.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mt-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">{t('doctor.expertiseTitle')}</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {expertiseTagLabels.map((tag: string, i: number) => (
+                  <span key={i} className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {doctor.licenseNumber && (
+            <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mt-4">
+              <span className="text-lg shrink-0">🪪</span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-amber-900">{t('doctor.licenseNumber')}</p>
+                <p className="text-xs text-amber-700">{doctor.licenseNumber}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <PaymentInsuranceBadges
+              paymentMethods={paymentMethodsList}
+              insuranceProviders={doctor.insuranceProviders || []}
+              labels={{
+                paymentTitle: t('doctor.paymentTitle'),
+                insuranceTitle: t('doctor.insuranceTitle'),
+                cash: t('doctor.paymentCash'),
+                card: t('doctor.paymentCard'),
+                insurance: t('doctor.paymentInsurance'),
+                installment: t('doctor.paymentInstallment'),
+              }}
+            />
+          </div>
         </div>
 
         {/* Статьи */}
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
+
+          {/* Фото и видео-визитка */}
+          {(doctor.gallery?.length > 0 || doctor.videoIntro) && (
+            <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-gray-100 shadow-sm space-y-6">
+              <h2 className="text-lg font-black text-gray-900">{t('doctor.mediaTitle')}</h2>
+              <div className="flex flex-col md:flex-row gap-6">
+                {doctor.videoIntro && (
+                  <div className="md:w-1/2 shrink-0">
+                    <VideoIntro videoUrl={doctor.videoIntro} doctorName={doctor.name} />
+                  </div>
+                )}
+                {doctor.gallery?.length > 0 && (
+                  <div className="flex-1">
+                    <DoctorGallery photos={doctor.gallery} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-black text-gray-900 tracking-tight">
               {t('doctor.articles')}
@@ -443,6 +555,18 @@ export default async function DoctorProfilePage({ params }: Props) {
             <ReviewList initialReviews={reviews} doctorId={doctor._id.toString()} />
           </div>
 
+          {/* Награды и достижения */}
+          {achievementsLabels.length > 0 && (
+            <div className="mt-12 pt-10 border-t border-gray-100">
+              <AchievementsSection items={achievementsLabels} title={t('doctor.achievementsTitle')} />
+            </div>
+          )}
+
+          {/* Частые вопросы */}
+          <div className="mt-12 pt-10 border-t border-gray-100">
+            <DoctorFAQ items={faqItems} title={t('doctor.faqTitle')} />
+          </div>
+
           {/* "You may also like" section */}
           {articles.length > 0 && (
             <div className="mt-12 pt-10 border-t border-gray-100">
@@ -510,6 +634,21 @@ export default async function DoctorProfilePage({ params }: Props) {
                 )}
               </div>
 
+              {expertiseTagLabels.length > 0 && (
+                <div className="px-5 pb-5">
+                  <div className="border-t border-gray-50 pt-4">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">{t('doctor.expertiseTitle')}</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {expertiseTagLabels.map((tag: string, i: number) => (
+                        <span key={i} className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {bioLabel && (
                 <div className="px-5 pb-5 pt-0">
                   <div className="border-t border-gray-50 pt-4">
@@ -540,6 +679,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               lastMedicalReviewDate={lastMedicalReviewDate}
               lastArticleDate={articles.length > 0 ? articles[0].createdAt : null}
               lang={lang}
+              licenseNumber={doctor.licenseNumber}
             />
 
             <ContactDoctorButton doctor={doctor} lang={lang} />
@@ -634,6 +774,19 @@ export default async function DoctorProfilePage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            <PaymentInsuranceBadges
+              paymentMethods={paymentMethodsList}
+              insuranceProviders={doctor.insuranceProviders || []}
+              labels={{
+                paymentTitle: t('doctor.paymentTitle'),
+                insuranceTitle: t('doctor.insuranceTitle'),
+                cash: t('doctor.paymentCash'),
+                card: t('doctor.paymentCard'),
+                insurance: t('doctor.paymentInsurance'),
+                installment: t('doctor.paymentInstallment'),
+              }}
+            />
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
