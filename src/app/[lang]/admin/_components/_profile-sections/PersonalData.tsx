@@ -26,6 +26,16 @@ export default function PersonalData({ profile, setProfile }: Props) {
           placeholder="+992 XXX XXX XXX"
           hint="Не отображается на сайте — только для администрации"
         />
+        <div className="md:col-span-2">
+          <Field
+            icon="🪪"
+            label="Номер лицензии / сертификата специалиста"
+            value={profile.licenseNumber || ''}
+            onChange={(v) => setProfile((p: any) => ({ ...p, licenseNumber: v }))}
+            placeholder="№ 0123456"
+            hint="Отображается на странице как знак подлинности — пациенты это ценят"
+          />
+        </div>
       </div>
     </div>
   );

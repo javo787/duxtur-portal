@@ -5,7 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { stripHtml } from '@/lib/utils';
 import { updateDoctorProfileByUserId, findDoctorByEmail } from '@/lib/db-doctor';
-import { translateFields } from '@/lib/translation-service';
+import { translateFields, translateText } from '@/lib/translation-service';
 
 /**
  * Данные профиля врача, которые могут быть обновлены.
@@ -16,6 +16,7 @@ interface DoctorProfileData {
   name?: string;
   phone?: string;
   image?: string;
+  licenseNumber?: string;
   specialty?: { ru?: string; uz?: string; tg?: string; ky?: string; kk?: string } | string;
   experience?: number;
   languages?: string[];
@@ -44,6 +45,20 @@ interface DoctorProfileData {
     type: 'Point';
     coordinates: [number, number]; // [lng, lat]
   };
+
+  // ─── Премиум-профиль ───
+  gallery?: string[];
+  videoIntro?: string;
+  achievements?: Array<{
+    type: 'award' | 'certification' | 'membership' | 'publication';
+    title: string; // ru-текст, переводится автоматически
+    issuer?: string;
+    year?: number;
+  }>;
+  expertiseTags?: string[]; // ru-теги, переводятся автоматически
+  faq?: Array<{ question: string; answer: string }>; // ru-текст, переводится автоматически
+  paymentMethods?: string[];
+  insuranceProviders?: string[];
 }
 
 /**
@@ -103,11 +118,37 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
     // 3. Запрашиваем переводы, если есть что переводить
     const translations = await translateFields(fieldsToTranslate);
 
+    // 3.1 Переводим элементы массивов (достижения, FAQ, теги направлений) параллельно
+    const [achievementsUpdate, faqUpdate, expertiseTagsUpdate] = await Promise.all([
+      data.achievements
+        ? Promise.all(
+            data.achievements.map(async (a) => ({
+              type: a.type || 'award',
+              title: a.title ? await translateText(stripHtml(a.title)) : { ru: '', uz: '', kk: '', ky: '', tg: '' },
+              issuer: a.issuer ? stripHtml(a.issuer) : '',
+              year: a.year || undefined,
+            })),
+          )
+        : undefined,
+      data.faq
+        ? Promise.all(
+            data.faq.map(async (f) => ({
+              question: f.question ? await translateText(stripHtml(f.question)) : { ru: '', uz: '', kk: '', ky: '', tg: '' },
+              answer: f.answer ? await translateText(stripHtml(f.answer)) : { ru: '', uz: '', kk: '', ky: '', tg: '' },
+            })),
+          )
+        : undefined,
+      data.expertiseTags
+        ? Promise.all(data.expertiseTags.filter(Boolean).map((tag) => translateText(stripHtml(tag))))
+        : undefined,
+    ]);
+
     // 4. Формируем объект для обновления (только не undefined / null поля)
     const updateFields: Record<string, unknown> = Object.fromEntries(
       Object.entries({
         name: data.name ? stripHtml(data.name) : undefined,
         phone: data.phone ? stripHtml(data.phone) : undefined,
+        licenseNumber: data.licenseNumber ? stripHtml(data.licenseNumber) : undefined,
         image: data.image,
         experience: data.experience,
         languages: data.languages,
@@ -127,6 +168,13 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
         priceRange: data.priceRange,
         schedule: data.schedule,
         coordinates: data.coordinates, // ← исправление: сохраняем геолокацию
+        gallery: data.gallery,
+        videoIntro: data.videoIntro,
+        paymentMethods: data.paymentMethods,
+        insuranceProviders: data.insuranceProviders,
+        achievements: achievementsUpdate,
+        faq: faqUpdate,
+        expertiseTags: expertiseTagsUpdate,
       }).filter(([_, v]) => v !== undefined && v !== null),
     );
 

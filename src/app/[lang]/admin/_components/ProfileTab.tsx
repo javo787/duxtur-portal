@@ -11,8 +11,11 @@ import AvatarHero from './_profile-sections/AvatarHero';
 import PersonalData from './_profile-sections/PersonalData';
 import Specialization from './_profile-sections/Specialization';
 import PublicProfile from './_profile-sections/PublicProfile';
+import Media from './_profile-sections/Media';
+import Achievements from './_profile-sections/Achievements';
 import LocationClinic from './_profile-sections/LocationClinic';
 import AppointmentsPricing from './_profile-sections/AppointmentsPricing';
+import FAQAdmin from './_profile-sections/FAQAdmin';
 import Schedule from './_profile-sections/Schedule';
 import SocialsVisitingCard from './_profile-sections/SocialsVisitingCard';
 import CardDesign from './_profile-sections/CardDesign';
@@ -112,6 +115,15 @@ export function ProfileTab({ lang }: { lang: string }) {
       workplace: typeof profile.workplace === 'string' ? profile.workplace : strField(profile.workplace),
       education: typeof profile.education === 'string' ? profile.education : strField(profile.education),
       specialty: typeof profile.specialty === 'string' ? profile.specialty : strField(profile.specialty),
+      expertiseTags: (profile.expertiseTags || []).map((t: any) => (typeof t === 'string' ? t : strField(t))),
+      achievements: (profile.achievements || []).map((a: any) => ({
+        ...a,
+        title: typeof a.title === 'string' ? a.title : strField(a.title),
+      })),
+      faq: (profile.faq || []).map((f: any) => ({
+        question: typeof f.question === 'string' ? f.question : strField(f.question),
+        answer: typeof f.answer === 'string' ? f.answer : strField(f.answer),
+      })),
     });
     setIsSaving(false);
     if (result.success) {
@@ -160,6 +172,8 @@ export function ProfileTab({ lang }: { lang: string }) {
       <PersonalData profile={profile} setProfile={setProfile} />
       <Specialization profile={profile} setProfile={setProfile} />
       <PublicProfile profile={profile} setProfile={setProfile} />
+      <Media profile={profile} setProfile={setProfile} />
+      <Achievements profile={profile} setProfile={setProfile} />
 
       <LocationClinic
         profile={profile}
@@ -170,6 +184,7 @@ export function ProfileTab({ lang }: { lang: string }) {
       />
 
       <AppointmentsPricing profile={profile} setProfile={setProfile} />
+      <FAQAdmin profile={profile} setProfile={setProfile} />
       <Schedule profile={profile} setProfile={setProfile} />
       <SocialsVisitingCard profile={profile} setProfile={setProfile} />
       <CardDesign profile={profile} setProfile={setProfile} />
