@@ -3,29 +3,50 @@ import { useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { useParams } from 'next/navigation';
 
-export default function VideoIntro({ videoUrl, doctorName }: { videoUrl: string; doctorName?: string }) {
+// Cloudinary отдаёт превью-кадр видео, если заменить расширение файла на .jpg
+function getVideoPoster(videoUrl: string): string | undefined {
+  try {
+    const withoutExt = videoUrl.replace(/\.[a-zA-Z0-9]+($|\?)/, '$1');
+    return `${withoutExt}.jpg`;
+  } catch {
+    return undefined;
+  }
+}
+
+export default function VideoIntro({ videoUrl }: { videoUrl: string; doctorName?: string }) {
   const { lang } = useParams() as { lang: string };
   const { t } = useT(lang);
   const [playing, setPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   if (!videoUrl) return null;
+
+  if (hasError) {
+    // Не показываем сломанный плеер — тихая деградация вместо чёрного экрана
+    return null;
+  }
+
+  const poster = getVideoPoster(videoUrl);
 
   return (
     <div className="relative rounded-[2rem] overflow-hidden bg-black shadow-lg group max-w-md">
       <video
         ref={videoRef}
         src={videoUrl}
+        poster={poster}
         controls={playing}
         playsInline
+        preload="metadata"
         className="w-full aspect-video object-cover"
         onEnded={() => setPlaying(false)}
+        onError={() => setHasError(true)}
       />
       {!playing && (
         <button
           onClick={() => {
             setPlaying(true);
-            videoRef.current?.play();
+            videoRef.current?.play().catch(() => setHasError(true));
           }}
           className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors"
         >

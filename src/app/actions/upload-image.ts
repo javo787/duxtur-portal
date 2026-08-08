@@ -44,7 +44,17 @@ export async function uploadImageToCloudinary(formData: FormData, folder: string
 
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: isVideo ? 'video' : 'image' },
+        isVideo
+          ? {
+              folder,
+              resource_type: 'video',
+              // Телефоны часто снимают в .mov/HEVC — большинство браузеров (особенно Chrome
+              // на Android/десктопе) такой контейнер/кодек в <video> не проигрывают.
+              // Принудительно транскодируем в H.264/AAC mp4 — гарантированно проигрывается везде.
+              format: 'mp4',
+              video_codec: 'h264',
+            }
+          : { folder, resource_type: 'image' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result!);
