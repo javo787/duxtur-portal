@@ -47,71 +47,10 @@ export default function DoctorHero({
       <div className="absolute top-0 left-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* ─── МОБИЛЬ: компактный горизонтальный layout ─── */}
-      <div className="md:hidden relative px-4 pt-4 pb-5">
-        
-        {/* Строка 1: фото + имя/специальность */}
-        <div className="flex items-center gap-3.5">
-          {/* Аватар компактный */}
-          <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/15 shadow-xl">
-              <Avatar3D
-                src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                alt={doctor.name}
-              />
-            </div>
-            {/* Верифицирован — точка */}
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-[#0f2a52] flex items-center justify-center shadow-md">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Имя + специальность */}
-          <div className="min-w-0 flex-1">
-            {/* Специальность пилюля */}
-            <div className="inline-flex items-center gap-1 bg-blue-500/20 border border-blue-400/25 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-1">
-              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
-              {specialtyLabel}
-            </div>
-            <p className="text-xl font-black text-white tracking-tight leading-tight truncate">
-              {doctor.name}
-            </p>
-            {doctor.workplace && (
-              <p className="text-blue-200/60 text-[11px] mt-0.5 truncate">{doctor.workplace}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Строка 2: миссия — 2 строки максимум */}
-        <p className="text-blue-200/80 text-[13px] leading-relaxed mt-3 line-clamp-2 italic">
-          «{mission}»
-        </p>
-
-        {/* Строка 3: метрики горизонтально — скролл если не влезает */}
-        <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none pb-0.5">
-          <MobileStat value={articlesCount.toString()} label={t('common.articles')} icon="📄" />
-          {doctor.experience > 0 && (
-            <MobileStat value={`${doctor.experience}`} label={t('doctor.yearsExp')} icon="⏱" />
-          )}
-          {totalViews > 0 && (
-            <MobileStat
-              value={totalViews > 999 ? `${(totalViews / 1000).toFixed(1)}k` : totalViews.toString()}
-              label={t('doctor.reads')}
-              icon="👁"
-            />
-          )}
-          {doctor.languages?.length > 0 && (
-            <MobileStat value={doctor.languages.join(' · ')} label={t('common.languages')} icon="🌐" />
-          )}
-        </div>
-      </div>
-
-      {/* ─── ДЕСКТОП: оригинальный layout ─── */}
-      <div className="hidden md:block relative max-w-6xl mx-auto px-6 py-20">
+      {/* Примечание: этот компонент рендерится родителем только внутри
+          `hidden md:block`, поэтому здесь нужна исключительно десктопная
+          раскладка — мобильную вёрстку показывает PremiumMobileProfile. */}
+      <div className="relative max-w-6xl mx-auto px-6 py-20">
         <div className="flex flex-row items-center gap-10">
           {/* Аватар */}
           <div className="relative shrink-0 group">
@@ -151,7 +90,7 @@ export default function DoctorHero({
 
             <div className="flex flex-wrap gap-3">
               <HeroStat icon={<PdfIcon />} value={articlesCount.toString()} label={t('common.articles')} />
-              {doctor.experience > 0 && <HeroStat icon={<CalendarIcon />} value={`${doctor.experience}`} label={t('doctor.yearsExp')} />}
+              {doctor.experience > 0 && <HeroStat icon={<CalendarIcon />} value={`${doctor.experience}`} label={t('common.yearsExp')} />}
               {totalViews > 0 && (
                 <HeroStat
                   icon={<EyeIcon />}
@@ -165,19 +104,6 @@ export default function DoctorHero({
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* Мобильная метрика — компактная */
-function MobileStat({ value, label, icon }: { value: string; label: string; icon: string }) {
-  return (
-    <div className="flex items-center gap-1.5 bg-white/8 border border-white/10 px-3 py-1.5 rounded-xl shrink-0">
-      <span className="text-sm">{icon}</span>
-      <div>
-        <p className="font-black text-white text-xs leading-none">{value}</p>
-        <p className="text-blue-200/50 text-[10px] mt-0.5 whitespace-nowrap">{label}</p>
       </div>
     </div>
   );
