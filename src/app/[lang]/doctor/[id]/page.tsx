@@ -10,7 +10,7 @@ import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
 import MobileStickyShare from '@/components/MobileStickyShare';
-import { CATEGORY_LABELS, CATEGORY_COLORS, CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
+import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
@@ -24,6 +24,8 @@ import VideoIntro from './_components/VideoIntro';
 import AchievementsSection from './_components/AchievementsSection';
 import DoctorFAQ from './_components/DoctorFAQ';
 import PaymentInsuranceBadges from './_components/PaymentInsuranceBadges';
+import { IdCard } from 'lucide-react';
+import StarRating from '@/components/StarRating';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -358,6 +360,7 @@ export default async function DoctorProfilePage({ params }: Props) {
             articles={articles}
             lang={lang}
             doctorUrl={doctorUrl}
+            categoryKey={categoryKey}
           />
 
           {/* ── КНОПКА ЗАПИСИ (МОБИЛЬ) ── */}
@@ -390,7 +393,9 @@ export default async function DoctorProfilePage({ params }: Props) {
 
           {doctor.licenseNumber && (
             <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mt-4">
-              <span className="text-lg shrink-0">🪪</span>
+              <span className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+                <IdCard className="w-4 h-4" />
+              </span>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-amber-900">{t('doctor.licenseNumber')}</p>
                 <p className="text-xs text-amber-700">{doctor.licenseNumber}</p>
@@ -542,9 +547,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <div>
                 <h3 className="text-xl font-black text-gray-900 tracking-tight">{t('doctor.reviews')}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="flex text-amber-400 text-sm">
-                    {'★'.repeat(Math.round(doctor.reviewAvg || 0))}{'☆'.repeat(5 - Math.round(doctor.reviewAvg || 0))}
-                  </div>
+                  <StarRating rating={doctor.reviewAvg || 0} size="w-4 h-4" />
                   <span className="text-sm font-bold text-gray-900">{doctor.reviewAvg || 0}</span>
                   <span className="text-xs text-gray-400">({doctor.reviewCount || 0} {t('blog.ratings')})</span>
                 </div>
@@ -552,7 +555,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <ReviewModal doctorId={doctor._id.toString()} doctorName={doctor.name} lang={lang} />
             </div>
 
-            <ReviewList initialReviews={reviews} doctorId={doctor._id.toString()} />
+            <ReviewList initialReviews={reviews} doctorId={doctor._id.toString()} lang={lang} />
           </div>
 
           {/* Награды и достижения */}

@@ -4,6 +4,21 @@ import { useState } from 'react';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import DownloadCardButton from '@/components/DownloadCardButton';
 import { useT } from '@/i18n';
+import { CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
+import {
+  Stethoscope,
+  Clock,
+  FileText,
+  Languages as LanguagesIcon,
+  GraduationCap,
+  ShieldCheck,
+  Microscope,
+  Newspaper,
+  Building2,
+  CalendarClock,
+  ExternalLink,
+  Check,
+} from 'lucide-react';
 
 interface PremiumMobileProfileProps {
   doctor: any;
@@ -12,6 +27,7 @@ interface PremiumMobileProfileProps {
   articles: any[];
   lang: string;
   doctorUrl: string;
+  categoryKey?: string;
 }
 
 export function PremiumMobileProfile({
@@ -20,6 +36,7 @@ export function PremiumMobileProfile({
   lastMedicalReviewDate,
   articles,
   lang,
+  categoryKey,
 }: PremiumMobileProfileProps) {
   const { t: i18nT } = useT(lang);
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -39,33 +56,51 @@ export function PremiumMobileProfile({
   const hasContacts =
     doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram;
 
+  // Личный цвет врача — деталь-подпись. Фон карточки — цвет специальности:
+  // так пациент с первого взгляда узнаёт профиль кардиолога среди неврологов.
+  const accent = doctor.accentColor || '#2563eb';
+  const gradient = CATEGORY_GRADIENTS[categoryKey || 'general'] || CATEGORY_GRADIENTS.general;
+
   return (
     <div className="space-y-3 pb-2">
       {/* ── ГЛАВНАЯ КАРТОЧКА ──────────────────────────────────── */}
       <div
-        className="rounded-3xl overflow-hidden"
+        className="relative rounded-[28px] overflow-hidden"
         style={{
-          background: 'linear-gradient(145deg, #0a1628 0%, #0f2a52 60%, #1a3a6e 100%)',
-          boxShadow: '0 20px 60px rgba(15,42,82,0.4)',
+          background: `linear-gradient(160deg, ${gradient.from} 0%, #0f2a52 48%, ${gradient.to} 100%)`,
+          boxShadow: '0 20px 50px -14px rgba(10,22,40,0.5)',
         }}
       >
-        {/* Верхняя полоса-акцент */}
+        {/* Тонкая сетка — фирменная фактура бренда */}
         <div
-          className="h-1"
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
-            background: `linear-gradient(90deg, ${doctor.accentColor || '#2563eb'}, #6d28d9)`,
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+            backgroundSize: '26px 26px',
           }}
+        />
+        {/* Мягкое свечение личным цветом врача */}
+        <div
+          className="absolute -top-16 -right-10 w-48 h-48 rounded-full blur-3xl pointer-events-none"
+          style={{ background: accent, opacity: 0.22 }}
+        />
+
+        {/* Верхняя нить-акцент — персональный цвет врача */}
+        <div
+          className="relative h-[3px]"
+          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
         />
 
         {/* Основной контент */}
-        <div className="px-5 pt-5 pb-4">
+        <div className="relative px-5 pt-5 pb-4">
           {/* Фото + имя */}
           <div className="flex items-start gap-4 mb-4">
             <div className="relative shrink-0">
               <div
                 className="w-20 h-20 rounded-2xl overflow-hidden"
                 style={{
-                  boxShadow: `0 0 0 2px ${doctor.accentColor || '#2563eb'}40, 0 8px 24px rgba(0,0,0,0.4)`,
+                  boxShadow: `0 0 0 2px ${accent}55, 0 10px 24px rgba(0,0,0,0.35)`,
                 }}
               >
                 <img
@@ -82,17 +117,7 @@ export function PremiumMobileProfile({
                 className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full border-2 border-[#0f2a52] flex items-center justify-center"
                 style={{ background: '#10b981' }}
               >
-                <svg
-                  className="w-3.5 h-3.5 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
               </div>
             </div>
 
@@ -101,31 +126,19 @@ export function PremiumMobileProfile({
               <div
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2"
                 style={{
-                  background: `${doctor.accentColor || '#2563eb'}25`,
-                  border: `1px solid ${doctor.accentColor || '#2563eb'}40`,
-                  color: '#93c5fd',
+                  background: `${accent}25`,
+                  border: `1px solid ${accent}45`,
+                  color: 'rgba(255,255,255,0.92)',
                 }}
               >
-                <svg
-                  className="w-2.5 h-2.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                  />
-                </svg>
+                <Stethoscope className="w-3 h-3" strokeWidth={2.25} />
                 {specialtyLabel || i18nT('common.doctorSingle')}
               </div>
-              <h1 className="text-[18px] font-black text-white leading-tight">
+              <h1 className="font-display text-[22px] font-bold text-white leading-[1.15] tracking-tight">
                 {doctor.name}
               </h1>
               {workplaceLabel && (
-                <p className="text-[11.5px] text-blue-300/70 mt-1 leading-tight">
+                <p className="text-[12px] text-white/65 mt-1.5 leading-tight truncate">
                   {workplaceLabel}
                 </p>
               )}
@@ -141,13 +154,14 @@ export function PremiumMobileProfile({
                 border: '1px solid rgba(255,255,255,0.1)',
               }}
             >
-              <p className="text-[12px] text-blue-200/80 leading-relaxed italic">
+              <p className="text-[12.5px] text-white/80 leading-relaxed italic">
                 «{bioExpanded ? rawBio : shortBio}»
               </p>
               {rawBio.length > 120 && (
                 <button
                   onClick={() => setBioExpanded(!bioExpanded)}
-                  className="mt-1.5 text-[11px] font-semibold text-blue-400"
+                  className="mt-1.5 text-[11px] font-semibold"
+                  style={{ color: accent === '#2563eb' ? '#93c5fd' : accent }}
                 >
                   {bioExpanded ? i18nT('common.collapse') : i18nT('blog.readMore')}
                 </button>
@@ -155,70 +169,58 @@ export function PremiumMobileProfile({
             </div>
           )}
 
-          {/* Метрики — горизонтальный скролл */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Метрики — переносятся по строкам, ничего не обрезается */}
+          <div className="flex flex-wrap gap-2">
             {articles.length > 0 && (
               <MetricChip
+                icon={<FileText className="w-3.5 h-3.5" />}
                 value={articles.length.toString()}
                 label={i18nT('common.articles')}
-                icon="📄"
-                accent={doctor.accentColor}
               />
             )}
             {(doctor.experience || 0) > 0 && (
               <MetricChip
+                icon={<Clock className="w-3.5 h-3.5" />}
                 value={`${doctor.experience}`}
-                label={i18nT('doctor.yearsExp')}
-                icon="⏱"
-                accent={doctor.accentColor}
+                label={i18nT('common.yearsExp')}
               />
             )}
             {doctor.languages?.length > 0 && (
               <MetricChip
+                icon={<LanguagesIcon className="w-3.5 h-3.5" />}
                 value={doctor.languages.join(' · ')}
                 label={i18nT('common.languages')}
-                icon="🌐"
-                accent={doctor.accentColor}
               />
             )}
             {educationLabel && (
               <MetricChip
+                icon={<GraduationCap className="w-3.5 h-3.5" />}
                 value={educationLabel.split(',')[0]}
                 label={i18nT('doctor.education')}
-                icon="🎓"
-                accent={doctor.accentColor}
               />
             )}
           </div>
         </div>
-
-        {/* Нижняя полоса-акцент */}
-        <div
-          className="h-0.5"
-          style={{
-            background: `linear-gradient(90deg, transparent, ${doctor.accentColor || '#2563eb'}60, transparent)`,
-          }}
-        />
       </div>
 
       {/* ── ДОВЕРИЕ ───────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2">
         <TrustBadge
-          icon="✅"
+          icon={<ShieldCheck className="w-4 h-4" />}
           title={i18nT('doctor.verified')}
           subtitle={i18nT('doctor.diplomaVerified')}
           color="#10b981"
         />
         {lastMedicalReviewDate ? (
           <TrustBadge
-            icon="🔬"
+            icon={<Microscope className="w-4 h-4" />}
             title={i18nT('blog.articleMedicalReview')}
             subtitle={lastMedicalReviewDate}
             color="#3b82f6"
           />
         ) : (
           <TrustBadge
-            icon="📝"
+            icon={<Newspaper className="w-4 h-4" />}
             title={i18nT('doctor.articles')}
             subtitle={`${articles.length} ${i18nT('common.articles')}`}
             color="#8b5cf6"
@@ -228,37 +230,29 @@ export function PremiumMobileProfile({
 
       {/* ── КНОПКА СВЯЗАТЬСЯ ──────────────────────────────────── */}
       {hasContacts && (
-        <div className="rounded-2xl overflow-hidden">
-          <ContactDoctorButton doctor={doctor} lang={lang} />
-        </div>
+        <ContactDoctorButton
+          doctor={doctor}
+          lang={lang}
+          className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 active:from-blue-800 active:to-blue-700 text-white font-bold rounded-2xl transition-all shadow-sm shadow-blue-200 btn-spring text-sm"
+        />
       )}
 
       {/* ── СКАЧАТЬ ВИЗИТКУ ───────────────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden">
-        <DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
-      </div>
+      <DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
 
       {/* ── ДОП. ИНФОРМАЦИЯ ───────────────────────────────────── */}
       {(doctor.workingHours || workplaceLabel || doctor.sameAs?.length > 0) && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {workplaceLabel && (
             <InfoRow
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              }
+              icon={<Building2 className="w-4 h-4" />}
               label={i18nT('doctor.workplace')}
               value={workplaceLabel}
             />
           )}
           {doctor.workingHours && (
             <InfoRow
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
+              icon={<CalendarClock className="w-4 h-4" />}
               label={i18nT('doctor.workingHours')}
               value={doctor.workingHours}
             />
@@ -278,8 +272,9 @@ export function PremiumMobileProfile({
                       href={link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg font-medium"
+                      className="inline-flex items-center gap-1 text-[11px] text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg font-medium"
                     >
+                      <ExternalLink className="w-3 h-3 shrink-0" />
                       {hostname}
                     </a>
                   );
@@ -296,28 +291,26 @@ export function PremiumMobileProfile({
 // ── Вспомогательные компоненты ────────────────────────────────
 
 function MetricChip({
+  icon,
   value,
   label,
-  icon,
-  accent,
 }: {
+  icon: React.ReactNode;
   value: string;
   label: string;
-  icon: string;
-  accent?: string;
 }) {
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 rounded-xl shrink-0"
+      className="flex items-center gap-2 px-3 py-2 rounded-xl min-w-0"
       style={{
         background: 'rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.12)',
       }}
     >
-      <span className="text-base">{icon}</span>
-      <div>
-        <p className="font-black text-white text-[12px] leading-none">{value}</p>
-        <p className="text-blue-200/50 text-[10px] mt-0.5 whitespace-nowrap">{label}</p>
+      <span className="text-white/55 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="font-black text-white text-[12px] leading-none truncate max-w-[140px]">{value}</p>
+        <p className="text-white/45 text-[10px] mt-0.5 whitespace-nowrap">{label}</p>
       </div>
     </div>
   );
@@ -329,7 +322,7 @@ function TrustBadge({
   subtitle,
   color,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle: string;
   color: string;
@@ -338,13 +331,13 @@ function TrustBadge({
     <div
       className="flex items-center gap-3 px-3 py-3 rounded-2xl border"
       style={{
-        background: `${color}08`,
-        borderColor: `${color}20`,
+        background: `${color}0c`,
+        borderColor: `${color}25`,
       }}
     >
       <div
-        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-base"
-        style={{ background: `${color}15` }}
+        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: `${color}18`, color }}
       >
         {icon}
       </div>

@@ -1,3 +1,5 @@
+import { Banknote, CreditCard, ShieldCheck, CalendarClock, Wallet, type LucideIcon } from 'lucide-react';
+
 interface Props {
   paymentMethods: string[];
   insuranceProviders: string[];
@@ -11,11 +13,11 @@ interface Props {
   };
 }
 
-const ICONS: Record<string, string> = {
-  cash: '💵',
-  card: '💳',
-  insurance: '🩺',
-  installment: '📆',
+const ICONS: Record<string, LucideIcon> = {
+  cash: Banknote,
+  card: CreditCard,
+  insurance: ShieldCheck,
+  installment: CalendarClock,
 };
 
 export default function PaymentInsuranceBadges({ paymentMethods, insuranceProviders, labels }: Props) {
@@ -26,15 +28,18 @@ export default function PaymentInsuranceBadges({ paymentMethods, insuranceProvid
       <div>
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em] mb-3">{labels.paymentTitle}</p>
         <div className="flex flex-wrap gap-2">
-          {methods.map((m) => (
-            <span
-              key={m}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600"
-            >
-              <span>{ICONS[m] || '💠'}</span>
-              {(labels as any)[m] || m}
-            </span>
-          ))}
+          {methods.map((m) => {
+            const Icon = ICONS[m] || Wallet;
+            return (
+              <span
+                key={m}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600"
+              >
+                <Icon className="w-3.5 h-3.5 text-slate-400" strokeWidth={2.25} />
+                {(labels as any)[m] || m}
+              </span>
+            );
+          })}
         </div>
       </div>
       {insuranceProviders && insuranceProviders.length > 0 && (
