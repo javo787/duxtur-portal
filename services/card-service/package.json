@@ -1,0 +1,18 @@
+{
+  "name": "duxtur-card-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Рендер PDF-визитки врача (Duxtur.org) через настоящий HTML/CSS в headless Chrome. Отдельный сервис — не Vercel serverless, чтобы не упираться в лимиты размера/времени функции для headless-браузера.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "preview": "node preview.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer-core": "^23.9.0"
+  }
+}
