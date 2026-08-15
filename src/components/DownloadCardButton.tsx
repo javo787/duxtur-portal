@@ -24,6 +24,43 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
     setLoading(true);
     setError(false);
 
+    // Основной путь: рендер через выделенный сервис (настоящий HTML/CSS
+    // в headless Chrome — фон-градиенты, PT Serif для имени, чёткие QR).
+    // Пока NEXT_PUBLIC_CARD_SERVICE_URL не настроен (сервис ещё не задеплоен
+    // на Render) — тихо уходим в fallback ниже, чтобы кнопка не сломалась.
+    const serviceUrl = process.env.NEXT_PUBLIC_CARD_SERVICE_URL;
+    if (serviceUrl) {
+      try {
+        const res = await fetch(`${serviceUrl}/card/${doctorSlug}?lang=${lang}`);
+        if (!res.ok) throw new Error(`Service responded ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vizitka-${doctorSlug}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(`/api/doctor/${doctorSlug}/card`);
+        } else {
+          fetch(`/api/doctor/${doctorSlug}/card`, { method: 'POST' }).catch(() => {});
+        }
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn('Card service failed, falling back to client-side render:', err);
+        // падаем ниже, на клиентский рендер
+      }
+    }
+
+    await handleDownloadFallback();
+  };
+
+  const handleDownloadFallback = async () => {
+    setLoading(true);
+    setError(false);
+
     try {
       const { pdf, Document, Page, View, Text, Image, StyleSheet, Font } =
         await import('@react-pdf/renderer');

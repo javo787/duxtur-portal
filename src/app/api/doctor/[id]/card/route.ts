@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import { rateLimit } from '@/lib/rate-limit';
+import { getMission, getCategoryKey } from '@/lib/doctor-mission';
 
 type Lang = 'ru' | 'uz' | 'kk' | 'ky' | 'tg';
 
@@ -41,13 +42,17 @@ export async function GET(
   }
 
   const articlesCount = await Article.countDocuments({ authorId: doctor._id });
+  const specialty = t(doctor.specialty, lang);
+  const bio = t(doctor.bio, lang);
 
   return NextResponse.json({
     name:         doctor.name            ?? '',
     image:        doctor.image           ?? null,
-    specialty:    t(doctor.specialty,  lang),
+    specialty,
     workplace:    t(doctor.workplace,  lang),
-    bio:          t(doctor.bio,        lang),
+    bio,
+    mission:      bio || getMission(doctor.specialty?.ru || specialty, lang),
+    categoryKey:  getCategoryKey(specialty, lang),
     experience:   doctor.experience      ?? 0,
     languages:    doctor.languages       ?? [],
     phone:        doctor.phone           ?? '',
@@ -57,6 +62,7 @@ export async function GET(
     workingHours: doctor.workingHours    ?? '',
     accentColor:  doctor.accentColor     ?? '#2563eb',
     cardTheme:    doctor.cardTheme       ?? 'dark',
+    licenseNumber: doctor.licenseNumber  ?? '',
     articlesCount,
     slug:         doctor.slug            ?? '',
   });
