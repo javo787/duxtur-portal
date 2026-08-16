@@ -26,6 +26,7 @@ import DoctorFAQ from './_components/DoctorFAQ';
 import PaymentInsuranceBadges from './_components/PaymentInsuranceBadges';
 import { IdCard } from 'lucide-react';
 import StarRating from '@/components/StarRating';
+import { getMission, getCategoryKey } from '@/lib/doctor-mission';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -59,23 +60,6 @@ function getReadingTime(article: any): number {
     Object.values(article.symptoms || {}).join(' ');
   const words = text.split(/\s+/).length;
   return Math.max(2, Math.ceil(words / 200));
-}
-
-function getMission(specialty: string, lang: string): string {
-  // TODO: Mission statements should ideally be translated per doctor by themselves.
-  // Using generic professional statements for now.
-  const t = getT(lang);
-  const missions: Record<string, string> = {
-    'кардиология': t('doctor.missionCardiology'),
-    'неврология': t('doctor.missionNeurology'),
-    'стоматология': t('doctor.missionDentistry'),
-    'педиатрия': t('doctor.missionPediatrics'),
-    'дерматология': t('doctor.missionDermatology'),
-    'офтальмология': t('doctor.missionOphthalmology'),
-    'хирургия': t('doctor.missionSurgery'),
-    'гинекология': t('doctor.missionGynecology'),
-  };
-  return missions[specialty.toLowerCase()] || t('doctor.genericMission');
 }
 
 export default async function DoctorProfilePage({ params }: Props) {
@@ -178,13 +162,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   const totalViews = articles.reduce((sum, a) => sum + (a.views || 0), 0);
   const mission = bioLabel || getMission(doctor.specialty?.ru || specialtyLabel, lang);
 
-  let categoryKey = 'general';
-  for (const [key, labels] of Object.entries(CATEGORY_LABELS)) {
-    if (labels[lang] === specialtyLabel || labels.ru === specialtyLabel) {
-      categoryKey = key;
-      break;
-    }
-  }
+  const categoryKey = getCategoryKey(specialtyLabel, lang);
 
   const jsonLd: any = {
     '@context': 'https://schema.org',

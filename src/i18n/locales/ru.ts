@@ -509,6 +509,8 @@ export const ru = {
     scanProfile: 'Сканируйте для полного профиля',
     allByQr: 'Все статьи по QR-коду',
     pdfDesc: 'PDF · 2 стороны · для печати и мессенджеров',
+    imageFormat: 'Изображение',
+    imageDesc: 'Изображение · 2 стороны · для мессенджеров и соцсетей',
     downloadCard: 'Скачать визитку',
     generating: 'Генерируем PDF…',
     downloadError: 'Ошибка. Попробуйте ещё раз',

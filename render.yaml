@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: duxtur-card-service
+    runtime: docker
+    rootDir: services/card-service
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /healthz
+    envVars:
+      - key: DUXTUR_BASE_URL
+        value: https://duxtur.org
+      - key: ALLOWED_ORIGINS
+        value: https://duxtur.org
+      - key: CHROMIUM_PATH
+        value: /usr/bin/chromium
