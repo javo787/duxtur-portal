@@ -19,6 +19,9 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
   const { t } = useT(lang);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [format, setFormat] = useState<'pdf' | 'image'>('pdf');
+
+  const serviceUrl = process.env.NEXT_PUBLIC_CARD_SERVICE_URL;
 
   const handleDownload = async () => {
     setLoading(true);
@@ -28,16 +31,15 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
     // в headless Chrome — фон-градиенты, PT Serif для имени, чёткие QR).
     // Пока NEXT_PUBLIC_CARD_SERVICE_URL не настроен (сервис ещё не задеплоен
     // на Render) — тихо уходим в fallback ниже, чтобы кнопка не сломалась.
-    const serviceUrl = process.env.NEXT_PUBLIC_CARD_SERVICE_URL;
     if (serviceUrl) {
       try {
-        const res = await fetch(`${serviceUrl}/card/${doctorSlug}?lang=${lang}`);
+        const res = await fetch(`${serviceUrl}/card/${doctorSlug}?lang=${lang}&format=${format}`);
         if (!res.ok) throw new Error(`Service responded ${res.status}`);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `vizitka-${doctorSlug}.pdf`;
+        a.download = `vizitka-${doctorSlug}.${format === 'image' ? 'png' : 'pdf'}`;
         a.click();
         URL.revokeObjectURL(url);
 
@@ -50,7 +52,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         return;
       } catch (err) {
         console.warn('Card service failed, falling back to client-side render:', err);
-        // падаем ниже, на клиентский рендер
+        // падаем ниже, на клиентский рендер (только PDF — см. комментарий у кнопок формата)
       }
     }
 
@@ -562,6 +564,28 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
 
   return (
     <div className="no-print flex flex-col gap-2">
+      {serviceUrl && (
+        <div className="flex gap-1.5 p-1 bg-gray-100 rounded-xl self-center">
+          <button
+            type="button"
+            onClick={() => setFormat('pdf')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              format === 'pdf' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormat('image')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              format === 'image' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            {t('share.imageFormat')}
+          </button>
+        </div>
+      )}
       <button
         onClick={handleDownload}
         disabled={loading}
@@ -592,7 +616,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         )}
       </button>
       <p className="text-xs text-center text-gray-500">
-        {t('share.pdfDesc')}
+        {format === 'image' && serviceUrl ? t('share.imageDesc') : t('share.pdfDesc')}
       </p>
     </div>
   );

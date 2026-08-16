@@ -69,6 +69,7 @@ app.get('/healthz', (req, res) => res.json({ ok: true }));
 app.get('/card/:doctorId', rateLimit, async (req, res) => {
   const { doctorId } = req.params;
   const lang = ['ru', 'uz', 'tg', 'kk', 'ky'].includes(req.query.lang) ? req.query.lang : 'ru';
+  const format = req.query.format === 'image' ? 'image' : 'pdf';
 
   let page;
   try {
@@ -80,23 +81,35 @@ app.get('/card/:doctorId', rateLimit, async (req, res) => {
     }
     const doctor = await dataRes.json();
 
-    const html = renderCardHTML(doctor, lang, DUXTUR_BASE_URL);
+    const html = renderCardHTML(doctor, lang, DUXTUR_BASE_URL, format === 'image' ? 'image' : 'print');
 
     const browser = await getBrowser();
     page = await browser.newPage();
+    // 4x — печатное качество для скачивания как изображения (тонкие линии
+    // QR и шрифт остаются чёткими даже если пользователь откроет фото на весь экран).
+    await page.setViewport({ width: 340, height: 400, deviceScaleFactor: format === 'image' ? 4 : 2 });
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
+    // Ждём, пока скрипт внутри страницы подгонит размер шрифта имени под ширину —
+    // без этого можно захватить кадр до того, как он отработает.
+    await page.waitForFunction('window.__cardReady === true', { timeout: 5000 }).catch(() => {});
 
-    const pdf = await page.pdf({
-      width: '90mm',
-      height: '50mm',
-      printBackground: true,
-      pageRanges: '1-2',
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
-    });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="vizitka-${doctor.slug || doctorId}.pdf"`);
-    res.send(pdf);
+    let output;
+    if (format === 'image') {
+      output = await page.screenshot({ type: 'png', fullPage: true });
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', `attachment; filename="vizitka-${doctor.slug || doctorId}.png"`);
+    } else {
+      output = await page.pdf({
+        width: '90mm',
+        height: '50mm',
+        printBackground: true,
+        pageRanges: '1-2',
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="vizitka-${doctor.slug || doctorId}.pdf"`);
+    }
+    res.send(output);
   } catch (err) {
     console.error('Card render error:', err);
     res.status(500).json({ error: 'Render failed' });

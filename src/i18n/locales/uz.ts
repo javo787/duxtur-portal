@@ -508,6 +508,8 @@ export const uz = {
     scanProfile: 'Toʻliq profil uchun skanerlang',
     allByQr: 'Barcha maqolalar QR-kod orqali',
     pdfDesc: 'PDF · 2 tomonlama · chop etish va messenjerlar uchun',
+    imageFormat: 'Rasm',
+    imageDesc: 'Rasm · 2 tomonlama · messenjerlar va ijtimoiy tarmoqlar uchun',
     downloadCard: 'Vizitkani yuklab olish',
     generating: 'PDF yaratilmoqda…',
     downloadError: 'Xatolik. Qayta urinib koʻring',
