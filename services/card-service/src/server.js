@@ -95,17 +95,22 @@ app.get('/card/:doctorId', rateLimit, async (req, res) => {
 
     let output;
     if (format === 'image') {
-      output = await page.screenshot({ type: 'png', fullPage: true });
+      // page.screenshot()/page.pdf() return Uint8Array (not Node Buffer) since
+      // puppeteer-core v22+ (puppeteer/puppeteer#12823). Buffer.isBuffer() on a
+      // plain Uint8Array is false, so res.send() below would silently fall
+      // back to res.json() and JSON-serialize the bytes while keeping the
+      // already-set Content-Type — a "PDF"/"PNG" that's actually JSON text.
+      output = Buffer.from(await page.screenshot({ type: 'png', fullPage: true }));
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Content-Disposition', `attachment; filename="vizitka-${doctor.slug || doctorId}.png"`);
     } else {
-      output = await page.pdf({
+      output = Buffer.from(await page.pdf({
         width: '90mm',
         height: '50mm',
         printBackground: true,
         pageRanges: '1-2',
         margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      });
+      }));
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="vizitka-${doctor.slug || doctorId}.pdf"`);
     }
