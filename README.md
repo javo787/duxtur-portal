@@ -287,8 +287,8 @@ NEXTAUTH_SECRET=your-secret-key-min-32-chars
 NEXTAUTH_URL=http://localhost:3000
 
 # Google OAuth
-GOOGLE_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_SECRET=your-google-client-secret
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # ─────────────────────────────────────────
 # EMAIL & NOTIFICATIONS

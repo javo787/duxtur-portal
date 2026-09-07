@@ -1,6 +1,8 @@
 'use server';
 
 import { model } from '@/lib/gemini';
+import { requireRole } from '@/lib/authGuards';
+import { rateLimit } from '@/lib/rate-limit';
 
 const languageNames: Record<string, string> = {
   ru: 'Russian',
@@ -12,6 +14,10 @@ const languageNames: Record<string, string> = {
 
 // ─── РЕЖИМ 1: Написать статью из черновика ───
 export async function processMedicalDraft(draftText: string, language: string = 'ru') {
+  const { email } = await requireRole('doctor');
+  const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
+  if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
+
   console.log(`--- [WRITE MODE] Язык: ${language}`);
   const targetLanguage = languageNames[language] || 'Russian';
 
@@ -62,6 +68,10 @@ OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
 
 // ─── РЕЖИМ 2: Обработать готовую статью ───
 export async function processMedicalArticle(articleText: string, language: string = 'ru') {
+  const { email } = await requireRole('doctor');
+  const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
+  if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
+
   console.log(`--- [PROCESS MODE] Язык: ${language}, Длина: ${articleText.length}`);
   const targetLanguage = languageNames[language] || 'Russian';
 
@@ -111,6 +121,10 @@ OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
 
 // ─── РЕЖИМ 3: Перевести статью ───
 export async function translateMedicalArticle(articleText: string, language: string = 'ru') {
+  const { email } = await requireRole('doctor');
+  const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
+  if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
+
   console.log(`--- [TRANSLATE MODE] Язык: ${language}, Длина: ${articleText.length}`);
   const targetLanguage = languageNames[language] || 'Russian';
 
