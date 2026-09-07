@@ -112,7 +112,6 @@ ClinicSchema.index(
   },
   { default_language: 'russian' }
 );
-ClinicSchema.index({ slug: 1 });
 ClinicSchema.index({ status: 1 });
 ClinicSchema.index({ city: 1 });
 ClinicSchema.index({ status: 1, city: 1, type: 1, specialties: 1, 'rating.avg': -1 });
