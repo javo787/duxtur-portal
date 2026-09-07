@@ -1,7 +1,6 @@
 import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
-import { auth } from '@/auth';
 import { BASE_URL } from "@/lib/seo";
 import { Locale } from "@/i18n";
 
@@ -37,7 +36,6 @@ export default async function LangLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = (await params) as { lang: Locale };
-  const session = await auth();
 
   return (
     <html lang={lang} dir="ltr" suppressHydrationWarning>
@@ -70,7 +68,7 @@ export default async function LangLayout({
         />
       </head>
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
-        <SessionProvider session={session}>
+        <SessionProvider>
           {children}
         </SessionProvider>
       </body>

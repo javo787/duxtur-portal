@@ -30,6 +30,17 @@ import { getMission, getCategoryKey } from '@/lib/doctor-mission';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
+// Without generateStaticParams, `revalidate` below is silently ignored and
+// this route renders 100% dynamically on every request (Next.js requirement).
+// Empty array + dynamicParams keeps this safe for a large/growing doctor list:
+// nothing is pre-built, but the first visit to any doctor gets cached for
+// `revalidate` seconds instead of hitting Mongo on every single hit/prefetch.
+export async function generateStaticParams() {
+  return [];
+}
+export const dynamicParams = true;
+export const revalidate = 21600; // matches the Cache-Control already set in next.config.ts for /doctor/:slug
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await dbConnect();
   const { id, lang } = await params;
@@ -244,13 +255,13 @@ export default async function DoctorProfilePage({ params }: Props) {
       {/* HEADER */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 no-print">
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between">
-          <Link href={`/${lang}`} className="text-base md:text-lg font-black tracking-tight text-blue-600 shrink-0">
+          <Link href={`/${lang}`} prefetch={false} className="text-base md:text-lg font-black tracking-tight text-blue-600 shrink-0">
             duxtur<span className="text-gray-300 font-light">.org</span>
           </Link>
 
           <nav className="hidden sm:flex items-center text-xs text-gray-400 gap-1.5 overflow-hidden" itemScope itemType="https://schema.org/BreadcrumbList">
             <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <Link href={`/${lang}`} itemProp="item" className="hover:text-gray-600 transition">
+              <Link href={`/${lang}`} itemProp="item" prefetch={false} className="hover:text-gray-600 transition">
                 <span itemProp="name">{t('nav.home')}</span>
               </Link>
               <meta itemProp="position" content="1" />
@@ -259,7 +270,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
             <span itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-gray-600 transition">
+              <Link href={`/${lang}/authors`} itemProp="item" prefetch={false} className="hover:text-gray-600 transition">
                 <span itemProp="name">{t('nav.authors')}</span>
               </Link>
               <meta itemProp="position" content="2" />
@@ -275,6 +286,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
           <Link
             href={`/${lang}/authors`}
+            prefetch={false}
             className="text-sm text-gray-400 hover:text-gray-700 transition font-medium flex items-center gap-1.5 shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,14 +318,14 @@ export default async function DoctorProfilePage({ params }: Props) {
       >
         <ol className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
           <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-            <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+            <Link href={`/${lang}`} itemProp="item" prefetch={false} className="hover:text-blue-600 transition font-medium">
               <span itemProp="name">Duxtur.org</span>
             </Link>
             <meta itemProp="position" content="1" />
           </li>
           <li>/</li>
           <li itemScope itemType="https://schema.org/ListItem" itemProp="itemListElement">
-            <Link href={`/${lang}/authors`} itemProp="item" className="hover:text-blue-600 transition font-medium">
+            <Link href={`/${lang}/authors`} itemProp="item" prefetch={false} className="hover:text-blue-600 transition font-medium">
               <span itemProp="name">{t('nav.authors')}</span>
             </Link>
             <meta itemProp="position" content="2" />
@@ -453,6 +465,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                   <Link
                     key={article._id}
                     href={`/${lang}/blog/${article.slug}`}
+                    prefetch={false}
                     className="group flex bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                   >
                     {/* Картинка */}
@@ -554,7 +567,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <h3 className="text-lg font-black text-gray-900 mb-6">{t('doctor.alsoLike')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {articles.slice(0, 3).map((a) => (
-                  <Link key={a._id} href={`/${lang}/blog/${a.slug}`} className="group block">
+                  <Link key={a._id} href={`/${lang}/blog/${a.slug}`} prefetch={false} className="group block">
                     <div className="aspect-video rounded-xl overflow-hidden mb-3 relative">
                       <Image
                         src={a.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
