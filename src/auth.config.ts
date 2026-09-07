@@ -18,8 +18,13 @@ export const authConfig = {
         return true;
       }
 
-      if (pathname.includes('/admin/write')) {
-        if (!isLoggedIn) {
+      // Кабинет врача — ровно "/xx/admin" без вложенных сегментов.
+      // Точный паттерн вместо .includes('/admin'), чтобы не задеть
+      // /admin/portal (обработан выше) и /clinic/admin.
+      // (Старая проверка на "/admin/write" была мёртвой веткой — такого
+      // роута больше нет, WriteTab теперь просто вкладка внутри /admin.)
+      if (/^\/[a-z]{2}\/admin\/?$/.test(pathname)) {
+        if (!isLoggedIn || role !== 'doctor') {
           const lang = pathname.split('/')[1] || 'ru';
           return Response.redirect(new URL(`/${lang}/login`, nextUrl));
         }

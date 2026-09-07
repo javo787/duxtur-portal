@@ -7,6 +7,7 @@ import User from '@/models/User';
 import Clinic from '@/models/Clinic';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
+import { requireRole } from '@/lib/authGuards';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -188,6 +189,7 @@ async function sendDoctorStatusEmail(
 }
 
 export async function updateDoctorStatus(id: string, status: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   await Doctor.findByIdAndUpdate(id, { status });
 
@@ -202,6 +204,7 @@ export async function updateDoctorStatus(id: string, status: string) {
 }
 
 export async function approveClinic(id: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   await Clinic.findByIdAndUpdate(id, { status: 'approved' });
   await sendClinicStatusEmail(id, 'approved').catch(err =>
@@ -211,6 +214,7 @@ export async function approveClinic(id: string) {
 }
 
 export async function rejectClinic(id: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   await Clinic.findByIdAndUpdate(id, { status: 'rejected' });
   await sendClinicStatusEmail(id, 'rejected').catch(err =>
@@ -220,6 +224,7 @@ export async function rejectClinic(id: string) {
 }
 
 export async function deleteClinic(id: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   const clinic = await Clinic.findById(id);
   if (!clinic) return;
@@ -231,6 +236,7 @@ export async function deleteClinic(id: string) {
 }
 
 export async function banClinic(id: string, banned: boolean) {
+  await requireRole('portal_admin');
   await dbConnect();
   const status = banned ? 'banned' : 'approved';
   await Clinic.findByIdAndUpdate(id, { status });
@@ -238,6 +244,7 @@ export async function banClinic(id: string, banned: boolean) {
 }
 
 export async function deleteDoctor(id: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   const doctor = await Doctor.findById(id);
   if (!doctor) return;
@@ -251,12 +258,14 @@ export async function deleteDoctor(id: string) {
 }
 
 export async function deleteArticle(id: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   await Article.findByIdAndDelete(id);
   revalidatePath('/admin/portal');
 }
 
 export async function toggleDoctorBan(id: string, banned: boolean) {
+  await requireRole('portal_admin');
   await dbConnect();
   const status = banned ? 'banned' : 'approved';
   await Doctor.findByIdAndUpdate(id, { status });
@@ -272,12 +281,14 @@ export async function toggleDoctorBan(id: string, banned: boolean) {
 }
 
 export async function approveArticle(articleId: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   await Article.findByIdAndUpdate(articleId, { isVerified: true });
   revalidatePath('/admin/portal');
 }
 
 export async function approveReview(reviewId: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   const Review = (await import('@/models/Review')).default;
   const review = await Review.findById(reviewId);
@@ -312,6 +323,7 @@ export async function approveReview(reviewId: string) {
 }
 
 export async function deleteReview(reviewId: string) {
+  await requireRole('portal_admin');
   await dbConnect();
   const Review = (await import('@/models/Review')).default;
   const review = await Review.findById(reviewId);
