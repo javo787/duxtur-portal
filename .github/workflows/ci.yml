@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    # В проекте уже есть ~480 существующих ошибок eslint (в основном
+    # @typescript-eslint/no-explicit-any) — линтить весь репозиторий сразу
+    # значило бы, что джоба красная с первого дня на любом PR, даже без
+    # единой новой строчки. Поэтому линтим только файлы, изменённые в
+    # конкретном PR/пуше: новый код обязан быть чистым, разбор старого
+    # долга — отдельная, не блокирующая задача.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint changed files
+        run: |
+          BASE="${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}"
+          if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then
+            FILES=$(git diff --name-only "$BASE" "${{ github.sha }}" -- '*.ts' '*.tsx')
+          else
+            echo "Нет базы для сравнения — линтим весь проект."
+            FILES=$(git ls-files '*.ts' '*.tsx')
+          fi
+          if [ -z "$FILES" ]; then
+            echo "Нет .ts/.tsx файлов для проверки."
+            exit 0
+          fi
+          echo "$FILES" | xargs npx eslint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+
+  build:
+    runs-on: ubuntu-latest
+    # generateStaticParams в blog/[slug] стучится в MongoDB во время сборки —
+    # поднимаем одноразовый пустой инстанс, реальные данные не нужны, важно
+    # чтобы просто был жив коннекшн. Транзакции при сборке не используются,
+    # поэтому replica set не нужен.
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})' --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Значения ниже — заглушки только для сборки в CI, не реальные
+          # секреты. Продакшн-значения живут в Vercel env vars.
+          MONGODB_URI: mongodb://127.0.0.1:27017/duxtur_ci
+          NEXTAUTH_SECRET: ci-only-dummy-secret-not-used-in-prod-32ch
+          NEXTAUTH_URL: http://localhost:3000
+          GOOGLE_CLIENT_ID: ci-dummy-client-id
+          GOOGLE_CLIENT_SECRET: ci-dummy-client-secret
+          RESEND_API_KEY: re_ci_dummy_key
+          TELEGRAM_BOT_TOKEN: ci-dummy-bot-token
+          TELEGRAM_BOT_SECRET: ci-dummy-webhook-secret
+          TELEGRAM_ADMIN_CHAT_ID: "123456789"
+          ANTHROPIC_API_KEY: sk-ant-ci-dummy-key
+          GOOGLE_GEMINI_API_KEY: ci-dummy-gemini-key
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci-dummy-cloud
+          CLOUDINARY_API_KEY: ci-dummy-cloudinary-key
+          CLOUDINARY_API_SECRET: ci-dummy-cloudinary-secret
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+          NODE_ENV: production

@@ -1,117 +1,24 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signIn } from 'next-auth/react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
-import { ALLOWED_CITIES, CLINIC_TYPES } from '@/lib/clinic-constants';
+import { ALLOWED_CITIES } from '@/lib/clinic-constants';
 import { getT } from '@/i18n';
-import { getCachedMap, cacheMap } from '@/lib/indexeddb-cache';
-
-const AUTOSAVE_KEY = 'duxtur_clinic_reg_draft';
-const AUTOSAVE_INTERVAL = 30_000;
-const AUTOSAVE_EXPIRY_DAYS = parseInt(process.env.NEXT_PUBLIC_DRAFT_TTL_DAYS || '7');
+import { Spinner, ClinicPreviewCard } from './_components/PreviewAndSpinner';
+import { useOnlineStatus } from './_hooks/useOnlineStatus';
+import { useMapPreview } from './_hooks/useMapPreview';
+import { useClinicClaimSearch } from './_hooks/useClinicClaimSearch';
+import { useAutosaveDraft } from './_hooks/useAutosaveDraft';
 
 const LocationPickerModal = dynamic(
   () => import('@/app/[lang]/admin/_components/_profile-sections/LocationPickerModal'),
   { ssr: false }
 );
-
-// ─── Spinner ────────────────────────────────────────────────────────────────
-const Spinner = ({ dark = false }: { dark?: boolean }) => (
-  <motion.svg
-    animate={{ rotate: 360 }}
-    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-    className={`h-5 w-5 ${dark ? 'text-slate-900' : 'text-white'}`}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    />
-  </motion.svg>
-);
-
-// ─── Live preview card ───────────────────────────────────────────────────────
-function ClinicPreviewCard({
-  name, type, city, logo, t
-}: { name: string; type: string; city: string; logo: string; t: any }) {
-  const typeObj = CLINIC_TYPES.find((t) => t.id === type);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative rounded-[32px] overflow-hidden border border-white/40 bg-white/60 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all group hover:shadow-[0_20px_50px_rgba(37,99,235,0.1)]"
-    >
-      {/* mini cover */}
-      <div className="h-20 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600" />
-
-      {/* logo */}
-      <motion.div
-        layoutId="clinic-logo"
-        className="absolute top-10 left-6 w-20 h-20 rounded-[24px] border-4 border-white bg-white shadow-2xl overflow-hidden flex items-center justify-center text-4xl"
-      >
-        {logo ? (
-          <img src={logo} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span>{typeObj?.emoji || '🏥'}</span>
-        )}
-      </motion.div>
-
-      {/* verified badge */}
-      <motion.div
-        initial={{ x: 20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="absolute top-4 right-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-full flex items-center gap-1.5 shadow-xl shadow-blue-500/30"
-      >
-        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-        </svg>
-        {t('common.verified')}
-      </motion.div>
-
-      <div className="pt-12 pb-8 px-8">
-        <motion.p
-          layout
-          className="font-black text-slate-900 text-xl truncate leading-tight tracking-tight"
-        >
-          {name || t('clinic.clinicName')}
-        </motion.p>
-        <div className="flex items-center gap-3 mt-3 flex-wrap">
-          <span className="text-[12px] bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-black uppercase tracking-wider">
-            {typeObj ? t(`clinic.type_${typeObj.id}`) : t('clinic.type_clinic')}
-          </span>
-          {city && (
-            <span className="text-[12px] text-slate-500 font-bold flex items-center gap-1.5">
-              <span className="text-base">📍</span> {city}
-            </span>
-          )}
-        </div>
-        <div className="mt-5 flex items-center gap-1.5 text-amber-500">
-          {'★★★★★'.split('').map((s, i) => (
-            <motion.span
-              key={i}
-              initial={{ scale: 0, rotate: -30 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.1 * i, type: "spring" }}
-              className="text-lg"
-            >
-              {s}
-            </motion.span>
-          ))}
-          <span className="text-slate-400 text-[12px] ml-2 font-black uppercase tracking-widest">{t('clinic.newClinic')}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RegisterClinicForm({ lang }: { lang: string }) {
@@ -147,36 +54,6 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
   const [submitError, setSubmitError]         = useState<string | null>(null);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
-  const [lastSaved, setLastSaved] = useState<number | null>(null);
-
-  const [claimCandidates, setClaimCandidates] = useState<Record<string, any>[]>([]);
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
-  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
-
-  // Auto-load claimed clinic if slug is provided
-  useEffect(() => {
-    if (claimSlug && claimCandidates.length === 0) {
-      const fetchClaimed = async () => {
-        try {
-          const res = await fetch(`/api/clinic/check-existing`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: claimSlug, city: formData.city }), // fuzzy search will likely find it
-          });
-          const data = await res.json();
-          const target = data.candidates?.find((c: any) => c.slug === claimSlug);
-          if (target) {
-            setClaimCandidates(data.candidates);
-            setSelectedClaimId(target._id);
-          }
-        } catch (err) {
-          console.error('Failed to pre-load claimed clinic', err);
-        }
-      };
-      fetchClaimed();
-    }
-  }, [claimSlug]);
-
   const initialData = {
     name:       '',
     type:       'clinic',
@@ -191,112 +68,26 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
     password:   '',
   };
 
-  const [mapPreviewLoading, setMapPreviewLoading] = useState(false);
-  const [mapPreviewError, setMapPreviewError] = useState(false);
-  const [isCaching, setIsCaching] = useState(false);
-  const [isCached, setIsCached] = useState(false);
-  const [mapPreviewUrl, setMapPreviewUrl] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const isOnline = useOnlineStatus();
+  const { formData, setFormData, lastSaved, expiryWarning, clearDraft, discardDraft: discardDraftBase } =
+    useAutosaveDraft(initialData, t);
+  const {
+    mapPreviewUrl, mapPreviewLoading, mapPreviewError, isCaching, isCached,
+    notifyCoordinatesChanged, handleRetry, handleImageError, handleImageLoad,
+  } = useMapPreview(formData.coordinates);
+  const {
+    claimCandidates, selectedClaimId, setSelectedClaimId, isCheckingExisting, checkExistingClinics,
+  } = useClinicClaimSearch(formData, claimSlug);
 
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  const [formData, setFormData] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(AUTOSAVE_KEY);
-      if (saved) {
-        try {
-          const { data, timestamp } = JSON.parse(saved);
-          const ageInDays = (Date.now() - timestamp) / (1000 * 60 * 60 * 24);
-          if (ageInDays < AUTOSAVE_EXPIRY_DAYS) {
-            return data;
-          } else {
-            localStorage.removeItem(AUTOSAVE_KEY);
-          }
-        } catch {}
-      }
-    }
-    return initialData;
-  });
-
-  useEffect(() => {
-    if (formData.coordinates.lat === 0) return;
-    const key = `map_${formData.coordinates.lat}_${formData.coordinates.lng}`;
-    const primaryUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${formData.coordinates.lat},${formData.coordinates.lng}&zoom=15&size=600x300&markers=${formData.coordinates.lat},${formData.coordinates.lng},red-pushpin`;
-
-    const loadMap = async () => {
-      const cached = await getCachedMap(key, 7);
-      if (cached) {
-        setMapPreviewUrl(cached);
-        setMapPreviewLoading(false);
-        setMapPreviewError(false);
-        setIsCached(true);
-      } else {
-        setMapPreviewUrl(primaryUrl);
-        setIsCached(false);
-      }
-    };
-    loadMap();
-  }, [formData.coordinates]);
-
-  const getExpiryWarning = useCallback((savedTime: number) => {
-    const ageInDays = (Date.now() - savedTime) / (1000 * 60 * 60 * 24);
-    if (ageInDays > AUTOSAVE_EXPIRY_DAYS - 1) return t('clinic.draftExpiresToday') || 'Draft expires today';
-    if (ageInDays > AUTOSAVE_EXPIRY_DAYS - 2) return t('clinic.draftExpiresTomorrow') || 'Draft expires tomorrow';
-    return null;
-  }, [t]);
-
-  // Load timestamp on mount if draft exists
-  useEffect(() => {
-    const saved = localStorage.getItem(AUTOSAVE_KEY);
-    if (saved) {
-      try {
-        const { timestamp } = JSON.parse(saved);
-        setLastSaved(timestamp);
-      } catch {}
-    }
-  }, []);
-
-  const expiryWarning = lastSaved ? getExpiryWarning(lastSaved) : null;
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: Record<string, any>) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: unknown) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (submitError) setSubmitError(null);
-    if (field === 'coordinates' && value.lat !== 0) {
-      setMapPreviewLoading(true);
-      setMapPreviewError(false);
+    if (field === 'coordinates' && (value as { lat: number } | undefined)?.lat !== 0) {
+      notifyCoordinatesChanged();
     }
   };
 
-  const discardDraft = () => {
-    if (confirm(t('common.confirm') || 'Are you sure?')) {
-      localStorage.removeItem(AUTOSAVE_KEY);
-      setFormData(initialData);
-      setLastSaved(null);
-      setStep(1);
-    }
-  };
-
-  // Autosave
-  const autosave = useCallback(() => {
-    const timestamp = Date.now();
-    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ data: formData, timestamp }));
-    setLastSaved(timestamp);
-  }, [formData]);
-
-  useEffect(() => {
-    const timer = setInterval(autosave, AUTOSAVE_INTERVAL);
-    return () => clearInterval(timer);
-  }, [autosave]);
+  const discardDraft = () => discardDraftBase(() => setStep(1));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -307,28 +98,6 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const checkExistingClinics = async () => {
-    if (!formData.name || !formData.city) return;
-    setIsCheckingExisting(true);
-    try {
-      const res = await fetch('/api/clinic/check-existing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          city: formData.city,
-        }),
-      });
-      const data = await res.json();
-      setClaimCandidates(data.candidates || []);
-    } catch (error) {
-      console.error('Error checking existing clinics:', error);
-    } finally {
-      setIsCheckingExisting(false);
-    }
-  };
 
   const goToStep = async (n: 1 | 2 | 3) => {
     if (step === 1 && n === 2) {
@@ -407,7 +176,7 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
       });
       const data = await res.json();
       if (res.ok) {
-        localStorage.removeItem(AUTOSAVE_KEY);
+        clearDraft();
         // Automatic login
         await signIn('credentials', {
           email: formData.email,
@@ -677,7 +446,7 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
                 {STEPS.map((s, i) => (
                   <button
                     key={s.num}
-                    onClick={() => s.num < step && goToStep(s.num as any)}
+                    onClick={() => s.num < step && goToStep(s.num as 1 | 2 | 3)}
                     className="relative z-10"
                   >
                     <motion.div
@@ -981,7 +750,7 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
                                   <text x="300" y="170" textAnchor="middle" fontSize="12" fill="#cbd5e1">{t('common.error') || 'Map Error'}</text>
                                 </svg>
                                 <button
-                                  onClick={() => { setMapPreviewError(false); setMapPreviewLoading(true); }}
+                                  onClick={handleRetry}
                                   className="absolute bottom-4 bg-white/80 backdrop-blur px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm border border-slate-200 hover:bg-white"
                                 >
                                   {t('common.retry') || 'Retry'}
@@ -992,17 +761,8 @@ function RegisterClinicFormContent({ lang }: { lang: string }) {
                                 src={mapPreviewUrl || ''}
                                 alt="Map preview"
                                 className="w-full h-full object-cover"
-                                onLoad={async () => {
-                                  setMapPreviewLoading(false);
-                                  if (mapPreviewUrl && mapPreviewUrl.startsWith('http')) {
-                                    setIsCaching(true);
-                                    const key = `map_${formData.coordinates.lat}_${formData.coordinates.lng}`;
-                                    const success = await cacheMap(key, mapPreviewUrl);
-                                    setIsCaching(false);
-                                    if (success) setIsCached(true);
-                                  }
-                                }}
-                                onError={() => { setMapPreviewLoading(false); setMapPreviewError(true); }}
+                                onLoad={handleImageLoad}
+                                onError={handleImageError}
                               />
                             )}
 
