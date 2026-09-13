@@ -30,16 +30,17 @@ import { getMission, getCategoryKey } from '@/lib/doctor-mission';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
-// Without generateStaticParams, `revalidate` below is silently ignored and
-// this route renders 100% dynamically on every request (Next.js requirement).
-// Empty array + dynamicParams keeps this safe for a large/growing doctor list:
-// nothing is pre-built, but the first visit to any doctor gets cached for
-// `revalidate` seconds instead of hitting Mongo on every single hit/prefetch.
-export async function generateStaticParams() {
-  return [];
-}
-export const dynamicParams = true;
-export const revalidate = 21600; // matches the Cache-Control already set in next.config.ts for /doctor/:slug
+// ВРЕМЕННЫЙ ОТКАТ (2026-09-13): generateStaticParams/revalidate ниже вызывали
+// "Page changed from static to dynamic at runtime, reason: headers" — что-то
+// в дереве рендера (сам код страницы чист, вероятный источник — авто-
+// инструментация Sentry через withSentryConfig) всё ещё дёргает headers()
+// после того как страница уже помечена ISR-кандидатом, и Next.js это
+// специально запрещает. Возвращено к полностью динамическому рендерингу
+// (как было до PR #82) — работает, просто без ISR-кэша. TODO: правильный
+// фикс — кэшировать сам запрос к Doctor через unstable_cache вместо кэша
+// всей страницы, это даёт тот же выигрыш по нагрузке на Mongo, но не
+// конфликтует с headers().
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   await dbConnect();
