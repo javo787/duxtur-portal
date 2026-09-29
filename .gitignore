@@ -46,3 +46,7 @@ dev_server_*.log
 next-env.d.ts
 
 /src/generated/prisma
+
+# ingest pipeline output/cache
+import-output/
+.ingest-cache/

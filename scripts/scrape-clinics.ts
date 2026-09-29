@@ -337,7 +337,6 @@ async function main() {
         importSource: 'ydoc',
         dataSource:   'scraped',
         importedAt:   new Date(),
-        rating:       { avg: 0, count: raw.reviewCount || 0 },
       });
 
       log.success('   Saved to MongoDB');
