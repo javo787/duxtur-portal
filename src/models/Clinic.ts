@@ -31,7 +31,7 @@ const ClinicSchema = new mongoose.Schema({
   },
   importSource: {
     type: String,
-    enum: ['2gis', 'ydoc', 'manual'],
+    enum: ['2gis', 'ydoc', 'osm', 'website', 'manual'],
     default: 'manual'
   },
   dataSource: {
@@ -39,6 +39,8 @@ const ClinicSchema = new mongoose.Schema({
     enum: ['scraped', 'self_registered', 'admin_verified'],
     default: 'self_registered'
   },
+  importSourceId: { type: String, default: '' },
+  importSourceUrl: { type: String, default: '' },
   importedAt: { type: Date },
   logo: { type: String, default: '' },
   coverImage: { type: String, default: '' },
@@ -113,6 +115,7 @@ ClinicSchema.index(
   { default_language: 'russian' }
 );
 ClinicSchema.index({ status: 1 });
+ClinicSchema.index({ importSource: 1, importSourceId: 1 });
 ClinicSchema.index({ city: 1 });
 ClinicSchema.index({ status: 1, city: 1, type: 1, specialties: 1, 'rating.avg': -1 });
 
