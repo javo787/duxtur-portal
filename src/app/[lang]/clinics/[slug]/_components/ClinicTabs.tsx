@@ -8,6 +8,7 @@ import ClinicGallery from './ClinicGallery';
 import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
+import { hasRealWorkingHours } from '@/lib/clinic-hours';
 
 interface MultilingualString {
   ru: string;
@@ -181,7 +182,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                    </div>
                 </div>
 
-                {clinic.status !== 'pre_imported' && (
+                {hasRealWorkingHours(clinic) && (
                 <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.workingHours')}</h2>
                    <div className="space-y-1">
