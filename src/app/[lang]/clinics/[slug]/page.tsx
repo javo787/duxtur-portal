@@ -59,7 +59,8 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
 
   // Build JSON-LD MedicalClinic schema
   let openingHours: string[] = [];
-  if (clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
+  // pre_imported clinics carry only schema defaults (08:00-18:00 every day): never publish them as real hours.
+  if (clinic.status !== 'pre_imported' && clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
     openingHours = Object.entries(clinic.workingHours)
       .filter(([_, v]: any) => v && v.isWorking)
       .map(([day, v]: any) => {

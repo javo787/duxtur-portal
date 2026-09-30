@@ -24,6 +24,7 @@ interface Clinic {
   quote?: MultilingualString;
   history?: MultilingualString;
   specialties: string[];
+  status?: string;
   workingHours?: Record<string, { open: string; close: string; isWorking: boolean }>;
   address: string;
   phone: string;
@@ -180,6 +181,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                    </div>
                 </div>
 
+                {clinic.status !== 'pre_imported' && (
                 <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.workingHours')}</h2>
                    <div className="space-y-1">
@@ -200,6 +202,7 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                       })}
                    </div>
                 </div>
+                )}
 
                 <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.contacts')}</h2>
