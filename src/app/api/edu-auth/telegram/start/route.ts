@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { createLogin, START_PREFIX } from '@/lib/edu-telegram-login';
 import { eduPreflight, withEduCors } from '@/lib/edu-cors';
+import { eduBotUsername } from '@/lib/edu-telegram-bot';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +21,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { token, pollSecret, expiresInSec } = await createLogin();
-    const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'duxtur_bot';
-    const botUrl = `https://t.me/${bot}?start=${START_PREFIX}${token}`;
+    const botUrl = `https://t.me/${eduBotUsername()}?start=${START_PREFIX}${token}`;
     return withEduCors(req, NextResponse.json({ token, pollSecret, botUrl, expiresInSec }));
   } catch (error) {
     Sentry.captureException(error);
