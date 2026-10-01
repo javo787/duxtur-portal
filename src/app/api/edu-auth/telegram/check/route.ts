@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     const customToken = await createEduCustomToken(`tg_${tg.id}`, {
       provider: 'telegram',
       telegramId: tg.id,
+      tgName: displayName(tg).slice(0, 100),
     });
     return withEduCors(
       req,
