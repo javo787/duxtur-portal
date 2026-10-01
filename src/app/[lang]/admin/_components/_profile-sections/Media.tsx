@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { uploadImageToCloudinary } from '@/app/actions/upload-image';
+import { getCloudinaryUploadSignature } from '@/app/actions/cloudinary-signature';
+import { uploadFileDirectToCloudinary } from '@/lib/cloudinary-direct-upload';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import { SectionHeader, Spinner } from './_shared';
 
@@ -9,9 +10,13 @@ interface Props {
   setProfile: (p: any) => void;
 }
 
+const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 МБ
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 МБ — с запасом для минуты видео в хорошем качестве
+
 export default function Media({ profile, setProfile }: Props) {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoPlaybackError, setVideoPlaybackError] = useState(false);
@@ -22,15 +27,19 @@ export default function Media({ profile, setProfile }: Props) {
     setUploadingGallery(true);
     setGalleryError(null);
     try {
+      const tooBig = Array.from(files).find((f) => f.size > MAX_IMAGE_SIZE);
+      if (tooBig) {
+        setGalleryError(`Файл «${tooBig.name}» больше 15 МБ — сожмите фото и попробуйте снова`);
+        return;
+      }
+
+      const sig = await getCloudinaryUploadSignature({ folder: 'doctors', resourceType: 'image' });
       const results = await Promise.all(
-        Array.from(files).map(async (file) => {
-          const fd = new FormData();
-          fd.append('file', file);
-          return uploadImageToCloudinary(fd, 'doctors');
-        }),
+        Array.from(files).map((file) => uploadFileDirectToCloudinary(file, sig, 'image')),
       );
       const successful = results.filter((r) => r.success).map((r) => r.url as string);
       const failed = results.filter((r) => !r.success);
+
       if (successful.length > 0) {
         setProfile((p: any) => ({ ...p, gallery: [...(p.gallery || []), ...successful] }));
       }
@@ -45,13 +54,18 @@ export default function Media({ profile, setProfile }: Props) {
   };
 
   const handleVideoUpload = async (file: File) => {
+    if (file.size > MAX_VIDEO_SIZE) {
+      setVideoError('Видео больше 100 МБ. Сожмите его (например, в приложении для обрезки видео) и загрузите снова');
+      return;
+    }
+
     setUploadingVideo(true);
+    setVideoProgress(0);
     setVideoError(null);
     setVideoPlaybackError(false);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await uploadImageToCloudinary(fd, 'doctors');
+      const sig = await getCloudinaryUploadSignature({ folder: 'doctors', resourceType: 'video' });
+      const res = await uploadFileDirectToCloudinary(file, sig, 'video', setVideoProgress);
       if (res.success) {
         setProfile((p: any) => ({ ...p, videoIntro: res.url }));
       } else {
@@ -165,17 +179,27 @@ export default function Media({ profile, setProfile }: Props) {
         ) : (
           <label className="flex flex-col items-center justify-center gap-2 max-w-sm aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer">
             {uploadingVideo ? (
-              <Spinner size="md" />
+              <div className="flex flex-col items-center gap-2 w-2/3">
+                <Spinner size="md" />
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-200"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-bold text-slate-400">{videoProgress}%</span>
+              </div>
             ) : (
               <>
                 <span className="text-3xl">🎥</span>
-                <span className="text-xs font-bold text-slate-500">Загрузить видео (до 30 МБ)</span>
+                <span className="text-xs font-bold text-slate-500">Загрузить видео (до 100 МБ)</span>
               </>
             )}
             <input
               type="file"
               accept="video/mp4,video/webm,video/quicktime"
               className="hidden"
+              disabled={uploadingVideo}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleVideoUpload(file);

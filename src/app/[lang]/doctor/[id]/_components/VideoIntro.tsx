@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { useParams } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 
 // Cloudinary отдаёт превью-кадр видео, если заменить расширение файла на .jpg
 function getVideoPoster(videoUrl: string): string | undefined {
@@ -40,13 +41,30 @@ export default function VideoIntro({ videoUrl }: { videoUrl: string; doctorName?
         preload="metadata"
         className="w-full aspect-video object-cover"
         onEnded={() => setPlaying(false)}
-        onError={() => setHasError(true)}
+        onError={() => {
+          // TEMP: diagnostic logging for the video-intro fix — remove once
+          // confirmed working in production (see PR description)
+          console.error('[video-intro] failed to load', videoUrl);
+          Sentry.captureMessage('video-intro failed to load', {
+            level: 'warning',
+            extra: { videoUrl },
+          });
+          setHasError(true);
+        }}
       />
       {!playing && (
         <button
           onClick={() => {
             setPlaying(true);
-            videoRef.current?.play().catch(() => setHasError(true));
+            videoRef.current?.play().catch((err) => {
+              // TEMP: see note above — remove alongside the onError logging
+              console.error('[video-intro] play() rejected', videoUrl, err);
+              Sentry.captureMessage('video-intro play() rejected', {
+                level: 'warning',
+                extra: { videoUrl, err: String(err) },
+              });
+              setHasError(true);
+            });
           }}
           className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors"
         >

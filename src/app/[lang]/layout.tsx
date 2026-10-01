@@ -3,6 +3,7 @@ import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
 import { BASE_URL } from "@/lib/seo";
 import { Locale } from "@/i18n";
+import CspViolationLogger from "@/components/_temp/CspViolationLogger";
 
 export async function generateMetadata() {
   return {
@@ -69,6 +70,7 @@ export default async function LangLayout({
       </head>
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
         <SessionProvider>
+          <CspViolationLogger />
           {children}
         </SessionProvider>
       </body>
