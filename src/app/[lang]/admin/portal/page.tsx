@@ -67,6 +67,17 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         {/* МЕСТА (КЛИНИКИ И Т.Д.) */}
         <PlacesSection />
 
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href={`/${lang}/admin/portal/clinics`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
+            <div className="font-bold text-lg">🏥 Клиники</div>
+            <p className="text-sm text-gray-500 mt-1">Редактировать любую клинику (в том числе импортированные) или создать новую</p>
+          </Link>
+          <Link href={`/${lang}/admin/portal/doctors`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
+            <div className="font-bold text-lg">👨‍⚕️ Врачи</div>
+            <p className="text-sm text-gray-500 mt-1">Редактировать профили врачей или создать профиль вручную</p>
+          </Link>
+        </section>
+
         {/* СТАТИСТИКА */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <StatCard label="Заявки" value={pendingDoctors.length} color="bg-yellow-900/40 border-yellow-700 text-yellow-400" icon="⏳" urgent={pendingDoctors.length > 0} />
