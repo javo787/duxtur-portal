@@ -9,6 +9,7 @@ import ClinicTabs from './_components/ClinicTabs';
 import ClinicViewTracker from '@/components/ClinicViewTracker';
 import HomeFooter from '@/components/home/HomeFooter';
 import { cache } from 'react';
+import { hasRealWorkingHours } from '@/lib/clinic-hours';
 
 export const revalidate = 3600; // 1 hour
 
@@ -59,7 +60,8 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
 
   // Build JSON-LD MedicalClinic schema
   let openingHours: string[] = [];
-  if (clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
+  // pre_imported clinics carry only schema defaults (08:00-18:00 every day): never publish them as real hours.
+  if (hasRealWorkingHours(clinic) && clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
     openingHours = Object.entries(clinic.workingHours)
       .filter(([_, v]: any) => v && v.isWorking)
       .map(([day, v]: any) => {

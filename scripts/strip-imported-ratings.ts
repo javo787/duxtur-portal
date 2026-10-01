@@ -15,7 +15,8 @@ async function main() {
   await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
   const filter = {
     status: 'pre_imported',
-    dataSource: 'scraped',
+    // older imports have no dataSource field, so match on the import source instead
+    importSource: { $in: ['ydoc', '2gis', 'osm', 'website'] },
     $or: [{ 'rating.count': { $gt: 0 } }, { 'rating.avg': { $gt: 0 } }],
   };
   const n = await Clinic.countDocuments(filter);
