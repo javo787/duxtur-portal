@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
+import { EDU_CSP } from "./src/lib/edu-csp";
+
+// Origin that serves the static Duxtur Edu build at its ROOT (e.g. a Firebase Hosting site).
+// When unset, /edu is simply not mounted.
+const EDU_APP_ORIGIN = (process.env.EDU_APP_ORIGIN || '').replace(/\/$/, '');
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -22,7 +27,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // Everything except /edu, which has its own CSP below
+        source: '/((?!edu/|edu$).*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
@@ -37,6 +43,18 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://cdn-icons-png.flaticon.com https://*.tile.openstreetmap.org https://*.mapbox.com; media-src 'self' https://res.cloudinary.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.mapbox.com https://api.cloudinary.com; frame-src 'self';",
           },
+        ],
+      },
+      {
+        source: '/edu/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Content-Security-Policy', value: EDU_CSP },
         ],
       },
       {
@@ -58,6 +76,16 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+
+  async rewrites() {
+    if (!EDU_APP_ORIGIN) return [];
+    return {
+      beforeFiles: [
+        { source: '/edu', destination: `${EDU_APP_ORIGIN}/` },
+        { source: '/edu/:path*', destination: `${EDU_APP_ORIGIN}/:path*` },
+      ],
+    };
   },
 
   async redirects() {
