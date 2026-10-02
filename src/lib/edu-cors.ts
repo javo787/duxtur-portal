@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { REQUEST_ID_HEADER } from '@/lib/edu-log';
 
 /**
  * Same-origin (duxtur.org/edu) needs no CORS. The allowlist is only for the
@@ -9,13 +10,16 @@ function allowedOrigins(): string[] {
   return ['https://duxtur.org', 'https://www.duxtur.org', ...extra];
 }
 
-export function withEduCors(req: NextRequest, res: NextResponse): NextResponse {
+export function withEduCors(req: NextRequest, res: NextResponse, reqId?: string): NextResponse {
+  if (reqId) res.headers.set(REQUEST_ID_HEADER, reqId);
   const origin = req.headers.get('origin');
   if (origin && allowedOrigins().includes(origin)) {
     res.headers.set('Access-Control-Allow-Origin', origin);
     res.headers.set('Vary', 'Origin');
     res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    // Cross-origin pages can only read headers that are exposed explicitly.
+    res.headers.set('Access-Control-Expose-Headers', REQUEST_ID_HEADER);
   }
   return res;
 }
