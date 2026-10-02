@@ -34,6 +34,7 @@ interface Clinic {
   phone: string;
   website?: string;
   email?: string;
+  branches?: { _id?: string; label?: string; address: string; city?: string; phone?: string; coordinates?: { lat?: number; lng?: number } }[];
   telegram?: string;
   whatsapp?: string;
   instagram?: string;
@@ -251,6 +252,31 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('auth.registerPhone')}</p>
                           <a href={`tel:${clinic.phone}`} className="text-sm font-bold text-[#374151] hover:text-blue-600">{clinic.phone}</a>
+                        </div>
+                      )}
+                      {clinic.branches && clinic.branches.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">{t('clinic.branches')}</p>
+                          <ul className="space-y-3">
+                            {clinic.branches.map((b, i) => (
+                              <li key={b._id ?? i} className="text-sm">
+                                {b.label && <p className="font-bold text-[#374151]">{b.label}</p>}
+                                <p className="text-[#374151]">{[b.address, b.city].filter(Boolean).join(', ')}</p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-0.5">
+                                  {b.phone && <a href={`tel:${b.phone}`} className="text-xs font-bold text-blue-600 hover:underline">{b.phone}</a>}
+                                  {typeof b.coordinates?.lat === 'number' && typeof b.coordinates?.lng === 'number' && (
+                                    <a
+                                      href={`https://www.openstreetmap.org/?mlat=${b.coordinates.lat}&mlon=${b.coordinates.lng}#map=17/${b.coordinates.lat}/${b.coordinates.lng}`}
+                                      target="_blank" rel="noopener noreferrer"
+                                      className="text-xs font-bold text-slate-500 hover:text-blue-600"
+                                    >
+                                      {t('clinic.exactAddress')} ↗
+                                    </a>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                       {clinic.website && safeHttpUrl(clinic.website) && (

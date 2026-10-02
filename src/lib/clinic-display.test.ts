@@ -11,7 +11,9 @@ describe('clinic-display', () => {
     expect(specialtyId('surgery')).toBe('surgery');
     expect(specialtyId('Хирургия')).toBe('surgery');
     expect(specialtyId(' хирургия ')).toBe('surgery');
-    expect(specialtyId('general')).toBeNull();
+    expect(specialtyId('general')).toBe('general');
+    expect(specialtyId('endocrinology')).toBe('endocrinology');
+    expect(specialtyId('alchemy')).toBeNull();
   });
   it('builds social links from bare handles', () => {
     expect(telegramUrl('@nur')).toBe('https://t.me/nur');

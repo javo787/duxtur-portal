@@ -41,3 +41,21 @@ export function safeHttpUrl(url: string): string | null {
     return null;
   }
 }
+
+/**
+ * The listing filter used to send the Russian label ("Хирургия"), while clinics saved from the
+ * owner dashboard and the admin editor store ids ("surgery"). Normalize a URL param to the id.
+ * Unknown values are returned unchanged so they simply match nothing.
+ */
+export function normalizeSpecialtyParam(param?: string): string | undefined {
+  if (!param) return undefined;
+  return specialtyId(param) ?? param;
+}
+
+/** Values to match in `specialties`: both the id and the legacy Russian label. */
+export function specialtyMatchValues(param: string): string[] {
+  const id = specialtyId(param);
+  if (!id) return [param];
+  const label = COMMON_SPECIALTIES.find(s => s.id === id)?.label;
+  return label ? [id, label] : [id];
+}

@@ -19,7 +19,7 @@ describe('parseClinicForm', () => {
       name_ru: '  Клиника «Нур»  ', type: 'dental_clinic', status: 'approved', city: 'Душанбе',
       phone: '92 000 0000', email: 'INFO@Nur.tj', website: 'nur.tj', instagram: 'https://instagram.com/nur_clinic/',
       telegram: '@nur_clinic', whatsapp: '+992 98 774 6263', lat: '38,5598', lng: '68.787',
-      specialties: ['dentistry', 'general', 'not-a-key'],
+      specialties: ['dentistry', 'not-a-key'],
       mon_working: 'on', mon_open: '08:00', mon_close: '18:00',
     })));
     expect(d.name.ru).toBe('Клиника «Нур»');
@@ -32,9 +32,9 @@ describe('parseClinicForm', () => {
     expect(d.workingHours?.sun.isWorking).toBe(false);
   });
 
-  it('accepts only the clinic specialty vocabulary (doctor-only keys like general are dropped)', () => {
-    const d = ok(parseClinicForm(fd({ name_ru: 'Клиника Тест', specialties: ['ultrasound', 'tests', 'general'] })));
-    expect(d.specialties).toEqual(['ultrasound', 'tests']);
+  it('accepts only the clinic specialty vocabulary', () => {
+    const d = ok(parseClinicForm(fd({ name_ru: 'Клиника Тест', specialties: ['ultrasound', 'tests', 'endocrinology', 'alchemy'] })));
+    expect(d.specialties).toEqual(['ultrasound', 'tests', 'endocrinology']);
   });
 
   it('leaves optional blocks empty instead of inventing values', () => {
@@ -61,6 +61,39 @@ describe('parseClinicForm', () => {
     expect(parseClinicForm(fd({ name_ru: 'Клиника Тест', logo: 'http://x.tj/a.png' })).ok).toBe(false);
     expect(parseClinicForm(fd({ name_ru: 'Клиника Тест', logo: 'javascript:alert(1)' })).ok).toBe(false);
     expect(parseClinicForm(fd({ name_ru: 'Клиника Тест', logo: 'https://res.cloudinary.com/x/a.png' })).ok).toBe(true);
+  });
+});
+
+describe('branches', () => {
+  it('parses filled branch slots and ignores empty ones', () => {
+    const d = ok(parseClinicForm(fd({
+      name_ru: 'Клиника Vita',
+      branch_0_address: 'ул. Рудаки, 11', branch_0_city: 'Душанбе', branch_0_label: 'Филиал на Рудаки',
+      branch_0_phone: '92 000 0000', branch_0_lat: '38,57', branch_0_lng: '68.78',
+      branch_1_address: '', branch_2_address: 'ул. Айни 1',
+    })));
+    expect(d.branches).toHaveLength(2);
+    expect(d.branches[0]).toEqual({
+      label: 'Филиал на Рудаки', address: 'ул. Рудаки, 11', city: 'Душанбе', district: '',
+      phone: '+992920000000', coordinates: { lat: 38.57, lng: 68.78 },
+    });
+    expect(d.branches[1]).toMatchObject({ address: 'ул. Айни 1', phone: '', coordinates: null });
+  });
+  it('requires an address when anything else in the row is filled', () => {
+    const r = parseClinicForm(fd({ name_ru: 'Клиника Vita', branch_0_label: 'Филиал', branch_0_phone: '92 000 0000' }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(' ')).toMatch(/Филиал 1: укажите адрес/);
+  });
+  it('validates branch phone and coordinates', () => {
+    const r = parseClinicForm(fd({ name_ru: 'Клиника Vita', branch_0_address: 'ул. Рудаки, 11', branch_0_phone: '123', branch_0_lat: '38.5' }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors.join(' | ')).toMatch(/Филиал 1: телефон/);
+      expect(r.errors.join(' | ')).toMatch(/Филиал 1: координаты/);
+    }
+  });
+  it('a clinic without branches gets an empty list', () => {
+    expect(ok(parseClinicForm(fd({ name_ru: 'Клиника Тест' }))).branches).toEqual([]);
   });
 });
 

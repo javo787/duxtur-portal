@@ -3,6 +3,7 @@ import { CLINIC_TYPES, ALLOWED_CITIES, COMMON_SPECIALTIES } from '@/lib/clinic-c
 import { specialtyId } from '@/lib/clinic-display';
 import { CLINIC_STATUSES } from '@/lib/admin-content/clinic-form';
 import { DAYS } from '@/lib/admin-content/common';
+import { MAX_BRANCH_SLOTS } from '@/lib/admin-content/clinic-form';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import { STATUS_LABELS } from '../../_shared/AdminShell';
 import { Card, Grid, ImagePicker, inputCls, Label, MultiLang } from '../../_shared/FormBits';
@@ -17,7 +18,9 @@ export interface ClinicDoc {
   phone?: string; phone2?: string; email?: string; website?: string;
   telegram?: string; whatsapp?: string; instagram?: string;
   workingHours?: Record<string, { open: string; close: string; isWorking: boolean }>;
-  specialties?: string[]; logo?: string; coverImage?: string; licenseNumber?: string;
+  specialties?: string[];
+  branches?: { label?: string; address?: string; city?: string; district?: string; phone?: string; coordinates?: { lat?: number; lng?: number } }[];
+  logo?: string; coverImage?: string; licenseNumber?: string;
   importSource?: string; importSourceUrl?: string; verifiedAt?: string | Date;
 }
 
@@ -69,6 +72,33 @@ export default function ClinicForm({ lang, id, clinic }: { lang: string; id: str
               <input name="lng" defaultValue={c?.coordinates?.lng ?? ''} inputMode="decimal" className={inputCls} />
             </Label>
           </Grid>
+        </Card>
+
+        <Card
+          title="Филиалы"
+          hint="Дополнительные адреса этой же клиники. Главный адрес указан выше. Пустые строки игнорируются; чтобы убрать филиал, очистите его поля."
+        >
+          <div className="space-y-4">
+            {Array.from({ length: Math.min(MAX_BRANCH_SLOTS, Math.max((c?.branches?.length ?? 0) + 2, 3)) }, (_, i) => {
+              const b = c?.branches?.[i];
+              return (
+                <fieldset key={i} className="border border-gray-800 rounded-xl p-4 space-y-3">
+                  <legend className="px-2 text-xs text-gray-500">Филиал {i + 1}</legend>
+                  <Grid>
+                    <Label text="Название (необязательно)"><input name={`branch_${i}_label`} defaultValue={b?.label ?? ''} placeholder="Филиал на Рудаки" className={inputCls} /></Label>
+                    <Label text="Адрес"><input name={`branch_${i}_address`} defaultValue={b?.address ?? ''} className={inputCls} /></Label>
+                    <Label text="Город"><input name={`branch_${i}_city`} list="cities" defaultValue={b?.city ?? ''} className={inputCls} /></Label>
+                    <Label text="Район"><input name={`branch_${i}_district`} defaultValue={b?.district ?? ''} className={inputCls} /></Label>
+                    <Label text="Телефон филиала"><input name={`branch_${i}_phone`} defaultValue={b?.phone ?? ''} className={inputCls} /></Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Label text="Широта"><input name={`branch_${i}_lat`} defaultValue={b?.coordinates?.lat ?? ''} inputMode="decimal" className={inputCls} /></Label>
+                      <Label text="Долгота"><input name={`branch_${i}_lng`} defaultValue={b?.coordinates?.lng ?? ''} inputMode="decimal" className={inputCls} /></Label>
+                    </div>
+                  </Grid>
+                </fieldset>
+              );
+            })}
+          </div>
         </Card>
 
         <Card title="Контакты" hint="Номера приводятся к формату +992…, в соцсетях можно вставлять ссылку целиком.">

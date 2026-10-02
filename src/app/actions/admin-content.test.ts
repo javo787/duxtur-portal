@@ -92,6 +92,16 @@ describe('saveClinic', () => {
     expect(doc.slug).toMatch(/^klinika-nur-[0-9a-f]{6}$/);
   });
 
+  it('saves branches with their own coordinates', async () => {
+    await redirectOf(saveClinic('c1', form({
+      name_ru: 'Клиника Vita', branch_0_address: 'ул. Рудаки, 11', branch_0_city: 'Душанбе', branch_0_lat: '38.57', branch_0_lng: '68.78',
+    })));
+    const set = clinicModel.updateOne.mock.calls[0][1].$set;
+    expect(set.branches).toEqual([
+      { label: '', address: 'ул. Рудаки, 11', city: 'Душанбе', district: '', phone: '', coordinates: { lat: 38.57, lng: 68.78 } },
+    ]);
+  });
+
   it('edits an existing (scraped) clinic, keeps its slug, clears coordinates when emptied', async () => {
     const r = await redirectOf(saveClinic('c1', form({ name_ru: 'Клиника «Vedanta»', status: 'pre_imported', website: 'vedanta.tj' })));
     expect(r).toBe('REDIRECT:/ru/admin/portal/clinics?saved=1');
