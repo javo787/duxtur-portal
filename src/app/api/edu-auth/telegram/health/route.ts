@@ -178,10 +178,19 @@ export async function GET(req: NextRequest) {
           max_connections?: number;
           ip_address?: string;
         };
-        const expectedUrl = 'https://duxtur.org/api/edu-auth/telegram/webhook';
+        // Telegram does not follow redirects, so the webhook must be registered on the host that answers
+        // directly. That is the host this very request came in on (www.duxtur.org in production, where the
+        // bare domain redirects), not a hardcoded one.
+        const servingHost = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(',')[0].trim();
+        const expectedUrl = `https://${servingHost}/api/edu-auth/telegram/webhook`;
         const problems: string[] = [];
         if (!info.url) problems.push('no webhook is registered: Telegram sends nothing to the server');
-        else if (info.url !== expectedUrl) problems.push(`webhook points to ${info.url}, expected ${expectedUrl}`);
+        else if (info.url !== expectedUrl) {
+          problems.push(
+            `webhook points to ${info.url}, but this server answers on ${servingHost}. If the registered host redirects here, ` +
+              `Telegram gets a 301/307/308 and drops every update (it does not follow redirects)`
+          );
+        }
         if (info.last_error_message) {
           problems.push(`Telegram's last delivery error: "${scrubSecrets(String(info.last_error_message))}"`);
         }
@@ -193,13 +202,14 @@ export async function GET(req: NextRequest) {
             pendingUpdates: info.pending_update_count ?? 0,
             lastErrorAt: info.last_error_date ? new Date(info.last_error_date * 1000).toISOString() : null,
             lastErrorMessage: info.last_error_message ? scrubSecrets(String(info.last_error_message)) : null,
+            expectedUrl,
             maxConnections: info.max_connections ?? null,
             ipAddress: info.ip_address ?? null,
           },
           ...(problems.length
             ? {
                 problems,
-                fix: 'Re-register: curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" -d "url=https://duxtur.org/api/edu-auth/telegram/webhook" -d "secret_token=<EDU_TELEGRAM_BOT_SECRET>"',
+                fix: 'Re-register: curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" -d "url=' + expectedUrl + '" -d "secret_token=<EDU_TELEGRAM_BOT_SECRET>"',
               }
             : {}),
           ms,

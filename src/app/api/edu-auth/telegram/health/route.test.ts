@@ -8,10 +8,10 @@ import { GET } from './route';
 
 const SECRET = 'health-secret_123';
 
-function call(key: string | null) {
-  const headers: Record<string, string> = {};
+function call(key: string | null, host = 'duxtur.org') {
+  const headers: Record<string, string> = { host };
   if (key !== null) headers['x-edu-health-key'] = key;
-  return GET(new NextRequest('https://duxtur.org/api/edu-auth/telegram/health', { headers }));
+  return GET(new NextRequest(`https://${host}/api/edu-auth/telegram/health`, { headers }));
 }
 
 const ENV_KEYS = ['EDU_TELEGRAM_BOT_SECRET', 'EDU_TELEGRAM_BOT_TOKEN', 'MONGODB_URI', 'FIREBASE_SERVICE_ACCOUNT_JSON', 'EDU_TELEGRAM_BOT_USERNAME'];
@@ -82,5 +82,40 @@ describe('GET /api/edu-auth/telegram/health', () => {
     expect(body.checks.telegramBot.status).toBe('fail');
     expect(body.checks.telegramBot.detail.errorCode).toBe(401);
     expect(body.checks.telegramBot.fix).toContain('@BotFather');
+  });
+
+  it('expects the webhook on the host that serves the request (www in production) and explains the redirect trap', async () => {
+    process.env.EDU_TELEGRAM_BOT_TOKEN = '123456:TOKEN';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const method = String(url).split('/').pop();
+        if (method === 'getMe') return new Response(JSON.stringify({ ok: true, result: { username: 'duxtur_bot' } }));
+        return new Response(
+          JSON.stringify({ ok: true, result: { url: 'https://duxtur.org/api/edu-auth/telegram/webhook', pending_update_count: 3, last_error_message: 'Wrong response from the webhook: 308 Permanent Redirect' } })
+        );
+      })
+    );
+    const body = await (await call(SECRET, 'www.duxtur.org')).json();
+    const hook = body.checks.telegramWebhook;
+    expect(hook.status).toBe('fail');
+    expect(hook.detail.expectedUrl).toBe('https://www.duxtur.org/api/edu-auth/telegram/webhook');
+    expect(hook.problems.join(' ')).toContain('does not follow redirects');
+    expect(hook.problems.join(' ')).toContain('308 Permanent Redirect');
+    expect(hook.fix).toContain('url=https://www.duxtur.org/api/edu-auth/telegram/webhook');
+  });
+
+  it('is happy when the registered webhook matches the serving host', async () => {
+    process.env.EDU_TELEGRAM_BOT_TOKEN = '123456:TOKEN';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const method = String(url).split('/').pop();
+        if (method === 'getMe') return new Response(JSON.stringify({ ok: true, result: { username: 'duxtur_bot' } }));
+        return new Response(JSON.stringify({ ok: true, result: { url: 'https://www.duxtur.org/api/edu-auth/telegram/webhook', pending_update_count: 0 } }));
+      })
+    );
+    const body = await (await call(SECRET, 'www.duxtur.org')).json();
+    expect(body.checks.telegramWebhook.status).toBe('ok');
   });
 });
