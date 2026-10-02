@@ -579,6 +579,8 @@ export const ru = {
     ownerNamePlaceholder: 'Иванов Иван Иванович',
     institutionType: 'Тип учреждения',
     exactAddress: 'Точный адрес',
+    website: 'Сайт',
+    email: 'Email',
     addressPlaceholder: 'ул. Главная, 10',
     markOnMap: 'Отметить на карте',
     markOnMapOptional: 'Отметить на карте (необязательно)',

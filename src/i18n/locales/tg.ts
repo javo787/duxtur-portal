@@ -578,6 +578,8 @@ export const tg = {
     ownerNamePlaceholder: 'Иванов Иван Иванович',
     institutionType: 'Намуди муассиса',
     exactAddress: 'Суроғаи дақиқ',
+    website: 'Сомона',
+    email: 'Email',
     addressPlaceholder: 'кӯчаи Асосӣ, 10',
     markOnMap: 'Дар харита қайд кардан',
     markOnMapOptional: 'Дар харита қайд кардан (ихтиёрӣ)',

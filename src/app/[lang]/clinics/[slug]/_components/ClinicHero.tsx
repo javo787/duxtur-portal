@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useT } from '@/i18n';
 import { getOptimizedCloudinaryUrl, cn } from '@/lib/utils';
+import { isUnverifiedImport } from '@/lib/clinic-display';
 
 interface MultilingualString {
   ru: string;
@@ -24,7 +25,6 @@ interface ClinicData {
   phone?: string;
   whatsapp?: string;
   rating: { avg: number; count: number };
-  dataSource?: string;
 }
 
 export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang: string }) {
@@ -102,7 +102,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
                    <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight break-words max-w-full">
                      {name}
                    </h1>
-                   {clinic.dataSource === 'scraped' && (
+                   {isUnverifiedImport(clinic) && (
                      <span className="text-xs md:text-sm font-medium text-white/50 mt-1">
                        {t('clinic.unverified')}
                      </span>
@@ -156,7 +156,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicData; lang:
                  >
                    {t('clinic.book')}
                  </button>
-                 {clinic.dataSource === 'scraped' && (
+                 {isUnverifiedImport(clinic) && (
                    <Link
                      href={`/${lang}/clinic/register?claim=${clinic.slug}`}
                      className="w-full text-center px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl text-[10px] md:text-xs font-bold transition-all active:scale-95"

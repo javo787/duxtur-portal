@@ -578,6 +578,8 @@ export const ky = {
     ownerNamePlaceholder: 'Иванов Иван Иванович',
     institutionType: 'Мекеменин түрү',
     exactAddress: 'Так дареги',
+    website: 'Сайт',
+    email: 'Email',
     addressPlaceholder: 'Башкы көчөсү, 10',
     markOnMap: 'Картадан белгилөө',
     markOnMapOptional: 'Картадан белгилөө (милдеттүү эмес)',

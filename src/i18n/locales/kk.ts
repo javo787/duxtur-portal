@@ -578,6 +578,8 @@ export const kk = {
     ownerNamePlaceholder: 'Иванов Иван Иванович',
     institutionType: 'Мекеме түрі',
     exactAddress: 'Нақты мекенжай',
+    website: 'Сайт',
+    email: 'Email',
     addressPlaceholder: 'Басты көшесі, 10',
     markOnMap: 'Картада белгілеу',
     markOnMapOptional: 'Картада белгілеу (міндетті емес)',
