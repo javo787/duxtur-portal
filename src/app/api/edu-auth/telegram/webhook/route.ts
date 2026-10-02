@@ -14,7 +14,9 @@ import { describeError, eduLog, maskRef, newReqId, requestFacts } from '@/lib/ed
 export const dynamic = 'force-dynamic';
 
 // Webhook of the Duxtur Edu login bot (@duxtur_bot). Register it with setWebhook
-// (url = https://duxtur.org/api/edu-auth/telegram/webhook, secret_token = EDU_TELEGRAM_BOT_SECRET).
+// (url = https://<serving host>/api/edu-auth/telegram/webhook, secret_token = EDU_TELEGRAM_BOT_SECRET).
+// Use the host that answers WITHOUT a redirect (www.duxtur.org in production): Telegram does not follow redirects.
+// GET /api/edu-auth/telegram/health shows the registered URL and the exact command to fix it.
 export async function POST(req: NextRequest) {
   const reqId = newReqId();
   const startedAt = Date.now();
