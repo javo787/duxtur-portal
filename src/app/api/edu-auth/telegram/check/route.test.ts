@@ -7,7 +7,8 @@ const createEduCustomToken = vi.fn();
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/models/TelegramLogin', () => ({ default: {} }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
-vi.mock('@/lib/rate-limit', () => ({ rateLimit: vi.fn().mockResolvedValue({ success: true, count: 1 }) }));
+const rateLimit = vi.fn();
+vi.mock('@/lib/rate-limit', () => ({ rateLimit: (...a: unknown[]) => rateLimit(...a) }));
 vi.mock('@/lib/firebase-admin', () => ({ createEduCustomToken: (...a: unknown[]) => createEduCustomToken(...a) }));
 vi.mock('@/lib/edu-telegram-login', async () => {
   const actual = await vi.importActual<typeof import('@/lib/edu-telegram-login')>('@/lib/edu-telegram-login');
@@ -39,6 +40,7 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(sink);
   vi.spyOn(console, 'error').mockImplementation(sink);
   delete process.env.EDU_LOG_VERBOSE;
+  rateLimit.mockResolvedValue({ success: true, count: 1 });
   process.env.FIREBASE_SERVICE_ACCOUNT_JSON = JSON.stringify({ project_id: 'edu-proj' });
 });
 
@@ -106,5 +108,16 @@ describe('POST /api/edu-auth/telegram/check', () => {
     const res = await call('{not json');
     expect(res.status).toBe(400);
     expect(logs.some(l => l.includes('check:bad-json'))).toBe(true);
+  });
+
+  it('an unexpected exception anywhere in the handler still answers JSON with a ref and is logged', async () => {
+    rateLimit.mockRejectedValue(new Error('redis exploded'));
+    const res = await call({ token: TOKEN, pollSecret: POLL });
+    const body = await res.json();
+    expect(res.status).toBe(500);
+    expect(body.ref).toBe(res.headers.get('X-Edu-Request-Id'));
+    const line = logs.find(l => l.includes('check:unhandled'));
+    expect(line).toBeTruthy();
+    expect(JSON.parse(line!).message).toContain('redis exploded');
   });
 });
