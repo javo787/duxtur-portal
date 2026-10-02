@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { describeError, eduLog, envFlags, newReqId, requestFacts, scrubSecrets } from '@/lib/edu-log';
 import { eduBotUsername } from '@/lib/edu-telegram-bot';
+import { expectedWebhookUrl, servingHostOf, webhookProblems, type WebhookInfo } from '@/lib/edu-webhook-state';
 
 export const dynamic = 'force-dynamic';
 
@@ -170,31 +171,13 @@ export async function GET(req: NextRequest) {
       if (!value.ok) {
         checks.telegramWebhook = { status: 'fail', detail: { errorCode: value.error_code, description: scrubSecrets(value.description || '') }, ms };
       } else {
-        const info = (value.result ?? {}) as {
-          url?: string;
-          pending_update_count?: number;
-          last_error_date?: number;
-          last_error_message?: string;
-          max_connections?: number;
-          ip_address?: string;
-        };
+        const info = (value.result ?? {}) as WebhookInfo;
         // Telegram does not follow redirects, so the webhook must be registered on the host that answers
         // directly. That is the host this very request came in on (www.duxtur.org in production, where the
         // bare domain redirects), not a hardcoded one.
-        const servingHost = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(',')[0].trim();
-        const expectedUrl = `https://${servingHost}/api/edu-auth/telegram/webhook`;
-        const problems: string[] = [];
-        if (!info.url) problems.push('no webhook is registered: Telegram sends nothing to the server');
-        else if (info.url !== expectedUrl) {
-          problems.push(
-            `webhook points to ${info.url}, but this server answers on ${servingHost}. If the registered host redirects here, ` +
-              `Telegram gets a 301/307/308 and drops every update (it does not follow redirects)`
-          );
-        }
-        if (info.last_error_message) {
-          problems.push(`Telegram's last delivery error: "${scrubSecrets(String(info.last_error_message))}"`);
-        }
-        if ((info.pending_update_count ?? 0) > 0) problems.push(`${info.pending_update_count} updates are waiting (the server answered with errors)`);
+        const servingHost = servingHostOf(req.headers);
+        const expectedUrl = expectedWebhookUrl(servingHost);
+        const problems = webhookProblems(info, servingHost);
         checks.telegramWebhook = {
           status: problems.length ? 'fail' : 'ok',
           detail: {

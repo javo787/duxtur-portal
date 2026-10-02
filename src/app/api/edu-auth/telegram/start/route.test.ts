@@ -13,6 +13,7 @@ vi.mock('@/lib/edu-telegram-login', async () => {
   return { ...actual, createLogin: (...a: unknown[]) => createLogin(...a) };
 });
 
+import { resetWebhookStateThrottle } from '@/lib/edu-webhook-state';
 import { POST } from './route';
 
 const TOKEN = 'a1b2c3'.padEnd(32, 'd');
@@ -28,6 +29,7 @@ let logs: string[];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetWebhookStateThrottle();
   logs = [];
   vi.spyOn(console, 'log').mockImplementation((l: string) => void logs.push(String(l)));
   vi.spyOn(console, 'warn').mockImplementation((l: string) => void logs.push(String(l)));
@@ -36,7 +38,11 @@ beforeEach(() => {
   createLogin.mockResolvedValue({ token: TOKEN, pollSecret: POLL, expiresInSec: 300 });
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  delete process.env.EDU_TELEGRAM_BOT_TOKEN;
+});
 
 describe('POST /api/edu-auth/telegram/start', () => {
   it('returns the login and a request id header the browser can read', async () => {
@@ -76,6 +82,30 @@ describe('POST /api/edu-auth/telegram/start', () => {
     expect(res.status).toBe(429);
     expect((await res.json()).ref).toBe(res.headers.get('X-Edu-Request-Id'));
     expect(logs.some(l => l.includes('start:rate-limited'))).toBe(true);
+  });
+
+  it('writes the Telegram webhook registration state to the logs after a successful start, without breaking the login', async () => {
+    process.env.EDU_TELEGRAM_BOT_TOKEN = '123456:VERY_SECRET_BOT_TOKEN-x';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ ok: true, result: { url: 'https://duxtur.org/api/edu-auth/telegram/webhook', pending_update_count: 0 } })))
+    );
+    const res = await call();
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(logs.some(l => l.includes('start:webhook-state'))).toBe(true));
+    const line = JSON.parse(logs.find(l => l.includes('start:webhook-state'))!);
+    expect(line.status).toBe('broken'); // registered on duxtur.org, request served on duxtur.org/api in this test
+    expect(line.reqId).toBe(res.headers.get('X-Edu-Request-Id'));
+    expect(logs.join('\n')).not.toContain('VERY_SECRET_BOT_TOKEN');
+  });
+
+  it('does not check the webhook when the start failed', async () => {
+    process.env.EDU_TELEGRAM_BOT_TOKEN = '123456:TOKEN';
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    createLogin.mockRejectedValue(new Error('db down'));
+    await call();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('masks the client IP in the logs', async () => {
