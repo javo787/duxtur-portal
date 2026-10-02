@@ -578,6 +578,8 @@ export const uz = {
     ownerNamePlaceholder: 'Ivanov Ivan Ivanovich',
     institutionType: 'Muassasa turi',
     exactAddress: 'Aniq manzil',
+    website: 'Veb-sayt',
+    email: 'Email',
     addressPlaceholder: 'Asosiy koʻchasi, 10',
     markOnMap: 'Xaritada belgilash',
     markOnMapOptional: 'Xaritada belgilash (ixtiyoriy)',

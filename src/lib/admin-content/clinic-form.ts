@@ -1,5 +1,4 @@
-import { CATEGORIES } from '../doctor-constants';
-import { CLINIC_TYPES } from '../clinic-constants';
+import { CLINIC_TYPES, COMMON_SPECIALTIES } from '../clinic-constants';
 import {
   coordsField, emailField, Errors, field, handleField, hoursField, imageUrlField, INSTAGRAM_HOST,
   multilingual, phoneField, pickEnum, pickMany, TELEGRAM_HOST, urlField, whatsappField,
@@ -8,7 +7,8 @@ import {
 
 export const CLINIC_STATUSES = ['pre_imported', 'pending', 'approved', 'rejected', 'banned'] as const;
 export type ClinicStatus = (typeof CLINIC_STATUSES)[number];
-export const SPECIALTY_KEYS = Object.keys(CATEGORIES);
+// Clinics use their own specialty vocabulary (not the doctor categories); the public page translates these ids.
+export const SPECIALTY_KEYS: string[] = COMMON_SPECIALTIES.map(x => x.id);
 const TYPE_IDS = CLINIC_TYPES.map(t => t.id);
 
 export interface ClinicInput {

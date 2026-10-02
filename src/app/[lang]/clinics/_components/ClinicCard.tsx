@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { ClinicDocument, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
 import { isClinicOpen } from '@/lib/clinic-utils';
 import { getOptimizedCloudinaryUrl, cn } from '@/lib/utils';
+import { isUnverifiedImport } from '@/lib/clinic-display';
 
 export default function ClinicCard({
   clinic,
@@ -99,7 +100,7 @@ export default function ClinicCard({
              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1 font-display">
                {name}
              </h3>
-             {(clinic as any).dataSource === 'scraped' && (
+             {isUnverifiedImport(clinic as { status?: string }) && (
                <span className="text-[10px] font-medium text-slate-400">
                  {t('clinic.unverified')}
                </span>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useT } from '@/i18n';
 import ClinicDoctors from './ClinicDoctors';
 import ClinicServices from './ClinicServices';
@@ -9,6 +10,8 @@ import ClinicReviews from './ClinicReviews';
 import ClinicBookingWidget from './ClinicBookingWidget';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
+import { COMMON_SPECIALTIES } from '@/lib/clinic-constants';
+import { instagramUrl, isUnverifiedImport, safeHttpUrl, specialtyId, telegramUrl, websiteHost, whatsappUrl } from '@/lib/clinic-display';
 
 interface MultilingualString {
   ru: string;
@@ -29,6 +32,11 @@ interface Clinic {
   workingHours?: Record<string, { open: string; close: string; isWorking: boolean }>;
   address: string;
   phone: string;
+  website?: string;
+  email?: string;
+  telegram?: string;
+  whatsapp?: string;
+  instagram?: string;
   photos: string[];
   doctorIds: any[];
   services: { name: MultilingualString; price: number; currency: string }[];
@@ -99,12 +107,14 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                   </div>
                 )}
 
+                {(clinic.description?.[lang as keyof MultilingualString] || clinic.description?.ru) && (
                 <div className="bg-[#f8faff] p-8 rounded-xl border-l-4 border-blue-600 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-4 uppercase tracking-[0.12em]">{t('clinic.about')}</h2>
                    <p className="text-[15px] leading-[1.7] text-[#374151] whitespace-pre-wrap">
                       {clinic.description[lang as keyof MultilingualString] || clinic.description.ru}
                    </p>
                 </div>
+                )}
 
                 {/* History Section */}
                 {(clinic.history?.[lang as keyof MultilingualString] || clinic.history?.ru) && (
@@ -120,11 +130,18 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                   <div className="bg-white p-8 rounded-xl border border-slate-100 shadow-sm">
                     <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.specialties')}</h2>
                     <div className="flex flex-wrap gap-2">
-                        {clinic.specialties.map((s: string) => (
-                          <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wide">
-                            {s}
-                          </span>
-                        ))}
+                        {clinic.specialties.map((s: string) => {
+                          const id = specialtyId(s);
+                          if (!id && /^[a-z_]+$/.test(s)) return null; // unknown raw key: never show it
+                          const key = `clinic.specialty_${id}`;
+                          const translated = id ? t(key) : s;
+                          const label = id && translated === key ? COMMON_SPECIALTIES.find(c => c.id === id)?.label ?? s : translated;
+                          return (
+                            <span key={s} className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-wide">
+                              {label}
+                            </span>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
@@ -149,8 +166,9 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                         </div>
                       </div>
 
-                      {/* Verified Badge Card */}
-                      <div className="flex items-center gap-4 group">
+                      {/* Verified badge: approved clinics only. Imported ones must not claim verification. */}
+                      {clinic.status === 'approved' && (
+                        <div className="flex items-center gap-4 group">
                         <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0 transition-colors group-hover:bg-blue-600 group-hover:text-white">
                           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         </div>
@@ -159,6 +177,21 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                           <p className="text-xs text-slate-500 mt-0.5">{t('doctor.diplomaVerified')}</p>
                         </div>
                       </div>
+                      )}
+                      {isUnverifiedImport(clinic) && (
+                        <div className="flex items-start gap-4 rounded-xl bg-amber-50 border border-amber-100 p-4">
+                          <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center shrink-0 font-black">i</div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-bold text-slate-900">{t('clinic.unverified')}</p>
+                            <Link
+                              href={`/${lang}/clinic/register?claim=${clinic.slug}`}
+                              className="inline-block text-xs font-bold text-blue-600 hover:underline"
+                            >
+                              {t('clinic.claimClinic')}
+                            </Link>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Doctor Count */}
                       <div className="flex items-center gap-4 group">
@@ -208,14 +241,37 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                 <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                    <h2 className="text-[13px] font-bold text-[#94a3b8] mb-6 uppercase tracking-[0.12em]">{t('clinic.contacts')}</h2>
                    <div className="space-y-4">
-                      <div>
-                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('clinic.address')}</p>
-                         <p className="text-sm font-bold text-[#374151]">{clinic.address}</p>
-                      </div>
-                      <div>
-                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('auth.registerPhone')}</p>
-                         <p className="text-sm font-bold text-[#374151]">{clinic.phone}</p>
-                      </div>
+                      {clinic.address && (
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('clinic.address')}</p>
+                          <p className="text-sm font-bold text-[#374151]">{clinic.address}</p>
+                        </div>
+                      )}
+                      {clinic.phone && (
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('auth.registerPhone')}</p>
+                          <a href={`tel:${clinic.phone}`} className="text-sm font-bold text-[#374151] hover:text-blue-600">{clinic.phone}</a>
+                        </div>
+                      )}
+                      {clinic.website && safeHttpUrl(clinic.website) && (
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('clinic.website')}</p>
+                          <a href={safeHttpUrl(clinic.website)!} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 hover:underline break-all">{websiteHost(clinic.website)}</a>
+                        </div>
+                      )}
+                      {clinic.email && (
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{t('clinic.email')}</p>
+                          <a href={`mailto:${clinic.email}`} className="text-sm font-bold text-blue-600 hover:underline break-all">{clinic.email}</a>
+                        </div>
+                      )}
+                      {(clinic.telegram || clinic.instagram || clinic.whatsapp) && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {clinic.telegram && <a href={telegramUrl(clinic.telegram)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">Telegram</a>}
+                          {clinic.instagram && <a href={instagramUrl(clinic.instagram)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">Instagram</a>}
+                          {clinic.whatsapp && <a href={whatsappUrl(clinic.whatsapp)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">WhatsApp</a>}
+                        </div>
+                      )}
                    </div>
                 </div>
              </div>

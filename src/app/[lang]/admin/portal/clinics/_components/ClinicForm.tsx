@@ -1,6 +1,6 @@
 import { saveClinic, deleteManagedClinic } from '@/app/actions/admin-content';
-import { CLINIC_TYPES, ALLOWED_CITIES } from '@/lib/clinic-constants';
-import { CATEGORIES } from '@/lib/doctor-constants';
+import { CLINIC_TYPES, ALLOWED_CITIES, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
+import { specialtyId } from '@/lib/clinic-display';
 import { CLINIC_STATUSES } from '@/lib/admin-content/clinic-form';
 import { DAYS } from '@/lib/admin-content/common';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
@@ -103,10 +103,10 @@ export default function ClinicForm({ lang, id, clinic }: { lang: string; id: str
 
         <Card title="Специальности">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {Object.entries(CATEGORIES).map(([key, cfg]) => (
-              <label key={key} className="flex items-center gap-2 text-sm bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
-                <input type="checkbox" name="specialties" value={key} defaultChecked={c?.specialties?.includes(key)} />
-                <span>{cfg.icon} {cfg.labels.ru}</span>
+            {COMMON_SPECIALTIES.map(sp => (
+              <label key={sp.id} className="flex items-center gap-2 text-sm bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                <input type="checkbox" name="specialties" value={sp.id} defaultChecked={c?.specialties?.some(x => specialtyId(x) === sp.id)} />
+                <span>{sp.emoji} {sp.label}</span>
               </label>
             ))}
           </div>

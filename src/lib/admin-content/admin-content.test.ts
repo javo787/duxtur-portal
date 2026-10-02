@@ -19,7 +19,7 @@ describe('parseClinicForm', () => {
       name_ru: '  Клиника «Нур»  ', type: 'dental_clinic', status: 'approved', city: 'Душанбе',
       phone: '92 000 0000', email: 'INFO@Nur.tj', website: 'nur.tj', instagram: 'https://instagram.com/nur_clinic/',
       telegram: '@nur_clinic', whatsapp: '+992 98 774 6263', lat: '38,5598', lng: '68.787',
-      specialties: ['dentistry', 'not-a-key'],
+      specialties: ['dentistry', 'general', 'not-a-key'],
       mon_working: 'on', mon_open: '08:00', mon_close: '18:00',
     })));
     expect(d.name.ru).toBe('Клиника «Нур»');
@@ -30,6 +30,11 @@ describe('parseClinicForm', () => {
     expect(d.coordinates).toEqual({ lat: 38.5598, lng: 68.787 });
     expect(d.workingHours?.mon).toEqual({ open: '08:00', close: '18:00', isWorking: true });
     expect(d.workingHours?.sun.isWorking).toBe(false);
+  });
+
+  it('accepts only the clinic specialty vocabulary (doctor-only keys like general are dropped)', () => {
+    const d = ok(parseClinicForm(fd({ name_ru: 'Клиника Тест', specialties: ['ultrasound', 'tests', 'general'] })));
+    expect(d.specialties).toEqual(['ultrasound', 'tests']);
   });
 
   it('leaves optional blocks empty instead of inventing values', () => {
