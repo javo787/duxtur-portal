@@ -111,13 +111,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 3) Firebase service account: sign a throw-away token for a fake uid (nothing is created in Firebase)
+  // 3) Firebase service account: sign a throw-away custom token for a fake uid locally (nothing is created in Firebase)
   if (flags.FIREBASE_SERVICE_ACCOUNT_JSON !== 'ok') {
     checks.firebase = { status: 'skipped', detail: 'FIREBASE_SERVICE_ACCOUNT_JSON is not set or not valid JSON' };
   } else {
     try {
       const { value, ms } = await timed(async () => {
-        const { createEduCustomToken } = await import('@/lib/firebase-admin');
+        const { createEduCustomToken } = await import('@/lib/edu-custom-token');
         const token = await createEduCustomToken('tg_healthcheck', { provider: 'healthcheck' });
         return { customTokenLength: token.length };
       });
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
       checks.firebase = {
         status: 'fail',
         detail: describeError(err),
-        fix: 'Service account key is wrong/expired, belongs to another project, or lacks the "Service Account Token Creator" role.',
+        fix: 'FIREBASE_SERVICE_ACCOUNT_JSON is incomplete or its private_key is damaged: paste the whole key file of the Firebase project that active_study uses.',
       };
     }
   }

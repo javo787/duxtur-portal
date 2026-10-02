@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { consumeLogin, displayName, isValidToken } from '@/lib/edu-telegram-login';
-import { createEduCustomToken } from '@/lib/firebase-admin';
+import { createEduCustomToken } from '@/lib/edu-custom-token';
 import { eduPreflight, withEduCors } from '@/lib/edu-cors';
 import { describeError, eduLog, envFlags, maskRef, newReqId, requestFacts, verboseLogs } from '@/lib/edu-log';
 
@@ -100,7 +100,7 @@ async function handleCheck(req: NextRequest, reqId: string, startedAt: number, r
         ...describeError(err),
         tookMs: Date.now() - tokenStartedAt,
         consequence: 'login was already consumed: the next poll returns gone and the user must restart the login',
-        hint: 'FIREBASE_SERVICE_ACCOUNT_JSON missing/invalid, or the service account lacks permission (Service Account Token Creator).',
+        hint: 'FIREBASE_SERVICE_ACCOUNT_JSON is missing, not valid JSON, or its private_key is damaged (see the error message above).',
         env: envFlags(),
       }, 'error');
       return respond({ error: 'Server error', ref: reqId }, 500);
