@@ -14,11 +14,29 @@ export async function OPTIONS(req: NextRequest) {
 
 // POST /api/edu-auth/telegram/check { token, pollSecret }
 //  -> { status: 'pending' } | { status: 'gone' } | { status: 'approved', customToken, profile }
+type Respond = (body: Record<string, unknown>, status?: number) => NextResponse;
+
 export async function POST(req: NextRequest) {
   const reqId = newReqId();
   const startedAt = Date.now();
-  const respond = (body: Record<string, unknown>, status = 200) =>
-    withEduCors(req, NextResponse.json(body, { status }), reqId);
+  const respond: Respond = (body, status = 200) => withEduCors(req, NextResponse.json(body, { status }), reqId);
+
+  // Nothing may escape: an uncaught exception makes Next answer 500 with an empty body and no X-Edu-Request-Id,
+  // which is undiagnosable from the browser. Anything unexpected is logged here and returned with its ref.
+  try {
+    return await handleCheck(req, reqId, startedAt, respond);
+  } catch (error) {
+    Sentry.captureException(error);
+    eduLog('check', reqId, 'check:unhandled', {
+      ...describeError(error),
+      tookMs: Date.now() - startedAt,
+      env: envFlags(),
+    }, 'error');
+    return respond({ error: 'Server error', ref: reqId }, 500);
+  }
+}
+
+async function handleCheck(req: NextRequest, reqId: string, startedAt: number, respond: Respond): Promise<NextResponse> {
 
   const ip = (req.headers.get('x-forwarded-for') || 'anonymous').split(',')[0].trim();
   // Polled every ~2s for up to 5 min from one client: allow generously, but not unbounded.
