@@ -3,6 +3,7 @@ import { authConfig } from '@/auth.config';
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { i18n } from "@/i18n-config";
+import { isEduPath } from "@/lib/edu-routes";
 
 const { auth } = NextAuth(authConfig);
 
@@ -15,6 +16,11 @@ export default async function middleware(request: NextRequest) {
       new URL(`https://duxtur.org${pathname}${request.nextUrl.search}`, request.url),
       301
     );
+  }
+
+  // 2a. Duxtur Edu is a separate app proxied under /edu: no locale redirect, no portal auth
+  if (isEduPath(pathname)) {
+    return NextResponse.next();
   }
 
   // 2. Skip static files and API routes
