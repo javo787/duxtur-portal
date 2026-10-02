@@ -9,7 +9,7 @@ vi.mock('@/models/TelegramLogin', () => ({ default: {} }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 const rateLimit = vi.fn();
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: (...a: unknown[]) => rateLimit(...a) }));
-vi.mock('@/lib/firebase-admin', () => ({ createEduCustomToken: (...a: unknown[]) => createEduCustomToken(...a) }));
+vi.mock('@/lib/edu-custom-token', () => ({ createEduCustomToken: (...a: unknown[]) => createEduCustomToken(...a) }));
 vi.mock('@/lib/edu-telegram-login', async () => {
   const actual = await vi.importActual<typeof import('@/lib/edu-telegram-login')>('@/lib/edu-telegram-login');
   return { ...actual, consumeLogin: (...a: unknown[]) => consumeLogin(...a) };
