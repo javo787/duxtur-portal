@@ -7,6 +7,7 @@ export interface ClinicFilters {
 }
 
 import { escapeRegExp } from './utils/string';
+import { specialtyMatchValues } from './clinic-display';
 
 export function buildClinicQuery(filters: ClinicFilters) {
   const query: Record<string, any> = {
@@ -26,7 +27,8 @@ export function buildClinicQuery(filters: ClinicFilters) {
   }
 
   if (filters.specialty) {
-    query.specialties = filters.specialty;
+    // match both the id and the legacy Russian label stored by older records
+    query.specialties = { $in: specialtyMatchValues(filters.specialty) };
   }
 
   if (filters.q) {

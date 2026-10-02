@@ -82,5 +82,14 @@ export const COMMON_SPECIALTIES = [
   { id: 'gynecology',    label: 'Гинекология',    emoji: '🤰' },
   { id: 'ultrasound',    label: 'УЗИ',            emoji: '🌊' },
   { id: 'mri',           label: 'МРТ',            emoji: '🧲' },
-  { id: 'tests',         label: 'Анализы',        emoji: '🧪' }
+  { id: 'tests',         label: 'Анализы',        emoji: '🧪' },
+  { id: 'general',       label: 'Общая медицина', emoji: '🩺' },
+  { id: 'endocrinology', label: 'Эндокринология', emoji: '🦋' },
+  { id: 'urology',       label: 'Урология',       emoji: '💧' },
+  { id: 'orthopedics',   label: 'Травматология и ортопедия', emoji: '🦴' },
+  { id: 'gastroenterology', label: 'Гастроэнтерология', emoji: '🍽️' },
+  { id: 'ent',           label: 'Оториноларингология (ЛОР)', emoji: '👂' },
+  { id: 'oncology',      label: 'Онкология',      emoji: '🎗️' },
+  { id: 'genetics',      label: 'Генетика',       emoji: '🧬' },
+  { id: 'physiotherapy', label: 'Физиотерапия',   emoji: '💆' }
 ];

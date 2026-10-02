@@ -1,4 +1,5 @@
 import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, ClinicType } from './clinic-constants';
+import { normalizeSpecialtyParam } from './clinic-display';
 
 export interface ClinicSearchParams {
   city?: string;
@@ -40,7 +41,8 @@ export function sanitizeSearchParams(params: ClinicSearchParams) {
     const trimmedSpecialty = params.specialty.trim();
     const len = Array.from(trimmedSpecialty).length;
     if (len > 0 && len <= 100) {
-      sanitized.specialty = trimmedSpecialty;
+      // old links carry the Russian label, new ones the id: always continue with the id
+      sanitized.specialty = normalizeSpecialtyParam(trimmedSpecialty);
     }
   }
 

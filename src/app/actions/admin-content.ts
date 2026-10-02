@@ -87,6 +87,10 @@ export async function saveClinic(id: string, fd: FormData) {
     phone: d.phone, phone2: d.phone2, email: d.email, website: d.website,
     telegram: d.telegram, whatsapp: d.whatsapp, instagram: d.instagram,
     specialties: d.specialties, licenseNumber: d.licenseNumber,
+    branches: d.branches.map(b => ({
+      label: b.label, address: b.address, city: b.city, district: b.district, phone: b.phone,
+      ...(b.coordinates ? { coordinates: { lat: b.coordinates.lat, lng: b.coordinates.lng } } : {}),
+    })),
     logo: logo.url || d.logo, coverImage: cover.url || d.coverImage,
     ...(d.workingHours ? { workingHours: d.workingHours } : {}),
     ...(d.coordinates

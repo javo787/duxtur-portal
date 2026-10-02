@@ -14,6 +14,19 @@ const WorkingHoursSchema = {
   isWorking: { type: Boolean, default: true },
 };
 
+// Additional locations of the same clinic. The main location stays in the top-level address/coordinates.
+const BranchSchema = new mongoose.Schema({
+  label:    { type: String, default: '', maxlength: 120 },   // e.g. "Филиал на Рудаки"
+  address:  { type: String, required: true, maxlength: 300 },
+  city:     { type: String, default: '' },
+  district: { type: String, default: '' },
+  phone:    { type: String, default: '' },
+  coordinates: {
+    lat: { type: Number, min: -90, max: 90 },
+    lng: { type: Number, min: -180, max: 180 },
+  },
+});
+
 const ClinicSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
   name: MultilingualString,
@@ -79,6 +92,11 @@ const ClinicSchema = new mongoose.Schema({
     sun: WorkingHoursSchema,
   },
   specialties: { type: [String], default: [] },
+  branches: {
+    type: [BranchSchema],
+    default: [],
+    validate: { validator: (v: unknown[]) => v.length <= 20, message: 'A clinic can have at most 20 branches' },
+  },
   services: [{
     name: MultilingualString,
     price: { type: Number, default: 0 },
