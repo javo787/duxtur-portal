@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
 import { EDU_CSP } from "./src/lib/edu-csp";
+import { eduLocaleRedirects } from "./src/lib/edu-routes";
 
 // Origin that serves the static Duxtur Edu build at its ROOT (e.g. a Firebase Hosting site).
 // When unset, /edu is simply not mounted.
@@ -90,6 +91,8 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      // /ru/edu, /tg/edu/... -> /edu (Edu is mounted once, without a locale prefix)
+      ...eduLocaleRedirects,
       {
         source: '/:path*',
         has: [

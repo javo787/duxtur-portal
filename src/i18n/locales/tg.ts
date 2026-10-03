@@ -71,6 +71,8 @@ export const tg = {
     aboutUs: 'Дар бораи мо',
     editorialPolicy: 'Сиёсати таҳририя',
     help: 'Ёрӣ',
+    edu: 'Донишҷӯён',
+    eduFull: 'Донишҷӯён ва омӯзгорон',
   },
   home: {
     heroBadge: 'Мақолаҳо аз духтурони амалкунанда',

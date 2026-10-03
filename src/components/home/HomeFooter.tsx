@@ -46,11 +46,19 @@ export default function HomeFooter({ lang }: { lang: Locale }) {
                 { href: `/${lang}/clinics`, label: t('clinic.title') },
                 { href: `/${lang}/authors`, label: t('nav.authors') },
                 { href: `/${lang}/search`, label: t('common.search') },
+                // Duxtur Edu is a separate app at /edu: a plain <a> (a full page load), not next/link.
+                { href: '/edu', label: t('nav.eduFull'), hardNav: true },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="footer-link inline-block text-sm text-slate-500">
-                    {link.label}
-                  </Link>
+                  {link.hardNav ? (
+                    <a href={link.href} className="footer-link inline-block text-sm text-slate-500">
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className="footer-link inline-block text-sm text-slate-500">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

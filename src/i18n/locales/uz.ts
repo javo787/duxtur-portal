@@ -71,6 +71,8 @@ export const uz = {
     aboutUs: 'Biz haqimizda',
     editorialPolicy: 'Tahririyat siyosati',
     help: 'Yordam',
+    edu: 'Talabalar uchun',
+    eduFull: 'Talabalar va o‘qituvchilar uchun',
   },
   home: {
     heroBadge: 'Amaliyotchi shifokorlardan maqolalar',
