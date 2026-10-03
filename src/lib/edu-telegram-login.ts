@@ -70,7 +70,7 @@ export async function approveLogin(token: string, tg: TelegramProfile): Promise<
   const res = await TelegramLogin.findOneAndUpdate(
     { tokenHash: sha256(token), status: 'pending', expiresAt: { $gt: new Date() } },
     { $set: { status: 'approved', telegram: tg } },
-    { new: true }
+    { returnDocument: 'after' }
   );
   return !!res;
 }
@@ -92,7 +92,7 @@ export async function consumeLogin(token: string, pollSecret: string): Promise<C
   const consumed = await TelegramLogin.findOneAndUpdate(
     { tokenHash, pollSecretHash, status: 'approved', expiresAt: { $gt: new Date() } },
     { $set: { status: 'consumed' } },
-    { new: false }
+    { returnDocument: 'before' }
   ).lean();
 
   if (consumed?.telegram) {

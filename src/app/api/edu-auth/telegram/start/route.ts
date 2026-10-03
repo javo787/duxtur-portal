@@ -1,15 +1,26 @@
 import * as Sentry from '@sentry/nextjs';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { createLogin, START_PREFIX } from '@/lib/edu-telegram-login';
 import { eduPreflight, withEduCors } from '@/lib/edu-cors';
 import { eduBotUsername } from '@/lib/edu-telegram-bot';
 import { describeError, eduLog, envFlags, maskRef, newReqId, requestFacts } from '@/lib/edu-log';
+import { logWebhookState, servingHostOf } from '@/lib/edu-webhook-state';
 
 export const dynamic = 'force-dynamic';
 
 // Logged once per cold start, so a deploy with a missing env var is visible without any request failing first.
 let envLogged = false;
+
+// Writes the Telegram webhook registration state to the logs (see edu-webhook-state.ts) after the response is sent.
+function scheduleWebhookStateLog(reqId: string, servingHost: string) {
+  const run = () => logWebhookState(reqId, servingHost);
+  try {
+    after(run);
+  } catch {
+    void run(); // called outside a request scope (unit tests)
+  }
+}
 
 export async function OPTIONS(req: NextRequest) {
   const reqId = newReqId();
@@ -51,6 +62,7 @@ export async function POST(req: NextRequest) {
       dbMs,
       tookMs: Date.now() - startedAt,
     });
+    scheduleWebhookStateLog(reqId, servingHostOf(req.headers));
     return respond({ token, pollSecret, botUrl, expiresInSec });
   } catch (error) {
     Sentry.captureException(error);

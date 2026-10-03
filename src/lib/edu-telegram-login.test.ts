@@ -84,6 +84,8 @@ describe('login lifecycle', () => {
     expect(filter.status).toBe('pending');
     expect(filter.tokenHash).toBe(sha256(TOKEN));
     expect(filter.expiresAt.$gt).toBeInstanceOf(Date);
+    // Mongoose 9 deprecates `new: true` and prints a [MONGOOSE] warning (level error in Vercel) on every call.
+    expect(findOneAndUpdate.mock.calls[0][2]).toEqual({ returnDocument: 'after' });
 
     findOneAndUpdate.mockResolvedValueOnce(null);
     expect(await approveLogin(TOKEN, { id: 1, firstName: 'A' })).toBe(false);
@@ -99,6 +101,7 @@ describe('login lifecycle', () => {
     expect(filter.tokenHash).toBe(sha256(TOKEN));
     expect(filter.pollSecretHash).toBe(sha256(SECRET));
     expect(filter.status).toBe('approved');
+    expect(findOneAndUpdate.mock.calls[0][2]).toEqual({ returnDocument: 'before' });
   });
 
   it('reports pending, then gone', async () => {
