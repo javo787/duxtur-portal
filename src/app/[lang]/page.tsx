@@ -145,7 +145,7 @@ for (const item of (categoryAgg as any[])) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomeHeader lang={lang} eduLabel={t('nav.edu')} />
+      <HomeHeader lang={lang} eduLabel={t('nav.edu')} eduTeacherLabel={t('nav.eduTeachers')} />
       <HomeHero lang={lang} dict={dict} />
       <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
       <HomeArticles lang={lang} articles={articles as any[]} dict={dict} t={t} />

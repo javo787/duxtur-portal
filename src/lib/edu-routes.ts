@@ -3,6 +3,15 @@ import { i18n } from '../i18n-config';
 /** Duxtur Edu (active_study) is mounted under this path via a rewrite in next.config.ts. */
 export const EDU_BASE = '/edu';
 
+/**
+ * Where the portal's two entry links lead. Both go to the Edu root for now; change a value here (for example
+ * to `${EDU_BASE}?role=teacher`) when teachers get their own entry.
+ */
+export const EDU_LINKS = {
+  students: EDU_BASE,
+  teachers: EDU_BASE,
+} as const;
+
 export function isEduPath(pathname: string): boolean {
   return pathname === EDU_BASE || pathname.startsWith(`${EDU_BASE}/`);
 }

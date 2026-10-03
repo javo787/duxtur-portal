@@ -73,8 +73,7 @@ export const tg = {
     help: 'Ёрӣ',
     edu: 'Донишҷӯён',
     eduFull: 'Донишҷӯён ва омӯзгорон',
-    eduStripText: 'Duxtur Edu — санҷишҳо дар дарсҳо барои донишҷӯён ва омӯзгорони донишгоҳҳои тиббӣ',
-    eduStripCta: 'Кушодан →',
+    eduTeachers: 'Омӯзгорон',
   },
   home: {
     heroBadge: 'Мақолаҳо аз духтурони амалкунанда',

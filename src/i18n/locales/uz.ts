@@ -73,8 +73,7 @@ export const uz = {
     help: 'Yordam',
     edu: 'Talabalar uchun',
     eduFull: 'Talabalar va o‘qituvchilar uchun',
-    eduStripText: 'Duxtur Edu — tibbiyot universitetlari talabalari va o‘qituvchilari uchun darsdagi testlar',
-    eduStripCta: 'Ochish →',
+    eduTeachers: 'O‘qituvchilar uchun',
   },
   home: {
     heroBadge: 'Amaliyotchi shifokorlardan maqolalar',

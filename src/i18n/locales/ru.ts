@@ -73,8 +73,7 @@ export const ru = {
     help: 'Помощь',
     edu: 'Студентам',
     eduFull: 'Студентам и преподавателям',
-    eduStripText: 'Duxtur Edu — тесты на занятиях для студентов и преподавателей медвузов',
-    eduStripCta: 'Открыть →',
+    eduTeachers: 'Преподавателям',
   },
   home: {
     heroBadge: 'Статьи от практикующих врачей',
