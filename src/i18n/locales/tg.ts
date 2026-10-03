@@ -73,6 +73,7 @@ export const tg = {
     help: 'Ёрӣ',
     edu: 'Донишҷӯён',
     eduFull: 'Донишҷӯён ва омӯзгорон',
+    eduTeachers: 'Омӯзгорон',
   },
   home: {
     heroBadge: 'Мақолаҳо аз духтурони амалкунанда',

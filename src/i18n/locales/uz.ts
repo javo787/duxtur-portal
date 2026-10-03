@@ -73,6 +73,7 @@ export const uz = {
     help: 'Yordam',
     edu: 'Talabalar uchun',
     eduFull: 'Talabalar va o‘qituvchilar uchun',
+    eduTeachers: 'O‘qituvchilar uchun',
   },
   home: {
     heroBadge: 'Amaliyotchi shifokorlardan maqolalar',

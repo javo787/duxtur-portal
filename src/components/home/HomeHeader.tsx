@@ -8,6 +8,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useSession, signOut } from 'next-auth/react';
 import { Locale } from '@/i18n';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
+import { EDU_LINKS } from '@/lib/edu-routes';
 
 interface ExtendedUser {
   name?: string | null;
@@ -18,9 +19,13 @@ interface ExtendedUser {
 
 // Duxtur Edu is a separate app mounted at /edu (see next.config.ts). It is reached with a plain <a>, never next/link:
 // Link would try to prefetch and client-navigate to a route this app does not own.
-const EDU_HREF = '/edu';
+interface HomeHeaderProps {
+  lang: Locale;
+  eduLabel?: string;
+  eduTeacherLabel?: string;
+}
 
-export default function HomeHeader({ lang, eduLabel = 'Студентам' }: { lang: Locale; eduLabel?: string }) {
+export default function HomeHeader({ lang, eduLabel = 'Студентам', eduTeacherLabel = 'Преподавателям' }: HomeHeaderProps) {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const { visible, scrolled } = useScrollVisibility();
@@ -80,7 +85,7 @@ export default function HomeHeader({ lang, eduLabel = 'Студентам' }: { 
             </Link>
           ))}
           <a
-            href={EDU_HREF}
+            href={EDU_LINKS.students}
             className="relative px-4 py-2 text-[13.5px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-full transition-all duration-200"
           >
             {eduLabel}
@@ -155,7 +160,7 @@ export default function HomeHeader({ lang, eduLabel = 'Студентам' }: { 
       </div>
 
       {/* ── Mobile menu ── */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96' : 'max-h-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-[36rem]' : 'max-h-0'}`}>
         <div className="bg-white dark:bg-card border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
           {navLinks.map((link) => (
             <Link
@@ -167,13 +172,19 @@ export default function HomeHeader({ lang, eduLabel = 'Студентам' }: { 
               {link.label}
             </Link>
           ))}
-          <a
-            href={EDU_HREF}
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center px-4 py-3 text-[14px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
-          >
-            {eduLabel}
-          </a>
+          {[
+            { href: EDU_LINKS.students, label: eduLabel },
+            { href: EDU_LINKS.teachers, label: eduTeacherLabel },
+          ].map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center px-4 py-3 text-[14px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
+            >
+              {link.label}
+            </a>
+          ))}
 
           <div className="pt-3 border-t border-slate-100 dark:border-white/5 mt-3 flex flex-col gap-2">
             {session ? (
