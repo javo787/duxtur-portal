@@ -14,7 +14,7 @@ export interface DoctorDoc {
   clinicName?: string; clinicId?: string | null;
   experience?: number; price?: number; languages?: string[]; consultationTypes?: string[];
   acceptsNewPatients?: boolean; workingHours?: string; licenseNumber?: string; image?: string;
-  instagram?: string; telegram?: string; whatsapp?: string;
+  instagram?: string; telegram?: string; whatsapp?: string; facebook?: string;
 }
 export interface ClinicOption { _id: string; name?: { ru?: string }; city?: string }
 
@@ -73,6 +73,7 @@ export default function DoctorForm({
             <Label text="Telegram"><input name="telegram" defaultValue={d?.telegram ?? ''} className={inputCls} /></Label>
             <Label text="WhatsApp"><input name="whatsapp" defaultValue={d?.whatsapp ?? ''} className={inputCls} /></Label>
             <Label text="Instagram"><input name="instagram" defaultValue={d?.instagram ?? ''} className={inputCls} /></Label>
+            <Label text="Facebook"><input name="facebook" defaultValue={d?.facebook ?? ''} placeholder="https://facebook.com/…" className={inputCls} /></Label>
             <Label text="Город">
               <input name="city" list="cities" defaultValue={d?.city ?? ''} className={inputCls} />
               <datalist id="cities">{ALLOWED_CITIES.map(x => <option key={x} value={x} />)}</datalist>

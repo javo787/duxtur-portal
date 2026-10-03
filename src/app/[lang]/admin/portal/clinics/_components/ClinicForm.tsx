@@ -16,7 +16,7 @@ export interface ClinicDoc {
   city?: string; district?: string; address?: string;
   coordinates?: { lat?: number; lng?: number };
   phone?: string; phone2?: string; email?: string; website?: string;
-  telegram?: string; whatsapp?: string; instagram?: string;
+  telegram?: string; whatsapp?: string; instagram?: string; facebook?: string;
   workingHours?: Record<string, { open: string; close: string; isWorking: boolean }>;
   specialties?: string[];
   branches?: { label?: string; address?: string; city?: string; district?: string; phone?: string; coordinates?: { lat?: number; lng?: number } }[];
@@ -110,6 +110,9 @@ export default function ClinicForm({ lang, id, clinic }: { lang: string; id: str
             <Label text="Telegram"><input name="telegram" defaultValue={c?.telegram ?? ''} placeholder="@name или ссылка" className={inputCls} /></Label>
             <Label text="WhatsApp" hint="Номер с кодом страны"><input name="whatsapp" defaultValue={c?.whatsapp ?? ''} className={inputCls} /></Label>
             <Label text="Instagram"><input name="instagram" defaultValue={c?.instagram ?? ''} placeholder="@name или ссылка" className={inputCls} /></Label>
+            <Label text="Facebook" hint="Ссылка на страницу, например facebook.com/название">
+              <input name="facebook" defaultValue={c?.facebook ?? ''} placeholder="https://facebook.com/…" className={inputCls} />
+            </Label>
           </Grid>
         </Card>
 

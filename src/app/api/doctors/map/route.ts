@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
         telegram: 1,
         whatsapp: 1,
         instagram: 1,
+        facebook: 1,
         workingHours: 1
       }
     });

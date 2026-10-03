@@ -23,6 +23,14 @@ export default function SocialsVisitingCard({ profile, setProfile }: Props) {
           hint="Полная ссылка на профиль"
         />
         <Field
+          icon="📘"
+          label="Facebook"
+          value={profile.facebook || ''}
+          onChange={(v) => setProfile((p: Record<string, unknown>) => ({ ...p, facebook: v }))}
+          placeholder="https://facebook.com/your.page"
+          hint="facebook.com/your.page"
+        />
+        <Field
           icon="✈️"
           label="Telegram"
           value={profile.telegram || ''}

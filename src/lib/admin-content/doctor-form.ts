@@ -1,8 +1,9 @@
 import {
-  coordsField, Errors, field, handleField, imageUrlField, INSTAGRAM_HOST, multilingual, numberField,
+  coordsField, Errors, facebookField, field, handleField, imageUrlField, INSTAGRAM_HOST, multilingual, numberField,
   phoneField, pickEnum, pickMany, TELEGRAM_HOST, whatsappField, type Lang,
 } from './common';
 import type { ParseResult } from './clinic-form';
+import { instagramUrl, telegramUrl, whatsappUrl } from '../clinic-display';
 
 export const DOCTOR_STATUSES = ['pre_imported', 'pending', 'approved', 'rejected', 'banned'] as const;
 export type DoctorStatus = (typeof DOCTOR_STATUSES)[number];
@@ -32,7 +33,10 @@ export interface DoctorInput {
   instagram: string;
   telegram: string;
   whatsapp: string;
+  facebook: string;
 }
+
+const toUrl = (value: string, build: (v: string) => string) => (value ? build(value) : '');
 
 export function parseDoctorForm(fd: FormData): ParseResult<DoctorInput> {
   const errors: Errors = [];
@@ -74,9 +78,11 @@ export function parseDoctorForm(fd: FormData): ParseResult<DoctorInput> {
     workingHours: field(fd, 'workingHours'),
     licenseNumber: field(fd, 'licenseNumber'),
     image: imageUrlField(fd, 'image', 'Фото', errors),
-    instagram: handleField(fd, 'instagram', 'Instagram', INSTAGRAM_HOST, errors),
-    telegram: handleField(fd, 'telegram', 'Telegram', TELEGRAM_HOST, errors),
-    whatsapp: whatsappField(fd, 'whatsapp', errors),
+    // Doctor profiles store full URLs: the public doctor page uses these values directly as links.
+    instagram: toUrl(handleField(fd, 'instagram', 'Instagram', INSTAGRAM_HOST, errors), instagramUrl),
+    telegram: toUrl(handleField(fd, 'telegram', 'Telegram', TELEGRAM_HOST, errors), telegramUrl),
+    whatsapp: toUrl(whatsappField(fd, 'whatsapp', errors), whatsappUrl),
+    facebook: facebookField(fd, 'facebook', errors),
   };
   return errors.length ? { ok: false, errors } : { ok: true, data };
 }

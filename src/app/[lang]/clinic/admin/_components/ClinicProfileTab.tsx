@@ -282,6 +282,19 @@ export default function ClinicProfileTab({ lang, clinic }: { lang: string, clini
         </button>
       </div>
 
+      {/* Contacts & social networks */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
+        <SectionHeader title="Контакты и соцсети" subtitle="Пациенты увидят эти ссылки на странице вашей клиники" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label={`${t('auth.registerPhone')} 2`} value={profile.phone2 || ''} onChange={v => setProfile({ ...profile, phone2: v })} placeholder="+992 XX XXX XXXX" />
+          <Field label="Сайт" value={profile.website || ''} onChange={v => setProfile({ ...profile, website: v })} placeholder="https://" />
+          <Field label="Telegram" value={profile.telegram || ''} onChange={v => setProfile({ ...profile, telegram: v })} placeholder="@имя или ссылка" />
+          <Field label="WhatsApp" value={profile.whatsapp || ''} onChange={v => setProfile({ ...profile, whatsapp: v })} placeholder="+992 XX XXX XXXX" />
+          <Field label="Instagram" value={profile.instagram || ''} onChange={v => setProfile({ ...profile, instagram: v })} placeholder="@имя или ссылка" />
+          <Field label="Facebook" value={profile.facebook || ''} onChange={v => setProfile({ ...profile, facebook: v })} placeholder="https://facebook.com/название" hint="Ссылка на страницу клиники" />
+        </div>
+      </div>
+
       {/* Gallery Section */}
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm space-y-6">
         <SectionHeader title={t('clinic.gallery')} />

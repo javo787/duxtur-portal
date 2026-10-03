@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useT } from '@/i18n';
+import { facebookHref } from '@/lib/social';
 
 interface Props {
   doctor: {
@@ -11,6 +12,7 @@ interface Props {
     _id?: any;
     phone?: string;
     instagram?: string;
+    facebook?: string;
     telegram?: string;
     whatsapp?: string;
     workingHours?: string;
@@ -43,7 +45,7 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
   const [loading, setLoading] = useState('');
 
   const isLoggedIn = !!session?.user;
-  const hasContacts = doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram;
+  const hasContacts = doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram || facebookHref(doctor.facebook);
 
   const handleOpen = () => {
     setOpen(true);
@@ -301,6 +303,27 @@ export default function ContactDoctorButton({ doctor, lang, className }: Props) 
                             <p className="font-bold text-gray-900">{t('contact.write')}</p>
                           </div>
                           <svg className="w-4 h-4 text-gray-300 group-hover:text-pink-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </a>
+                      )}
+
+                      {facebookHref(doctor.facebook) && (
+                        <a href={facebookHref(doctor.facebook)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition group"
+                        >
+                          <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.413c0-3.026 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.265h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-400 font-medium">Facebook</p>
+                            <p className="font-bold text-gray-900">{t('contact.write')}</p>
+                          </div>
+                          <svg className="w-4 h-4 text-gray-300 group-hover:text-blue-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                           </svg>
                         </a>

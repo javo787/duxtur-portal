@@ -97,6 +97,30 @@ describe('branches', () => {
   });
 });
 
+describe('facebook and doctor social URLs', () => {
+  it('clinic: normalizes a Facebook link or page name, rejects other hosts', () => {
+    expect(ok(parseClinicForm(fd({ name_ru: 'Клиника Тест', facebook: 'facebook.com/dlcshifo/' }))).facebook).toBe('https://www.facebook.com/dlcshifo');
+    expect(ok(parseClinicForm(fd({ name_ru: 'Клиника Тест', facebook: 'dlcshifo' }))).facebook).toBe('https://www.facebook.com/dlcshifo');
+    expect(ok(parseClinicForm(fd({ name_ru: 'Клиника Тест' }))).facebook).toBe('');
+    const bad = parseClinicForm(fd({ name_ru: 'Клиника Тест', facebook: 'https://evil.com/x' }));
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.join(' ')).toMatch(/Facebook/);
+  });
+  it('doctor: stores socials as full URLs because the public page uses them as hrefs', () => {
+    const d = ok(parseDoctorForm(fd({
+      name: 'Иванов Иван', specialty_ru: 'Хирург',
+      instagram: '@dr_ivanov', telegram: 'https://t.me/dr_ivanov', whatsapp: '+992 98 774 6263', facebook: 'fb.com/dr.ivanov',
+    })));
+    expect(d).toMatchObject({
+      instagram: 'https://instagram.com/dr_ivanov', telegram: 'https://t.me/dr_ivanov',
+      whatsapp: 'https://wa.me/992987746263', facebook: 'https://www.facebook.com/dr.ivanov',
+    });
+  });
+  it('doctor: empty socials stay empty strings', () => {
+    expect(ok(parseDoctorForm(fd({ name: 'Иванов Иван', specialty_ru: 'Хирург' })))).toMatchObject({ instagram: '', telegram: '', whatsapp: '', facebook: '' });
+  });
+});
+
 describe('clinicCompleteness', () => {
   it('lists what is still missing', () => {
     const r = clinicCompleteness({ phone: '+992900000000', coordinates: { lat: 38.5 }, specialties: ['surgery'] });

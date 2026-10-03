@@ -6,6 +6,7 @@ import User from '@/models/User';
 import { stripHtml } from '@/lib/utils';
 import { updateDoctorProfileByUserId, findDoctorByEmail } from '@/lib/db-doctor';
 import { translateFields, translateText } from '@/lib/translation-service';
+import { normalizeFacebookUrl } from '@/lib/social';
 
 /**
  * Данные профиля врача, которые могут быть обновлены.
@@ -27,6 +28,7 @@ interface DoctorProfileData {
   instagram?: string;
   telegram?: string;
   whatsapp?: string;
+  facebook?: string;
   workingHours?: string;
   accentColor?: string;
   cardTheme?: string;
@@ -156,6 +158,8 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
         instagram: data.instagram,
         telegram: data.telegram,
         whatsapp: data.whatsapp,
+        // empty clears the link; anything else must be a real Facebook page/profile URL
+        facebook: data.facebook === undefined ? undefined : (normalizeFacebookUrl(data.facebook) ?? ''),
         workingHours: data.workingHours,
         accentColor: data.accentColor,
         cardTheme: data.cardTheme,

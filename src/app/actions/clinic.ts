@@ -9,6 +9,7 @@ import { translateText } from '@/lib/translation-service';
 import { generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
+import { normalizeClinicContacts } from '@/lib/clinic-contacts';
 
 export async function registerClinic(formData: Record<string, any>) {
   await dbConnect();
@@ -179,6 +180,10 @@ export async function updateClinicProfile(id: string, data: Record<string, any>,
     if (incomingDescRu && incomingDescRu !== clinic.description?.ru) {
       updateData.description = await translateText(incomingDescRu);
     }
+
+    // Contact fields: normalize to the stored formats and refuse malformed links (instead of saving junk).
+    const contactError = normalizeClinicContacts(updateData);
+    if (contactError) return { success: false, error: contactError };
 
     await Clinic.findByIdAndUpdate(id, { $set: updateData }, { runValidators: true });
     return { success: true };

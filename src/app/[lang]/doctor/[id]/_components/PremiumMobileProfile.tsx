@@ -54,7 +54,7 @@ export function PremiumMobileProfile({
   const shortBio = rawBio.length > 120 ? rawBio.slice(0, 120) + '…' : rawBio;
   const hasBio = rawBio.length > 0;
   const hasContacts =
-    doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram;
+    doctor.phone || doctor.telegram || doctor.whatsapp || doctor.instagram || doctor.facebook;
 
   // Личный цвет врача — деталь-подпись. Фон карточки — цвет специальности:
   // так пациент с первого взгляда узнаёт профиль кардиолога среди неврологов.

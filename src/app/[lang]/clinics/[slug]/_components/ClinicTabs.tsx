@@ -11,6 +11,7 @@ import ClinicBookingWidget from './ClinicBookingWidget';
 import { useScrollVisibility } from '@/hooks/useScrollVisibility';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import { COMMON_SPECIALTIES } from '@/lib/clinic-constants';
+import { facebookHref } from '@/lib/social';
 import { instagramUrl, isUnverifiedImport, safeHttpUrl, specialtyId, telegramUrl, websiteHost, whatsappUrl } from '@/lib/clinic-display';
 
 interface MultilingualString {
@@ -38,6 +39,7 @@ interface Clinic {
   telegram?: string;
   whatsapp?: string;
   instagram?: string;
+  facebook?: string;
   photos: string[];
   doctorIds: any[];
   services: { name: MultilingualString; price: number; currency: string }[];
@@ -291,9 +293,10 @@ export default function ClinicTabs({ clinic, lang }: { clinic: Clinic; lang: str
                           <a href={`mailto:${clinic.email}`} className="text-sm font-bold text-blue-600 hover:underline break-all">{clinic.email}</a>
                         </div>
                       )}
-                      {(clinic.telegram || clinic.instagram || clinic.whatsapp) && (
+                      {(clinic.telegram || clinic.instagram || clinic.whatsapp || facebookHref(clinic.facebook)) && (
                         <div className="flex flex-wrap gap-2 pt-1">
                           {clinic.telegram && <a href={telegramUrl(clinic.telegram)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">Telegram</a>}
+                          {facebookHref(clinic.facebook) && <a href={facebookHref(clinic.facebook)!} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">Facebook</a>}
                           {clinic.instagram && <a href={instagramUrl(clinic.instagram)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">Instagram</a>}
                           {clinic.whatsapp && <a href={whatsappUrl(clinic.whatsapp)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">WhatsApp</a>}
                         </div>

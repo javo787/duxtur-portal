@@ -1,4 +1,5 @@
 import { cleanText, normalizePhone } from '../ingest/normalize';
+import { normalizeFacebookUrl } from '../social';
 
 export const LANGS = ['ru', 'tg', 'uz', 'kk', 'ky'] as const;
 export type Lang = (typeof LANGS)[number];
@@ -73,6 +74,18 @@ export function handleField(fd: FormData, key: string, label: string, host: RegE
 }
 export const INSTAGRAM_HOST = /^https?:\/\/(www\.)?instagram\.com\//i;
 export const TELEGRAM_HOST = /^https?:\/\/(www\.)?(t\.me|telegram\.me)\//i;
+
+/** Facebook is stored as a full canonical URL (accepts a link or a bare page name). */
+export function facebookField(fd: FormData, key: string, errors: Errors): string {
+  const raw = field(fd, key);
+  if (!raw) return '';
+  const url = normalizeFacebookUrl(raw);
+  if (!url) {
+    errors.push(`Facebook: нужна ссылка на страницу вида facebook.com/название («${raw}» не подходит)`);
+    return '';
+  }
+  return url;
+}
 
 /** WhatsApp is stored as digits only (the UI builds wa.me/<digits>). */
 export function whatsappField(fd: FormData, key: string, errors: Errors): string {

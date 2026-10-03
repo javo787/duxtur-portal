@@ -10,6 +10,7 @@ import ClinicViewTracker from '@/components/ClinicViewTracker';
 import HomeFooter from '@/components/home/HomeFooter';
 import { cache } from 'react';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
+import { facebookHref } from '@/lib/social';
 
 export const revalidate = 3600; // 1 hour
 
@@ -102,6 +103,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       clinic.website,
       clinic.telegram && `https://t.me/${clinic.telegram.replace('@', '')}`,
       clinic.instagram && `https://instagram.com/${clinic.instagram.replace('@', '')}`,
+      facebookHref(clinic.facebook),
       clinic.whatsapp && `https://wa.me/${clinic.whatsapp.replace(/\D/g, '')}`
     ].filter(Boolean),
     medicalSpecialty: clinic.specialties?.length ? clinic.specialties : undefined,
