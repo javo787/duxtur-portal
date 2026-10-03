@@ -1,6 +1,6 @@
 import { CLINIC_TYPES, COMMON_SPECIALTIES } from '../clinic-constants';
 import {
-  coordsField, emailField, Errors, field, handleField, hoursField, imageUrlField, INSTAGRAM_HOST,
+  coordsField, emailField, Errors, facebookField, field, handleField, hoursField, imageUrlField, INSTAGRAM_HOST,
   multilingual, phoneField, pickEnum, pickMany, TELEGRAM_HOST, urlField, whatsappField,
   type Day, type DayHours, type Lang,
 } from './common';
@@ -38,6 +38,7 @@ export interface ClinicInput {
   telegram: string;
   whatsapp: string;
   instagram: string;
+  facebook: string;
   workingHours: Record<Day, DayHours> | null;
   specialties: string[];
   branches: BranchInput[];
@@ -73,6 +74,7 @@ export function parseClinicForm(fd: FormData): ParseResult<ClinicInput> {
     telegram: handleField(fd, 'telegram', 'Telegram', TELEGRAM_HOST, errors),
     whatsapp: whatsappField(fd, 'whatsapp', errors),
     instagram: handleField(fd, 'instagram', 'Instagram', INSTAGRAM_HOST, errors),
+    facebook: facebookField(fd, 'facebook', errors),
     workingHours: hoursField(fd, errors),
     specialties: pickMany(fd, 'specialties', SPECIALTY_KEYS),
     branches: branchesField(fd, errors),

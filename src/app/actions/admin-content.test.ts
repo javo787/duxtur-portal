@@ -102,6 +102,13 @@ describe('saveClinic', () => {
     ]);
   });
 
+  it('saves the Facebook link for clinics and doctors', async () => {
+    await redirectOf(saveClinic('c1', form({ name_ru: 'Клиника Тест', facebook: 'facebook.com/nur.clinic' })));
+    expect(clinicModel.updateOne.mock.calls[0][1].$set.facebook).toBe('https://www.facebook.com/nur.clinic');
+    await redirectOf(saveDoctor('d1', form({ name: 'Иванов Иван', specialty_ru: 'Хирург', facebook: 'fb.com/dr.ivanov' })));
+    expect(doctorModel.updateOne.mock.calls[0][1].$set.facebook).toBe('https://www.facebook.com/dr.ivanov');
+  });
+
   it('edits an existing (scraped) clinic, keeps its slug, clears coordinates when emptied', async () => {
     const r = await redirectOf(saveClinic('c1', form({ name_ru: 'Клиника «Vedanta»', status: 'pre_imported', website: 'vedanta.tj' })));
     expect(r).toBe('REDIRECT:/ru/admin/portal/clinics?saved=1');

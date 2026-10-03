@@ -40,13 +40,13 @@ export async function PATCH(req: NextRequest) {
     // Whitelist allowed fields to prevent overwriting sensitive data like status or userId
     const {
       name, description, quote, history, address, city, coordinates, specialties,
-      phone, phone2, email, website, telegram, whatsapp, instagram,
+      phone, phone2, email, website, telegram, whatsapp, instagram, facebook,
       workingHours, logo, coverImage, photos
     } = body;
 
     const updateData = {
       name, description, quote, history, address, city, coordinates, specialties,
-      phone, phone2, email, website, telegram, whatsapp, instagram,
+      phone, phone2, email, website, telegram, whatsapp, instagram, facebook,
       workingHours, logo, coverImage, photos
     };
 

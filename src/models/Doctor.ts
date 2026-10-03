@@ -42,6 +42,7 @@ const DoctorSchema = new mongoose.Schema({
 
   // Соцсети и график
   instagram: { type: String, default: '' },
+  facebook: { type: String, default: '' },
   telegram: { type: String, default: '' },
   whatsapp: { type: String, default: '' },
   workingHours: { type: String, default: '' },

@@ -85,7 +85,7 @@ export async function saveClinic(id: string, fd: FormData) {
     name: d.name, description: d.description, type: d.type, status: d.status,
     city: d.city, district: d.district, address: d.address,
     phone: d.phone, phone2: d.phone2, email: d.email, website: d.website,
-    telegram: d.telegram, whatsapp: d.whatsapp, instagram: d.instagram,
+    telegram: d.telegram, whatsapp: d.whatsapp, instagram: d.instagram, facebook: d.facebook,
     specialties: d.specialties, licenseNumber: d.licenseNumber,
     branches: d.branches.map(b => ({
       label: b.label, address: b.address, city: b.city, district: b.district, phone: b.phone,
@@ -163,7 +163,7 @@ export async function saveDoctor(id: string, fd: FormData) {
     consultationTypes: d.consultationTypes.length ? d.consultationTypes : ['in_person'],
     acceptsNewPatients: d.acceptsNewPatients, workingHours: d.workingHours, licenseNumber: d.licenseNumber,
     image: img.url || d.image || undefined,
-    instagram: d.instagram, telegram: d.telegram, whatsapp: d.whatsapp,
+    instagram: d.instagram, telegram: d.telegram, whatsapp: d.whatsapp, facebook: d.facebook,
     ...(d.coordinates
       ? { coordinates: { lat: d.coordinates.lat, lng: d.coordinates.lng, type: 'Point', coordinates: [d.coordinates.lng, d.coordinates.lat] } }
       : {}),

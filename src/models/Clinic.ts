@@ -82,6 +82,7 @@ const ClinicSchema = new mongoose.Schema({
   telegram: { type: String, default: '' },
   whatsapp: { type: String, default: '' },
   instagram: { type: String, default: '' },
+  facebook: { type: String, default: '' }, // full https URL (page shapes vary)
   workingHours: {
     mon: WorkingHoursSchema,
     tue: WorkingHoursSchema,

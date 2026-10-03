@@ -59,6 +59,7 @@ export async function GET(
     instagram:    doctor.instagram       ?? '',
     telegram:     doctor.telegram        ?? '',
     whatsapp:     doctor.whatsapp        ?? '',
+    facebook:     doctor.facebook        ?? '',
     workingHours: doctor.workingHours    ?? '',
     accentColor:  doctor.accentColor     ?? '#2563eb',
     cardTheme:    doctor.cardTheme       ?? 'dark',
