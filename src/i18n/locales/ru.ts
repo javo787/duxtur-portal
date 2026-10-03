@@ -71,6 +71,8 @@ export const ru = {
     aboutUs: 'О нас',
     editorialPolicy: 'Редполитика',
     help: 'Помощь',
+    edu: 'Студентам',
+    eduFull: 'Студентам и преподавателям',
   },
   home: {
     heroBadge: 'Статьи от практикующих врачей',

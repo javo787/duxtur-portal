@@ -16,7 +16,11 @@ interface ExtendedUser {
   role?: string;
 }
 
-export default function HomeHeader({ lang }: { lang: Locale }) {
+// Duxtur Edu is a separate app mounted at /edu (see next.config.ts). It is reached with a plain <a>, never next/link:
+// Link would try to prefetch and client-navigate to a route this app does not own.
+const EDU_HREF = '/edu';
+
+export default function HomeHeader({ lang, eduLabel = 'Студентам' }: { lang: Locale; eduLabel?: string }) {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const { visible, scrolled } = useScrollVisibility();
@@ -75,6 +79,12 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
               {link.label}
             </Link>
           ))}
+          <a
+            href={EDU_HREF}
+            className="relative px-4 py-2 text-[13.5px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-full transition-all duration-200"
+          >
+            {eduLabel}
+          </a>
         </nav>
 
         {/* ── Right actions ── */}
@@ -145,7 +155,7 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
       </div>
 
       {/* ── Mobile menu ── */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-80' : 'max-h-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-96' : 'max-h-0'}`}>
         <div className="bg-white dark:bg-card border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
           {navLinks.map((link) => (
             <Link
@@ -157,6 +167,13 @@ export default function HomeHeader({ lang }: { lang: Locale }) {
               {link.label}
             </Link>
           ))}
+          <a
+            href={EDU_HREF}
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center px-4 py-3 text-[14px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
+          >
+            {eduLabel}
+          </a>
 
           <div className="pt-3 border-t border-slate-100 dark:border-white/5 mt-3 flex flex-col gap-2">
             {session ? (
