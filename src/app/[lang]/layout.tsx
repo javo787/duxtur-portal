@@ -2,9 +2,8 @@ import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
 import { BASE_URL } from "@/lib/seo";
-import { Locale, getT } from "@/i18n";
+import { Locale } from "@/i18n";
 import CspViolationLogger from "@/components/_temp/CspViolationLogger";
-import EduStrip from "@/components/EduStrip";
 
 export async function generateMetadata() {
   return {
@@ -72,7 +71,6 @@ export default async function LangLayout({
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
         <SessionProvider>
           <CspViolationLogger />
-          <EduStrip text={getT(lang)('nav.eduStripText')} cta={getT(lang)('nav.eduStripCta')} />
           {children}
         </SessionProvider>
       </body>
