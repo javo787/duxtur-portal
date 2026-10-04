@@ -12,6 +12,7 @@ import HomeAuthors from '@/components/home/HomeAuthors';
 import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { eduNavLabels } from '@/lib/edu-labels';
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -87,6 +88,9 @@ for (const item of (categoryAgg as any[])) {
     return field[lang] || field['ru'] || '';
   };
 
+  // UI strings (not DB fields): do not use the local t() above for these
+  const eduLabels = eduNavLabels(lang);
+
   // ── WebSite + Organization + SearchAction JSON-LD ─────────────────────────
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -145,7 +149,7 @@ for (const item of (categoryAgg as any[])) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomeHeader lang={lang} eduLabel={t('nav.edu')} eduTeacherLabel={t('nav.eduTeachers')} />
+      <HomeHeader lang={lang} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
       <HomeHero lang={lang} dict={dict} />
       <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
       <HomeArticles lang={lang} articles={articles as any[]} dict={dict} t={t} />
