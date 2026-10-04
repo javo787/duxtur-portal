@@ -19,6 +19,12 @@ interface ExtendedUser {
 
 // Duxtur Edu is a separate app mounted at /edu (see next.config.ts). It is reached with a plain <a>, never next/link:
 // Link would try to prefetch and client-navigate to a route this app does not own.
+// One style per menu, used by the regular links AND the Edu links, so they cannot drift apart.
+const DESKTOP_LINK_CLASS =
+  'relative px-4 py-2 text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-full transition-all duration-200';
+const MOBILE_LINK_CLASS =
+  'flex items-center px-4 py-3 text-[14px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition';
+
 interface HomeHeaderProps {
   lang: Locale;
   eduLabel?: string;
@@ -82,15 +88,12 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
             <Link
               key={link.href}
               href={link.href}
-              className="relative px-4 py-2 text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-full transition-all duration-200"
+              className={DESKTOP_LINK_CLASS}
             >
               {link.label}
             </Link>
           ))}
-          <a
-            href={EDU_LINKS.students}
-            className="relative px-4 py-2 text-[13.5px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-full transition-all duration-200"
-          >
+          <a href={EDU_LINKS.students} className={DESKTOP_LINK_CLASS}>
             {eduLabel}
           </a>
         </nav>
@@ -170,7 +173,7 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-4 py-3 text-[14px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition"
+              className={MOBILE_LINK_CLASS}
             >
               {link.label}
             </Link>
@@ -183,7 +186,7 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
               key={link.label}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-4 py-3 text-[14px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
+              className={MOBILE_LINK_CLASS}
             >
               {link.label}
             </a>
