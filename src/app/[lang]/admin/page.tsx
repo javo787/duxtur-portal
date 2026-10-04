@@ -32,8 +32,11 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
   }, []);
 
   // Deep link, e.g. from the Duxtur Edu teacher menu: /ru/admin?tab=articles opens "My articles".
+  // Read after hydration on purpose: the server renders the default tab, and reading the URL during render would
+  // make the first client render differ from it.
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get('tab');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (wanted && (wanted === 'write' || TABS.some(t => t.id === wanted))) setTab(wanted as Tab);
   }, []);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
