@@ -42,7 +42,7 @@ beforeEach(() => {
   auth.mockResolvedValue({ user: { id: 'u1' } });
   verify.mockResolvedValue({ uid: 'tg_123', provider: 'custom', authTime: 1 });
   linkEduUid.mockResolvedValue({ ok: true, eduUid: 'tg_123', alreadyLinked: false });
-  unlinkEduUid.mockResolvedValue('tg_123');
+  unlinkEduUid.mockResolvedValue({ ok: true, previous: 'tg_123' });
 });
 
 afterEach(() => {
@@ -135,8 +135,15 @@ describe('DELETE /api/edu-auth/link', () => {
   });
 
   it('reports that there was nothing to unlink', async () => {
-    unlinkEduUid.mockResolvedValue(null);
+    unlinkEduUid.mockResolvedValue({ ok: true, previous: null });
     expect(await (await del()).json()).toEqual({ unlinked: false });
+  });
+
+  it('refuses to strand a profile that only the portal can open', async () => {
+    unlinkEduUid.mockResolvedValue({ ok: false, code: 'cannot_unlink' });
+    const res = await del();
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('cannot_unlink');
   });
 
   it('refuses foreign origins and signed-out requests', async () => {

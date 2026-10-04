@@ -18,10 +18,11 @@ const matchesFilter = (doc: Doc, filter: Record<string, unknown>): boolean => {
     const cond = filter.eduUid as unknown;
     if (typeof cond === 'string' && doc.eduUid !== cond) return false;
     if (cond && typeof cond === 'object') {
-      const c = cond as { $exists?: boolean; $ne?: unknown };
+      const c = cond as { $exists?: boolean; $ne?: unknown; $not?: { $regex: string } };
       const has = doc.eduUid !== undefined;
       if (c.$exists !== undefined && has !== c.$exists) return false;
       if ('$ne' in c && doc.eduUid === c.$ne) return false;
+      if (c.$not && typeof doc.eduUid === 'string' && new RegExp(c.$not.$regex).test(doc.eduUid)) return false;
     }
   }
   if (Array.isArray(filter.$or)) {
@@ -135,12 +136,18 @@ describe('linkEduUid', () => {
 
 describe('unlinkEduUid', () => {
   it('detaches and reports what was detached', async () => {
-    expect(await unlinkEduUid('u3')).toBe('tg_333');
+    expect(await unlinkEduUid('u3')).toEqual({ ok: true, previous: 'tg_333' });
     expect(docs[2].eduUid).toBeUndefined();
   });
 
   it('does nothing for an account without a link', async () => {
-    expect(await unlinkEduUid('u1')).toBeNull();
+    expect(await unlinkEduUid('u1')).toEqual({ ok: true, previous: null });
+  });
+
+  it('keeps a generated dx_ uid: the portal is the only way into that Edu profile', async () => {
+    await getOrCreateEduUid('u1');
+    expect(await unlinkEduUid('u1')).toEqual({ ok: false, code: 'cannot_unlink' });
+    expect(docs[0].eduUid).toBe('dx_u1');
   });
 
   it('frees the Edu uid for another account afterwards', async () => {

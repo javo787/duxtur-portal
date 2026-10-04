@@ -80,16 +80,26 @@ export async function linkEduUid(portalUserId: string, eduUid: string): Promise<
   return { ok: true, eduUid, alreadyLinked: false };
 }
 
+export type UnlinkResult =
+  | { ok: true; previous: string | null }
+  | { ok: false; code: 'cannot_unlink' };
+
 /**
  * Detaches the Edu uid. The Edu profile itself (groups, results) is not touched: it simply stops being reachable
- * through this portal account. Returns the uid that was detached, or null if there was none.
+ * through this portal account. `previous` is the uid that was detached, or null if there was none.
+ *
+ * A generated dx_ uid cannot be detached: that Edu profile was created from the portal account and the portal is
+ * its only way in, so unlinking would strand it with its groups and results.
  */
-export async function unlinkEduUid(portalUserId: string): Promise<string | null> {
+export async function unlinkEduUid(portalUserId: string): Promise<UnlinkResult> {
   await dbConnect();
+  const user = await User.findById(portalUserId).select('eduUid').lean<{ eduUid?: string | null }>();
+  if (user?.eduUid?.startsWith(GENERATED_UID_PREFIX)) return { ok: false, code: 'cannot_unlink' };
+
   const before = await User.findOneAndUpdate(
-    { _id: portalUserId, eduUid: { $exists: true, $ne: null } },
+    { _id: portalUserId, eduUid: { $exists: true, $ne: null, $not: { $regex: `^${GENERATED_UID_PREFIX}` } } },
     { $unset: { eduUid: '' } },
     { new: false }
   ).select('eduUid').lean<{ eduUid?: string | null }>();
-  return before?.eduUid ?? null;
+  return { ok: true, previous: before?.eduUid ?? null };
 }

@@ -17,6 +17,7 @@ const CONFLICT_MESSAGES = {
   edu_uid_taken: 'This Duxtur Edu account is already linked to another duxtur.org account.',
   portal_already_linked: 'This duxtur.org account already has a Duxtur Edu account. Unlink it first.',
   invalid_uid: 'This Duxtur Edu account cannot be linked.',
+  cannot_unlink: 'This Duxtur Edu profile was created from the duxtur.org account and can only be reached through it, so it cannot be unlinked.',
   not_found: 'Account not found.',
 } as const;
 
@@ -102,9 +103,13 @@ export async function DELETE(req: NextRequest) {
     const portalUserId = (session?.user as { id?: string } | undefined)?.id;
     if (!portalUserId) return respond({ error: 'Not signed in on duxtur.org', code: 'not_signed_in', ref: reqId }, 401);
 
-    const previous = await unlinkEduUid(portalUserId);
-    eduLog('link', reqId, 'link:unlinked', { hadLink: previous !== null, uidKind: previous?.split('_')[0] ?? null });
-    return respond({ unlinked: previous !== null });
+    const result = await unlinkEduUid(portalUserId);
+    if (!result.ok) {
+      eduLog('link', reqId, 'unlink:refused', { code: result.code }, 'warn');
+      return respond({ error: CONFLICT_MESSAGES[result.code], code: result.code, ref: reqId }, 409);
+    }
+    eduLog('link', reqId, 'link:unlinked', { hadLink: result.previous !== null, uidKind: result.previous?.split('_')[0] ?? null });
+    return respond({ unlinked: result.previous !== null });
   } catch (error) {
     Sentry.captureException(error);
     eduLog('link', reqId, 'unlink:failed', { ...describeError(error), env: envFlags() }, 'error');
