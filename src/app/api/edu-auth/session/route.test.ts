@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 
 const auth = vi.fn();
 const findById = vi.fn();
+const findDoctor = vi.fn();
 const getOrCreateEduUid = vi.fn();
 const createEduCustomToken = vi.fn();
 const rateLimit = vi.fn();
@@ -10,6 +11,7 @@ const rateLimit = vi.fn();
 vi.mock('@/auth', () => ({ auth: () => auth() }));
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/models/User', () => ({ default: { findById: (...a: unknown[]) => findById(...a) } }));
+vi.mock('@/models/Doctor', () => ({ default: { findOne: (...a: unknown[]) => findDoctor(...a) } }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: (...a: unknown[]) => rateLimit(...a) }));
 vi.mock('@/lib/edu-custom-token', () => ({ createEduCustomToken: (...a: unknown[]) => createEduCustomToken(...a) }));
@@ -24,6 +26,7 @@ const post = (origin: string | null = 'https://duxtur.org') =>
 
 const portalUser = { _id: { toString: () => 'u1' }, name: 'Dr. Rahimov', email: 'r@mail.org', image: 'i.png', role: 'doctor', eduUid: null };
 const withUser = (user: unknown) => findById.mockReturnValue({ select: () => ({ lean: async () => user }) });
+const withDoctor = (doctor: unknown) => findDoctor.mockReturnValue({ select: () => ({ lean: async () => doctor }) });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -34,6 +37,7 @@ beforeEach(() => {
   rateLimit.mockResolvedValue({ success: true, count: 1 });
   auth.mockResolvedValue({ user: { id: 'u1' } });
   withUser(portalUser);
+  withDoctor(null);
   getOrCreateEduUid.mockResolvedValue({ eduUid: 'dx_u1', created: true });
   createEduCustomToken.mockResolvedValue('custom.jwt.token');
 });
@@ -52,8 +56,21 @@ describe('GET /api/edu-auth/session', () => {
   it('describes the signed-in account and what is linked, and issues no token', async () => {
     withUser({ ...portalUser, eduUid: 'tg_5' });
     const body = await (await get()).json();
-    expect(body).toEqual({ signedIn: true, name: 'Dr. Rahimov', email: 'r@mail.org', image: 'i.png', eduUid: 'tg_5' });
+    expect(body).toEqual({ signedIn: true, name: 'Dr. Rahimov', email: 'r@mail.org', image: 'i.png', eduUid: 'tg_5', role: 'doctor', doctor: null });
     expect(createEduCustomToken).not.toHaveBeenCalled();
+  });
+
+  it('reports the status of the doctor profile, which decides whether this person may write articles', async () => {
+    for (const status of ['approved', 'pending', 'rejected', 'banned', 'pre_imported']) {
+      withDoctor({ status });
+      expect((await (await get()).json()).doctor).toEqual({ status });
+    }
+    expect(findDoctor).toHaveBeenCalledWith({ userId: portalUser._id });
+  });
+
+  it('answers role patient for an account that has none', async () => {
+    withUser({ ...portalUser, role: undefined });
+    expect((await (await get()).json()).role).toBe('patient');
   });
 
   it('treats a session whose account no longer exists as signed out', async () => {

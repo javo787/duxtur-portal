@@ -30,6 +30,12 @@ export default function DoctorCabinetPage({ params }: { params: Promise<{ lang: 
   useEffect(() => {
     fetch('/api/doctor/me').then(r => r.json()).then(setDoctor);
   }, []);
+
+  // Deep link, e.g. from the Duxtur Edu teacher menu: /ru/admin?tab=articles opens "My articles".
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab');
+    if (wanted && (wanted === 'write' || TABS.some(t => t.id === wanted))) setTab(wanted as Tab);
+  }, []);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [articlesKey, setArticlesKey] = useState(0); // force refetch after save
 

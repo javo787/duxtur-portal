@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Doctor from '@/models/Doctor';
 import { rateLimit } from '@/lib/rate-limit';
 import { createEduCustomToken } from '@/lib/edu-custom-token';
 import { eduPreflight, isAllowedOrigin, withEduCors } from '@/lib/edu-cors';
@@ -27,20 +28,25 @@ export async function OPTIONS(req: NextRequest) {
   return eduPreflight(req);
 }
 
-// GET /api/edu-auth/session -> { signedIn: false } | { signedIn: true, name, email, image, eduUid }
-// Lets the Edu sign-in page offer "Continue as ..." and the Edu profile show what is linked. No token is issued here.
+// GET /api/edu-auth/session ->
+//   { signedIn: false } | { signedIn: true, name, email, image, eduUid, role, doctor: { status } | null }
+// Lets the Edu sign-in page offer "Continue as ...", the Edu profile show what is linked, and the Edu teacher's
+// "Articles" page say whether this person may write articles (an approved doctor profile). No token is issued here.
 export async function GET(req: NextRequest) {
   const reqId = newReqId();
   const respond = (body: Record<string, unknown>, status = 200) => withEduCors(req, NextResponse.json(body, { status }), reqId);
   try {
     const user = await currentPortalUser();
     if (!user) return respond({ signedIn: false });
+    const doctor = await Doctor.findOne({ userId: user._id }).select('status').lean<{ status?: string }>();
     return respond({
       signedIn: true,
       name: user.name || '',
       email: user.email || '',
       image: user.image || '',
       eduUid: user.eduUid ?? null,
+      role: user.role || 'patient',
+      doctor: doctor?.status ? { status: doctor.status } : null,
     });
   } catch (error) {
     Sentry.captureException(error);
