@@ -4,20 +4,35 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getT, Locale } from '@/i18n';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
-import ClinicHero from './_components/ClinicHero';
-import ClinicTabs from './_components/ClinicTabs';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { Source_Serif_4 } from 'next/font/google';
+import ClinicHero, { ClinicCover } from './_components/ClinicHero';
+import ClinicPanel, { panelHasContent } from './_components/ClinicPanel';
+import ClinicBody from './_components/ClinicBody';
+import ClinicDock from './_components/ClinicDock';
+import type { ClinicView } from './_components/shared';
 import ClinicViewTracker from '@/components/ClinicViewTracker';
 import HomeFooter from '@/components/home/HomeFooter';
 import { cache } from 'react';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import { facebookHref } from '@/lib/social';
+import { whatsappUrl } from '@/lib/clinic-display';
 
 export const revalidate = 3600; // 1 hour
+
+// Display face for clinic pages. Fraunces has no Cyrillic, so ru/tg/kk/ky headings fell back to a system serif.
+const clinicSerif = Source_Serif_4({
+  subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
+  variable: '--font-clinic-serif',
+  display: 'swap',
+  axes: ['opsz'],
+});
 
 const getClinic = cache(async (slug: string) => {
   await dbConnect();
   return Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })
-    .populate('doctorIds', 'name image specialty slug experience reviewAvg reviewCount')
+    .populate('doctorIds', 'name image specialty slug experience reviewAvg reviewCount schedule consultationTypes')
     .lean();
 });
 
@@ -124,15 +139,42 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   // Remove undefined fields
   Object.keys(jsonLd).forEach(k => (jsonLd as any)[k] === undefined && delete (jsonLd as any)[k]);
 
+  const view = clinic as unknown as ClinicView;
+  const doctors = (clinic.doctorIds as unknown[]) ?? [];
+  const hasBooking = doctors.length > 0;
+  const hasPanel = panelHasContent(view, hasBooking);
+  const whatsappHref = clinic.whatsapp ? whatsappUrl(clinic.whatsapp) : null;
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <ClinicViewTracker slug={slug} />
       {/* dangerouslySetInnerHTML is safe here as jsonLd is a strictly constructed server-side object (audit point 12) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ClinicHero clinic={clinic} lang={lang} />
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
-        <ClinicTabs clinic={clinic} lang={lang} />
-      </div>
+
+      <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
+        <Link href={`/${lang}/clinics`} className="-ml-1 inline-flex items-center gap-1 text-foreground/70 hover:text-foreground">
+          <ChevronLeft className="size-4" aria-hidden="true" />
+          {t('clinic.title')}
+        </Link>
+        <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
+          duxtur<span className="text-primary">.org</span>
+        </Link>
+      </nav>
+
+      <ClinicCover clinic={view} />
+
+      <main className={`mx-auto max-w-6xl px-4 md:px-8 ${hasPanel ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-14' : ''}`}>
+        <ClinicHero clinic={view} lang={lang} />
+        {hasPanel && <ClinicPanel clinic={view} lang={lang} hasBooking={hasBooking} />}
+        <ClinicBody clinic={view} lang={lang} doctors={doctors} />
+      </main>
+
+      <ClinicDock
+        phone={clinic.phone || undefined}
+        whatsappHref={whatsappHref}
+        hasBooking={hasBooking}
+        labels={{ book: t('clinic.book'), call: t('clinic.call') }}
+      />
       <HomeFooter lang={lang} />
     </div>
   );

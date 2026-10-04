@@ -16,7 +16,7 @@ export async function generateMetadata() {
 
 const inter = Inter({
   variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"],
   display: "swap",
   weight: ["300", "400", "500", "600", "700"],
 });

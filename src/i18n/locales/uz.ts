@@ -661,5 +661,12 @@ export const uz = {
     noDoctorsYet: 'Klinika shifokorlari hali ko\'rsatilmagan',
     unverified: 'Profil tasdiqlanmagan',
     claimClinic: 'Bu sizning klinikangizmi? Profilni tasdiqlang',
+    call: 'Qo\'ng\'iroq qilish',
+    route: 'Xaritada',
+    today: 'Bugun',
+    openUntil: '{time} gacha ochiq',
+    opensAt: '{time} da ochiladi',
+    priceOnRequest: 'So\'rov bo\'yicha',
+    claimBody: 'Profilni tasdiqlang, shifokorlar, narxlar va suratlarni qo\'shing — bemorlar onlayn yozilishi mumkin bo\'ladi.',
   },
 } as const
