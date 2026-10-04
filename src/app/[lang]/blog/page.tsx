@@ -7,6 +7,7 @@ import { getT, T } from '@/i18n';
 import FadeIn from '@/components/FadeIn';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import Image from 'next/image';
+import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -73,7 +74,22 @@ export default async function BlogListPage({ params, searchParams }: Props) {
     return (field as Record<string, string>)[lang] || (field as Record<string, string>)['ru'] || (field as Record<string, string>)['uz'] || (field as Record<string, string>)['tg'] || (field as Record<string, string>)['kk'] || (field as Record<string, string>)['ky'] || '';
   };
 
-  const validArticles = articles.filter((a) => dbT(a.title).length > 0);
+  // Each article is shown in ONE language (title and overview from the same text) and is marked
+  // when that is not the reader's language; opening it explains and offers to switch.
+  const items = articles.map((a) => ({ ...a, _lang: resolveListLanguage(a, lang).contentLang }));
+  const pick = (a: { _lang: string }, field: Record<string, string> | string | undefined | null): string => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[a._lang] || '';
+  };
+  const langChip = (a: { _lang: string }, extra: string) =>
+    a._lang !== lang ? (
+      <span lang={a._lang} className={`inline-flex items-center px-2.5 py-0.5 rounded-full border border-[#bcc9c6] bg-white text-[#3d4947] text-xs font-semibold ${extra}`}>
+        {LANG_ENDONYMS[a._lang as ArticleLang]}
+      </span>
+    ) : null;
+
+  const validArticles = items.filter((a) => pick(a, a.title).length > 0);
 
   // ── CollectionPage JSON-LD ────────────────────────────────────────────────
   const jsonLd = {
@@ -103,8 +119,8 @@ export default async function BlogListPage({ params, searchParams }: Props) {
         itemListElement: validArticles.slice(0, 5).map((a, i) => ({
           '@type': 'ListItem',
           position: i + 1,
-          url: `${BASE_URL}/${lang}/blog/${a.slug}`,
-          name: dbT(a.title),
+          url: `${BASE_URL}/${a._lang}/blog/${a.slug}`,
+          name: pick(a, a.title),
         })),
       },
     }),
@@ -239,7 +255,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                        <Link href={`/${lang}/blog/${validArticles[0].slug}`}>
                         <Image
                           src={validArticles[0].image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900'}
-                          alt={dbT(validArticles[0].title)}
+                          alt={pick(validArticles[0], validArticles[0].title)}
                           fill
                           className="object-cover group-hover:scale-105 transition duration-700"
                           priority={true}
@@ -264,13 +280,14 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                            </svg>
                            <span>{t('blog.verified')}</span>
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-[#131b2e] mb-4 hover:text-[#00685f] transition-colors font-serif leading-tight">
+                        {langChip(validArticles[0], 'ml-2 mb-4 align-top')}
+                        <h2 lang={validArticles[0]._lang !== lang ? validArticles[0]._lang : undefined} className="text-2xl md:text-3xl font-bold text-[#131b2e] mb-4 hover:text-[#00685f] transition-colors font-serif leading-tight">
                           <Link href={`/${lang}/blog/${validArticles[0].slug}`}>
-                            {dbT(validArticles[0].title)}
+                            {pick(validArticles[0], validArticles[0].title)}
                           </Link>
                         </h2>
                         <p className="text-base text-[#3d4947] mb-6 leading-relaxed line-clamp-3">
-                          {dbT(validArticles[0].overview)}
+                          {pick(validArticles[0], validArticles[0].overview)}
                         </p>
                       </div>
                       <div className="pt-6 border-t border-[#eaedff]">
@@ -335,7 +352,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                             <Link href={`/${lang}/blog/${article.slug}`} className="block relative rounded-xl overflow-hidden mb-4 aspect-video">
                               <Image
                                 src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                                alt={dbT(article.title)}
+                                alt={pick(article, article.title)}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                 loading="lazy"
@@ -359,14 +376,15 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                                </svg>
                               <span>{t('blog.verified')}</span>
                             </div>
-                            <h4 className="text-lg font-bold text-[#131b2e] group-hover:text-[#00685f] transition-colors mb-2 leading-snug line-clamp-2">
+                            {langChip(article, 'ml-2 mb-3 align-top')}
+                            <h4 lang={article._lang !== lang ? article._lang : undefined} className="text-lg font-bold text-[#131b2e] group-hover:text-[#00685f] transition-colors mb-2 leading-snug line-clamp-2">
                               <Link href={`/${lang}/blog/${article.slug}`}>
-                                {dbT(article.title)}
+                                {pick(article, article.title)}
                               </Link>
                             </h4>
-                            {dbT(article.overview) && (
+                            {pick(article, article.overview) && (
                               <p className="text-sm text-[#3d4947] line-clamp-2 mb-4 leading-relaxed">
-                                {dbT(article.overview)}
+                                {pick(article, article.overview)}
                               </p>
                             )}
                           </div>

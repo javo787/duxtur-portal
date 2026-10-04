@@ -12,6 +12,8 @@ import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import ViewCounter from '@/components/ViewCounter';
+import ArticleLanguageNotice from '@/components/ArticleLanguageNotice';
+import { buildArticleAlternates, LANG_ENDONYMS, previewLanguages, resolveArticleLanguage } from '@/lib/article-lang';
 import { ShieldCheck } from 'lucide-react';
 import { clinicSerif } from '@/lib/fonts';
 import { btnPrimary, btnQuiet, initials } from '../../clinics/[slug]/_components/shared';
@@ -42,7 +44,9 @@ export async function generateMetadata({
   const { slug, lang } = await params;
   const article = await Article.findOne({ slug }).lean() as any;
   if (!article) return { title: 'Not Found' };
-  const t = (f: any) => (f && (f[lang] || f['ru'])) || '';
+  // The page shows ONE language; metadata must describe that same text
+  const { contentLang, available, isFallback } = resolveArticleLanguage(article, lang);
+  const t = (f: any) => f?.[contentLang] || '';
   const title = `${t(article.title)} | Duxtur.org`;
   const description = t(article.overview).substring(0, 160);
 
@@ -57,7 +61,7 @@ const ogImage = article.image
   ? article.image.startsWith('http')
     ? article.image
     : `${BASE_URL}${article.image}`
-  : `${BASE_URL}/og?title=${encodeURIComponent(t(article.title))}&author=${encodeURIComponent(article.authorId?.name || 'Duxtur')}&lang=${lang}`;
+  : `${BASE_URL}/og?title=${encodeURIComponent(t(article.title))}&author=${encodeURIComponent(article.authorId?.name || 'Duxtur')}&lang=${contentLang}`;
 
 return {
   title,
@@ -80,7 +84,10 @@ return {
     description,
     images: [ogImage],
   },
-  alternates: buildAlternates(`blog/${slug}`, lang),
+  // canonical and hreflang only for languages that have the text; this URL, when it shows another
+  // language, is kept out of the index and points at the real version
+  alternates: buildArticleAlternates(BASE_URL, slug, available, contentLang),
+  ...(isFallback ? { robots: { index: false, follow: true } } : {}),
   other: {
     "twitter:label1": "Reading time",
     "twitter:data1": `${readingMinutes} min read`,
@@ -89,6 +96,9 @@ return {
   }
   };
 } 
+
+type Ml = Record<string, string> | null | undefined;
+type RelatedArticle = { _id: string; slug: string; image?: string; title?: Ml; overview?: Ml };
 
 // ─── Markdown → elements ─────────────────────────────────────────────────────
 // Explicit components: the project has no typography plugin, so `prose` classes do nothing.
@@ -149,10 +159,14 @@ export default async function BlogPage({
     .lean();
   if (!article) notFound();
 
-  const dbT = (field: any) => {
-    if (!field) return '';
-    return field[lang] || field['ru'] || '';
-  };
+  // Article text: ONE language for the whole page, never mixed field by field
+  const { contentLang, available, isFallback } = resolveArticleLanguage(article, lang);
+  const dbT = (field: Ml) => field?.[contentLang] || '';
+  // Doctor profile fields (specialty) are not article text: interface language, Russian as a fallback
+  const uiT = (field: Ml) => field?.[lang] || field?.ru || '';
+  // Headings the page adds itself ("Symptoms", ...) go with the text, not with the interface
+  const tc = getT(contentLang);
+  const contentLangAttr = isFallback ? contentLang : undefined;
 
   // ── Время чтения ──────────────────────────────────────────────────────────
   const fullText = [
@@ -174,24 +188,17 @@ export default async function BlogPage({
       : 0;
 
   // ── Похожие статьи — по категории, fallback по автору ────────────────────
+  // Related articles: only ones that exist in the language this page is shown in
+  const loadRelated = async (filter: Record<string, unknown>) =>
+    (await Article.find(filter).limit(12).select('slug title image overview').lean() as unknown as RelatedArticle[])
+      .filter(a => previewLanguages(a).includes(contentLang))
+      .slice(0, 3);
   let relatedArticles: any[] = [];
   if (article.category) {
-    relatedArticles = await Article.find({
-      category: article.category,
-      slug: { $ne: slug },
-    })
-      .limit(3)
-      .select('slug title image overview')
-      .lean();
+    relatedArticles = await loadRelated({ category: article.category, slug: { $ne: slug } });
   }
   if (relatedArticles.length === 0) {
-    relatedArticles = await Article.find({
-      authorId: article.authorId?._id,
-      slug: { $ne: slug },
-    })
-      .limit(3)
-      .select('slug title image overview')
-      .lean();
+    relatedArticles = await loadRelated({ authorId: article.authorId?._id, slug: { $ne: slug } });
   }
 
   // ── Даты ──────────────────────────────────────────────────────────────────
@@ -208,10 +215,10 @@ export default async function BlogPage({
 
   // ── Секции ────────────────────────────────────────────────────────────────
   const legacySections = [
-    { id: 'symptoms',   title: t('blog.sectionSymptoms'), content: dbT(article.symptoms)             },
-    { id: 'causes',     title: t('blog.sectionCauses'), content: dbT(article.causes)               },
-    { id: 'treatment',  title: t('blog.sectionTreatment'), content: dbT(article.diagnosis_treatment)  },
-    { id: 'prevention', title: t('blog.sectionPrevention'), content: dbT(article.prevention)           },
+    { id: 'symptoms',   title: tc('blog.sectionSymptoms'), content: dbT(article.symptoms)             },
+    { id: 'causes',     title: tc('blog.sectionCauses'), content: dbT(article.causes)               },
+    { id: 'treatment',  title: tc('blog.sectionTreatment'), content: dbT(article.diagnosis_treatment)  },
+    { id: 'prevention', title: tc('blog.sectionPrevention'), content: dbT(article.prevention)           },
   ].filter((s) => s.content && s.content.length > 0);
 
   const dynamicSections = [1, 2, 3, 4, 5]
@@ -225,7 +232,8 @@ export default async function BlogPage({
   const sections = dynamicSections.length > 0 ? dynamicSections : legacySections;
 
   // ── URLs ──────────────────────────────────────────────────────────────────
-  const articleUrl = `${BASE_URL}/${lang}/blog/${article.slug}`;
+  // The URL of the version that has the text: what search engines and shared links should use
+  const articleUrl = `${BASE_URL}/${contentLang}/blog/${article.slug}`;
   const authorSlug = article.authorId?.slug || article.authorId?._id;
   const authorUrl = `${BASE_URL}/${lang}/doctor/${authorSlug}`;
 
@@ -250,7 +258,7 @@ export default async function BlogPage({
   // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.
   const author = article.authorId || null;
   const authorHref = author ? `/${lang}/doctor/${author.slug || author._id}` : null;
-  const authorSpecialty = dbT(author?.specialty);
+  const authorSpecialty = uiT(author?.specialty);
   const reviewer = article.reviewedById || null;
   const reviewerName: string = reviewer?.name || article.reviewedBy || '';
   const reviewerHref = reviewer ? `/${lang}/doctor/${reviewer.slug || reviewer._id}` : null;
@@ -274,7 +282,7 @@ export default async function BlogPage({
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
     dateReviewed: article.lastMedicalReview || undefined,
-    inLanguage: lang,
+    inLanguage: contentLang,
     isAccessibleForFree: true,
     wordCount: wordCount,
     speakable: {
@@ -293,7 +301,7 @@ export default async function BlogPage({
       '@type': 'Person',
       '@id': authorUrl,
       name: article.authorId?.name,
-      jobTitle: dbT(article.authorId?.specialty),
+      jobTitle: uiT(article.authorId?.specialty),
       url: authorUrl,
     },
     publisher: {
@@ -354,7 +362,18 @@ export default async function BlogPage({
       <article className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
         <div className="lg:grid lg:grid-cols-[minmax(0,44rem)_1fr] lg:gap-x-16">
           <div className="min-w-0">
-            <header className="pt-6 md:pt-10">
+            {isFallback && (
+              <ArticleLanguageNotice
+                slug={article.slug}
+                contentLang={contentLang}
+                others={available.filter(l => l !== contentLang)}
+                title={t('blog.langNoticeTitle')}
+                body={t('blog.langNoticeBody').replace('{lang}', LANG_ENDONYMS[contentLang])}
+                switchLabel={t('blog.langSwitch').replace('{lang}', LANG_ENDONYMS[contentLang])}
+                alsoLabel={t('blog.langAlso')}
+              />
+            )}
+            <header className={isFallback ? 'pt-6 md:pt-8' : 'pt-6 md:pt-10'}>
               {categoryLabel && (
                 <p className="text-sm">
                   <Link href={`/${lang}/blog/c/${category}`} className="font-medium text-primary underline-offset-4 hover:underline">
@@ -362,7 +381,7 @@ export default async function BlogPage({
                   </Link>
                 </p>
               )}
-              <h1 className="mt-3 font-clinic text-[2rem] leading-[1.12] font-semibold tracking-[-0.01em] text-balance md:text-[2.75rem]">
+              <h1 lang={contentLangAttr} className="mt-3 font-clinic text-[2rem] leading-[1.12] font-semibold tracking-[-0.01em] text-balance md:text-[2.75rem]">
                 {title}
               </h1>
 
@@ -417,7 +436,7 @@ export default async function BlogPage({
               </figure>
             )}
 
-            <div className="article-overview mt-8 max-w-[42rem]">
+            <div lang={contentLangAttr} className="article-overview mt-8 max-w-[42rem]">
               <ReactMarkdown components={mdLead}>{dbT(article.overview)}</ReactMarkdown>
             </div>
 
@@ -436,7 +455,7 @@ export default async function BlogPage({
               </nav>
             )}
 
-            <div className="mt-10 max-w-[42rem]">
+            <div lang={contentLangAttr} className="mt-10 max-w-[42rem]">
               {sections.map(sec => (
                 <section key={sec.id} id={sec.id} className="scroll-mt-6 not-first:mt-12">
                   <h2 className="mb-4 font-clinic text-[1.625rem] leading-tight font-semibold md:text-[1.875rem]">{sec.title}</h2>
@@ -547,7 +566,7 @@ export default async function BlogPage({
                         <Image src={rel.image} alt="" fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
                       </div>
                     )}
-                    <h3 className="font-clinic text-lg leading-snug font-semibold group-hover:underline">{dbT(rel.title)}</h3>
+                    <h3 lang={contentLangAttr} className="font-clinic text-lg leading-snug font-semibold group-hover:underline">{dbT(rel.title)}</h3>
                     <p className="mt-1 line-clamp-2 text-sm text-foreground/70">{dbT(rel.overview).replace(/[#*`_>]/g, '')}</p>
                   </Link>
                 </li>
