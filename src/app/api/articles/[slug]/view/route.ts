@@ -26,7 +26,8 @@ export async function POST(
     const article = await Article.findOneAndUpdate(
       { slug },
       { $inc: { views: 1 } },
-      { new: true }
+      // timestamps: false, иначе каждый просмотр сдвигает updatedAt и «дата обновления» врёт
+      { new: true, timestamps: false }
     );
 
     if (!article) {

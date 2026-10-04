@@ -143,6 +143,8 @@ export const ky = {
     articleReviewedBy: 'Текшерилди',
     articleFaqTitle: 'Көп берилүүчү суроолор',
     articleReadingMin: 'мүнөт окуу',
+    byAuthor: 'Автор',
+    needConsult: 'Бетме-бет кеңеш керекпи?',
     articleRateTitle: 'Макаланы баалагаңыз',
     articleRateThanks: 'Баа бергениңиз үчүн рахмат!',
     articleUsefulTitle: 'Бул макала пайдалуу болдубу?',

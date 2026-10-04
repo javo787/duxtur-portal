@@ -1,17 +1,20 @@
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import { notFound } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import { getT, T } from '@/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
-import ShareButtons from '@/components/ShareButtons';
+import ArticleShare from '@/components/ArticleShare';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
+import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import ViewCounter from '@/components/ViewCounter';
-import FAQSection from '@/components/FAQSection';
+import { ShieldCheck } from 'lucide-react';
+import { clinicSerif } from '@/lib/fonts';
+import { btnPrimary, btnQuiet, initials } from '../../clinics/[slug]/_components/shared';
 
 // ─── ISR: регенерация каждые 6 часов ────────────────────────────────────────
 export const revalidate = 21600;
@@ -87,6 +90,50 @@ return {
   };
 } 
 
+// ─── Markdown → elements ─────────────────────────────────────────────────────
+// Explicit components: the project has no typography plugin, so `prose` classes do nothing.
+const body = 'text-[1.0625rem] leading-[1.75]';
+const md: Components = {
+  p: ({ children }) => <p className={`mb-5 ${body}`}>{children}</p>,
+  ul: ({ children }) => <ul className={`mb-5 list-disc space-y-2 pl-6 marker:text-foreground/40 ${body}`}>{children}</ul>,
+  ol: ({ children }) => <ol className={`mb-5 list-decimal space-y-2 pl-6 marker:text-foreground/50 ${body}`}>{children}</ol>,
+  li: ({ children }) => <li className="pl-1">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  h3: ({ children }) => <h3 className="mt-8 mb-3 font-clinic text-xl leading-snug font-semibold">{children}</h3>,
+  h4: ({ children }) => <h4 className="mt-6 mb-2 font-semibold">{children}</h4>,
+  blockquote: ({ children }) => (
+    <blockquote className="my-6 border-l-2 border-primary pl-5 font-clinic text-xl leading-snug">{children}</blockquote>
+  ),
+  a: ({ href, children }) => {
+    const external = !!href && /^https?:/.test(href);
+    return (
+      <a
+        href={href}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        className="font-medium text-primary underline underline-offset-4"
+      >
+        {children}
+      </a>
+    );
+  },
+};
+const mdLead: Components = {
+  ...md,
+  p: ({ children }) => <p className="mb-4 text-[1.1875rem] leading-8 text-foreground/90">{children}</p>,
+};
+
+function Avatar({ name, src, size }: { name: string; src?: string; size: number }) {
+  const style = { width: size, height: size };
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={getOptimizedCloudinaryUrl(src, { width: size * 2, height: size * 2, crop: 'fill' })} alt="" width={size} height={size} style={style} className="shrink-0 rounded-full border border-border object-cover" />
+  ) : (
+    <span style={style} aria-hidden="true" className="flex shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground/60">
+      {initials(name)}
+    </span>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default async function BlogPage({
   params,
@@ -157,7 +204,6 @@ export default async function BlogPage({
         })
       : null;
   const datePublished = fmt(article.createdAt);
-  const dateUpdated = fmt(article.updatedAt);
   const dateMedicalReview = fmt(article.lastMedicalReview);
 
   // ── Секции ────────────────────────────────────────────────────────────────
@@ -200,6 +246,22 @@ export default async function BlogPage({
       }
     : null;
 
+  // ── Автор, проверяющий, рубрика ───────────────────────────────────────────
+  // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.
+  const author = article.authorId || null;
+  const authorHref = author ? `/${lang}/doctor/${author.slug || author._id}` : null;
+  const authorSpecialty = dbT(author?.specialty);
+  const reviewer = article.reviewedById || null;
+  const reviewerName: string = reviewer?.name || article.reviewedBy || '';
+  const reviewerHref = reviewer ? `/${lang}/doctor/${reviewer.slug || reviewer._id}` : null;
+  const category: string = article.category || '';
+  const categoryKey = category ? `blog.category${category[0].toUpperCase()}${category.slice(1)}` : '';
+  const categoryLabel = categoryKey && t(categoryKey) !== categoryKey ? t(categoryKey) : '';
+  const careQuery = category && category !== 'general' ? `?specialty=${category}` : '';
+  // Отметка «проверено» только если материал реально подтверждён администратором
+  const showVerified = article.isVerified === true && !reviewerName && !dateMedicalReview;
+  const title = dbT(article.title);
+
   // ── Article JSON-LD ───────────────────────────────────────────────────────
   const articleJsonLd: any = {
     '@context': 'https://schema.org',
@@ -211,7 +273,7 @@ export default async function BlogPage({
     thumbnailUrl: article.image || undefined,
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
-    dateReviewed: article.lastMedicalReview || article.updatedAt,
+    dateReviewed: article.lastMedicalReview || undefined,
     inLanguage: lang,
     isAccessibleForFree: true,
     wordCount: wordCount,
@@ -273,397 +335,226 @@ export default async function BlogPage({
   );
 
   return (
-    <div className="min-h-screen bg-white font-sans">
-      {article.image && (
-        <link
-          rel="preload"
-          as="image"
-          href={article.image}
-          fetchPriority="high"
-        />
-      )}
+    <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <ViewCounter slug={article.slug} />
       {/* Article Schema */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       {/* FAQ Schema — отдельный тег */}
-      {faqJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      )}
+      {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
 
-      {/* HEADER */}
-      <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href={`/${lang}`} className="font-extrabold text-blue-600 text-xl">
-            duxtur<span className="text-gray-300 font-light">.org</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/${lang}/blog`}
-              className="text-sm text-gray-400 hover:text-gray-700 font-medium transition hidden md:block"
-            >
-              Blog
-            </Link>
-            <Link
-              href={`/${lang}`}
-              className="text-sm text-gray-400 hover:text-gray-700 font-medium transition"
-            >
-              ← {t('nav.home')}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
+        <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
+          duxtur<span className="text-primary">.org</span>
+        </Link>
+        <Link href={`/${lang}/blog`} className="text-foreground/70 hover:text-foreground">
+          {t('blog.title')}
+        </Link>
+      </nav>
 
-      <article className="pb-24">
-
-        {/* HERO */}
-        <div className="relative w-full h-72 md:h-[460px] bg-gray-900 overflow-hidden">
-          <Image
-            src={article.image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=1200'}
-            alt={dbT(article.title)}
-            className="w-full h-full object-cover opacity-55"
-            priority={true}
-            fill
-            sizes="100vw"
-            quality={85}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <span className="bg-green-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                {t('blog.verified')}
-              </span>
-              <span className="text-white/60 text-xs flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {readingMinutes} {t('blog.articleReadingMin')}
-              </span>
-              {avgRating > 0 && (
-                <span className="text-yellow-400 text-xs font-bold flex items-center gap-1">
-                  ★ {avgRating}
-                  <span className="text-white/40 font-normal ml-0.5">({article.ratings?.length})</span>
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight max-w-3xl">
-              {dbT(article.title)}
-            </h1>
-          </div>
-        </div>
-
-        {/* АВТОР + ДАТЫ + ПОДЕЛИТЬСЯ */}
-        <div className="max-w-5xl mx-auto px-6 py-5 border-b border-gray-100">
-          <div className="flex flex-wrap items-center gap-4 justify-between">
-            <Link
-              href={`/${lang}/doctor/${article.authorId?.slug || article.authorId?._id}`}
-              className="flex items-center gap-3 group"
-            >
-              <img
-                src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-              alt={article.authorId?.name || 'Doctor'}
-                className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 group-hover:border-blue-400 transition"
-              />
-              <div>
-                <p className="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm leading-tight">
-                  {article.authorId?.name || 'Dr. Expert'}
+      <article className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
+        <div className="lg:grid lg:grid-cols-[minmax(0,44rem)_1fr] lg:gap-x-16">
+          <div className="min-w-0">
+            <header className="pt-6 md:pt-10">
+              {categoryLabel && (
+                <p className="text-sm">
+                  <Link href={`/${lang}/blog/c/${category}`} className="font-medium text-primary underline-offset-4 hover:underline">
+                    {categoryLabel}
+                  </Link>
                 </p>
-                <p className="text-xs text-blue-500 mt-0.5">{dbT(article.authorId?.specialty) || t('common.verified')}</p>
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{t('blog.articlePublished')}</span>
-                <span className="text-xs text-gray-600 font-semibold mt-0.5">{datePublished}</span>
-              </div>
-              {dateUpdated && dateUpdated !== datePublished && (
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{t('blog.articleUpdated')}</span>
-                  <span className="text-xs text-gray-600 font-semibold mt-0.5">{dateUpdated}</span>
-                </div>
               )}
-              {dateMedicalReview && (
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-green-600 font-medium uppercase tracking-wider">{t('blog.articleMedicalReview')}</span>
-                  <span className="text-xs text-green-700 font-semibold mt-0.5">{dateMedicalReview}</span>
+              <h1 className="mt-3 font-clinic text-[2rem] leading-[1.12] font-semibold tracking-[-0.01em] text-balance md:text-[2.75rem]">
+                {title}
+              </h1>
+
+              <div className="mt-6 flex gap-3">
+                {author && <Avatar name={author.name || ''} src={author.image} size={48} />}
+                <div className="min-w-0 text-sm leading-6">
+                  {author && (
+                    <p>
+                      <span className="text-foreground/65">{t('blog.byAuthor')}: </span>
+                      <Link href={authorHref!} className="font-medium hover:underline">
+                        {author.name}
+                      </Link>
+                      {authorSpecialty && <span className="text-foreground/65">, {authorSpecialty}</span>}
+                    </p>
+                  )}
+                  {(reviewerName || dateMedicalReview) && (
+                    <p>
+                      <span className="text-foreground/65">{t('blog.articleMedicalReview')}: </span>
+                      {reviewerName &&
+                        (reviewerHref ? (
+                          <Link href={reviewerHref} className="font-medium hover:underline">
+                            {reviewerName}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{reviewerName}</span>
+                        ))}
+                      {dateMedicalReview && <span className="text-foreground/65">{reviewerName ? ` · ${dateMedicalReview}` : dateMedicalReview}</span>}
+                    </p>
+                  )}
+                  <p className="text-foreground/65">
+                    {datePublished} · {readingMinutes} {t('blog.articleReadingMin')}
+                  </p>
+                  {showVerified && (
+                    <p className="inline-flex items-center gap-1.5 font-medium text-ok">
+                      <ShieldCheck className="size-4" aria-hidden="true" />
+                      {t('blog.verified')}
+                    </p>
+                  )}
                 </div>
-              )}
-              {article.reviewedById ? (
-                <Link
-                  href={`/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`}
-                  className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1.5 rounded-full font-medium hover:bg-green-100 transition"
-                >
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  {t('blog.articleReviewedBy')}: <span className="font-bold ml-1">{article.reviewedById?.name}</span>
-                </Link>
-              ) : article.reviewedBy ? (
-                <span className="inline-flex items-center gap-1.5 text-xs bg-green-50 border border-green-200 text-green-700 px-2.5 py-1.5 rounded-full font-medium">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  {t('blog.articleReviewedBy')}: {article.reviewedBy}
-                </span>
-              ) : null}
-              <ShareButtons url={articleUrl} title={dbT(article.title)} lang={lang} />
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* ОСНОВНОЙ КОНТЕНТ */}
-        <div className="max-w-7xl mx-auto px-6 pt-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="mt-5 hidden md:block">
+                <ArticleShare url={articleUrl} title={title} lang={lang} />
+              </div>
+            </header>
 
-          {/* ЛЕВАЯ ЧАСТЬ */}
-          <div className="lg:col-span-8">
+            {article.image && (
+              <figure className="mt-8">
+                <div className="relative aspect-[16/9] overflow-hidden rounded-[10px] bg-muted">
+                  <Image src={article.image} alt={title} fill priority sizes="(min-width: 1024px) 704px, 100vw" className="object-cover" />
+                </div>
+              </figure>
+            )}
 
-            {/* Breadcrumb */}
-            <nav aria-label="breadcrumb" className="mb-8" itemScope itemType="https://schema.org/BreadcrumbList">
-              <ol className="flex items-center gap-1.5 flex-wrap text-xs text-gray-400">
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-                  <Link href={`/${lang}`} itemProp="item" className="hover:text-blue-600 transition font-medium">
-                    <span itemProp="name">Duxtur.org</span>
-                  </Link>
-                  <meta itemProp="position" content="1" />
-                </li>
-                <li className="select-none">/</li>
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-                  <Link href={`/${lang}/blog`} itemProp="item" className="hover:text-blue-600 transition font-medium">
-                    <span itemProp="name">Blog</span>
-                  </Link>
-                  <meta itemProp="position" content="2" />
-                </li>
-                <li className="select-none">/</li>
-                <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-                  <span itemProp="name" className="text-gray-600 line-clamp-1 max-w-xs">{dbT(article.title)}</span>
-                  <meta itemProp="position" content="3" />
-                </li>
-              </ol>
-            </nav>
-
-            {/* Overview */}
-            <div className="text-lg leading-8 text-gray-700 mb-10 font-medium border-l-4 border-blue-200 pl-6 italic article-overview">
-              <ReactMarkdown>{dbT(article.overview)}</ReactMarkdown>
+            <div className="article-overview mt-8 max-w-[42rem]">
+              <ReactMarkdown components={mdLead}>{dbT(article.overview)}</ReactMarkdown>
             </div>
 
-            {/* Оглавление */}
-            {sections.length > 0 && (
-              <div className="bg-blue-50 rounded-2xl p-6 mb-12 border border-blue-100">
-                <h3 className="font-extrabold text-sm text-blue-900 mb-4 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-1 h-4 bg-blue-500 rounded-full" />
-                  {t('blog.articleContents')}
-                </h3>
-                <ul className="space-y-2">
-                  {sections.map((sec, i) => (
+            {sections.length > 1 && (
+              <nav aria-label={t('blog.articleContents')} className="mt-6 rounded-[10px] border border-border p-4 lg:hidden">
+                <p className="mb-2 text-sm font-semibold">{t('blog.articleContents')}</p>
+                <ol className="space-y-1.5 text-[0.9375rem]">
+                  {sections.map(sec => (
                     <li key={sec.id}>
-                      <a
-                        href={`#${sec.id}`}
-                        className="flex items-center gap-3 text-blue-700 hover:text-blue-900 font-medium group text-sm py-1"
-                      >
-                        <span className="w-6 h-6 rounded-full bg-white text-blue-600 text-xs font-extrabold flex items-center justify-center shrink-0 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition">
-                          {i + 1}
-                        </span>
-                        <span className="group-hover:underline">{sec.title}</span>
+                      <a href={`#${sec.id}`} className="text-primary underline-offset-4 hover:underline">
+                        {sec.title}
                       </a>
                     </li>
                   ))}
-                </ul>
-              </div>
+                </ol>
+              </nav>
             )}
 
-            {/* Секции */}
-            <div className="space-y-14" itemProp="articleBody">
-              {sections.map((sec) => (
-                <section key={sec.id} id={sec.id} className="scroll-mt-20">
-                  <h2 className="text-2xl font-extrabold text-gray-900 mb-6 flex items-center gap-3">
-                    <span className="w-1 h-8 bg-blue-500 rounded-full shrink-0" />
-                    {sec.title}
-                  </h2>
-                  <div className="prose prose-lg prose-slate max-w-none text-gray-700 leading-8">
-                    <ReactMarkdown
-                      components={{
-                        strong: ({ node, ...props }) => <strong className="font-extrabold text-gray-900" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="space-y-3 list-none pl-0 my-4" {...props} />,
-                        li: ({ node, ...props }) => (
-                          <li className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
-                            <span className="w-5 h-5 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 mt-0.5 text-blue-500 font-extrabold text-xs">✓</span>
-                            <div className="flex-1">{props.children}</div>
-                          </li>
-                        ),
-                      }}
-                    >
-                      {sec.content}
-                    </ReactMarkdown>
-                  </div>
+            <div className="mt-10 max-w-[42rem]">
+              {sections.map(sec => (
+                <section key={sec.id} id={sec.id} className="scroll-mt-6 not-first:mt-12">
+                  <h2 className="mb-4 font-clinic text-[1.625rem] leading-tight font-semibold md:text-[1.875rem]">{sec.title}</h2>
+                  <ReactMarkdown components={md}>{sec.content}</ReactMarkdown>
                 </section>
               ))}
             </div>
 
-            {/* Дисклеймер */}
-            <div className="mt-12 bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4">
-              <span className="text-2xl shrink-0">⚠️</span>
-              <div>
-                <p className="font-extrabold text-amber-800 text-sm mb-1">{t('blog.articleDisclaimer')}</p>
-                <p className="text-amber-700 text-sm leading-relaxed">{t('blog.articleDisclaimerText')}</p>
-              </div>
-            </div>
+            <aside className="mt-12 max-w-[42rem] rounded-[10px] border border-border bg-muted p-5">
+              <p className="font-semibold">{t('blog.articleDisclaimer')}</p>
+              <p className="mt-1 text-[0.9375rem] leading-6 text-foreground/80">{t('blog.articleDisclaimerText')}</p>
+            </aside>
 
-            {/* Источники */}
+            <section className="mt-6 max-w-[42rem] rounded-[10px] border border-border p-5">
+              <p className="font-clinic text-xl font-semibold">{t('blog.needConsult')}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/${lang}/doctors${careQuery}`} className={btnPrimary}>
+                  {t('doctors.title')}
+                </Link>
+                <Link href={`/${lang}/clinics${careQuery}`} className={btnQuiet}>
+                  {t('clinic.findClinic')}
+                </Link>
+              </div>
+            </section>
+
             {article.references?.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-gray-100">
-                <h4 className="font-extrabold text-gray-400 mb-4 text-xs uppercase tracking-widest">
-                  {t('blog.articleSources')}
-                </h4>
-                <ul className="space-y-2">
+              <section className="mt-10 max-w-[42rem]">
+                <h2 className="mb-3 font-clinic text-xl font-semibold">{t('blog.articleSources')}</h2>
+                <ol className="list-decimal space-y-2 pl-6 text-sm leading-6 text-foreground/75 marker:text-foreground/50">
                   {article.references.map((ref: string, i: number) => {
                     const urlMatch = ref.match(/(?:https?:\/\/)?(?:www\.)[^\s]+/) || ref.match(/https?:\/\/[^\s]+/);
                     const rawUrl = urlMatch ? urlMatch[0] : null;
                     const href = rawUrl && !rawUrl.startsWith('http') ? 'https://' + rawUrl : rawUrl;
                     const label = rawUrl ? ref.replace(rawUrl, '').trim().replace(/^[-–—:]\s*/, '') : ref;
                     return (
-                      <li key={i} className="flex gap-3 text-sm text-gray-500">
-                        <span className="text-blue-400 font-bold shrink-0">{i + 1}.</span>
+                      <li key={i}>
                         {urlMatch ? (
-                          <a href={href!} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline leading-relaxed">
+                          <a href={href!} target="_blank" rel="noopener noreferrer" className="break-words text-primary underline-offset-4 hover:underline">
                             {label || ref}
                           </a>
                         ) : (
-                          <span className="leading-relaxed">{ref}</span>
+                          ref
                         )}
                       </li>
                     );
                   })}
-                </ul>
-              </div>
+                </ol>
+              </section>
             )}
 
-            {/* FAQ Section */}
-            {sections.length >= 3 && (
-              <FAQSection sections={sections} lang={lang} />
-            )}
-
-            {/* Engagement */}
-            <ArticleEngagement
-              slug={article.slug}
-              initialRating={avgRating}
-              initialRatingCount={article.ratings?.length || 0}
-              initialLikesUp={article.likesUp || 0}
-              initialLikesDown={article.likesDown || 0}
-              lang={lang}
-            />
-
-            {/* Поделиться внизу */}
-            <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
-              <ShareButtons url={articleUrl} title={dbT(article.title)} lang={lang} />
+            <div className="max-w-[42rem]">
+              <ArticleEngagement
+                slug={article.slug}
+                initialRating={avgRating}
+                initialRatingCount={article.ratings?.length || 0}
+                initialLikesUp={article.likesUp || 0}
+                initialLikesDown={article.likesDown || 0}
+                lang={lang}
+              />
             </div>
-          </div>
 
+            <div className="mt-8 max-w-[42rem] border-t border-border pt-6">
+              <ArticleShare url={articleUrl} title={title} lang={lang} />
+            </div>
 
-{/* САЙДБАР */}
-<div className="lg:col-span-4">
-  <div className="sticky top-20 space-y-5">
-
-    {/* ← ДОБАВЬ ЭТО */}
-    {sections.length > 1 && (
-      <TableOfContents
-        sections={sections}
-        label={t('blog.articleContents')}
-      />
-    )}
-
-    
-
-              {/* Карточка автора */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-br from-slate-800 to-blue-900 p-6 text-white">
-                  <p className="text-xs font-bold text-blue-300 uppercase tracking-widest mb-3">{t('blog.articleAuthor')}</p>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                      alt={article.authorId?.name || 'Doctor'}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white/20"
-                    />
-                    <div>
-                      <p className="font-extrabold text-white leading-tight">{article.authorId?.name || 'Dr. Expert'}</p>
-                      <p className="text-blue-300 text-sm mt-0.5">{dbT(article.authorId?.specialty) || t('common.verified')}</p>
-                    </div>
+            {author && (
+              <section className="mt-10 max-w-[42rem] rounded-[10px] border border-border p-5">
+                <p className="text-sm text-foreground/65">{t('blog.articleAuthor')}</p>
+                <div className="mt-3 flex items-center gap-4">
+                  <Avatar name={author.name || ''} src={author.image} size={56} />
+                  <div className="min-w-0">
+                    <Link href={authorHref!} className="font-clinic text-lg font-semibold hover:underline">
+                      {author.name}
+                    </Link>
+                    {authorSpecialty && <p className="text-sm text-foreground/70">{authorSpecialty}</p>}
                   </div>
                 </div>
-                <div className="p-5 space-y-3">
-                  <span className="bg-green-100 text-green-700 text-xs font-extrabold px-3 py-1 rounded-full flex items-center gap-1 w-fit">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {t('blog.verified')}
-                  </span>
-                  <Link
-                    href={`/${lang}/doctor/${article.authorId?.slug || article.authorId?._id}`}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition"
-                  >
+                <p className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
+                  <Link href={authorHref!} className="text-primary underline-offset-4 hover:underline">
                     {t('blog.articleAuthorArticles')}
                   </Link>
-                </div>
-              </div>
-
-              {/* Рейтинг */}
-              {avgRating > 0 && (
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 text-center">
-                  <p className="text-4xl font-extrabold text-gray-900">{avgRating}</p>
-                  <div className="flex justify-center my-2 gap-0.5">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <svg key={s} className={`w-5 h-5 ${s <= Math.round(avgRating) ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400">{article.ratings?.length} {t('blog.ratings')}</p>
-                </div>
-              )}
-
-              {/* Похожие статьи */}
-              {relatedArticles.length > 0 && (
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-extrabold text-gray-900 text-sm mb-4 uppercase tracking-wider">
-                    {t('blog.articleRelated')}
-                  </h3>
-                  <div className="space-y-3">
-                    {relatedArticles.map((rel) => (
-                      <Link
-                        key={rel._id}
-                        href={`/${lang}/blog/${rel.slug}`}
-                        className="flex gap-3 group hover:bg-gray-50 p-2 rounded-xl transition"
-                      >
-                        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100 relative">
-                          <Image
-                            src={rel.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'}
-                            alt={dbT(rel.title)}
-                            fill
-                            className="object-cover group-hover:scale-105 transition"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition line-clamp-2 leading-snug">
-                            {dbT(rel.title)}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
+                  <Link href={`/${lang}/editorial`} className="text-primary underline-offset-4 hover:underline">
+                    {t('nav.editorialPolicy')}
+                  </Link>
+                </p>
+              </section>
+            )}
           </div>
+
+          {sections.length > 1 && (
+            <aside className="hidden lg:block lg:pt-10">
+              <div className="sticky top-6">
+                <TableOfContents sections={sections} label={t('blog.articleContents')} />
+              </div>
+            </aside>
+          )}
         </div>
+
+        {relatedArticles.length > 0 && (
+          <section className="mt-16 border-t border-border pt-10">
+            <h2 className="mb-6 font-clinic text-2xl font-semibold">{t('blog.articleRelated')}</h2>
+            <ul className="grid gap-8 sm:grid-cols-3">
+              {relatedArticles.map(rel => (
+                <li key={rel._id}>
+                  <Link href={`/${lang}/blog/${rel.slug}`} className="group block">
+                    {rel.image && (
+                      <div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-lg bg-muted">
+                        <Image src={rel.image} alt="" fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
+                      </div>
+                    )}
+                    <h3 className="font-clinic text-lg leading-snug font-semibold group-hover:underline">{dbT(rel.title)}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm text-foreground/70">{dbT(rel.overview).replace(/[#*`_>]/g, '')}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </article>
     </div>
   );

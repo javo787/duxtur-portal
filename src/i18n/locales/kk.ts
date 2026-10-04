@@ -143,6 +143,8 @@ export const kk = {
     articleReviewedBy: 'Тексерген',
     articleFaqTitle: 'Жиі қойылатын сұрақтар',
     articleReadingMin: 'мин оқу',
+    byAuthor: 'Автор',
+    needConsult: 'Жүзбе-жүз кеңес керек пе?',
     articleRateTitle: 'Мақаланы бағалаңыз',
     articleRateThanks: 'Бағалағаныңыз үшін рақмет!',
     articleUsefulTitle: 'Бұл мақала пайдалы болды ма?',

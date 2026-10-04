@@ -143,6 +143,8 @@ export const tg = {
     articleReviewedBy: 'Санҷида шуд',
     articleFaqTitle: 'Саволҳои зуд-зуд додашаванда',
     articleReadingMin: 'дақ. хониш',
+    byAuthor: 'Муаллиф',
+    needConsult: 'Ба машварати ҳузурӣ эҳтиёҷ доред?',
     articleRateTitle: 'Мақоларо баҳо диҳед',
     articleRateThanks: 'Барои баҳо гузоштан ташаккур!',
     articleUsefulTitle: 'Оё ин мақола муфид буд?',

@@ -143,6 +143,8 @@ export const uz = {
     articleReviewedBy: 'Tekshirgan',
     articleFaqTitle: 'Koʻp beriladigan savollar',
     articleReadingMin: 'daqiqalik oʻqish',
+    byAuthor: 'Muallif',
+    needConsult: 'Yuzma-yuz maslahat kerakmi?',
     articleRateTitle: 'Maqolani baholang',
     articleRateThanks: 'Baholaganingiz uchun rahmat!',
     articleUsefulTitle: 'Ushbu maqola foydali boʻldimi?',

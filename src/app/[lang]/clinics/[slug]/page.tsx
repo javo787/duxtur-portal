@@ -6,7 +6,7 @@ import { getT, Locale } from '@/i18n';
 import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { clinicSerif } from '../_fonts';
+import { clinicSerif } from '@/lib/fonts';
 import ClinicHero, { ClinicCover } from './_components/ClinicHero';
 import ClinicPanel, { panelHasContent } from './_components/ClinicPanel';
 import ClinicBody from './_components/ClinicBody';

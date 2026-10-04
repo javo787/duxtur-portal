@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Star, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { rateArticle, likeArticle } from '@/app/actions/rating';
 
 type Props = {
@@ -58,96 +59,62 @@ export default function ArticleEngagement({
     await likeArticle(slug, type);
   };
 
+  const yes = { ru: 'Да', uz: 'Ha', tg: 'Ҳа', kk: 'Иә', ky: 'Ооба' }[lang] ?? 'Да';
+  const no = { ru: 'Нет', uz: "Yo'q", tg: 'Не', kk: 'Жоқ', ky: 'Жок' }[lang] ?? 'Нет';
+  const iconBtn =
+    'inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
   return (
-    <div className="mt-14 space-y-6">
-
-      {/* РАЗДЕЛИТЕЛЬ */}
-      <div className="border-t border-gray-100" />
-
-      {/* ЗВЁЗДОЧКИ */}
-      <div className="bg-gradient-to-br from-blue-50 to-white rounded-3xl p-8 border border-blue-100 text-center">
-        <p className="font-extrabold text-gray-900 text-lg mb-1">{L('rate_title', lang)}</p>
-
-        {/* Текущий рейтинг */}
-        {ratingCount > 0 && (
-          <div className="flex items-center justify-center gap-2 mb-5">
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <svg key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-            </div>
-            <span className="text-sm font-bold text-gray-600">{avgRating} ({ratingCount})</span>
-          </div>
-        )}
-
+    <div className="mt-12 grid gap-8 border-t border-border pt-8 sm:grid-cols-2">
+      <div>
+        <p className="font-semibold">{L('rate_title', lang)}</p>
         {rated ? (
-          <div className="flex items-center justify-center gap-2 text-green-600 font-bold">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+          <p className="mt-3 text-sm text-ok" role="status">
             {L('thanks', lang)}
-          </div>
+          </p>
         ) : (
-          <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
+          <div className="mt-2 flex" onMouseLeave={() => setHoverRating(0)}>
+            {[1, 2, 3, 4, 5].map(star => (
               <button
                 key={star}
+                type="button"
                 onClick={() => handleRate(star)}
                 onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                className="transition-transform hover:scale-125 active:scale-110"
+                aria-label={`${star} / 5`}
+                className="flex size-11 items-center justify-center focus-visible:outline-2 focus-visible:outline-ring"
               >
-                <svg
-                  className={`w-10 h-10 transition-colors ${
-                    star <= (hoverRating || userRating)
-                      ? 'text-yellow-400'
-                      : 'text-gray-200'
-                  }`}
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+                <Star
+                  className={`size-7 ${star <= (hoverRating || userRating) ? 'fill-amber-500 text-amber-500' : 'text-foreground/25'}`}
+                  aria-hidden="true"
+                />
               </button>
             ))}
           </div>
         )}
+        {ratingCount > 0 && (
+          <p className="mt-1 text-sm text-foreground/65 tabular-nums">
+            {avgRating} ({ratingCount})
+          </p>
+        )}
       </div>
 
-      {/* ПОЛЕЗНО / НЕ ПОЛЕЗНО */}
-      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-center">
-        <p className="font-bold text-gray-800 mb-5">{L('useful_title', lang)}</p>
-
+      <div>
+        <p className="font-semibold">{L('useful_title', lang)}</p>
         {liked ? (
-          <div className="flex items-center justify-center gap-2 text-green-600 font-bold">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+          <p className="mt-3 text-sm text-ok" role="status">
             {L('thanks_like', lang)}
-          </div>
+          </p>
         ) : (
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={() => handleLike('up')}
-              className="flex items-center gap-3 px-8 py-3.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-2xl font-bold transition border border-green-200 hover:border-green-400 group"
-            >
-              <span className="text-2xl group-hover:scale-110 transition">👍</span>
-              <span>
-                {lang === 'ru' ? 'Да' : lang === 'uz' ? 'Ha' : lang === 'tg' ? 'Ҳа' : lang === 'kk' ? 'Иә' : 'Ооба'}
-                {likesUp > 0 && <span className="ml-2 text-green-500 font-extrabold">{likesUp}</span>}
-              </span>
+          <div className="mt-3 flex gap-2">
+            <button type="button" onClick={() => handleLike('up')} className={iconBtn}>
+              <ThumbsUp className="size-4" aria-hidden="true" />
+              {yes}
+              {likesUp > 0 && <span className="text-foreground/65 tabular-nums">{likesUp}</span>}
             </button>
-            <button
-              onClick={() => handleLike('down')}
-              className="flex items-center gap-3 px-8 py-3.5 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-2xl font-bold transition border border-gray-200 hover:border-red-200 group"
-            >
-              <span className="text-2xl group-hover:scale-110 transition">👎</span>
-              <span>
-                {lang === 'ru' ? 'Нет' : lang === 'uz' ? 'Yo\'q' : lang === 'tg' ? 'Не' : lang === 'kk' ? 'Жоқ' : 'Жок'}
-                {likesDown > 0 && <span className="ml-2 text-red-400 font-extrabold">{likesDown}</span>}
-              </span>
+            <button type="button" onClick={() => handleLike('down')} className={iconBtn}>
+              <ThumbsDown className="size-4" aria-hidden="true" />
+              {no}
+              {likesDown > 0 && <span className="text-foreground/65 tabular-nums">{likesDown}</span>}
             </button>
           </div>
         )}
