@@ -57,7 +57,7 @@ export function redact(value: unknown, depth = 0): unknown {
 export type EduLogLevel = 'info' | 'warn' | 'error';
 
 export function eduLog(
-  scope: 'start' | 'check' | 'webhook' | 'health' | 'bot',
+  scope: 'start' | 'check' | 'webhook' | 'health' | 'bot' | 'sso' | 'link',
   reqId: string,
   event: string,
   data: Record<string, unknown> = {},
@@ -65,7 +65,7 @@ export function eduLog(
 ): void {
   const line = JSON.stringify({
     ts: new Date().toISOString(),
-    scope: `edu-tg:${scope}`,
+    scope: scope === 'sso' || scope === 'link' ? `edu-account:${scope}` : `edu-tg:${scope}`,
     reqId,
     event,
     ...(redact(data) as Record<string, unknown>),
