@@ -77,7 +77,9 @@ export async function POST(req: NextRequest) {
       provider: 'duxtur',
       portalUserId: user._id.toString(),
       portalRole: user.role || 'patient',
+      // Read by Edu when it creates the profile of a new user (see AuthContext): name and e-mail of the same person.
       tgName: (user.name || user.email || '').slice(0, 100),
+      portalEmail: (user.email || '').slice(0, 200),
     });
     eduLog('sso', reqId, 'sso:token-issued', { created: link.created, uidKind: link.eduUid.split('_')[0] });
     return respond({ customToken, projectId: envFlags().firebaseProjectId, eduUid: link.eduUid, created: link.created });

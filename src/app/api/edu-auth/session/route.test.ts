@@ -73,6 +73,7 @@ describe('POST /api/edu-auth/session', () => {
       portalUserId: 'u1',
       portalRole: 'doctor',
       tgName: 'Dr. Rahimov',
+      portalEmail: 'r@mail.org',
     });
   });
 
