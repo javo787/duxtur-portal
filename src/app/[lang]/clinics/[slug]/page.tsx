@@ -21,6 +21,16 @@ import { whatsappUrl } from '@/lib/clinic-display';
 
 export const revalidate = 3600; // 1 hour
 
+type LocalizedText = Partial<Record<string, string>>;
+type WorkingHoursEntry = { open: string; close: string; isWorking?: boolean };
+type ClinicDoctor = {
+  name?: string;
+  specialty?: string | Record<string, string>;
+  slug?: string;
+};
+
+const getLocalizedText = (value: LocalizedText | undefined, lang: string): string => value?.[lang] || value?.ru || '';
+
 const getClinic = cache(async (slug: string) => {
   await dbConnect();
   return Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })
@@ -34,8 +44,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const t = getT(lang);
   if (!clinic) return { title: t('clinic.notFound') };
 
-  const name = (clinic.name as any)[lang] || (clinic.name as any).ru;
-  const desc = (clinic.description as any)[lang] || (clinic.description as any).ru || '';
+  const name = getLocalizedText(clinic.name as LocalizedText | undefined, lang);
+  const desc = getLocalizedText(clinic.description as LocalizedText | undefined, lang);
 
   return {
     title: `${name} — ${t('clinic.type_' + clinic.type)} | Duxtur.org`,
@@ -56,7 +66,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
 
   // Filter out any potential null doctor references (audit point 11)
   if (clinic.doctorIds) {
-    clinic.doctorIds = (clinic.doctorIds as any[]).filter(Boolean);
+    clinic.doctorIds = (clinic.doctorIds as unknown[]).filter(Boolean);
   }
 
   // Ensure rating exists even if not in DB document (for lean)
@@ -65,26 +75,45 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
   }
 
   const t = getT(lang);
+  const clinicName = getLocalizedText(clinic.name as LocalizedText | undefined, lang);
+  const clinicDescription = getLocalizedText(clinic.description as LocalizedText | undefined, lang);
 
   // Build JSON-LD MedicalClinic schema
   let openingHours: string[] = [];
+  const workingHoursRecord = clinic.workingHours as Record<string, WorkingHoursEntry | undefined> | undefined;
+
   // pre_imported clinics carry only schema defaults (08:00-18:00 every day): never publish them as real hours.
-  if (hasRealWorkingHours(clinic) && clinic.workingHours && typeof clinic.workingHours === 'object' && !Array.isArray(clinic.workingHours)) {
-    openingHours = Object.entries(clinic.workingHours)
-      .filter(([_, v]: any) => v && v.isWorking)
-      .map(([day, v]: any) => {
+  if (hasRealWorkingHours(clinic) && workingHoursRecord) {
+    openingHours = Object.entries(workingHoursRecord)
+      .filter(([, v]) => v && v.isWorking)
+      .map(([day, v]) => {
         const dayMap: Record<string, string> = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
         const shortDay = day.toLowerCase().substring(0, 3);
-        return dayMap[shortDay] ? `${dayMap[shortDay]} ${v.open}-${v.close}` : null;
+        return dayMap[shortDay] ? `${dayMap[shortDay]} ${v!.open}-${v!.close}` : null;
       })
       .filter((v): v is string => v !== null);
   }
 
-  const jsonLd: any = {
+  const sameAs = [
+    clinic.website,
+    clinic.telegram && `https://t.me/${clinic.telegram.replace('@', '')}`,
+    clinic.instagram && `https://instagram.com/${clinic.instagram.replace('@', '')}`,
+    facebookHref(clinic.facebook),
+    clinic.whatsapp && `https://wa.me/${clinic.whatsapp.replace(/\D/g, '')}`,
+  ].filter(Boolean) as string[];
+
+  const employeeEntries = (clinic.doctorIds as ClinicDoctor[] | undefined)?.map((doc) => ({
+    '@type': 'Person',
+    name: doc.name,
+    jobTitle: (doc.specialty && typeof doc.specialty === 'object') ? (doc.specialty[lang] || doc.specialty.ru) : doc.specialty,
+    url: `${BASE_URL}/${lang}/doctor/${doc.slug}`,
+  }));
+
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'MedicalClinic',
-    name: (clinic.name as any)[lang] || (clinic.name as any).ru,
-    description: (clinic.description as any)?.[lang] || (clinic.description as any)?.ru,
+    name: clinicName,
+    description: clinicDescription,
     url: `${BASE_URL}/${lang}/clinics/${slug}`,
     logo: clinic.logo,
     image: clinic.coverImage || clinic.logo,
@@ -95,7 +124,7 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       addressLocality: clinic.city,
       addressCountry: clinic.city === 'Ташкент' || clinic.city === 'Самарканд' ? 'UZ' :
                       clinic.city === 'Алматы' || clinic.city === 'Астана' ? 'KZ' :
-                      clinic.city === 'Бишкек' ? 'KG' : 'TJ'
+                      clinic.city === 'Бишкек' ? 'KG' : 'TJ',
     },
     openingHours,
     // aggregateRating is only added if there are actual reviews (audit point 7)
@@ -104,32 +133,23 @@ export default async function ClinicProfilePage({ params }: { params: Promise<{ 
       ratingValue: clinic.rating.avg,
       reviewCount: clinic.rating.count,
       bestRating: 5,
-      worstRating: 1
+      worstRating: 1,
     } : undefined,
-    sameAs: [
-      clinic.website,
-      clinic.telegram && `https://t.me/${clinic.telegram.replace('@', '')}`,
-      clinic.instagram && `https://instagram.com/${clinic.instagram.replace('@', '')}`,
-      facebookHref(clinic.facebook),
-      clinic.whatsapp && `https://wa.me/${clinic.whatsapp.replace(/\D/g, '')}`
-    ].filter(Boolean),
+    sameAs,
     medicalSpecialty: clinic.specialties?.length ? clinic.specialties : undefined,
-    employee: (clinic.doctorIds as any[])?.map((doc: any) => ({
-      '@type': 'Person',
-      name: doc.name,
-      jobTitle: (doc.specialty && typeof doc.specialty === 'object') ? (doc.specialty[lang] || doc.specialty.ru) : doc.specialty,
-      url: `${BASE_URL}/${lang}/doctor/${doc.slug}`,
-    })),
+    employee: employeeEntries,
     breadcrumb: buildBreadcrumbJsonLd([
       { name: 'Duxtur.org', url: `/${lang}` },
       { name: t('clinic.title'), url: `/${lang}/clinics` },
-      { name: (clinic.name as any)[lang] || (clinic.name as any).ru, url: `/${lang}/clinics/${slug}` },
+      { name: clinicName, url: `/${lang}/clinics/${slug}` },
     ]),
     priceRange: '$$',
   };
 
   // Remove undefined fields
-  Object.keys(jsonLd).forEach(k => (jsonLd as any)[k] === undefined && delete (jsonLd as any)[k]);
+  Object.keys(jsonLd).forEach((key) => {
+    if (jsonLd[key] === undefined) delete jsonLd[key];
+  });
 
   const view = clinic as unknown as ClinicView;
   const doctors = (clinic.doctorIds as unknown[]) ?? [];
