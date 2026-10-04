@@ -7,6 +7,7 @@ import FadeIn from '@/components/FadeIn';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 import Image from 'next/image';
+import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 import { notFound } from 'next/navigation';
 
 type Props = {
@@ -57,12 +58,11 @@ export default async function BlogCategoryPage({ params }: Props) {
     .select('slug title overview image authorId createdAt category ratings')
     .lean();
 
-  const dbT = (field: any): string => {
-    if (!field) return '';
-    return field[lang] || field['ru'] || '';
-  };
+  // One language per article, marked when it is not the reader's (same rule as the blog index)
+  const items = articles.map((a) => ({ ...a, _lang: resolveListLanguage(a, lang).contentLang as ArticleLang }));
+  const dbT = (a: { _lang: string }, field: Record<string, string> | undefined | null): string => field?.[a._lang] || '';
 
-  const validArticles = articles.filter((a) => dbT(a.title).length > 0);
+  const validArticles = items.filter((a) => dbT(a, a.title).length > 0);
   const categoryName = t(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`);
 
   const jsonLd = {
@@ -157,15 +157,20 @@ export default async function BlogCategoryPage({ params }: Props) {
                   <div className="h-52 overflow-hidden relative shrink-0">
                     <Image
                       src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
-                      alt={dbT(article.title)}
+                      alt={dbT(article, article.title)}
                       fill
                       className="object-cover group-hover:scale-110 transition duration-700"
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                   </div>
                   <div className="p-5 flex flex-col flex-1">
-                    <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-snug line-clamp-2 flex-1 mb-3 text-base">
-                      {dbT(article.title)}
+                    {article._lang !== lang && (
+                      <span lang={article._lang} className="mb-2 self-start rounded-full border border-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                        {LANG_ENDONYMS[article._lang as ArticleLang]}
+                      </span>
+                    )}
+                    <h3 lang={article._lang !== lang ? article._lang : undefined} className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-snug line-clamp-2 flex-1 mb-3 text-base">
+                      {dbT(article, article.title)}
                     </h3>
                     <div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2 mt-auto">
                       <div className="flex items-center gap-2 min-w-0">
