@@ -25,7 +25,10 @@ interface HomeHeaderProps {
   eduTeacherLabel?: string;
 }
 
-export default function HomeHeader({ lang, eduLabel = 'Студентам', eduTeacherLabel = 'Преподавателям' }: HomeHeaderProps) {
+export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLabel: eduTeacherLabelProp }: HomeHeaderProps) {
+  // '' is not "missing" for a default parameter, and an empty label renders an invisible link: fall back explicitly.
+  const eduLabel = eduLabelProp || 'Студентам';
+  const eduTeacherLabel = eduTeacherLabelProp || 'Преподавателям';
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const { visible, scrolled } = useScrollVisibility();
