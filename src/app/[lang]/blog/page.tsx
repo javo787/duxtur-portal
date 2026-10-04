@@ -124,11 +124,13 @@ export default async function BlogListPage({ params, searchParams }: Props) {
         <div className="flex justify-between items-center w-full px-4 md:px-8 max-w-7xl mx-auto h-16">
           <div className="flex items-center gap-6">
             <Link href={`/${lang}`} className="flex items-center gap-2 group text-[#00685f] dark:text-[#6bd8cb]">
-              <div className="w-10 h-10 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#00685f] group-hover:bg-[#00685f] group-hover:text-white transition-colors duration-150">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Duxtur.org"
+                width={36}
+                height={36}
+                className="object-contain"
+              />
               <span className="text-xl font-bold tracking-tight">duxtur<span className="text-[#0d9488]">.org</span></span>
             </Link>
             <nav className="hidden md:flex items-center gap-1 pl-4">
