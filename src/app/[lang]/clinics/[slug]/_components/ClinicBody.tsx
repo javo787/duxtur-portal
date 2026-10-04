@@ -1,17 +1,16 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { getT } from '@/i18n';
-import { COMMON_SPECIALTIES } from '@/lib/clinic-constants';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import { facebookHref } from '@/lib/social';
-import { instagramUrl, isUnverifiedImport, safeHttpUrl, specialtyId, telegramUrl, websiteHost, whatsappUrl } from '@/lib/clinic-display';
+import { instagramUrl, isUnverifiedImport, safeHttpUrl, telegramUrl, websiteHost, whatsappUrl } from '@/lib/clinic-display';
 import ClinicNav, { type NavItem } from './ClinicNav';
 import ClinicDoctors from './ClinicDoctors';
 import ClinicServices from './ClinicServices';
 import ClinicReviews from './ClinicReviews';
 import ClinicGallery from './ClinicGallery';
 import ClinicHours from './ClinicHours';
-import { mapsUrl, pick, type ClinicView } from './shared';
+import { mapsUrl, pick, specialtyLabels, type ClinicView } from './shared';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -37,14 +36,7 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
   const history = pick(clinic.history, lang);
   const name = pick(clinic.name, lang);
 
-  const specialties = (clinic.specialties ?? []).flatMap(s => {
-    const id = specialtyId(s);
-    if (!id && /^[a-z_]+$/.test(s)) return []; // unknown raw key: never show it
-    const key = `clinic.specialty_${id}`;
-    const translated = id ? t(key) : s;
-    const label = id && translated === key ? (COMMON_SPECIALTIES.find(c => c.id === id)?.label ?? s) : translated;
-    return [{ label, id }];
-  });
+  const specialties = specialtyLabels(clinic.specialties, t);
 
   const services = clinic.services ?? [];
   const photos = clinic.photos ?? [];

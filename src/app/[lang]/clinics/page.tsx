@@ -1,6 +1,7 @@
 import ClinicCard from './_components/ClinicCard';
 import ClinicFilters from './_components/ClinicFilters';
 import Link from 'next/link';
+import { Search, X } from 'lucide-react';
 import { getT, T, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
@@ -8,6 +9,8 @@ import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
 import { getClinics } from '@/lib/clinic-service';
+import { clinicSerif } from './_fonts';
+import { btnPrimary, btnQuiet } from './[slug]/_components/shared';
 
 export const revalidate = 3600; // 1 hour
 
@@ -23,7 +26,7 @@ export async function generateMetadata({ params, searchParams }: {
 
   return {
     title: `${title} — Duxtur.org`,
-    description: t('home.heroSubtitle'),
+    description: t('clinic.metaDescription'),
     alternates: buildAlternates('clinics', lang, filters),
   };
 }
@@ -90,172 +93,150 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
     return `/${lang}/clinics?${params.toString()}`;
   };
 
+  // Active filters, each removable on its own
+  const typeLabel = filters.type ? t('clinic.type_' + filters.type) : '';
+  const specialtyKey = filters.specialty ? 'clinic.specialty_' + filters.specialty : '';
+  const specialtyLabel = specialtyKey ? (t(specialtyKey) === specialtyKey ? filters.specialty : t(specialtyKey)) : '';
+  const chips = [
+    filters.city && { key: 'city', label: filters.city },
+    filters.type && { key: 'type', label: typeLabel },
+    filters.specialty && { key: 'specialty', label: specialtyLabel },
+    filters.q && { key: 'q', label: `«${filters.q}»` },
+  ].filter(Boolean) as { key: string; label: string }[];
+  const activeCount = [filters.city, filters.type, filters.specialty].filter(Boolean).length;
+
+  const sorts = [
+    { value: undefined, label: t('doctors.rating') },
+    { value: 'reviews', label: t('clinic.sortReviews') },
+    { value: 'doctors', label: t('clinic.sortDoctors') },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-500">
+    <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      {/* Hero */}
-      <section className="bg-white dark:bg-slate-950 pt-32 pb-24 px-4 relative overflow-hidden transition-colors duration-500">
-         {/* Warm background gradient */}
-         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-amber-50/40 via-white to-white dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950" />
+      <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
+        <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
+          duxtur<span className="text-primary">.org</span>
+        </Link>
+        <Link href={`/${lang}/clinic/register`} className="font-medium text-primary underline-offset-4 hover:underline">
+          {t('clinic.registerClinic')}
+        </Link>
+      </nav>
 
-         {/* Decorative blobs */}
-         <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-slow opacity-30 dark:opacity-20 bg-amber-200/40 dark:bg-blue-900/20" />
-         <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[120px] -z-10 animate-float-delayed opacity-30 dark:opacity-20 bg-blue-200/40 dark:bg-indigo-900/20" />
+      <main className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
+        <h1 className="pt-4 pb-5 font-clinic text-[2rem] leading-[1.1] font-semibold tracking-[-0.01em] md:pt-8 md:pb-6 md:text-5xl">
+          {t('clinic.title')}
+        </h1>
 
-         <div className="max-w-7xl mx-auto text-center relative z-10">
-            <h1 className="text-4xl md:text-7xl font-bold mb-6 tracking-tight font-display text-slate-900 dark:text-white">
-              {t('clinic.findClinic')}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
-              {t('home.heroSubtitle')}
-            </p>
+        <form id="clinic-search" method="get" action={`/${lang}/clinics`} role="search" className="flex gap-2">
+          {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-foreground/50" aria-hidden="true" />
+            <input
+              type="search"
+              name="q"
+              defaultValue={filters.q}
+              placeholder={t('clinic.searchPlaceholder')}
+              aria-label={t('clinic.searchPlaceholder')}
+              className="min-h-12 w-full rounded-lg border border-border bg-background pr-3 pl-11 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </div>
+          <button type="submit" className={btnPrimary}>
+            {t('common.search')}
+          </button>
+        </form>
 
-            <div className="flex justify-center mb-12">
-              <Link
-                href={`/${lang}/clinic/register`}
-                className="px-6 py-2 bg-slate-900/5 dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-full text-blue-600 dark:text-blue-400 font-bold hover:bg-slate-900/10 dark:hover:bg-white/10 transition-colors group inline-flex items-center gap-2"
-              >
-                {t('clinic.registerClinic')}
-                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </div>
+        <div className="mt-5 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-x-12">
+          <aside className="lg:sticky lg:top-6">
+            <ClinicFilters
+              cities={ALLOWED_CITIES}
+              types={CLINIC_TYPES}
+              currentCity={filters.city}
+              currentType={filters.type}
+              currentSpecialty={filters.specialty}
+              activeCount={activeCount}
+              lang={lang}
+            />
+          </aside>
 
-            {/* Search Form */}
-            <form method="GET" className="max-w-3xl mx-auto bg-white dark:bg-slate-900 p-2 rounded-[2.5rem] border border-slate-200 dark:border-white/10 flex flex-col md:flex-row gap-2 shadow-2xl shadow-blue-500/20 dark:shadow-none">
-               <div className="flex-1 flex items-center px-6 gap-3 group">
-                 <span className="text-xl group-focus-within:scale-110 transition-transform">🔍</span>
-                 <input
-                    name="q"
-                    defaultValue={filters.q}
-                    className="w-full bg-transparent py-4 text-slate-900 dark:text-white outline-none placeholder:text-slate-400 font-medium"
-                    placeholder={t('search.placeholder')}
-                 />
-                 {filters.q && (
-                    <Link
-                      href={buildSearchUrl({ q: undefined, page: 1 })}
-                      className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-400 transition-colors"
-                    >
-                      ✕
-                    </Link>
-                 )}
-               </div>
-               <button type="submit" className="px-10 py-4 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all">
-                 {t('common.search')}
-               </button>
-            </form>
-
-            {(filters.city || filters.type || filters.specialty || filters.q) && (
-              <div className="mb-8 flex justify-center gap-4 flex-wrap">
-                <Link
-                  href={`/${lang}/clinics`}
-                  aria-label={t('doctors.resetFilters')}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-900 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                >
-                  ✕ {t('doctors.resetFilters')}
+          <section aria-label={t('clinic.title')} className="mt-6 min-w-0 lg:mt-0">
+            {chips.length > 0 && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {chips.map(c => (
+                  <Link
+                    key={c.key}
+                    href={buildSearchUrl({ [c.key]: undefined, page: undefined })}
+                    aria-label={`${t('common.reset')}: ${c.label}`}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-muted px-3 text-sm hover:bg-border"
+                  >
+                    {c.label}
+                    <X className="size-3.5" aria-hidden="true" />
+                  </Link>
+                ))}
+                <Link href={`/${lang}/clinics`} className="px-1 text-sm font-medium text-primary underline-offset-4 hover:underline">
+                  {t('doctors.resetFilters')}
                 </Link>
               </div>
             )}
 
-            {/* Quick Filters */}
-            <div className="max-w-4xl mx-auto">
-               <ClinicFilters
-                  cities={ALLOWED_CITIES}
-                  types={CLINIC_TYPES}
-                  currentCity={filters.city}
-                  currentType={filters.type}
-                  currentSpecialty={filters.specialty}
-                  currentQ={filters.q}
-                  currentSort={filters.sort}
-                  lang={lang}
-               />
-            </div>
-         </div>
-      </section>
+            {clinics.length > 0 && (
+              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 text-sm">
+                <p className="font-semibold">{t('clinic.found').replace('{count}', total.toString())}</p>
+                <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span className="text-foreground/60">{t('doctors.sortBy')}</span>
+                  {sorts.map(o => {
+                    const active = (filters.sort ?? undefined) === o.value;
+                    return (
+                      <Link
+                        key={o.label}
+                        href={buildSearchUrl({ sort: o.value, page: undefined })}
+                        aria-current={active ? 'true' : undefined}
+                        className={active ? 'font-semibold underline underline-offset-4' : 'text-foreground/70 hover:text-foreground'}
+                      >
+                        {o.label}
+                      </Link>
+                    );
+                  })}
+                </p>
+              </div>
+            )}
 
-      {/* Grid */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 -mt-10 relative z-10">
-         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center gap-2">
-               <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-               <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter">
-                  {t('clinic.found').replace('{count}', total.toString())}
-               </span>
-            </div>
+            {clinics.length === 0 ? (
+              <div className="border-t border-border py-16 text-center">
+                <p className="font-clinic text-2xl font-semibold">{t('common.noResults')}</p>
+              </div>
+            ) : (
+              <>
+                <ul className="divide-y divide-border border-t border-border">
+                  {clinics.map((clinic: ClinicDocument, index: number) => (
+                    <ClinicCard key={clinic._id.toString()} clinic={clinic} lang={lang} priority={index < 3} />
+                  ))}
+                </ul>
 
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center gap-4">
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">{t('doctors.sortBy')}</span>
-               <div className="flex gap-6 items-center">
-                  <Link
-                    href={buildSearchUrl({ sort: undefined, page: 1 })}
-                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${!filters.sort ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
-                  >
-                    {t('doctors.rating')}
-                  </Link>
-                  <Link
-                    href={buildSearchUrl({ sort: 'reviews', page: 1 })}
-                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${filters.sort === 'reviews' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
-                  >
-                    {t('blog.ratings')}
-                  </Link>
-                  <Link
-                    href={buildSearchUrl({ sort: 'doctors', page: 1 })}
-                    className={`text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${filters.sort === 'doctors' ? 'text-blue-600 dark:text-blue-400 scale-105' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
-                  >
-                    {t('common.doctors')}
-                  </Link>
-               </div>
-            </div>
-         </div>
-
-         {clinics.length === 0 ? (
-           <div className="bg-white dark:bg-slate-900 p-20 rounded-[3rem] text-center text-slate-400 dark:text-slate-400 border border-slate-100 dark:border-white/5 shadow-2xl transition-colors duration-500">
-              <p className="text-6xl mb-4">🔍</p>
-              <p className="text-xl font-black text-slate-900 dark:text-white">{t('common.noResults')}</p>
-           </div>
-         ) : (
-           <>
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" role="list">
-                {clinics.map((clinic: ClinicDocument, index: number) => (
-                  <ClinicCard
-                    key={clinic._id.toString()}
-                    clinic={clinic}
-                    lang={lang}
-                    priority={index < 4}
-                  />
-                ))}
-             </div>
-
-             {/* Pagination */}
-             {totalPages > 1 && (
-               <div className="mt-12 flex justify-center gap-2 pb-12">
-                 {page > 1 && (
-                   <Link
-                     href={buildSearchUrl({ page: page - 1 })}
-                     className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                   >
-                     {t('common.prev')}
-                   </Link>
-                 )}
-                 <div className="flex items-center px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-black text-slate-900 dark:text-white">
-                   {page} / {totalPages}
-                 </div>
-                 {page < totalPages && (
-                   <Link
-                     href={buildSearchUrl({ page: page + 1 })}
-                     className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                   >
-                     {t('common.next')}
-                   </Link>
-                 )}
-               </div>
-             )}
-           </>
-         )}
-      </section>
+                {totalPages > 1 && (
+                  <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-3">
+                    {page > 1 && (
+                      <Link href={buildSearchUrl({ page: page - 1 })} rel="prev" className={btnQuiet}>
+                        {t('common.prev')}
+                      </Link>
+                    )}
+                    <span className="px-2 text-sm tabular-nums text-foreground/70">
+                      {page} / {totalPages}
+                    </span>
+                    {page < totalPages && (
+                      <Link href={buildSearchUrl({ page: page + 1 })} rel="next" className={btnQuiet}>
+                        {t('common.next')}
+                      </Link>
+                    )}
+                  </nav>
+                )}
+              </>
+            )}
+          </section>
+        </div>
+      </main>
       <HomeFooter lang={lang} />
     </div>
   );

@@ -38,12 +38,17 @@ export function buildClinicQuery(filters: ClinicFilters) {
   return query;
 }
 
+/**
+ * Every order ends with _id so pages never overlap or skip when many clinics tie
+ * (most imported clinics have no rating yet). By default, among equal ratings the
+ * verified clinics (status "approved" sorts before "pre_imported") and those with more doctors go first.
+ */
 export function buildClinicSort(sort?: string): Record<string, 1 | -1> {
   if (sort === 'reviews') {
-    return { 'rating.count': -1 };
+    return { 'rating.count': -1, 'rating.avg': -1, _id: 1 };
   } else if (sort === 'doctors') {
-    return { 'doctorCount': -1 };
+    return { 'doctorCount': -1, 'rating.avg': -1, _id: 1 };
   }
 
-  return { 'rating.avg': -1 };
+  return { 'rating.avg': -1, 'rating.count': -1, status: 1, 'doctorCount': -1, _id: 1 };
 }
