@@ -58,18 +58,19 @@ export default async function BlogListPage({ params, searchParams }: Props) {
   await dbConnect();
   void Doctor; // ensure Doctor model registered for populate
 
-  const query: any = {};
+  const query: Record<string, string> = {};
   if (category) query.category = category;
 
-  const articles: any[] = await Article.find(query)
+  const articles = await Article.find(query)
     .sort({ createdAt: -1 })
     .populate('authorId', 'name image specialty slug')
     .select('slug title overview image authorId createdAt category ratings')
     .lean();
 
-  const dbT = (field: any): string => {
+  const dbT = (field: Record<string, string> | string | undefined | null): string => {
     if (!field) return '';
-    return field[lang] || field['ru'] || field['uz'] || field['tg'] || field['kk'] || field['ky'] || '';
+    if (typeof field === 'string') return field;
+    return (field as Record<string, string>)[lang] || (field as Record<string, string>)['ru'] || (field as Record<string, string>)['uz'] || (field as Record<string, string>)['tg'] || (field as Record<string, string>)['kk'] || (field as Record<string, string>)['ky'] || '';
   };
 
   const validArticles = articles.filter((a) => dbT(a.title).length > 0);
@@ -273,10 +274,12 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                       <div className="pt-6 border-t border-[#eaedff]">
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           <div className="flex items-center gap-3">
-                            <img
+                            <Image
                               src={validArticles[0].authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                               alt={validArticles[0].authorId?.name || 'Doctor'}
                               className="w-12 h-12 rounded-full object-cover border-2 border-[#89f5e7]"
+                              width={48}
+                              height={48}
                             />
                             <div>
                               <div className="flex items-center gap-1.5">
@@ -367,10 +370,12 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                           </div>
                           <div className="pt-4 border-t border-[#eaedff] flex items-center justify-between mt-auto">
                             <div className="flex items-center gap-2 min-w-0">
-                               <img
+                               <Image
                                   src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                                   alt={article.authorId?.name || 'Doctor'}
                                   className="w-8 h-8 rounded-full object-cover border border-[#bcc9c6] shrink-0"
+                                  width={32}
+                                  height={32}
                                 />
                                <span className="text-xs font-semibold text-[#131b2e] truncate">
                                   {article.authorId?.name || 'Dr.'}
