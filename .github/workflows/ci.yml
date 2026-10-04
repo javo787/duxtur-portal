@@ -28,7 +28,7 @@ jobs:
         run: |
           BASE="${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}"
           if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then
-            FILES=$(git diff --name-only "$BASE" "${{ github.sha }}" -- '*.ts' '*.tsx')
+            FILES=$(git diff --name-only "$BASE" "${{ github.sha }}" -- '*.ts' '*.tsx' | while IFS= read -r file; do [ -f "$file" ] && printf '%s\n' "$file"; done)
           else
             echo "Нет базы для сравнения — линтим весь проект."
             FILES=$(git ls-files '*.ts' '*.tsx')
@@ -37,7 +37,7 @@ jobs:
             echo "Нет .ts/.tsx файлов для проверки."
             exit 0
           fi
-          echo "$FILES" | xargs npx eslint
+          echo "$FILES" | xargs -r npx eslint
 
   typecheck:
     runs-on: ubuntu-latest
