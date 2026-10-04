@@ -143,6 +143,8 @@ export const ru = {
     articleReviewedBy: 'Проверено',
     articleFaqTitle: 'Часто задаваемые вопросы',
     articleReadingMin: 'мин чтения',
+    byAuthor: 'Автор',
+    needConsult: 'Нужна очная консультация?',
     articleRateTitle: 'Оцените статью',
     articleRateThanks: 'Спасибо за оценку!',
     articleUsefulTitle: 'Эта статья была полезна?',

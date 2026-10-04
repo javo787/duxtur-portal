@@ -9,7 +9,7 @@ import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
 import { getClinics } from '@/lib/clinic-service';
-import { clinicSerif } from './_fonts';
+import { clinicSerif } from '@/lib/fonts';
 import { btnPrimary, btnQuiet } from './[slug]/_components/shared';
 
 export const revalidate = 3600; // 1 hour
