@@ -657,6 +657,7 @@ export const ru = {
     specialty_genetics: 'Генетика',
     specialty_physiotherapy: 'Физиотерапия',
     found: 'Найдено: {count} клиник',
+    directorySubtitle: 'Каталог клиник и медицинских центров Центральной Азии: адреса, телефоны, часы работы, врачи и отзывы пациентов.',
     notFound: 'Клиника не найдена',
     noReviewsYet: 'Новая клиника — оставьте первый отзыв',
     noDoctorsYet: 'Врачи в клинике пока не указаны',

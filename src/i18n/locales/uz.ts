@@ -656,6 +656,7 @@ export const uz = {
     specialty_genetics: 'Genetika',
     specialty_physiotherapy: 'Fizioterapiya',
     found: 'Topildi: {count} ta klinika',
+    directorySubtitle: 'Markaziy Osiyodagi klinikalar va tibbiyot markazlari katalogi: manzillar, telefonlar, ish vaqti, shifokorlar va bemorlarning fikrlari.',
     notFound: 'Klinika topilmadi',
     noReviewsYet: 'Yangi klinika — birinchi fikringizni qoldiring',
     noDoctorsYet: 'Klinika shifokorlari hali ko\'rsatilmagan',
