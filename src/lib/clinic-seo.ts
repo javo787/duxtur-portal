@@ -537,7 +537,7 @@ export function buildListingMetadataText(args: { filters: ListingFilters; total:
   const title = Array.from(withTagline).length <= TITLE_BUDGET ? withTagline : `${heading}${pageSuffix}`;
 
   const found = total > 0 ? t('clinic.found').replace('{count}', String(total)) : '';
-  const description = truncateAtWord([`${heading}.`, found && `${found}.`, t('clinic.directorySubtitle')].filter(Boolean).join(' '), 158);
+  const description = truncateAtWord([`${heading}.`, found && `${found}.`, t('clinic.metaDescription')].filter(Boolean).join(' '), 158);
 
   return { title, description, heading };
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The pages are wired to the database and to next/font; replace both so generateMetadata can run in node.
-const state = vi.hoisted(() => ({ clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 } }));
+const state = vi.hoisted(() => ({ clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 }, facets: [] as unknown[] }));
 
 vi.mock('next/font/google', () => ({ Source_Serif_4: () => ({ variable: 'font-var', className: 'font-cls' }) }));
 vi.mock('@/lib/mongodb', () => ({ default: async () => undefined }));
@@ -11,6 +11,7 @@ vi.mock('@/models/Clinic', () => ({
 vi.mock('@/lib/clinic-service', () => ({
   getClinicsPage: async () => state.listing,
   getClinics: async () => state.listing,
+  getIndexableFacets: async () => state.facets,
 }));
 vi.mock('@/components/ClinicViewTracker', () => ({ default: () => null }));
 vi.mock('@/components/home/HomeFooter', () => ({ default: () => null }));

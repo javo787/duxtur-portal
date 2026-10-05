@@ -17,7 +17,7 @@ import {
 } from '@/lib/clinic-seo';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { Source_Serif_4 } from 'next/font/google';
+import { clinicSerif } from '@/lib/fonts';
 import ClinicHero, { ClinicCover } from './_components/ClinicHero';
 import ClinicPanel, { panelHasContent } from './_components/ClinicPanel';
 import ClinicBody from './_components/ClinicBody';
@@ -29,14 +29,6 @@ import { cache } from 'react';
 import { whatsappUrl } from '@/lib/clinic-display';
 
 export const revalidate = 3600; // 1 hour
-
-// Display face for clinic pages. Fraunces has no Cyrillic, so ru/tg/kk/ky headings fell back to a system serif.
-const clinicSerif = Source_Serif_4({
-  subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
-  variable: '--font-clinic-serif',
-  display: 'swap',
-  axes: ['opsz'],
-});
 
 const getClinic = cache(async (slug: string) => {
   await dbConnect();

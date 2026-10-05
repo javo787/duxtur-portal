@@ -2,6 +2,7 @@ import { cache } from 'react';
 import dbConnect from './mongodb';
 import Clinic from '@/models/Clinic';
 import { buildClinicQuery, buildClinicSort, ClinicFilters } from './clinic-query';
+import { indexableListingFacets, type FacetSource, type ListingFacet } from './clinic-seo';
 
 export const getClinics = cache(async (filters: ClinicFilters & { page: number, limit: number }) => {
   await dbConnect();
@@ -55,3 +56,21 @@ export const getClinicsPage = cache(
       limit,
     }),
 );
+
+let facetMemo: { at: number; facets: ListingFacet[] } | null = null;
+const FACET_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * City / type / specialty listings that have enough clinics to be indexable (the same list the sitemap uses).
+ * Kept for a few minutes in memory: it changes only when clinics are added, and every directory render wants it.
+ */
+export async function getIndexableFacets(): Promise<ListingFacet[]> {
+  if (facetMemo && Date.now() - facetMemo.at < FACET_TTL_MS) return facetMemo.facets;
+  await dbConnect();
+  const docs = await Clinic.find({ status: { $in: ['approved', 'pre_imported'] } })
+    .select('city type specialties updatedAt')
+    .lean();
+  const facets = indexableListingFacets(docs as unknown as FacetSource[]);
+  facetMemo = { at: Date.now(), facets };
+  return facets;
+}

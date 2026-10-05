@@ -25,7 +25,18 @@ const toMinutes = (s: string) => {
  * "today"-related is filled in after mount. Until then the server HTML is the plain schedule.
  * Uses the device's local time: right for patients in the clinic's own region.
  */
-export default function ClinicHours({ hours, lang, variant }: { hours: Hours; lang: string; variant: 'status' | 'table' }) {
+export default function ClinicHours({
+  hours,
+  lang,
+  variant,
+  fallback,
+}: {
+  hours: Hours;
+  lang: string;
+  variant: 'status' | 'table';
+  /** What the status variant renders before the visitor's clock is known (server HTML). Default: link to the schedule. */
+  fallback?: React.ReactNode;
+}) {
   const { t } = useT(lang);
   const minute = useSyncExternalStore(subscribe, getMinute, getServerMinute);
   const now = minute === null ? null : new Date(minute * 60_000);
@@ -36,6 +47,7 @@ export default function ClinicHours({ hours, lang, variant }: { hours: Hours; la
   if (variant === 'status') {
     const today = todayKey ? hours[todayKey] : null;
     if (!now || !today) {
+      if (fallback !== undefined) return <>{fallback}</>;
       return (
         <a href="#contacts" className="underline decoration-dotted underline-offset-4">
           {t('clinic.workingHours')}

@@ -1,136 +1,90 @@
-'use client';
+import { ChevronDown } from 'lucide-react';
+import { getT, Locale } from '@/i18n';
+import { ClinicTypeOption, COMMON_SPECIALTIES } from '@/lib/clinic-constants';
+import { btnPrimary } from '../[slug]/_components/shared';
 
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { ClinicTypeOption } from '@/lib/clinic-constants';
-import { useT, Locale } from '@/i18n';
+const selectCls =
+  'min-h-12 w-full rounded-lg border border-border bg-background px-3 text-[0.9375rem] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
-import { COMMON_SPECIALTIES } from '@/lib/clinic-constants';
-
+/**
+ * City, type and specialty as native selects. They belong to the search form (form="clinic-search"),
+ * so everything submits together and no client JavaScript is needed. On a phone the panel is
+ * collapsed behind one "Filters" row; from lg up it is a plain, always-open sidebar.
+ */
 export default function ClinicFilters({
   cities,
   types,
   currentCity,
   currentType,
   currentSpecialty,
-  currentQ,
-  currentSort,
-  lang
+  activeCount,
+  lang,
 }: {
-  cities: readonly string[] | string[],
-  types: readonly ClinicTypeOption[] | ClinicTypeOption[],
-  currentCity?: string,
-  currentType?: string,
-  currentSpecialty?: string,
-  currentQ?: string,
-  currentSort?: string,
-  lang: Locale
+  cities: readonly string[];
+  types: readonly ClinicTypeOption[];
+  currentCity?: string;
+  currentType?: string;
+  currentSpecialty?: string;
+  activeCount: number;
+  lang: Locale;
 }) {
-  const { t } = useT(lang);
-
-  const buildUrl = (updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams();
-    if (currentCity) params.set('city', currentCity);
-    if (currentType) params.set('type', currentType);
-    if (currentSpecialty) params.set('specialty', currentSpecialty);
-    if (currentQ) params.set('q', currentQ);
-    if (currentSort) params.set('sort', currentSort);
-
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value === undefined) params.delete(key);
-      else params.set(key, value);
-    });
-
-    return `/${lang}/clinics?${params.toString()}`;
-  };
+  const t = getT(lang);
 
   return (
-    <div className="flex flex-col gap-4" role="search" aria-label={t('doctors.filters')}>
-      {/* Cities */}
-      <div className="relative">
-        <motion.div
-          initial={{ x: 40, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 100, damping: 20 }}
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2"
-        >
-          {cities.map(city => (
-            <Link
-              key={city}
-              href={buildUrl({ city: currentCity === city ? undefined : city, page: '1' })}
-              aria-label={`${city}${currentCity === city ? ` (${t('common.selected')})` : ''}`}
-              aria-pressed={currentCity === city}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-                currentCity === city
-                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              {city}
-            </Link>
-          ))}
-        </motion.div>
-        {/* Gradient Mask */}
-        <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white dark:from-slate-950 to-transparent pointer-events-none" />
-      </div>
+    <details className="group rounded-[10px] border border-border lg:rounded-none lg:border-0 lg:[&::details-content]:[content-visibility:visible]">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 font-semibold lg:px-0 [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center gap-2">
+          {t('doctors.filters')}
+          {activeCount > 0 && (
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+              {activeCount}
+            </span>
+          )}
+        </span>
+        <ChevronDown className="size-4 transition-transform group-open:rotate-180 lg:hidden" aria-hidden="true" />
+      </summary>
 
-      {/* Types */}
-      <div className="relative">
-        <motion.div
-          initial={{ x: 60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.1 }}
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2"
-        >
-          {types.map(type => (
-            <Link
-              key={type.id}
-              href={buildUrl({ type: currentType === type.id ? undefined : type.id, page: '1' })}
-              aria-label={`${t('clinic.type_' + type.id)}${currentType === type.id ? ` (${t('common.selected')})` : ''}`}
-              aria-pressed={currentType === type.id}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-                currentType === type.id
-                ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span className="mr-2" aria-hidden="true">{type.emoji}</span>
-              {t('clinic.type_' + type.id)}
-            </Link>
-          ))}
-        </motion.div>
-        {/* Gradient Mask */}
-        <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white dark:from-slate-950 to-transparent pointer-events-none" />
-      </div>
+      <div className="space-y-4 border-t border-border p-4 lg:border-0 lg:px-0 lg:pt-2">
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-foreground/70">{t('clinic.city')}</span>
+          <select name="city" form="clinic-search" defaultValue={currentCity ?? ''} className={selectCls}>
+            <option value="">{t('doctors.allCities')}</option>
+            {cities.map(c => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      {/* Specialties */}
-      <div className="relative">
-        <motion.div
-          initial={{ x: 80, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-2"
-        >
-          {COMMON_SPECIALTIES.map(specialty => (
-            <Link
-              key={specialty.id}
-              href={buildUrl({ specialty: currentSpecialty === specialty.id ? undefined : specialty.id, page: '1' })}
-              aria-label={`${t('clinic.specialty_' + specialty.id)}${currentSpecialty === specialty.id ? ` (${t('common.selected')})` : ''}`}
-              aria-pressed={currentSpecialty === specialty.id}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border flex items-center gap-2 ${
-                currentSpecialty === specialty.id
-                ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span aria-hidden="true">{specialty.emoji}</span>
-              {t('clinic.specialty_' + specialty.id)}
-            </Link>
-          ))}
-        </motion.div>
-        {/* Gradient Mask */}
-        <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white dark:from-slate-950 to-transparent pointer-events-none" />
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-foreground/70">{t('clinic.specialty')}</span>
+          <select name="specialty" form="clinic-search" defaultValue={currentSpecialty ?? ''} className={selectCls}>
+            <option value="">{t('clinic.anySpecialty')}</option>
+            {COMMON_SPECIALTIES.map(s => (
+              <option key={s.id} value={s.id}>
+                {t('clinic.specialty_' + s.id)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-foreground/70">{t('clinic.type')}</span>
+          <select name="type" form="clinic-search" defaultValue={currentType ?? ''} className={selectCls}>
+            <option value="">{t('clinic.anyType')}</option>
+            {types.map(ty => (
+              <option key={ty.id} value={ty.id}>
+                {t('clinic.type_' + ty.id)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <button type="submit" form="clinic-search" className={`${btnPrimary} w-full`}>
+          {t('doctors.applyFilters')}
+        </button>
       </div>
-    </div>
+    </details>
   );
 }

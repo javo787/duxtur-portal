@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 // Renders the real page components to HTML (data and heavy children mocked) to prove the pieces are wired:
 // the JSON-LD actually ends up in a <script> tag, as parseable JSON, and cannot be broken out of.
 const { state, nothing } = vi.hoisted(() => ({
-  state: { clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 } },
+  state: { clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 }, facets: [] as { city?: string; type?: string; specialty?: string; count: number }[] },
   nothing: () => ({ default: () => null }),
 }));
 
@@ -17,6 +17,7 @@ vi.mock('@/models/Clinic', () => ({
 vi.mock('@/lib/clinic-service', () => ({
   getClinicsPage: async () => state.listing,
   getClinics: async () => state.listing,
+  getIndexableFacets: async () => state.facets,
 }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -68,6 +69,7 @@ const renderListing = async (sp: Record<string, string> = {}, lang = 'ru') =>
 beforeEach(() => {
   state.clinic = clinic();
   state.listing = { clinics: [], total: 0 };
+  state.facets = [];
 });
 
 describe('clinic profile page markup', () => {
@@ -113,10 +115,10 @@ describe('clinic directory page markup', () => {
     expect(crumbs.itemListElement[2].name).toBe('Стоматология — Душанбе');
   });
 
-  it('keeps the call to action as the H1 of the unfiltered directory', async () => {
+  it('keeps the plain title as the H1 of the unfiltered directory', async () => {
     state.listing = { clinics: cards(3), total: 3 };
     const markup = await renderListing();
-    expect(markup).toMatch(/<h1[^>]*>Найти клинику<\/h1>/);
+    expect(markup).toMatch(/<h1[^>]*>Клиники<\/h1>/);
     expect(jsonLdBlocks(markup)[1].itemListElement).toHaveLength(2);
   });
 
@@ -134,5 +136,81 @@ describe('clinic directory page markup', () => {
     const [list] = jsonLdBlocks(markup);
     expect(list['@type']).toBe('ItemList');
     expect(list.itemListElement).toBeUndefined();
+  });
+});
+
+describe('crawlable links to the city and type listings', () => {
+  const cards = (n: number) => Array.from({ length: n }, (_, i) => clinic({ _id: `id${i}`, slug: `c${i}`, name: { ru: `Клиника ${i}` } }));
+  const facets = [
+    { city: 'Душанбе', count: 12 },
+    { city: 'Душанбе', type: 'dental_clinic', count: 6 },
+    { type: 'hospital', count: 4 },
+  ];
+  // next/link puts class before href, so match the attributes in any order
+  const links = (markup: string) =>
+    [...markup.matchAll(/<a\b([^>]*)>([^<]*)<\/a>/g)]
+      .map(m => [/href="([^"]*)"/.exec(m[1])?.[1].replace(/&amp;/g, '&') ?? '', m[2]])
+      .filter(l => l[0]);
+
+  it('lists the facets as plain anchors with the canonical query and a heading', async () => {
+    state.listing = { clinics: cards(3), total: 3 };
+    state.facets = facets;
+    const markup = await renderListing();
+    expect(markup).toContain('Клиники по городам и типам');
+    expect(links(markup)).toEqual(
+      expect.arrayContaining([
+        ['/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5', 'Клиники — Душанбе'],
+        ['/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&type=dental_clinic', 'Стоматология — Душанбе'],
+        ['/ru/clinics?type=hospital', 'Больница'],
+      ]),
+    );
+  });
+
+  /** The browse block alone: the page's own sort links legitimately point at the current listing. */
+  const browseBlock = (markup: string) => /<nav aria-labelledby="clinic-browse-title"[\s\S]*?<\/nav>/.exec(markup)?.[0] ?? '';
+
+  it('does not link a listing to itself', async () => {
+    state.listing = { clinics: cards(3), total: 12 };
+    state.facets = facets;
+    const hrefs = links(browseBlock(await renderListing({ city: 'Душанбе' }))).map(l => l[0]);
+    expect(hrefs).not.toContain('/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5');
+    expect(hrefs).toContain('/ru/clinics?type=hospital');
+  });
+
+  it('skips the block on search results and when there is nothing to link', async () => {
+    state.listing = { clinics: cards(3), total: 3 };
+    state.facets = facets;
+    expect(await renderListing({ q: 'шифо' })).not.toContain('Клиники по городам и типам');
+    state.facets = [];
+    expect(await renderListing()).not.toContain('Клиники по городам и типам');
+  });
+
+  it('keeps the block to a sensible number of links', async () => {
+    state.listing = { clinics: cards(3), total: 3 };
+    state.facets = Array.from({ length: 60 }, (_, i) => ({ specialty: `spec${i}`, count: 60 - i }));
+    const hrefs = links(await renderListing()).map(l => l[0]).filter(h => h.includes('specialty='));
+    expect(hrefs).toHaveLength(24);
+  });
+});
+
+describe('one URL for the first page', () => {
+  const cards = (n: number) => Array.from({ length: n }, (_, i) => clinic({ _id: `id${i}`, slug: `c${i}`, name: { ru: `Клиника ${i}` } }));
+  const hrefsOf = (markup: string) =>
+    [...markup.matchAll(/<a\b([^>]*)>/g)].map(m => (/href="([^"]*)"/.exec(m[1])?.[1] ?? '').replace(/&amp;/g, '&')).filter(Boolean);
+
+  it('links back to page one without ?page=1 and without a dangling "?"', async () => {
+    state.listing = { clinics: cards(20), total: 45 };
+    const hrefs = hrefsOf(await renderListing({ page: '2' }));
+    expect(hrefs).toContain('/ru/clinics'); // "previous" from page 2
+    expect(hrefs).toContain('/ru/clinics?page=3'); // "next"
+    expect(hrefs.filter(h => /[?&]page=1(&|$)/.test(h))).toEqual([]);
+    expect(hrefs.filter(h => h.endsWith('?'))).toEqual([]);
+  });
+
+  it('removes a filter chip to the bare listing', async () => {
+    state.listing = { clinics: cards(5), total: 5 };
+    const hrefs = hrefsOf(await renderListing({ city: 'Душанбе' }));
+    expect(hrefs.filter(h => h.endsWith('?'))).toEqual([]);
+    expect(hrefs).toContain('/ru/clinics');
   });
 });

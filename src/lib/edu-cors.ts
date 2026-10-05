@@ -10,13 +10,23 @@ function allowedOrigins(): string[] {
   return ['https://duxtur.org', 'https://www.duxtur.org', ...extra];
 }
 
+/**
+ * State-changing Edu endpoints answer only to pages of duxtur.org itself (or the listed standalone hosts).
+ * The session cookie is SameSite=Lax, which already keeps it off cross-site POSTs; this check is the second wall,
+ * because linking accounts on a forged request would put a stranger's Edu account behind someone's portal login.
+ */
+export function isAllowedOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get('origin');
+  return !!origin && allowedOrigins().includes(origin);
+}
+
 export function withEduCors(req: NextRequest, res: NextResponse, reqId?: string): NextResponse {
   if (reqId) res.headers.set(REQUEST_ID_HEADER, reqId);
   const origin = req.headers.get('origin');
   if (origin && allowedOrigins().includes(origin)) {
     res.headers.set('Access-Control-Allow-Origin', origin);
     res.headers.set('Vary', 'Origin');
-    res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
     // Cross-origin pages can only read headers that are exposed explicitly.
     res.headers.set('Access-Control-Expose-Headers', REQUEST_ID_HEADER);

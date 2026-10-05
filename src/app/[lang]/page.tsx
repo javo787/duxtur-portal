@@ -78,12 +78,13 @@ const [articles, authors, categoryAgg] = await Promise.all([
  
 // Превращаем массив [{ _id: 'cardiology', count: 5 }, ...] в объект
 const categoryCounts: Record<string, number> = {};
-for (const item of (categoryAgg as any[])) {
+for (const item of (categoryAgg as { _id: string; count: number }[])) {
   categoryCounts[item._id] = item.count;
 }
  
 
-  const t = (field: any) => {
+  // Picks one language out of a localized DATABASE field ({ ru, tg, ... }); not for UI strings (see eduLabels below).
+  const t = (field: Partial<Record<string, string>> | null | undefined) => {
     if (!field) return '';
     return field[lang] || field['ru'] || '';
   };
@@ -152,8 +153,8 @@ for (const item of (categoryAgg as any[])) {
       <HomeHeader lang={lang} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
       <HomeHero lang={lang} dict={dict} />
       <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
-      <HomeArticles lang={lang} articles={articles as any[]} dict={dict} t={t} />
-      <HomeAuthors lang={lang} authors={authors as any[]} t={t} />
+      <HomeArticles lang={lang} articles={articles} dict={dict} t={t} />
+      <HomeAuthors lang={lang} authors={authors} t={t} />
       <HomeCTA lang={lang} dict={dict} />
       <HomeFooter lang={lang} />
     </main>
