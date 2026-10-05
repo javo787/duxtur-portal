@@ -37,3 +37,21 @@ export const getClinics = cache(async (filters: ClinicFilters & { page: number, 
 
   return { clinics, total };
 });
+
+/**
+ * Same as getClinics, but deduplicated within one request: generateMetadata and the page both need the
+ * result, and React's cache() only matches calls whose arguments are identical, which a fresh filters
+ * object never is. Primitive arguments are.
+ */
+export const getClinicsPage = cache(
+  async (city: string, type: string, specialty: string, q: string, sort: string, page: number, limit: number) =>
+    getClinics({
+      city: city || undefined,
+      type: type || undefined,
+      specialty: specialty || undefined,
+      q: q || undefined,
+      sort: sort || undefined,
+      page,
+      limit,
+    }),
+);
