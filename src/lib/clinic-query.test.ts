@@ -21,3 +21,15 @@ describe('specialty filter', () => {
     expect(buildClinicQuery({}).status).toEqual({ $in: ['approved', 'pre_imported'] });
   });
 });
+
+describe('sanitizeSearchParams: one spelling per URL', () => {
+  it('turns any casing of a city into the canonical name', () => {
+    expect(sanitizeSearchParams({ city: 'душанбе' }).city).toBe('Душанбе');
+    expect(sanitizeSearchParams({ city: ' ДУШАНБЕ ' }).city).toBe('Душанбе');
+    expect(sanitizeSearchParams({ city: 'Душанбе' }).city).toBe('Душанбе');
+  });
+
+  it('drops a city that is not on the list', () => {
+    expect(sanitizeSearchParams({ city: 'Париж' }).city).toBeUndefined();
+  });
+});

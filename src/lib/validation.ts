@@ -26,8 +26,11 @@ export function sanitizeSearchParams(params: ClinicSearchParams) {
   if (params.city) {
     // Clean from invisible characters and trim
     const trimmedCity = params.city.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
-    if (ALLOWED_CITIES.some(c => c.toLowerCase() === trimmedCity.toLowerCase())) {
-      sanitized.city = trimmedCity;
+    // Keep the canonical spelling, not what was typed: ?city=душанбе and ?city=Душанбе must be one URL
+    // (this value ends up in the canonical link and the sitemap).
+    const canonicalCity = ALLOWED_CITIES.find(c => c.toLowerCase() === trimmedCity.toLowerCase());
+    if (canonicalCity) {
+      sanitized.city = canonicalCity;
     }
   }
 

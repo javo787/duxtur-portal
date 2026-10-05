@@ -6,13 +6,16 @@ import { isUnverifiedImport } from '@/lib/clinic-display';
 import { pick, type ClinicView } from './shared';
 
 /** Real photo only. Without a cover the page opens on type instead of a grey placeholder. */
-export function ClinicCover({ clinic }: { clinic: ClinicView }) {
+export function ClinicCover({ clinic, lang = 'ru' }: { clinic: ClinicView; lang?: string }) {
   if (!clinic.coverImage) return null;
+  // It is the clinic's own photo and the page's largest image, so it gets a real description for image search
+  // and screen readers instead of alt="".
+  const alt = [pick(clinic.name, lang).text, clinic.city].filter(Boolean).join(', ');
   return (
     <div className="relative aspect-[16/9] w-full bg-muted md:aspect-[21/7] md:max-h-[400px]">
       <Image
         src={getOptimizedCloudinaryUrl(clinic.coverImage, { width: 1600, height: 700, crop: 'fill' })}
-        alt=""
+        alt={alt}
         fill
         priority
         sizes="100vw"

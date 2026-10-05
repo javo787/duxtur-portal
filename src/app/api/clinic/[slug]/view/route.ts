@@ -27,7 +27,8 @@ export async function POST(
     const clinic = await Clinic.findOneAndUpdate(
       { slug },
       { $inc: { profileViews: 1 } },
-      { new: true }
+      // timestamps: false, otherwise every visitor moves updatedAt, and with it the sitemap's lastmod.
+      { new: true, timestamps: false }
     );
 
     if (!clinic) {

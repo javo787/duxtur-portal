@@ -2,78 +2,126 @@ import ClinicCard from './_components/ClinicCard';
 import ClinicFilters from './_components/ClinicFilters';
 import Link from 'next/link';
 import { Search, X } from 'lucide-react';
-import { getT, T, Locale } from '@/i18n';
+import { getT, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
-import { buildAlternates, buildBreadcrumbJsonLd, BASE_URL } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd, buildFilterQuery, ogAlternateLocales, ogLocale, safeJsonLd } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
-import { getClinics } from '@/lib/clinic-service';
+import { getClinicsPage, getIndexableFacets } from '@/lib/clinic-service';
+import {
+  buildClinicListJsonLd,
+  buildListingHeading,
+  buildListingMetadataText,
+  listingIndexable,
+  type ListingFilters,
+} from '@/lib/clinic-seo';
 import { clinicSerif } from '@/lib/fonts';
 import { btnPrimary, btnQuiet } from './[slug]/_components/shared';
 
 export const revalidate = 3600; // 1 hour
 
+const PAGE_SIZE = 20;
+const MAX_BROWSE_LINKS = 24;
+
+type SearchParams = { city?: string; type?: string; specialty?: string; q?: string; page?: string; sort?: string };
+
+/** The one place that turns the query string into data, shared by generateMetadata and the page. */
+async function loadListing(lang: string, rawParams: SearchParams) {
+  const filters = sanitizeSearchParams(rawParams);
+  const { clinics, total } = await getClinicsPage(
+    filters.city ?? '',
+    filters.type ?? '',
+    filters.specialty ?? '',
+    filters.q ?? '',
+    filters.sort ?? '',
+    filters.page,
+    PAGE_SIZE,
+  );
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  // ?page=99 on a three-page listing is empty: not worth indexing, whatever the total says.
+  const pageInRange = filters.page === 1 || filters.page <= totalPages;
+  const indexable = listingIndexable(filters, total) && pageInRange;
+  return { lang, filters: filters as ListingFilters, clinics: clinics as ClinicDocument[], total, totalPages, indexable };
+}
+
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ lang: string }>,
-  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string, sort?: string }>
+  searchParams: Promise<SearchParams>
 }): Promise<Metadata> {
   const { lang } = (await params) as { lang: Locale };
-  const rawParams = await searchParams;
-  const filters = sanitizeSearchParams(rawParams);
+  const { filters, total, indexable } = await loadListing(lang, await searchParams);
   const t = getT(lang);
-  const title = T('clinic.title', lang) || T('clinic.title', 'ru');
+  const { title, description } = buildListingMetadataText({ filters, total, lang, t });
+
+  // Search results are never a page of their own: no canonical either, since pointing it at the plain
+  // listing while saying noindex would send two different signals.
+  if (filters.q) return { title, robots: { index: false, follow: true } };
+
+  const alternates = buildAlternates('clinics', lang, filters);
+  const fullTitle = `${title} | Duxtur.org`;
 
   return {
-    title: `${title} — Duxtur.org`,
-    description: t('clinic.metaDescription'),
-    alternates: buildAlternates('clinics', lang, filters),
+    title,
+    description,
+    // Thin facets (fewer than 3 clinics), empty pages and out-of-range pages: crawl the links, keep them out of the index.
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
+    // hreflang only makes sense between indexable pages.
+    alternates: indexable ? alternates : { canonical: alternates.canonical },
+    openGraph: {
+      type: 'website',
+      siteName: 'Duxtur.org',
+      title: fullTitle,
+      description,
+      url: alternates.canonical,
+      locale: ogLocale(lang),
+      alternateLocale: ogAlternateLocales(lang),
+      images: [{ url: 'https://duxtur.org/og-default.png', width: 1424, height: 752, alt: title }],
+    },
+    twitter: { card: 'summary_large_image', title: fullTitle, description, images: ['https://duxtur.org/og-default.png'] },
   };
 }
 
 export default async function ClinicsDirectoryPage({ params, searchParams }: {
   params: Promise<{ lang: string }>,
-  searchParams: Promise<{ city?: string, type?: string, specialty?: string, q?: string, page?: string, sort?: string }>
+  searchParams: Promise<SearchParams>
 }) {
   const { lang } = (await params) as { lang: Locale };
-  const rawParams = await searchParams;
-  const filters = sanitizeSearchParams(rawParams);
+  const [{ filters, clinics, total, totalPages }, allFacets] = await Promise.all([
+    loadListing(lang, await searchParams),
+    getIndexableFacets(),
+  ]);
   const t = getT(lang);
 
   const page = filters.page;
-  const limit = 20;
+  const isFiltered = !!(filters.city || filters.type || filters.specialty);
+  // The H1 follows the filter ("Стоматология — Душанбе"); the unfiltered page keeps its plain title.
+  const heading = isFiltered ? buildListingHeading(filters, lang, t) : t('clinic.title');
 
-  const { clinics, total } = await getClinics({ ...filters, limit });
-
-  const totalPages = Math.ceil(total / limit);
-
-  // Structured Data
-  const itemListJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: t('clinic.title'),
-    itemListElement: clinics.map((clinic: ClinicDocument, index: number) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      item: {
-        '@type': 'MedicalClinic',
-        name: clinic.name[lang] || clinic.name.ru,
-        url: `${BASE_URL}/${lang}/clinics/${clinic.slug}`,
-        image: clinic.logo || clinic.coverImage || undefined,
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: clinic.city,
-          streetAddress: clinic.address,
-        },
-        telephone: clinic.phone || undefined,
-      }
-    }))
-  };
+  // Structured Data: list items carry only url + name, the details live on the clinic's own page.
+  const itemListJsonLd = buildClinicListJsonLd({
+    clinics,
+    lang,
+    name: heading,
+    filters,
+    offset: (page - 1) * PAGE_SIZE,
+  });
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: t('nav.home'), url: `/${lang}` },
     { name: t('clinic.title'), url: `/${lang}/clinics` },
+    ...(isFiltered ? [{ name: heading, url: `/${lang}/clinics${buildFilterQuery({ ...filters, page: 1 })}` }] : []),
   ]);
+
+  // City / type / specialty are native <select>s in a GET form, which crawlers never submit. These plain links are
+  // how the listings that rank for "стоматология Душанбе" are reachable from the directory itself.
+  const currentQuery = buildFilterQuery({ ...filters, page: 1 });
+  const browseLinks = filters.q
+    ? []
+    : allFacets
+        .map(f => ({ href: `/${lang}/clinics${buildFilterQuery(f)}`, label: buildListingHeading({ ...f, page: 1 }, lang, t), query: buildFilterQuery(f) }))
+        .filter(l => l.query !== currentQuery)
+        .slice(0, MAX_BROWSE_LINKS);
 
   // Helper to build search URL with current filters
   const buildSearchUrl = (newParams: Record<string, string | number | undefined>) => {
@@ -90,7 +138,11 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
       else params.set(key, String(value));
     });
 
-    return `/${lang}/clinics?${params.toString()}`;
+    // The first page is the listing itself: ?page=1 would be a second URL for the same page, and an empty query
+    // would leave a dangling "?".
+    if (params.get('page') === '1') params.delete('page');
+    const qs = params.toString();
+    return `/${lang}/clinics${qs ? `?${qs}` : ''}`;
   };
 
   // Active filters, each removable on its own
@@ -113,8 +165,8 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
   return (
     <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(itemListJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }} />
 
       <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
         <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
@@ -127,7 +179,7 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
 
       <main className="mx-auto max-w-6xl px-4 pb-16 md:px-8">
         <h1 className="pt-4 pb-5 font-clinic text-[2rem] leading-[1.1] font-semibold tracking-[-0.01em] md:pt-8 md:pb-6 md:text-5xl">
-          {t('clinic.title')}
+          {heading}
         </h1>
 
         <form id="clinic-search" method="get" action={`/${lang}/clinics`} role="search" className="flex gap-2">
@@ -236,6 +288,23 @@ export default async function ClinicsDirectoryPage({ params, searchParams }: {
             )}
           </section>
         </div>
+
+        {browseLinks.length > 0 && (
+          <nav aria-labelledby="clinic-browse-title" className="mt-14 border-t border-border pt-8">
+            <h2 id="clinic-browse-title" className="mb-4 font-clinic text-xl font-semibold">
+              {t('clinic.browse')}
+            </h2>
+            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[0.9375rem]">
+              {browseLinks.map(l => (
+                <li key={l.href}>
+                  <Link href={l.href} className="font-medium text-primary underline-offset-4 hover:underline">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </main>
       <HomeFooter lang={lang} />
     </div>

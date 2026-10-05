@@ -20,7 +20,9 @@ export async function POST(
     // We use the slug or id to find the doctor
     const doctor = await Doctor.findOneAndUpdate(
       { $or: [{ slug: id }, { _id: id.match(/^[a-f\d]{24}$/i) ? id : null }] },
-      { $inc: { profileViews: 1 } }
+      { $inc: { profileViews: 1 } },
+      // timestamps: false, otherwise every visitor moves updatedAt, and with it the sitemap's lastmod.
+      { timestamps: false }
     );
 
     if (doctor) {

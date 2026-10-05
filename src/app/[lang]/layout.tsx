@@ -5,15 +5,6 @@ import { BASE_URL } from "@/lib/seo";
 import { Locale } from "@/i18n";
 import CspViolationLogger from "@/components/_temp/CspViolationLogger";
 
-export async function generateMetadata() {
-  return {
-    other: {
-      "link:preconnect:fonts": "https://fonts.googleapis.com",
-      "link:preconnect:fonts-static": "https://fonts.gstatic.com",
-    },
-  };
-}
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "latin-ext", "cyrillic", "cyrillic-ext"],

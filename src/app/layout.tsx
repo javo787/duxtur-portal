@@ -20,9 +20,6 @@ export const metadata: Metadata = {
   verification: {
     google: "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
   },
-  alternates: {
-    canonical: "https://duxtur.org",
-  },
   openGraph: {
     siteName: "Duxtur.org",
     type: "website",
@@ -63,9 +60,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  other: {
-    "google-site-verification": "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
   },
 };
 

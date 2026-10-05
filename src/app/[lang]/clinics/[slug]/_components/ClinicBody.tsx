@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { getT } from '@/i18n';
+import { ALLOWED_CITIES, ALLOWED_CLINIC_TYPES, type ClinicType } from '@/lib/clinic-constants';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import { facebookHref } from '@/lib/social';
+import { buildListingHeading, normalizeCity } from '@/lib/clinic-seo';
+import { buildFilterQuery } from '@/lib/seo';
 import { instagramUrl, isUnverifiedImport, safeHttpUrl, telegramUrl, websiteHost, whatsappUrl } from '@/lib/clinic-display';
 import ClinicNav, { type NavItem } from './ClinicNav';
 import ClinicDoctors from './ClinicDoctors';
@@ -59,6 +62,23 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
     clinic.whatsapp && { label: 'WhatsApp', href: whatsappUrl(clinic.whatsapp) },
     facebookHref(clinic.facebook) && { label: 'Facebook', href: facebookHref(clinic.facebook)! },
   ].filter(Boolean) as { label: string; href: string }[];
+
+  // Links back up to the city and city+type listings: every profile feeds the pages that rank for "клиника + город".
+  const city = normalizeCity(clinic.city);
+  const type = ALLOWED_CLINIC_TYPES.includes(clinic.type as ClinicType) && clinic.type !== 'clinic' ? clinic.type : undefined;
+  const hubLinks: { label: string; href: string }[] = [];
+  if (ALLOWED_CITIES.includes(city)) {
+    hubLinks.push({
+      label: buildListingHeading({ city, page: 1 }, lang, t),
+      href: `/${lang}/clinics${buildFilterQuery({ city })}`,
+    });
+    if (type) {
+      hubLinks.push({
+        label: buildListingHeading({ city, type, page: 1 }, lang, t),
+        href: `/${lang}/clinics${buildFilterQuery({ city, type })}`,
+      });
+    }
+  }
 
   const website = clinic.website ? safeHttpUrl(clinic.website) : null;
   const route = mapsUrl({ lat: clinic.coordinates?.lat, lng: clinic.coordinates?.lng, address: clinic.address, city: clinic.city });
@@ -240,6 +260,20 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
             {t('clinic.claimClinic')}
           </Link>
         </section>
+      )}
+
+      {hubLinks.length > 0 && (
+        <nav aria-label={t('clinic.title')} className="py-9">
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[0.9375rem]">
+            {hubLinks.map(l => (
+              <li key={l.href}>
+                <Link href={l.href} className={linkCls}>
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       )}
 
       <div id="clinic-end" aria-hidden="true" />

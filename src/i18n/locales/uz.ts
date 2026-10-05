@@ -675,6 +675,7 @@ export const uz = {
     priceOnRequest: 'So\'rov bo\'yicha',
     claimBody: 'Profilni tasdiqlang, shifokorlar, narxlar va suratlarni qo\'shing — bemorlar onlayn yozilishi mumkin bo\'ladi.',
     metaDescription: 'Markaziy Osiyo klinikalari va tibbiy markazlari katalogi: manzillar, mutaxassisliklar, reytinglar va shifokorga yozilish.',
+    browse: 'Shahar va turlar bo\'yicha klinikalar',
     searchPlaceholder: 'Nomi yoki manzil',
     city: 'Shahar',
     type: 'Turi',
