@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 import {
   approveLogin,
-  isPendingLogin,
+  pendingLoginInfo,
   parseLoginCallback,
   parseLoginStart,
   CALLBACK_PREFIX,
 } from '@/lib/edu-telegram-login';
 import { callEduBot, isValidWebhookSecret } from '@/lib/edu-telegram-bot';
+import { confirmationMessage } from '@/lib/edu-bot-messages';
 import { describeError, eduLog, maskRef, newReqId, requestFacts } from '@/lib/edu-log';
 
 export const dynamic = 'force-dynamic';
@@ -61,19 +62,20 @@ export async function POST(req: NextRequest) {
     // 1) "/start login_<token>" -> ask for confirmation
     const loginToken = parseLoginStart(message?.text);
     if (loginToken && message?.chat?.type === 'private') {
-      const pending = await isPendingLogin(loginToken);
+      const pending = await pendingLoginInfo(loginToken);
       eduLog('webhook', reqId, 'webhook:start-login', {
         tokenRef: maskRef(loginToken),
-        pending,
+        pending: !!pending,
+        purpose: pending?.purpose ?? null,
         meaning: pending ? 'asking the user to confirm' : 'token unknown or expired (5 min): user is told the link is outdated',
       }, pending ? 'info' : 'warn');
       if (pending) {
+        const confirm = confirmationMessage(pending.purpose, pending.requestHint);
         await callEduBot('sendMessage', {
           chat_id: message.chat.id,
-          text:
-            '🔐 Вход в Duxtur Edu\n\nЕсли вы только что нажали «Войти через Telegram» на сайте duxtur.org/edu — подтвердите вход.\nЕсли это были не вы, просто проигнорируйте это сообщение.',
+          text: confirm.text,
           reply_markup: {
-            inline_keyboard: [[{ text: '✅ Подтвердить вход', callback_data: `${CALLBACK_PREFIX}${loginToken}` }]],
+            inline_keyboard: [[{ text: confirm.button, callback_data: `${CALLBACK_PREFIX}${loginToken}` }]],
           },
         }, reqId);
       } else {
@@ -118,7 +120,7 @@ export async function POST(req: NextRequest) {
     if (message?.chat?.type === 'private' && typeof message.text === 'string') {
       await callEduBot('sendMessage', {
         chat_id: message.chat.id,
-        text: 'Это бот входа в Duxtur Edu. Чтобы войти, откройте duxtur.org/edu и нажмите «Войти через Telegram».',
+        text: 'Это бот входа в Duxtur. Чтобы войти, откройте duxtur.org (или duxtur.org/edu) и нажмите «Войти через Telegram».',
       }, reqId);
       eduLog('webhook', reqId, 'webhook:generic-reply', {});
     } else if (!loginToken && !approveToken) {

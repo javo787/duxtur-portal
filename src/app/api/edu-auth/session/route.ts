@@ -8,6 +8,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { createEduCustomToken } from '@/lib/edu-custom-token';
 import { eduPreflight, isAllowedOrigin, withEduCors } from '@/lib/edu-cors';
 import { getOrCreateEduUid } from '@/lib/edu-account-link';
+import { realEmail } from '@/lib/placeholder-email';
 import { describeError, eduLog, envFlags, newReqId } from '@/lib/edu-log';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     return respond({
       signedIn: true,
       name: user.name || '',
-      email: user.email || '',
+      email: realEmail(user.email),
       image: user.image || '',
       eduUid: user.eduUid ?? null,
       role: user.role || 'patient',
@@ -84,8 +85,8 @@ export async function POST(req: NextRequest) {
       portalUserId: user._id.toString(),
       portalRole: user.role || 'patient',
       // Read by Edu when it creates the profile of a new user (see AuthContext): name and e-mail of the same person.
-      tgName: (user.name || user.email || '').slice(0, 100),
-      portalEmail: (user.email || '').slice(0, 200),
+      tgName: (user.name || realEmail(user.email)).slice(0, 100),
+      portalEmail: realEmail(user.email).slice(0, 200),
     });
     eduLog('sso', reqId, 'sso:token-issued', { created: link.created, uidKind: link.eduUid.split('_')[0] });
     return respond({ customToken, projectId: envFlags().firebaseProjectId, eduUid: link.eduUid, created: link.created });

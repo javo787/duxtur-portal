@@ -6,11 +6,14 @@ const UserSchema = new mongoose.Schema({
   role:     { type: String, enum: ['doctor', 'portal_admin', 'patient', 'clinic'], default: 'patient' },
   name:     { type: String, default: '' },
   image:    { type: String, default: '' },
-  provider: { type: String, default: 'credentials' }, // google | resend | credentials
+  provider: { type: String, default: 'credentials' }, // google | resend | credentials | telegram
   // Firebase uid of this person's Duxtur Edu account (tg_<id>, a Google uid, or dx_<id> generated here).
   // Set only by the signed-in person through /api/edu-auth/link or the first "Sign in with duxtur.org" in Edu.
   // Absent for everybody who has never used Edu; sparse so those users do not collide on the unique index.
   eduUid:   { type: String, default: undefined, unique: true, sparse: true },
+  // Telegram user id of this person, set when they sign in with Telegram (and on "Connect Telegram").
+  // The same sparse-unique pattern as eduUid: absent for everybody who never used Telegram.
+  telegramId: { type: Number, default: undefined, unique: true, sparse: true },
   resetPasswordToken:   { type: String, default: null },
   resetPasswordExpires: { type: Date,   default: null },
 }, { timestamps: true });

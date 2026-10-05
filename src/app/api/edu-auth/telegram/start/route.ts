@@ -5,6 +5,7 @@ import { createLogin, START_PREFIX } from '@/lib/edu-telegram-login';
 import { eduPreflight, withEduCors } from '@/lib/edu-cors';
 import { eduBotUsername } from '@/lib/edu-telegram-bot';
 import { describeError, eduLog, envFlags, maskRef, newReqId, requestFacts } from '@/lib/edu-log';
+import { describeRequest } from '@/lib/request-hint';
 import { logWebhookState, servingHostOf } from '@/lib/edu-webhook-state';
 
 export const dynamic = 'force-dynamic';
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const dbStartedAt = Date.now();
-    const { token, pollSecret, expiresInSec } = await createLogin();
+    const { token, pollSecret, expiresInSec } = await createLogin({ purpose: 'edu', requestHint: describeRequest(req.headers) });
     const dbMs = Date.now() - dbStartedAt;
 
     const botUsername = eduBotUsername();

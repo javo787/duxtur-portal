@@ -77,6 +77,13 @@ describe('GET /api/edu-auth/session', () => {
     withUser(null);
     expect(await (await get()).json()).toEqual({ signedIn: false });
   });
+
+  it('does not pass on the placeholder address of an account that signed up with Telegram', async () => {
+    withUser({ ...portalUser, email: 'tg5.abcdef012345@telegram.invalid', role: 'patient', eduUid: 'tg_5' });
+    const body = await (await get()).json();
+    expect(body.email).toBe('');
+    expect(body.eduUid).toBe('tg_5');
+  });
 });
 
 describe('POST /api/edu-auth/session', () => {
@@ -92,6 +99,14 @@ describe('POST /api/edu-auth/session', () => {
       tgName: 'Dr. Rahimov',
       portalEmail: 'r@mail.org',
     });
+  });
+
+  it('sends no placeholder address to Edu for an account that signed up with Telegram', async () => {
+    withUser({ ...portalUser, name: '', email: 'tg5.abcdef012345@telegram.invalid', role: 'patient' });
+    await post();
+    const claims = createEduCustomToken.mock.calls[0][1];
+    expect(claims.portalEmail).toBe('');
+    expect(claims.tgName).toBe('');
   });
 
   it('signs in as the old Edu profile when the account is linked to one', async () => {

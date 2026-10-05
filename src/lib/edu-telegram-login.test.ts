@@ -11,6 +11,8 @@ vi.mock('@/models/TelegramLogin', () => ({
 }));
 
 import {
+  peekLogin,
+  pendingLoginInfo,
   parseLoginStart,
   parseLoginCallback,
   isValidToken,
@@ -118,5 +120,60 @@ describe('displayName', () => {
     expect(displayName({ id: 1, firstName: 'Ali', lastName: 'Karimov' })).toBe('Ali Karimov');
     expect(displayName({ id: 1, firstName: '', username: 'ali' })).toBe('ali');
     expect(displayName({ id: 7, firstName: '' })).toBe('Telegram 7');
+  });
+});
+
+describe('login purposes', () => {
+  it('records what a login is for, who started it and where from, still storing only hashes', async () => {
+    const { token } = await createLogin({ purpose: 'portal_link', userId: 'u1', requestHint: 'Chrome, Android · Dushanbe, TJ' });
+    const doc = create.mock.calls[0][0];
+    expect(doc).toMatchObject({ purpose: 'portal_link', userId: 'u1', requestHint: 'Chrome, Android · Dushanbe, TJ', tokenHash: sha256(token) });
+    expect(JSON.stringify(doc)).not.toContain(token);
+  });
+
+  it('is an Edu login unless said otherwise', async () => {
+    await createLogin();
+    expect(create.mock.calls[0][0].purpose).toBe('edu');
+    expect(create.mock.calls[0][0]).not.toHaveProperty('userId');
+  });
+
+  it('consume names the purpose, so a token made for one thing cannot be used for another', async () => {
+    findOneAndUpdate.mockReturnValue({ lean: () => Promise.resolve(null) });
+    exists.mockResolvedValue(null);
+
+    await consumeLogin(TOKEN, SECRET, { purpose: 'portal' });
+    expect(findOneAndUpdate.mock.calls[0][0].purpose).toBe('portal');
+
+    await consumeLogin(TOKEN, SECRET, { purpose: 'portal_link', userId: 'u1' });
+    expect(findOneAndUpdate.mock.calls[1][0]).toMatchObject({ purpose: 'portal_link', userId: 'u1' });
+    expect(exists.mock.calls[1][0]).toMatchObject({ purpose: 'portal_link', userId: 'u1' });
+
+    // Edu stays the default and also takes logins made before `purpose` existed.
+    await consumeLogin(TOKEN, SECRET);
+    expect(findOneAndUpdate.mock.calls[2][0].purpose).toEqual({ $in: ['edu', null] });
+    expect(findOneAndUpdate.mock.calls[2][0]).not.toHaveProperty('userId');
+  });
+
+  it('peek reports where a login stands without changing it', async () => {
+    const answer = (doc: unknown) => findOne.mockReturnValueOnce({ select: () => ({ lean: () => Promise.resolve(doc) }) });
+    answer({ status: 'pending' });
+    expect(await peekLogin(TOKEN, SECRET, { purpose: 'portal' })).toBe('pending');
+    answer({ status: 'approved' });
+    expect(await peekLogin(TOKEN, SECRET, { purpose: 'portal' })).toBe('approved');
+    answer({ status: 'consumed' });
+    expect(await peekLogin(TOKEN, SECRET, { purpose: 'portal' })).toBe('gone');
+    answer(null);
+    expect(await peekLogin(TOKEN, SECRET, { purpose: 'portal' })).toBe('gone');
+    expect(findOne.mock.calls[0][0]).toMatchObject({ tokenHash: sha256(TOKEN), pollSecretHash: sha256(SECRET), purpose: 'portal' });
+    expect(findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('tells the bot what a pending login is for, treating an old one as Edu', async () => {
+    findOne.mockReturnValueOnce({ lean: () => Promise.resolve({ purpose: 'portal', requestHint: 'Safari, iOS' }) });
+    expect(await pendingLoginInfo(TOKEN)).toEqual({ purpose: 'portal', requestHint: 'Safari, iOS' });
+    findOne.mockReturnValueOnce({ lean: () => Promise.resolve({}) });
+    expect(await pendingLoginInfo(TOKEN)).toEqual({ purpose: 'edu', requestHint: null });
+    findOne.mockReturnValueOnce({ lean: () => Promise.resolve(null) });
+    expect(await pendingLoginInfo(TOKEN)).toBeNull();
   });
 });

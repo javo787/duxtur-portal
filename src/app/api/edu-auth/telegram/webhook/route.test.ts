@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const isPendingLogin = vi.fn();
+const pendingLoginInfo = vi.fn();
 const approveLogin = vi.fn();
 const callEduBot = vi.fn();
 
@@ -18,7 +18,7 @@ vi.mock('@/lib/edu-telegram-login', async () => {
   const actual = await vi.importActual<typeof import('@/lib/edu-telegram-login')>('@/lib/edu-telegram-login');
   return {
     ...actual,
-    isPendingLogin: (...a: unknown[]) => isPendingLogin(...a),
+    pendingLoginInfo: (...a: unknown[]) => pendingLoginInfo(...a),
     approveLogin: (...a: unknown[]) => approveLogin(...a),
   };
 });
@@ -62,18 +62,36 @@ describe('edu bot webhook', () => {
   });
 
   it('asks for confirmation on /start login_<token>', async () => {
-    isPendingLogin.mockResolvedValue(true);
+    pendingLoginInfo.mockResolvedValue({ purpose: 'edu', requestHint: null });
     const res = await call(privateMsg(`/start login_${TOKEN}`));
     expect(res.status).toBe(200);
     const [method, payload] = callEduBot.mock.calls[0];
     expect(method).toBe('sendMessage');
     expect(payload.chat_id).toBe(77);
+    expect(payload.text).toContain('Duxtur Edu');
     expect(payload.reply_markup.inline_keyboard[0][0].callback_data).toBe(`el:${TOKEN}`);
     expect(approveLogin).not.toHaveBeenCalled(); // /start alone never approves
   });
 
+  it('words the confirmation by what the login is for and shows where the request came from', async () => {
+    pendingLoginInfo.mockResolvedValue({ purpose: 'portal', requestHint: 'Chrome, Android · Dushanbe, TJ' });
+    await call(privateMsg(`/start login_${TOKEN}`));
+    let payload = callEduBot.mock.calls[0][1];
+    expect(payload.text).toContain('Вход на duxtur.org');
+    expect(payload.text).toContain('Chrome, Android · Dushanbe, TJ');
+    expect(payload.reply_markup.inline_keyboard[0][0].text).toContain('Подтвердить вход');
+
+    callEduBot.mockClear();
+    pendingLoginInfo.mockResolvedValue({ purpose: 'portal_link', requestHint: null });
+    await call(privateMsg(`/start login_${TOKEN}`));
+    payload = callEduBot.mock.calls[0][1];
+    expect(payload.text).toContain('Подключение Telegram');
+    expect(payload.text).not.toContain('Запрос из');
+    expect(payload.reply_markup.inline_keyboard[0][0].text).toContain('Подключить Telegram');
+  });
+
   it('says the link is stale when the login is not pending', async () => {
-    isPendingLogin.mockResolvedValue(false);
+    pendingLoginInfo.mockResolvedValue(null);
     await call(privateMsg(`/start login_${TOKEN}`));
     expect(callEduBot.mock.calls[0][1].text).toContain('устарела');
     expect(callEduBot.mock.calls[0][1].reply_markup).toBeUndefined();
@@ -82,7 +100,7 @@ describe('edu bot webhook', () => {
   it('ignores login deep links outside private chats', async () => {
     const body = { message: { text: `/start login_${TOKEN}`, chat: { id: -5, type: 'group' }, from: { id: 1, first_name: 'X' } } };
     await call(body);
-    expect(isPendingLogin).not.toHaveBeenCalled();
+    expect(pendingLoginInfo).not.toHaveBeenCalled();
   });
 
   it('approves with the Telegram identity of whoever pressed the button', async () => {
@@ -111,6 +129,6 @@ describe('edu bot webhook', () => {
   it('replies with a hint to other private messages and still returns 200', async () => {
     const res = await call(privateMsg('hello'));
     expect(res.status).toBe(200);
-    expect(callEduBot.mock.calls[0][1].text).toContain('duxtur.org/edu');
+    expect(callEduBot.mock.calls[0][1].text).toContain('duxtur.org');
   });
 });

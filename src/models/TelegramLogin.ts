@@ -8,6 +8,12 @@ export interface ITelegramLogin extends Document {
   tokenHash: string;
   pollSecretHash: string;
   status: 'pending' | 'approved' | 'consumed';
+  /** edu: Duxtur Edu sign-in; portal: sign-in to duxtur.org; portal_link: connect Telegram to a signed-in duxtur.org account. */
+  purpose?: 'edu' | 'portal' | 'portal_link';
+  /** portal_link only: the portal user who started it. Only that user can finish it. */
+  userId?: string;
+  /** "Chrome, Android · Dushanbe, TJ": shown in the bot so a person can tell their own request from a stranger's. */
+  requestHint?: string;
   telegram?: {
     id: number;
     firstName: string;
@@ -23,6 +29,9 @@ const TelegramLoginSchema = new Schema<ITelegramLogin>(
     tokenHash: { type: String, required: true, unique: true },
     pollSecretHash: { type: String, required: true },
     status: { type: String, enum: ['pending', 'approved', 'consumed'], default: 'pending' },
+    purpose: { type: String, enum: ['edu', 'portal', 'portal_link'], default: 'edu' },
+    userId: String,
+    requestHint: String,
     telegram: {
       id: Number,
       firstName: String,
