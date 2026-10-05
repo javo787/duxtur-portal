@@ -1,6 +1,41 @@
 export const BASE_URL = "https://duxtur.org";
 
-const LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
+export const SEO_LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
+export type SeoLang = (typeof SEO_LANGS)[number];
+
+const LANGS = SEO_LANGS;
+
+/** og:locale per site language (the root layout used to hard-code ru_RU for every language). */
+const OG_LOCALES: Record<SeoLang, string> = {
+  ru: "ru_RU",
+  uz: "uz_UZ",
+  tg: "tg_TJ",
+  kk: "kk_KZ",
+  ky: "ky_KG",
+};
+
+export function ogLocale(lang: string): string {
+  return OG_LOCALES[lang as SeoLang] ?? OG_LOCALES.ru;
+}
+
+/** The other languages of the site, for og:locale:alternate. */
+export function ogAlternateLocales(lang: string): string[] {
+  return LANGS.filter((l) => l !== lang).map((l) => OG_LOCALES[l]);
+}
+
+/**
+ * Serialize JSON-LD for an inline <script type="application/ld+json">.
+ * Plain JSON.stringify is NOT safe there: a clinic or doctor name containing "</script>" would
+ * close the tag and let the rest run as HTML. "<" is escaped, which is still valid JSON.
+ */
+export function safeJsonLd(data: unknown): string {
+  return (JSON.stringify(data) ?? "null")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 
 /** Собирает URL без трейлинг-слэша, даже если путь пустой */
 function buildUrl(lang: string, path: string) {
@@ -10,33 +45,53 @@ function buildUrl(lang: string, path: string) {
   return `${BASE_URL}/${lang}${pathPart}`;
 }
 
-export function buildAlternates(path: string, currentLang = "ru", filters?: Record<string, string | number | undefined>) {
-  // Build query string if filters are provided
-  let queryString = "";
-  if (filters) {
-    const params = new URLSearchParams();
-    // Only include significant filters for SEO
-    if (filters.city) params.set('city', String(filters.city));
-    if (filters.type) params.set('type', String(filters.type));
-    if (filters.specialty) params.set('specialty', String(filters.specialty));
+export type AlternateFilters = {
+  city?: string;
+  type?: string;
+  specialty?: string;
+  page?: number | string;
+  /** Accepted so a whole filter object can be passed in, but never part of a canonical URL. */
+  q?: string;
+  sort?: string;
+};
 
-    const qs = params.toString();
-    if (qs) queryString = `?${qs}`;
-  }
+/**
+ * Query string for the filters that define a distinct, indexable listing.
+ * Order is fixed (city, type, specialty, page) so a URL always has exactly one spelling.
+ * `q` and `sort` are deliberately left out: they never get their own canonical URL.
+ */
+export function buildFilterQuery(filters?: AlternateFilters): string {
+  if (!filters) return "";
+  const params = new URLSearchParams();
+  if (filters.city) params.set("city", String(filters.city));
+  if (filters.type) params.set("type", String(filters.type));
+  if (filters.specialty) params.set("specialty", String(filters.specialty));
+  const page = Math.floor(Number(filters.page));
+  // Page 1 is the listing itself; later pages are real pages with their own content and self-canonical.
+  if (Number.isFinite(page) && page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
 
-  // Контролируем, что canonical всегда указывает на текущую языковую версию
+/** Absolute URL of a localized page, with the canonical filter query when given. */
+export function buildPageUrl(lang: string, path: string, filters?: AlternateFilters): string {
+  return buildUrl(lang, path) + buildFilterQuery(filters);
+}
+
+export function buildAlternates(path: string, currentLang = "ru", filters?: AlternateFilters) {
+  const queryString = buildFilterQuery(filters);
+
+  // Canonical always points at the current language version
   const canonical = buildUrl(currentLang, path) + queryString;
 
-  // Собираем список альтернативных версий (hreflang)
+  // All supported language versions (hreflang), self-reference included
   const languages: Record<string, string> = {};
-
-  // Добавляем все поддерживаемые языки
   for (const lang of LANGS) {
     languages[lang] = buildUrl(lang, path) + queryString;
   }
 
-  // Добавляем x-default, указывающий на русскую версию как на основную
-  languages['x-default'] = buildUrl('ru', path) + queryString;
+  // x-default points at the Russian version as the main one
+  languages["x-default"] = buildUrl("ru", path) + queryString;
 
   return {
     canonical,
