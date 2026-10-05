@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
+import TelegramConnect from '@/components/TelegramConnect';
 
 export default function PatientProfilePage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = use(params);
@@ -78,6 +79,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ lang:
               />
            </div>
         </div>
+
+        <TelegramConnect lang={lang} />
 
         <div className="sticky bottom-4">
            <button

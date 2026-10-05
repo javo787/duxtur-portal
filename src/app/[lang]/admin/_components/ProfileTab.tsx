@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { updateDoctorProfile } from '@/app/actions/update-profile';
 import ProfileCompletionBanner from './ProfileCompletionBanner';
+import TelegramConnect from '@/components/TelegramConnect';
 
 import AvatarHero from './_profile-sections/AvatarHero';
 import PersonalData from './_profile-sections/PersonalData';
@@ -188,6 +189,8 @@ export function ProfileTab({ lang }: { lang: string }) {
       <Schedule profile={profile} setProfile={setProfile} />
       <SocialsVisitingCard profile={profile} setProfile={setProfile} />
       <CardDesign profile={profile} setProfile={setProfile} />
+
+      <TelegramConnect lang={lang} />
 
       <SaveBar
         isSaving={isSaving}

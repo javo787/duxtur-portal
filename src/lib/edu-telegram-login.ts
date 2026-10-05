@@ -2,6 +2,12 @@ import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import TelegramLogin from '@/models/TelegramLogin';
 
+/**
+ * What a login is for. The same bot and the same confirm-in-Telegram flow serve three things, and a token made for
+ * one can never be used for another: the filters below always name the purpose.
+ */
+export type LoginPurpose = 'edu' | 'portal' | 'portal_link';
+
 export const LOGIN_TTL_MS = 5 * 60 * 1000;
 export const START_PREFIX = 'login_';
 export const CALLBACK_PREFIX = 'el:';
@@ -35,26 +41,51 @@ export function parseLoginCallback(data: unknown): string | null {
   return isValidToken(token) ? token : null;
 }
 
-export async function createLogin() {
+// Logins made before `purpose` existed have none: they were all Edu logins.
+const purposeFilter = (purpose: LoginPurpose): LoginPurpose | { $in: (LoginPurpose | null)[] } =>
+  purpose === 'edu' ? { $in: ['edu', null] } : purpose;
+
+export interface CreateLoginOptions {
+  purpose?: LoginPurpose;
+  /** portal_link: the signed-in portal user this login belongs to. */
+  userId?: string;
+  requestHint?: string;
+}
+
+export async function createLogin(options: CreateLoginOptions = {}) {
   await dbConnect();
   const token = randomToken();
   const pollSecret = randomToken();
   await TelegramLogin.create({
     tokenHash: sha256(token),
     pollSecretHash: sha256(pollSecret),
+    purpose: options.purpose ?? 'edu',
+    ...(options.userId ? { userId: options.userId } : {}),
+    ...(options.requestHint ? { requestHint: options.requestHint } : {}),
     expiresAt: new Date(Date.now() + LOGIN_TTL_MS),
   });
   return { token, pollSecret, expiresInSec: LOGIN_TTL_MS / 1000 };
 }
 
-export async function isPendingLogin(token: string): Promise<boolean> {
+export interface PendingLoginInfo {
+  purpose: LoginPurpose;
+  requestHint: string | null;
+}
+
+/** What the bot needs to word its confirmation, or null when the token is unknown, used or expired. */
+export async function pendingLoginInfo(token: string): Promise<PendingLoginInfo | null> {
   await dbConnect();
   const doc = await TelegramLogin.findOne({
     tokenHash: sha256(token),
     status: 'pending',
     expiresAt: { $gt: new Date() },
-  }).lean();
-  return !!doc;
+  }).lean<{ purpose?: LoginPurpose; requestHint?: string } | null>();
+  if (!doc) return null;
+  return { purpose: doc.purpose ?? 'edu', requestHint: doc.requestHint ?? null };
+}
+
+export async function isPendingLogin(token: string): Promise<boolean> {
+  return (await pendingLoginInfo(token)) !== null;
 }
 
 export interface TelegramProfile {
@@ -75,6 +106,40 @@ export async function approveLogin(token: string, tg: TelegramProfile): Promise<
   return !!res;
 }
 
+/** Which logins a poll may see: the purpose (default edu) and, for portal_link, the user who started it. */
+export interface LoginScope {
+  purpose?: LoginPurpose;
+  userId?: string;
+}
+
+function scopeFilter(scope: LoginScope) {
+  return {
+    purpose: purposeFilter(scope.purpose ?? 'edu'),
+    ...(scope.userId ? { userId: scope.userId } : {}),
+  };
+}
+
+export type PeekResult = 'pending' | 'approved' | 'gone';
+
+/**
+ * Where a login stands, WITHOUT using it up. The browser polls this and only signs in (which consumes the login)
+ * once it says "approved", so a poll can never swallow the login it is waiting for.
+ */
+export async function peekLogin(token: string, pollSecret: string, scope: LoginScope = {}): Promise<PeekResult> {
+  await dbConnect();
+  const doc = await TelegramLogin.findOne({
+    tokenHash: sha256(token),
+    pollSecretHash: sha256(pollSecret),
+    ...scopeFilter(scope),
+    expiresAt: { $gt: new Date() },
+  })
+    .select('status')
+    .lean<{ status?: string } | null>();
+  if (doc?.status === 'pending') return 'pending';
+  if (doc?.status === 'approved') return 'approved';
+  return 'gone';
+}
+
 export type ConsumeResult =
   | { state: 'pending' }
   | { state: 'gone' }
@@ -84,13 +149,14 @@ export type ConsumeResult =
  * Called by the polling client. Needs BOTH the token and the poll secret.
  * An approved login can be consumed exactly once (atomic approved -> consumed).
  */
-export async function consumeLogin(token: string, pollSecret: string): Promise<ConsumeResult> {
+export async function consumeLogin(token: string, pollSecret: string, scope: LoginScope = {}): Promise<ConsumeResult> {
   await dbConnect();
   const tokenHash = sha256(token);
   const pollSecretHash = sha256(pollSecret);
+  const owner = scopeFilter(scope);
 
   const consumed = await TelegramLogin.findOneAndUpdate(
-    { tokenHash, pollSecretHash, status: 'approved', expiresAt: { $gt: new Date() } },
+    { tokenHash, pollSecretHash, ...owner, status: 'approved', expiresAt: { $gt: new Date() } },
     { $set: { status: 'consumed' } },
     { returnDocument: 'before' }
   ).lean();
@@ -103,6 +169,7 @@ export async function consumeLogin(token: string, pollSecret: string): Promise<C
   const stillPending = await TelegramLogin.exists({
     tokenHash,
     pollSecretHash,
+    ...owner,
     status: 'pending',
     expiresAt: { $gt: new Date() },
   });

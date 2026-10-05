@@ -10,6 +10,7 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Doctor from "@/models/Doctor";
 import bcrypt from "bcryptjs";
+import { authorizeTelegramLogin } from "@/lib/portal-telegram-signin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -42,6 +43,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         }
         return { id: user._id.toString(), email: user.email, role: user.role };
+      },
+    }),
+
+    // "Sign in with Telegram": the browser has the login approved in the bot (see /api/telegram-login/*) and
+    // hands over the one-time token and poll secret. Nothing about the person comes from the browser.
+    Credentials({
+      id: "telegram",
+      name: "Telegram",
+      credentials: { token: {}, pollSecret: {} },
+      async authorize(credentials, request) {
+        const ip = (request?.headers?.get("x-forwarded-for") || "anonymous").split(",")[0].trim();
+        return authorizeTelegramLogin(credentials, ip);
       },
     }),
   ],
