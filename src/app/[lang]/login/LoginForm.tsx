@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { getT } from '@/i18n';
+import TelegramLogin from '@/components/TelegramLogin';
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -107,6 +108,16 @@ export default function LoginForm({ lang }: { lang: string }) {
               </svg>
               Войти через Google
             </button>
+
+            {/* Врач, который подключил Telegram в профиле, входит им же. Остальные попадают на главную. */}
+            <div className="mb-6">
+              <TelegramLogin
+                lang={lang}
+                mode="login"
+                variant="outline"
+                redirectFor={role => (role === 'doctor' ? `/${lang}/admin` : `/${lang}`)}
+              />
+            </div>
 
             <div className="flex items-center gap-3 mb-6">
               <div className="flex-1 h-px bg-slate-100" />
