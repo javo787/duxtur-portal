@@ -40,9 +40,9 @@ describe('middleware and /edu', () => {
     expect(authHandler).toHaveBeenCalledTimes(1);
   });
 
-  it('still redirects *.vercel.app, including /edu, to duxtur.org', async () => {
+  it('still redirects *.vercel.app, including /edu, to the main host (www.duxtur.org)', async () => {
     const res = await middleware(req('/edu/exam', 'duxtur-portal.vercel.app'));
     expect(res.status).toBe(301);
-    expect(res.headers.get('location')).toBe('https://duxtur.org/edu/exam');
+    expect(res.headers.get('location')).toBe('https://www.duxtur.org/edu/exam');
   });
 });

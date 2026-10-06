@@ -2,8 +2,9 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, buildPageUrl, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
+import { isPlainSpecialtyListing, specialtyIndexable } from '@/lib/doctor-seo';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { DoctorsSortSelect } from '../_components/DoctorsSortSelect';
 import UI from '@/dictionaries/doctor-translations';
@@ -19,6 +20,10 @@ type Props = {
   }>;
 };
 
+// The metadata depends on the database (an empty specialty is noindex), so never bake it in at build time:
+// the build database is empty. The page reads searchParams anyway, which makes it dynamic; this says it outright.
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   const languages = ['ru', 'uz', 'tg', 'kk', 'ky'];
   const specialties = Object.keys(CATEGORY_LABELS);
@@ -27,10 +32,18 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang, specialty } = await params;
-  const { city } = await searchParams;
+  const sp = await searchParams;
+  const { city } = sp;
 
   const specLabel = CATEGORY_LABELS[specialty]?.[lang] || CATEGORY_LABELS[specialty]?.ru;
-  if (!specLabel) return notFound();
+  const specLabelRu = CATEGORY_LABELS[specialty]?.ru;
+  if (!specLabel || !specLabelRu) return notFound();
+
+  // Same filter the page lists by (all approved doctors of the specialty, whatever the city)
+  await dbConnect();
+  const total = await Doctor.countDocuments({ status: 'approved', 'specialty.ru': specLabelRu });
+  const indexable = specialtyIndexable(total);
+  const path = `doctors/${specialty}`;
 
   let title = `${specLabel}`;
   if (city) {
@@ -49,7 +62,10 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title,
     description: descriptions[lang] || descriptions.ru,
-    alternates: buildAlternates(`doctors/${specialty}`, lang),
+    // Hreflang only on the plain, non-empty page; city / type / sort / later pages are variants of it
+    alternates: indexable && isPlainSpecialtyListing(sp) ? buildAlternates(path, lang) : { canonical: buildPageUrl(lang, path) },
+    // An empty specialty is a thin page: out of the index, links still followed
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   };
 }
 
@@ -62,11 +78,13 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
   await dbConnect();
 
   // Query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   const query: Record<string, any> = { status: 'approved', 'specialty.ru': specLabelRu };
   if (sp.city) query.city = new RegExp(sp.city, 'i');
   if (sp.type) query.consultationTypes = sp.type;
 
   // Sorting
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   let sort: any = { createdAt: -1 };
   if (sp.sort === 'rating') sort = { reviewAvg: -1, reviewCount: -1 };
   if (sp.sort === 'price_asc') sort = { 'priceRange.min': 1 };
@@ -77,11 +95,13 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
   const skip = (page - 1) * limit;
 
   const [doctors, total] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
     Doctor.find(query).sort(sort).skip(skip).limit(limit).lean() as Promise<any[]>,
     Doctor.countDocuments(query),
   ]);
 
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   const t = (field: any) => field?.[lang] || field?.ru || '';
 
   const specLabel = CATEGORY_LABELS[specialty]?.[lang] || CATEGORY_LABELS[specialty]?.ru;
@@ -91,6 +111,7 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: specLabel,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
     itemListElement: doctors.map((doc: any, index: number) => ({
       '@type': 'ListItem',
       position: index + 1,
@@ -168,6 +189,7 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change */}
             {doctors.map((doc: any) => (
               <div key={doc._id} className="group bg-white rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
                 <div className="p-4 md:p-6 pb-0 flex items-start justify-between">

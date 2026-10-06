@@ -201,7 +201,7 @@ describe('ogImageUrl', () => {
 
   it('passes other hosts through untouched and resolves site-relative paths', () => {
     expect(ogImageUrl('https://cdn.example.com/a.png')).toEqual({ url: 'https://cdn.example.com/a.png', transformed: false });
-    expect(ogImageUrl('/og-default.png')?.url).toBe('https://duxtur.org/og-default.png');
+    expect(ogImageUrl('/og-default.png')?.url).toBe('https://www.duxtur.org/og-default.png');
   });
 
   it('rejects empty and non-http values', () => {
@@ -252,8 +252,8 @@ describe('buildClinicJsonLd', () => {
     const [node, page, crumbs] = g['@graph'];
     expect(g['@context']).toBe('https://schema.org');
     expect(node['@type']).toBe('Dentist');
-    expect(node['@id']).toBe('https://duxtur.org/ru/clinics/shifo#clinic');
-    expect(node.url).toBe('https://duxtur.org/ru/clinics/shifo');
+    expect(node['@id']).toBe('https://www.duxtur.org/ru/clinics/shifo#clinic');
+    expect(node.url).toBe('https://www.duxtur.org/ru/clinics/shifo');
     expect(node.name).toBe('Шифо');
     expect(page['@type']).toBe('WebPage');
     expect(page.mainEntity).toEqual({ '@id': node['@id'] });
@@ -346,8 +346,8 @@ describe('buildClinicJsonLd', () => {
       }),
     );
     expect(node.employee).toEqual([
-      { '@type': 'Person', name: 'Иванов И.', jobTitle: 'Стоматолог', url: 'https://duxtur.org/ru/doctor/ivanov' },
-      { '@type': 'Person', name: 'Без слага', jobTitle: 'Хирург', url: 'https://duxtur.org/ru/doctor/64b0c0ffee0000000000abcd' },
+      { '@type': 'Person', name: 'Иванов И.', jobTitle: 'Стоматолог', url: 'https://www.duxtur.org/ru/doctor/ivanov' },
+      { '@type': 'Person', name: 'Без слага', jobTitle: 'Хирург', url: 'https://www.duxtur.org/ru/doctor/64b0c0ffee0000000000abcd' },
       { '@type': 'Person', name: 'Без ссылки' },
     ]);
   });
@@ -358,8 +358,8 @@ describe('buildClinicJsonLd', () => {
       branches: [{ label: 'Филиал на Сино', address: 'ул. Сино, 5', phone: '+992372220000', coordinates: { lat: 38.57, lng: 68.8 } }],
     });
     const branch = g['@graph'][1];
-    expect(branch['@id']).toBe('https://duxtur.org/ru/clinics/shifo#branch-1');
-    expect(branch.branchOf).toEqual({ '@id': 'https://duxtur.org/ru/clinics/shifo#clinic' });
+    expect(branch['@id']).toBe('https://www.duxtur.org/ru/clinics/shifo#branch-1');
+    expect(branch.branchOf).toEqual({ '@id': 'https://www.duxtur.org/ru/clinics/shifo#clinic' });
     expect(branch.name).toBe('Шифо — Филиал на Сино');
     expect(branch.address.addressLocality).toBe('Душанбе');
     expect(branch.geo.latitude).toBe(38.57);
@@ -367,7 +367,7 @@ describe('buildClinicJsonLd', () => {
 
   it('uses the page language for url, name and inLanguage', () => {
     const g = buildClinicJsonLd({ clinic, lang: 'uz', t: uz }) as Graph;
-    expect(clinicNode(g).url).toBe('https://duxtur.org/uz/clinics/shifo');
+    expect(clinicNode(g).url).toBe('https://www.duxtur.org/uz/clinics/shifo');
     expect(clinicNode(g).name).toBe('Shifo');
     expect(g['@graph'].find(n => n['@type'] === 'WebPage')?.inLanguage).toBe('uz');
   });
@@ -455,10 +455,10 @@ describe('directory pages', () => {
       offset: 20,
     }) as Record<string, any>;
     expect(ld['@type']).toBe('ItemList');
-    expect(ld.url).toBe('https://duxtur.org/uz/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&page=2');
+    expect(ld.url).toBe('https://www.duxtur.org/uz/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&page=2');
     expect(ld.itemListElement).toEqual([
-      { '@type': 'ListItem', position: 21, url: 'https://duxtur.org/uz/clinics/a', name: 'A' },
-      { '@type': 'ListItem', position: 22, url: 'https://duxtur.org/uz/clinics/b', name: 'Б' },
+      { '@type': 'ListItem', position: 21, url: 'https://www.duxtur.org/uz/clinics/a', name: 'A' },
+      { '@type': 'ListItem', position: 22, url: 'https://www.duxtur.org/uz/clinics/b', name: 'Б' },
     ]);
   });
 });

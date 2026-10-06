@@ -83,7 +83,7 @@ describe('clinic profile page markup', () => {
   it('drops null doctors and links the rest, never to ".../undefined"', async () => {
     const [ld] = jsonLdBlocks(await renderProfile());
     const employees = ld['@graph'][0].employee;
-    expect(employees.map((e: any) => e.url)).toEqual(['https://duxtur.org/ru/doctor/ivanov', 'https://duxtur.org/ru/doctor/abc']);
+    expect(employees.map((e: any) => e.url)).toEqual(['https://www.duxtur.org/ru/doctor/ivanov', 'https://www.duxtur.org/ru/doctor/abc']);
   });
 
   it('cannot be broken out of by a hostile clinic name', async () => {
@@ -126,8 +126,8 @@ describe('clinic directory page markup', () => {
     state.listing = { clinics: cards(2), total: 45 };
     const [list] = jsonLdBlocks(await renderListing({ page: '3' }));
     expect(list.itemListElement).toEqual([
-      { '@type': 'ListItem', position: 41, url: 'https://duxtur.org/ru/clinics/c0', name: 'Клиника 0' },
-      { '@type': 'ListItem', position: 42, url: 'https://duxtur.org/ru/clinics/c1', name: 'Клиника 1' },
+      { '@type': 'ListItem', position: 41, url: 'https://www.duxtur.org/ru/clinics/c0', name: 'Клиника 0' },
+      { '@type': 'ListItem', position: 42, url: 'https://www.duxtur.org/ru/clinics/c1', name: 'Клиника 1' },
     ]);
   });
 

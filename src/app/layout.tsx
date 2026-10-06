@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { BASE_URL } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -11,7 +12,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://duxtur.org"),
+  metadataBase: new URL(BASE_URL),
   title: {
     template: "%s | Duxtur.org",
     default: "Duxtur.org — Медицина на вашем языке",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     locale: "ru_RU",
     images: [
       {
-        url: "https://duxtur.org/og-default.png",
+        url: `${BASE_URL}/og-default.png`,
         width: 1424,
         height: 752,
         alt: "Duxtur.org — Медицина на вашем языке",
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@duxturcom",
-    images: ["https://duxtur.org/og-default.png"],
+    images: [`${BASE_URL}/og-default.png`],
   },
   icons: {
     icon: [

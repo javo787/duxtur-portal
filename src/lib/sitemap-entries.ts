@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { clinicIndexability, indexableListingFacets, type ClinicSeoInput } from './clinic-seo';
+import { specialtyIndexable, specialtyStats } from './doctor-seo';
 import { BASE_URL, SEO_LANGS, buildFilterQuery } from './seo';
 
 type DateLike = Date | string | undefined | null;
@@ -14,6 +15,8 @@ export interface SitemapDoctor {
   slug?: string;
   _id: unknown;
   updatedAt?: DateLike;
+  /** Only the Russian name is needed: the specialty pages filter doctors by it. */
+  specialty?: { ru?: string } | null;
 }
 
 export type SitemapClinic = Pick<ClinicSeoInput, 'slug' | 'status' | 'description' | 'city' | 'type' | 'specialties'> & {
@@ -25,7 +28,8 @@ export interface SitemapData {
   doctors: SitemapDoctor[];
   /** Every clinic the directory shows (approved and pre_imported); indexability is decided here. */
   clinics: SitemapClinic[];
-  doctorSpecialtySlugs: string[];
+  /** Specialty page slug -> Russian name as stored on doctors. A page without an approved doctor stays out. */
+  doctorSpecialties: Record<string, string>;
 }
 
 /**
@@ -87,7 +91,7 @@ export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
     ...perLang('', { lastModified: latest(articleDate, doctorDate, clinicDate), changeFrequency: 'daily', priority: 1.0 }),
     ...perLang('blog', { lastModified: articleDate, changeFrequency: 'daily', priority: 0.9 }),
     ...perLang('doctors', { lastModified: doctorDate, changeFrequency: 'daily', priority: 0.9 }),
-    ...perLang('doctors/map', { lastModified: doctorDate, changeFrequency: 'daily', priority: 0.9 }),
+    // /doctors/map is not listed: it is a client-only map with no text for a crawler to read, so it is noindex.
     ...perLang('authors', { lastModified: latest(articleDate, doctorDate), changeFrequency: 'weekly', priority: 0.8 }),
     ...perLang('clinics', { lastModified: clinicDate, changeFrequency: 'daily', priority: 0.9 }),
     // The recruitment page for clinics: robots.txt used to block it.
@@ -106,9 +110,12 @@ export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
     ...data.doctors.flatMap((doctor) =>
       perLang(`doctor/${doctor.slug || String(doctor._id)}`, { lastModified: toDate(doctor.updatedAt), changeFrequency: 'monthly', priority: 0.75 }),
     ),
-    ...data.doctorSpecialtySlugs.flatMap((specialty) =>
-      perLang(`doctors/${specialty}`, { lastModified: doctorDate, changeFrequency: 'weekly', priority: 0.85 }),
-    ),
+    // Specialty pages that list at least one doctor, dated by the newest of those doctors (not by "any doctor").
+    ...specialtyStats(data.doctors, data.doctorSpecialties)
+      .filter((stat) => specialtyIndexable(stat.count))
+      .flatMap((stat) =>
+        perLang(`doctors/${stat.slug}`, { lastModified: stat.lastModified, changeFrequency: 'weekly', priority: 0.85 }),
+      ),
     // /patient/appointments used to be listed here although it is private, disallowed and noindex.
   ];
 }

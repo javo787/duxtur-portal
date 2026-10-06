@@ -1,4 +1,10 @@
-export const BASE_URL = "https://duxtur.org";
+/**
+ * The ONE host every canonical, hreflang, sitemap, robots and JSON-LD URL is built on.
+ * It must be the host that answers 200 without a redirect: www.duxtur.org in production (the Telegram webhook
+ * is registered there for the same reason). The bare duxtur.org must redirect here permanently (Vercel > Domains).
+ * canonical-host.test.ts keeps a second host from sneaking back into the metadata.
+ */
+export const BASE_URL = "https://www.duxtur.org";
 
 export const SEO_LANGS = ["ru", "uz", "tg", "kk", "ky"] as const;
 export type SeoLang = (typeof SEO_LANGS)[number];
