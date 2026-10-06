@@ -1,5 +1,5 @@
 import { stableSlug } from './normalize';
-import type { ClinicType, Lang, RawClinic } from './types';
+import type { ClinicImages, ClinicType, Lang, RawClinic } from './types';
 
 const LANGS: Lang[] = ['ru', 'tg', 'uz', 'kk', 'ky'];
 
@@ -11,8 +11,12 @@ function multilingual(raw: RawClinic) {
   return out;
 }
 
-/** Full document for a brand-new pre_imported clinic. No rating fields at all. */
-export function toClinicDoc(raw: RawClinic, now = new Date()) {
+/**
+ * Full document for a brand-new pre_imported clinic. No rating fields at all.
+ * Image fields are added only when the image step actually produced a URL, so a
+ * record never gets a blank logo/cover that could later be mistaken for "cleared".
+ */
+export function toClinicDoc(raw: RawClinic, now = new Date(), images?: ClinicImages) {
   const hasCoords = typeof raw.lat === 'number' && typeof raw.lng === 'number';
   return {
     name: multilingual(raw),
@@ -30,6 +34,10 @@ export function toClinicDoc(raw: RawClinic, now = new Date()) {
     phone2: raw.phones?.[1] ?? '',
     website: raw.website ?? '',
     email: raw.email ?? '',
+    ...(raw.specialties?.length ? { specialties: raw.specialties } : {}),
+    ...(images?.logo ? { logo: images.logo } : {}),
+    ...(images?.coverImage ? { coverImage: images.coverImage } : {}),
+    ...(images?.photos?.length ? { photos: images.photos } : {}),
     ...(hasCoords
       ? {
           coordinates: {
@@ -53,18 +61,25 @@ interface ExistingDoc {
   website?: string;
   email?: string;
   importSourceId?: string;
+  logo?: string;
+  coverImage?: string;
+  photos?: string[];
+  specialties?: string[];
 }
 
 /**
  * $set patch for an existing pre_imported clinic: fills EMPTY fields only,
  * so a re-run can enrich a record but never overwrite manual edits.
  */
-export function fillEmptyPatch(existing: ExistingDoc, raw: RawClinic): Record<string, unknown> {
-  const doc = toClinicDoc(raw);
+export function fillEmptyPatch(existing: ExistingDoc, raw: RawClinic, images?: ClinicImages): Record<string, unknown> {
+  const doc = toClinicDoc(raw, new Date(), images) as ReturnType<typeof toClinicDoc> & Partial<ClinicImages> & { specialties?: string[] };
   const patch: Record<string, unknown> = {};
-  const empty = (v: unknown) => v === undefined || v === null || v === '';
+  const empty = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 
   for (const f of ['city', 'address', 'phone', 'phone2', 'website', 'email'] as const) {
+    if (empty(existing[f]) && !empty(doc[f])) patch[f] = doc[f];
+  }
+  for (const f of ['logo', 'coverImage', 'photos', 'specialties'] as const) {
     if (empty(existing[f]) && !empty(doc[f])) patch[f] = doc[f];
   }
   for (const l of LANGS) {

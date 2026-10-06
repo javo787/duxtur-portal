@@ -5,7 +5,7 @@
  * engagement data from another site (see PARSING_ROADMAP.md, data principles).
  */
 
-export type IngestSource = 'osm' | 'website' | '2gis' | 'manual';
+export type IngestSource = 'osm' | 'website' | '2gis' | 'manual' | 'ydoc' | 'samt';
 
 export type ClinicType =
   | 'clinic'
@@ -35,6 +35,19 @@ export interface RawClinic {
   phones?: string[];
   website?: string;
   email?: string;
+  /** Logo URL on the source (or the clinic's own site). Re-hosted on Cloudinary, never hot-linked. */
+  logoUrl?: string;
+  /** Up to a couple of photo URLs; first becomes the cover. Re-hosted on Cloudinary. */
+  photoUrls?: string[];
+  /** Canonical specialty ids (see clinic-constants COMMON_SPECIALTIES). Unknown labels are dropped. */
+  specialties?: string[];
+}
+
+/** Cloudinary URLs produced by the image step; written to the clinic only into EMPTY fields. */
+export interface ClinicImages {
+  logo?: string;
+  coverImage?: string;
+  photos?: string[];
 }
 
 export interface ExistingClinic {
