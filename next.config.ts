@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
-import { EDU_CSP } from "./src/lib/edu-csp";
+import { EDU_CSP, EDU_BRIDGE_CSP } from "./src/lib/edu-csp";
 import { eduLocaleRedirects } from "./src/lib/edu-routes";
 import { BASE_URL } from "./src/lib/seo";
 
@@ -48,7 +48,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/edu/:path*',
+        // Every Edu page except the bridge (below): nobody may frame these
+        source: '/edu/:path((?!auth-bridge$).*)?',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
@@ -57,6 +58,19 @@ const nextConfig: NextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
           { key: 'Content-Security-Policy', value: EDU_CSP },
+        ],
+      },
+      {
+        // The page duxtur.org frames (hidden) to ask Edu who is signed in: same-origin framing only
+        source: '/edu/auth-bridge',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Content-Security-Policy', value: EDU_BRIDGE_CSP },
         ],
       },
       {

@@ -6,6 +6,9 @@ import { processMedicalDraft, processMedicalArticle, translateMedicalArticle } f
 import { TutorialModal } from './TutorialModal';
 import { ManualEditor } from './ManualEditor';
 import { AIResultEditor } from './AIResultEditor';
+import { AuthorCompletion } from './AuthorCompletion';
+import type { SaveSuccess } from '@/lib/author-types';
+import type { AuthorField } from '@/lib/author-profile';
 
 type Mode = 'write' | 'process' | 'translate' | 'manual';
 
@@ -54,19 +57,59 @@ const Spinner = () => (
   </svg>
 );
 
-export function WriteTab({ lang }: { lang: string }) {
+/** A saved draft that is opened again in the editor. */
+export interface ResumedDraft {
+  id: string;
+  language: string;
+  data: Record<string, unknown>;
+}
+
+interface WriteTabProps {
+  lang: string;
+  /** Open this saved draft in the editor straight away. */
+  resume?: ResumedDraft | null;
+  /** The name on the account: the starting point of the name field in the "finish your profile" form. */
+  accountName?: string;
+  /** Something changed that the page around the editor shows (a draft was saved or sent, an article went live). */
+  onChanged?: () => void;
+  /** Open the five-step tour on the first visit (default). The author studio turns it off: "How to create an article" still opens it. */
+  autoTutorial?: boolean;
+  /** The "finish your profile" form is open inside the editor (the page around it may hide its own reminder). */
+  onCompletionChange?: (open: boolean) => void;
+}
+
+type Saved =
+  | { kind: 'published'; slug: string }
+  | { kind: 'draft'; missing: AuthorField[] }
+  | { kind: 'sent' };
+
+export function WriteTab({ lang, resume = null, accountName = '', onChanged, autoTutorial = true, onCompletionChange }: WriteTabProps) {
   const [mode, setMode] = useState<Mode>('write');
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(resume ? 2 : 1);
   const [draft, setDraft] = useState('');
-  const [language, setLanguage] = useState(lang || 'ru');
+  const [language, setLanguage] = useState(resume?.language || lang || 'ru');
   const [isLoading, setIsLoading] = useState(false);
-  const [article, setArticle] = useState<any>(null);
-  const [publishedSlug, setPublishedSlug] = useState('');
+  const [article, setArticle] = useState<any>(resume ? resume.data : null);
+  const [saved, setSaved] = useState<Saved | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
 
+  const handleSaved = (result: SaveSuccess) => {
+    if (result.outcome === 'published') setSaved({ kind: 'published', slug: result.slug });
+    else if (result.missing.length > 0) setSaved({ kind: 'draft', missing: result.missing });
+    else setSaved({ kind: 'sent' });
+    onChanged?.();
+  };
+
+  const startOver = () => { setSaved(null); setStep(1); setDraft(''); setArticle(null); };
+
+  const completionOpen = saved?.kind === 'draft';
   useEffect(() => {
-    if (!localStorage.getItem('duxtur_tutorial_done')) setShowTutorial(true);
-  }, []);
+    onCompletionChange?.(completionOpen);
+  }, [completionOpen, onCompletionChange]);
+
+  useEffect(() => {
+    if (autoTutorial && !localStorage.getItem('duxtur_tutorial_done')) setShowTutorial(true);
+  }, [autoTutorial]);
 
   const currentMode = MODES.find((m) => m.id === mode)!;
   const isOverLimit = currentMode.limit > 0 && draft.length > currentMode.limit;
@@ -90,22 +133,48 @@ export function WriteTab({ lang }: { lang: string }) {
     else alert('Ошибка AI: ' + result.error);
   };
 
+  // ── Kept as a draft: one short form, only what is missing ───────────────
+  if (saved?.kind === 'draft') return (
+    <div className="max-w-xl mx-auto">
+      <AuthorCompletion
+        missing={saved.missing}
+        accountName={accountName}
+        onDone={() => { setSaved({ kind: 'sent' }); onChanged?.(); }}
+        onLater={startOver}
+      />
+    </div>
+  );
+
+  // ── Sent: waiting for the team's check of the doctor ─────────────────────
+  if (saved?.kind === 'sent') return (
+    <div className="flex items-center justify-center py-16">
+      <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-md w-full text-center border-t-4 border-blue-400">
+        <div className="text-5xl mb-4">📨</div>
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Статья ждёт проверки</h2>
+        <p className="text-gray-500 mb-2">Команда Duxtur проверит ваш диплом. Как только профиль подтвердят, статья опубликуется сама.</p>
+        <p className="text-xs text-gray-400 mb-8">Мы сообщим вам, когда это произойдёт. Писать новые статьи можно уже сейчас.</p>
+        <button onClick={startOver}
+          className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
+          Написать ещё
+        </button>
+      </div>
+    </div>
+  );
+
   // ── Published ──────────────────────────────────────────────────────────
-  if (publishedSlug) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="bg-white rounded-3xl shadow-xl p-10 max-w-md w-full text-center border-t-4 border-green-400">
+  if (saved?.kind === 'published') return (
+    <div className="flex items-center justify-center py-16">
+      <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-md w-full text-center border-t-4 border-green-400">
         <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Статья отправлена!</h2>
-        <p className="text-gray-500 mb-2">Мы проверим её в течение 24 часов и опубликуем.</p>
-        <p className="text-xs text-gray-400 mb-8">Статус можно отслеживать во вкладке «Мои статьи».</p>
-        <div className="flex gap-3 justify-center">
-          {publishedSlug !== 'pending' && (
-            <Link href={`/${lang}/blog/${publishedSlug}`}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
-              Посмотреть →
-            </Link>
-          )}
-          <button onClick={() => { setPublishedSlug(''); setStep(1); setDraft(''); setArticle(null); }}
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Статья опубликована</h2>
+        <p className="text-gray-500 mb-2">Она уже на сайте. Редакция проверит текст и поставит отметку «Проверено».</p>
+        <p className="text-xs text-gray-400 mb-8">Все статьи и их статус — во вкладке «Мои статьи» кабинета.</p>
+        <div className="flex gap-3 justify-center flex-wrap">
+          <Link href={`/${lang}/blog/${saved.slug}`}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
+            Посмотреть →
+          </Link>
+          <button onClick={startOver}
             className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
             Написать ещё
           </button>
@@ -120,7 +189,7 @@ export function WriteTab({ lang }: { lang: string }) {
       {showTutorial && <TutorialModal onClose={handleCloseTutorial} />}
       <ManualEditor
         lang={lang}
-        onPublished={(slug) => setPublishedSlug(slug || 'pending')}
+        onSaved={handleSaved}
         onBack={() => setMode('write')}
       />
     </>
@@ -134,8 +203,9 @@ export function WriteTab({ lang }: { lang: string }) {
         lang={lang}
         language={language}
         initialArticle={article}
+        draftId={resume?.id}
         onBack={() => setStep(1)}
-        onPublished={(slug) => setPublishedSlug(slug || 'pending')}
+        onSaved={handleSaved}
       />
     </>
   );

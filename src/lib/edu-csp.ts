@@ -3,7 +3,7 @@
  * It needs Firebase (Auth + Firestore) and Google sign-in, which the portal-wide CSP blocks.
  * 'unsafe-inline' scripts are required by the Next.js static export bootstrap.
  */
-export const EDU_CSP = [
+const EDU_DIRECTIVES = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://apis.google.com",
   "style-src 'self' 'unsafe-inline'",
@@ -14,5 +14,12 @@ export const EDU_CSP = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+];
+
+export const EDU_CSP = [...EDU_DIRECTIVES, "frame-ancestors 'none'"].join('; ');
+
+/**
+ * The one Edu page that duxtur.org itself puts in a hidden frame, to learn who is signed in to Edu in this browser
+ * (/edu/auth-bridge, see the Edu app). Only pages of this same origin may frame it; every other Edu page stays unframeable.
+ */
+export const EDU_BRIDGE_CSP = [...EDU_DIRECTIVES, "frame-ancestors 'self'"].join('; ');

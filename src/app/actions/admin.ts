@@ -8,6 +8,8 @@ import Clinic from '@/models/Clinic';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
 import { requireRole } from '@/lib/authGuards';
+import { afterDoctorApproved } from '@/lib/author-approval';
+import { realEmail } from '@/lib/placeholder-email';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -106,7 +108,9 @@ async function sendDoctorStatusEmail(
   if (!doctor) return;
 
   const user = await User.findById(doctor.userId).lean() as { email?: string };
-  if (!user?.email) return;
+  // A person who signed in with Telegram has no real address; they are told in the bot instead.
+  const recipient = realEmail(user?.email);
+  if (!recipient) return;
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
   const profileUrl = `${baseUrl}/${lang}/doctor/${doctor.slug || doctor._id}`;
@@ -182,7 +186,7 @@ async function sendDoctorStatusEmail(
 
   await resend.emails.send({
     from: 'Duxtur.org <noreply@duxtur.org>',
-    to: user.email,
+    to: recipient,
     subject: subjects[status as keyof typeof subjects],
     html: status === 'approved' ? approvedHtml : rejectedHtml,
   });
@@ -198,6 +202,11 @@ export async function updateDoctorStatus(id: string, status: string) {
     await sendDoctorStatusEmail(id, status).catch(err =>
       console.error('Email send error:', err)
     );
+  }
+
+  // Одобренный автор: открывается кабинет врача, ждавшие проверки статьи выходят
+  if (status === 'approved') {
+    await afterDoctorApproved(id).catch(err => console.error('After-approval error:', err));
   }
 
   revalidatePath('/admin/portal');
@@ -275,6 +284,7 @@ export async function toggleDoctorBan(id: string, banned: boolean) {
     await sendDoctorStatusEmail(id, 'approved').catch(err =>
       console.error('Email send error:', err)
     );
+    await afterDoctorApproved(id).catch(err => console.error('After-approval error:', err));
   }
 
   revalidatePath('/admin/portal');

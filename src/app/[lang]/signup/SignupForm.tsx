@@ -4,6 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import Link from 'next/link';
 import TelegramLogin from '@/components/TelegramLogin';
+import EduContinue from '@/components/EduContinue';
 
 export default function SignupForm({ lang }: { lang: string }) {
   const [email, setEmail] = useState('');
@@ -54,6 +55,9 @@ export default function SignupForm({ lang }: { lang: string }) {
           </div>
 
           <div className="p-8 space-y-4">
+            {/* Уже вошли в Duxtur Edu: одно нажатие */}
+            <EduContinue lang={lang} className="" redirectFor={() => `/${lang}`} />
+
             {/* Google */}
             <button
               onClick={handleGoogle}
