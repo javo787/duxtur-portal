@@ -347,7 +347,7 @@
 }
 .hero-rise {
   animation: rise 650ms var(--motion-ease) both;
-  animation-delay: calc(var(--i, 0) * 60ms + 40ms);
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
 @keyframes glow-in {
   from { opacity: 0; }

@@ -1,5 +1,5 @@
 import { getDictionary } from '@/get-dictionary';
-import { Locale } from '@/i18n';
+import { getT, Locale } from '@/i18n';
 import type { Metadata } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
@@ -87,6 +87,18 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
 
   // UI strings (not DB fields)
   const eduLabels = eduNavLabels(lang);
+  const t = getT(lang);
+  const headerLabels = {
+    articles: t('nav.articles'),
+    findDoctor: t('nav.findDoctor'),
+    clinics: t('clinic.title'),
+    search: t('common.search'),
+    login: t('nav.login'),
+    logout: t('nav.logout'),
+    becomeAuthor: t('nav.becomeAuthor'),
+    myOffice: t('nav.myOffice'),
+    menu: t('nav.menu'),
+  };
 
   // ── WebSite + Organization + SearchAction JSON-LD ─────────────────────────
   const jsonLd = {
@@ -146,7 +158,7 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomeHeader lang={lang} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
+      <HomeHeader lang={lang} labels={headerLabels} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
       <main>
         <HomeHero lang={lang} dict={dict} />
         <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />

@@ -9,7 +9,7 @@ import { btnPrimary } from '@/app/[lang]/clinics/[slug]/_components/shared';
  * sections of the site and the reasons to trust it. Server component: no client JavaScript,
  * nothing hidden until hydration.
  */
-/** Entrance order: the lower the number, the earlier the block appears (60ms apart, CSS only). */
+/** Entrance order: the lower the number, the earlier the block appears (70ms apart, CSS only). The heading, the largest paint, starts at once. */
 const rise = (i: number) => ({ className: 'hero-rise', style: { '--i': i } as CSSProperties });
 
 export default function HomeHero({ lang, dict }: { lang: string; dict: Record<string, string> }) {
@@ -26,13 +26,13 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: Record<st
       <div className="mx-auto max-w-6xl px-4 pt-14 text-center md:px-8 md:pt-24">
         <p {...rise(0)} className="hero-rise text-sm font-medium text-primary">{dict.hero_badge}</p>
 
-        <h1 {...rise(1)} className="hero-rise mx-auto mt-4 max-w-3xl font-clinic text-[2.5rem] leading-[1.06] font-semibold tracking-[-0.02em] text-balance md:text-[4rem]">
+        <h1 {...rise(0)} className="hero-rise mx-auto mt-4 max-w-3xl font-clinic text-[2.5rem] leading-[1.06] font-semibold tracking-[-0.02em] text-balance md:text-[4rem]">
           {dict.hero_title}
         </h1>
 
-        <p {...rise(2)} className="hero-rise mx-auto mt-5 max-w-[36rem] text-[1.0625rem] leading-7 text-muted-foreground md:text-lg md:leading-8">{dict.hero_subtitle}</p>
+        <p {...rise(1)} className="hero-rise mx-auto mt-5 max-w-[36rem] text-[1.0625rem] leading-7 text-muted-foreground md:text-lg md:leading-8">{dict.hero_subtitle}</p>
 
-        <form action={`/${lang}/search`} method="get" role="search" {...rise(3)} className="hero-rise mx-auto mt-9 flex max-w-xl gap-2">
+        <form action={`/${lang}/search`} method="get" role="search" {...rise(2)} className="hero-rise mx-auto mt-9 flex max-w-xl gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <input
@@ -48,7 +48,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: Record<st
           </button>
         </form>
 
-        <p {...rise(4)} className="hero-rise mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[0.9375rem]">
+        <p {...rise(3)} className="hero-rise mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[0.9375rem]">
           {[
             { href: `/${lang}/blog`, label: dict.hero_cta_read },
             { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
@@ -61,7 +61,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: Record<st
         </p>
 
         {/* Why trust it: stated plainly, with the policy one click away */}
-        <ul {...rise(5)} className="hero-rise mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-5 border-t border-border py-7 text-left sm:grid-cols-3 sm:text-center">
+        <ul {...rise(4)} className="hero-rise mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-5 border-t border-border py-7 text-left sm:grid-cols-3 sm:text-center">
           <li className="flex items-baseline gap-3 sm:flex-col sm:items-center sm:gap-1">
             <span className="font-clinic text-3xl leading-none font-semibold tabular-nums">5</span>
             <span className="text-sm text-muted-foreground">{t('home.heroStatLanguages')}</span>

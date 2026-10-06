@@ -8,7 +8,7 @@ import { Menu, X } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Locale, useT } from '@/i18n';
+import type { Locale } from '@/i18n';
 import { EDU_LINKS } from '@/lib/edu-routes';
 
 interface ExtendedUser {
@@ -33,17 +33,33 @@ const subscribeScroll = (onChange: () => void) => {
 };
 const isScrolled = () => window.scrollY > 8;
 
+/**
+ * Translated by the server and passed in. A client component must not call useT: that ships all five
+ * dictionaries to the browser (about 64 KB gzipped) for nine words.
+ */
+export interface HeaderLabels {
+  articles: string;
+  findDoctor: string;
+  clinics: string;
+  search: string;
+  login: string;
+  logout: string;
+  becomeAuthor: string;
+  myOffice: string;
+  menu: string;
+}
+
 interface HomeHeaderProps {
   lang: Locale;
+  labels: HeaderLabels;
   eduLabel?: string;
   eduTeacherLabel?: string;
 }
 
-export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLabel: eduTeacherLabelProp }: HomeHeaderProps) {
+export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTeacherLabel: eduTeacherLabelProp }: HomeHeaderProps) {
   // '' is not "missing" for a default parameter, and an empty label renders an invisible link: fall back explicitly.
   const eduLabel = eduLabelProp || 'Студентам';
   const eduTeacherLabel = eduTeacherLabelProp || 'Преподавателям';
-  const { t } = useT(lang);
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
@@ -64,10 +80,10 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
   }, [menuOpen]);
 
   const navLinks = [
-    { href: `/${lang}/blog`, label: t('nav.articles') },
-    { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
-    { href: `/${lang}/clinics`, label: t('clinic.title') },
-    { href: `/${lang}/search`, label: t('common.search') },
+    { href: `/${lang}/blog`, label: labels.articles },
+    { href: `/${lang}/doctors`, label: labels.findDoctor },
+    { href: `/${lang}/clinics`, label: labels.clinics },
+    { href: `/${lang}/search`, label: labels.search },
   ];
   const current = (href: string) => (pathname === href || pathname?.startsWith(href + '/') ? 'page' : undefined);
 
@@ -77,13 +93,13 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
     if (session) {
       return isDoctor ? (
         <Link href={`/${lang}/admin`} className={mobile ? `${cta} h-12 w-full` : cta}>
-          {t('nav.myOffice')}
+          {labels.myOffice}
         </Link>
       ) : (
         <>
           <span className="max-w-40 truncate text-sm text-muted-foreground">{session.user?.name || session.user?.email}</span>
           <button type="button" onClick={() => signOut()} className={mobile ? `${link} justify-center border border-border` : link}>
-            {t('nav.logout')}
+            {labels.logout}
           </button>
         </>
       );
@@ -91,10 +107,10 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
     return (
       <>
         <Link href={`/${lang}/login`} className={mobile ? `${link} justify-center border border-border` : link}>
-          {t('nav.login')}
+          {labels.login}
         </Link>
         <Link href={`/${lang}/register`} className={mobile ? `${cta} h-12 w-full` : cta}>
-          {t('nav.becomeAuthor')}
+          {labels.becomeAuthor}
         </Link>
       </>
     );
@@ -135,7 +151,7 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
             onClick={() => setMenuOpen(!menuOpen)}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            aria-label={t('nav.menu')}
+            aria-label={labels.menu}
             className="inline-flex size-10 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
           >
             {menuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}

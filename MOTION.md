@@ -15,7 +15,7 @@ How things move on Duxtur.org, and what must stay true when you add more. The to
 
 | Where | Effect | How |
 | --- | --- | --- |
-| Hero | Blocks rise one after another (60 ms apart), the glow fades in | CSS only: `.hero-rise` with `--i`, `.hero-glow` |
+| Hero | Blocks rise one after another (70 ms apart, the heading first), the glow fades in | CSS only: `.hero-rise` with `--i`, `.hero-glow` |
 | Sections below the fold | Fade and 16 px rise when they scroll into view | `data-reveal=""` on the element, `<ScrollReveal />` once per page |
 | Header | Transparent at the top, gets its background and border after 8 px of scroll | `useSyncExternalStore` on scroll |
 | Mobile menu | Opens and closes by height; links are not focusable while closed | `grid-template-rows` 0fr/1fr + `visibility` |
@@ -30,3 +30,13 @@ How things move on Duxtur.org, and what must stay true when you add more. The to
 - **Do not** put `data-reveal` on something that is already above the fold on every screen: it is skipped anyway, but it is noise.
 - **Do not** hide content with `opacity-0` in the server HTML. If it needs JavaScript to become visible, it will not be indexed or read on a slow connection.
 - **Before adding an effect,** ask which of the rules above it breaks. If the answer is "it is just nice", leave it out.
+
+## Weight and bad connections
+
+Measured on this repository (esbuild + Tailwind, gzip, shared libraries excluded):
+
+- The motion itself is about 1 KB of JavaScript (`ScrollReveal`, the theme toggle) and **adds no requests**: no animation library, no Lottie, no video, no extra fonts.
+- The stylesheet got smaller, not bigger, because the old home page CSS (mesh blobs, orbits, glass cards) was removed.
+- The home route's own client JavaScript went from about 117 KB to about 3 KB: `framer-motion` is no longer imported there, and the header receives its labels from the server instead of calling `useT`. Rule: **a client component must not call `useT`**, because that ships all five dictionaries (about 64 KB gzipped) to the browser. Translate on the server and pass strings down.
+- Tested with scripts blocked and with scripts arriving 6 seconds late after the visitor scrolled to the bottom: everything is readable the whole time, and nothing already scrolled past is hidden when the script finally runs.
+- Known limit: without JavaScript the burger menu does not open (the footer has all the links).

@@ -22,7 +22,12 @@ function anchors(html: string) {
 }
 
 const html = renderToStaticMarkup(
-  createElement(HomeHeader, { lang: 'ru', eduLabel: 'Студентам', eduTeacherLabel: 'Преподавателям' })
+  createElement(HomeHeader, {
+    lang: 'ru',
+    labels: { articles: 'Статьи', findDoctor: 'Найти врача', clinics: 'Клиники', search: 'Поиск', login: 'Войти', logout: 'Выйти', becomeAuthor: 'Я врач', myOffice: 'Мой кабинет', menu: 'Меню' },
+    eduLabel: 'Студентам',
+    eduTeacherLabel: 'Преподавателям',
+  })
 );
 
 describe('HomeHeader Edu links', () => {
