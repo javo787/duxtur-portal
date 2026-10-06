@@ -70,6 +70,19 @@ describe('verifyFirebaseIdToken', () => {
     expect(result).toEqual({ uid: 'tg_123456', provider: 'custom', authTime: NOW - 120 });
   });
 
+  it('returns the profile claims of a verified token (Google sign-in) and the name the portal put into a custom token', async () => {
+    const google = { ...good, sub: 'g1', user_id: 'g1', email: 'dr@gmail.com', email_verified: true, name: 'Dr K', picture: 'https://lh3/p.png', firebase: { sign_in_provider: 'google.com' } };
+    expect(await verifyFirebaseIdToken(sign(google), options)).toEqual({
+      uid: 'g1', provider: 'google.com', authTime: NOW - 120, email: 'dr@gmail.com', emailVerified: true, name: 'Dr K', picture: 'https://lh3/p.png',
+    });
+    expect(await verifyFirebaseIdToken(sign({ ...good, tgName: 'Ali K' }), options)).toMatchObject({ uid: 'tg_123456', tgName: 'Ali K' });
+  });
+
+  it('ignores claims of the wrong type', async () => {
+    const odd = { ...good, email: 5, email_verified: 'yes', name: {}, picture: null, tgName: 7 };
+    expect(await verifyFirebaseIdToken(sign(odd), options)).toEqual({ uid: 'tg_123456', provider: 'custom', authTime: NOW - 120 });
+  });
+
   it('refuses a token signed with another key', async () => {
     expect(await reasonOf(sign(good, { key: other.privateKey }))).toBe('bad-signature');
   });

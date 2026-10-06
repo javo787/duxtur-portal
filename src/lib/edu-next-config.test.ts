@@ -43,4 +43,25 @@ describe('next.config /edu mount', () => {
     expect(csp(portalRules[0])).not.toContain('apis.google.com');
     expect(csp(portalRules[0])).toContain('mapbox');
   });
+
+  it('lets only the portal itself frame the auth bridge, and no other Edu page', async () => {
+    // @ts-expect-error Next's compiled path-to-regexp ships no type declarations
+    const { pathToRegexp } = await import('next/dist/compiled/path-to-regexp');
+    const cfg = await loadConfig('https://duxtur-edu.web.app');
+    const rules = await cfg.headers();
+    const header = (r: any, key: string) => r.headers.find((h: any) => h.key === key)?.value as string | undefined;
+    const matching = (path: string) => rules.filter((r: any) => pathToRegexp(r.source).test(path) && header(r, 'Content-Security-Policy'));
+
+    const bridge = matching('/edu/auth-bridge');
+    expect(bridge).toHaveLength(1);
+    expect(header(bridge[0], 'Content-Security-Policy')).toContain("frame-ancestors 'self'");
+    expect(header(bridge[0], 'X-Frame-Options')).toBe('SAMEORIGIN');
+
+    for (const path of ['/edu/exam', '/edu/dashboard/teacher/articles', '/edu/auth-bridge-other', '/edu/x/auth-bridge']) {
+      const rule = matching(path);
+      expect(rule, path).toHaveLength(1);
+      expect(header(rule[0], 'Content-Security-Policy'), path).toContain("frame-ancestors 'none'");
+      expect(header(rule[0], 'X-Frame-Options'), path).toBe('DENY');
+    }
+  });
 });

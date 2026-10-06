@@ -1,8 +1,10 @@
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import Doctor from '@/models/Doctor';
 import { TelegramProfile, displayName } from '@/lib/edu-telegram-login';
 import { placeholderEmail } from '@/lib/placeholder-email';
+import { PortalSignInUser, SIGN_IN_FIELDS, SignInRefusal, UserDoc, mayEnter, toSignInUser } from '@/lib/portal-sign-in-policy';
+
+export type { PortalSignInUser } from '@/lib/portal-sign-in-policy';
 
 /**
  * Sign in and registration of duxtur.org with Telegram.
@@ -24,48 +26,16 @@ export const TELEGRAM_EDU_PREFIX = 'tg_';
 
 export const telegramEduUid = (telegramId: number) => `${TELEGRAM_EDU_PREFIX}${telegramId}`;
 
-export interface PortalSignInUser {
-  id: string;
-  email: string;
-  role: string;
-  name: string;
-  image: string;
-}
-
 export type TelegramSignInResult =
   | { ok: true; user: PortalSignInUser; created: boolean }
-  | { ok: false; code: 'role_not_allowed' | 'doctor_not_approved' };
+  | SignInRefusal;
 
-type UserDoc = { _id: { toString(): string }; email?: string; role?: string; name?: string; image?: string };
-
-const FIELDS = 'email role name image';
+const FIELDS = SIGN_IN_FIELDS;
 const withoutTelegramId = { $or: [{ telegramId: { $exists: false } }, { telegramId: null }] };
 const withoutEduUid = { $or: [{ eduUid: { $exists: false } }, { eduUid: null }] };
 
 function isDuplicateKey(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 11000;
-}
-
-const toSignInUser = (doc: UserDoc): PortalSignInUser => ({
-  id: doc._id.toString(),
-  email: doc.email ?? '',
-  role: doc.role ?? 'patient',
-  name: doc.name ?? '',
-  image: doc.image ?? '',
-});
-
-/**
- * Who may sign in with Telegram. A portal administrator signs in with a password or Google: administrator power
- * does not hang on a chat confirmation. A doctor account that has not been approved is refused for the same reason
- * the password sign-in refuses it.
- */
-async function mayEnter(doc: UserDoc): Promise<TelegramSignInResult | null> {
-  if (doc.role === 'portal_admin') return { ok: false, code: 'role_not_allowed' };
-  if (doc.role === 'doctor') {
-    const doctor = await Doctor.findOne({ userId: doc._id }).select('status').lean<{ status?: string } | null>();
-    if (doctor?.status !== 'approved') return { ok: false, code: 'doctor_not_approved' };
-  }
-  return null;
 }
 
 export async function signInWithTelegram(tg: TelegramProfile): Promise<TelegramSignInResult> {

@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
@@ -11,6 +11,14 @@ import User from "@/models/User";
 import Doctor from "@/models/Doctor";
 import bcrypt from "bcryptjs";
 import { authorizeTelegramLogin } from "@/lib/portal-telegram-signin";
+import { EduSignInFailure, authorizeEduSignIn } from "@/lib/portal-edu-signin";
+
+/** A failed sign-in the person can act on: the code travels to the browser (signIn(...) returns it as `code`). */
+function failedSignIn(code: string): CredentialsSignin {
+  const error = new CredentialsSignin();
+  error.code = code;
+  return error;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -57,10 +65,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return authorizeTelegramLogin(credentials, ip);
       },
     }),
+
+    // "Continue as ..." for a person who is signed in to Duxtur Edu in this browser: the page hands over the Firebase
+    // ID token of that session, which is verified here (see portal-edu-signin.ts). Nothing else from the browser counts.
+    Credentials({
+      id: "edu",
+      name: "Duxtur Edu",
+      credentials: { idToken: {} },
+      async authorize(credentials, request) {
+        const ip = (request?.headers?.get("x-forwarded-for") || "anonymous").split(",")[0].trim();
+        try {
+          return await authorizeEduSignIn(credentials, ip);
+        } catch (error) {
+          throw failedSignIn(error instanceof EduSignInFailure ? error.code : "server");
+        }
+      },
+    }),
   ],
 
   callbacks: {
     ...authConfig.callbacks,
+    // The role in the session is set when the person signs in. When something changes it while they are signed in
+    // (the team approves a doctor, so a patient account becomes a doctor account), the page asks the session to
+    // update and the role is read again from the database: nothing the browser sends is used.
+    async jwt(params) {
+      const token = await authConfig.callbacks.jwt(params);
+      if (params.trigger === "update" && token.sub) {
+        await dbConnect();
+        const current = await User.findById(token.sub).select("role").lean<{ role?: string } | null>();
+        if (current?.role) token.role = current.role;
+      }
+      return token;
+    },
     async signIn({ user, account }) {
       if (account?.provider === "google" || account?.provider === "resend") {
         await dbConnect();
