@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
 import { EDU_CSP } from "./src/lib/edu-csp";
 import { eduLocaleRedirects } from "./src/lib/edu-routes";
+import { BASE_URL } from "./src/lib/seo";
 
 // Origin that serves the static Duxtur Edu build at its ROOT (e.g. a Firebase Hosting site).
 // When unset, /edu is simply not mounted.
@@ -101,7 +102,7 @@ const nextConfig: NextConfig = {
             value: 'duxtur-portal.vercel.app',
           },
         ],
-        destination: 'https://duxtur.org/:path*',
+        destination: `${BASE_URL}/:path*`,
         permanent: true,
       },
       {

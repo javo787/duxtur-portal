@@ -59,16 +59,22 @@ We use Schema.org structured data to help search engines understand our content 
 
 Снимок отчёта от 2026-10-06 (скриншот владельца): «Альтернативная страница с правильным canonical» 31 · Не найдено (404) 9 · Заблокировано в robots.txt 3 · Страница с редиректом 2 · Просканировано, не в индексе 3.
 
-**Проверено:** код (robots, sitemap, canonical и hreflang на всех страницах, редиректы, ссылки в компонентах), `tsc --noEmit`, eslint по изменённым файлам, `vitest` (461 тест).
+**Проверено:** код (robots, sitemap, canonical и hreflang на всех страницах, редиректы, ссылки в компонентах), `tsc --noEmit`, eslint по изменённым файлам, `vitest` (464 теста).
 **Не проверено:** живой сайт и выдача (из песочницы недоступны), списки URL внутри отчёта, `next build` (его гоняет CI). Соответствие «причина → URL» ниже — вывод по коду, не по спискам из отчёта.
 
 | Причина в отчёте | Что в коде | Решение |
 |---|---|---|
-| Альтернативная страница с canonical (31) | Дубли с правильным canonical — это норма, не ошибка. Источники: `/doctors?specialty=…` и прочие фильтры, `/blog?category=…`, `?page=`, `?sort=`. | Источник не в самих дублях, а в том, куда они указывают. `?specialty=X` без других фильтров → canonical на посадочную `/doctors/X`; `?category=X` → `/blog/c/X` (только для 5 категорий, у которых есть страница). Ссылки с главной ведут прямо на посадочные. hreflang — только у чистых списков. |
+| Альтернативная страница с canonical (31) | **Список URL из отчёта показал главную причину: все 31 страница — на `www.duxtur.org`** (`/ru`, `/tg`, `/ru/blog`, `/kk/blog/c/cardiology`, `/ru/doctor/…`). Сайт отвечает на www без редиректа, а canonical, hreflang, sitemap и JSON-LD везде указывали на `duxtur.org` без www: Google считает www-страницы копиями страниц чужого хоста. Параметрические дубли (`?specialty=`, `?category=`) — вторично (в списке их 3 из 31). | `BASE_URL` → `https://www.duxtur.org` и все места с жёстко прописанным хостом (см. «Главный хост»). Дополнительно: `?specialty=X` без других фильтров → canonical на `/doctors/X`; `?category=X` → `/blog/c/X` (только для 5 категорий с посадочной); ссылки с главной ведут прямо на посадочные; hreflang — только у чистых списков. |
 | Просканировано, не в индексе (3) | `/doctors/map` — целиком клиентская карта, для краулера текста нет, а в sitemap стояла с приоритетом 0.9. Страницы специальностей без врачей лежали в sitemap и не были noindex. | Карта: `noindex,follow`, вне sitemap. Специальность без одобренного врача: `noindex,follow`, вне sitemap; порог — `MIN_INDEXABLE_SPECIALTY_DOCTORS` в `clinic-seo.ts`. `lastmod` специальности — по самому свежему врачу этой специальности, а не «по любому». |
 | 404 (9) | По сетке ссылок в компонентах одна битая: в админке «Открыть на сайте» вела на `/doctors/<slug>` вместо `/doctor/<slug>`. Админка закрыта от краулеров, так что на отчёт это не влияет. | Ссылка исправлена. Остальные 404 — нужны URL из отчёта (вероятно, удалённые врачи/клиники/статьи или старые адреса). |
 | Заблокировано в robots.txt (3) | Ожидаемо: `login`, `register`, `signup`, `search`, `forgot-password`, `reset-password`, `admin`, `patient`, `?sort=`, `?q=`. | Менять нечего. Добавлен тест: ни один URL из sitemap не закрыт в robots.txt. Если среди 3 URL есть нужный для индекса — разбирать отдельно. |
 | Страница с редиректом (2) | `/`→`/ru`, `/blog`, `/authors`, `/doctors` (307), адрес без локали → `/ru/...` (307), `*.vercel.app` → duxtur.org (постоянный). | Норма. Решение владельца ниже. |
+
+**Главный хост: `www.duxtur.org`.** Что известно: (1) в Search Console свойство `https://www.duxtur.org/`, и все 31 URL группы «альтернативная страница» — на www и были просканированы (код 200, не редирект); (2) в коде Telegram-вебхука записано, что www — хост, который «отвечает без редиректа», то есть голый `duxtur.org` перенаправляет (это настройка Vercel, в репозитории её нет); (3) весь код строил canonical на `duxtur.org`. Чего не проверено: ответ голого `duxtur.org` (код и куда ведёт) — из песочницы сайт недоступен.
+Решение: один хост — тот, что отвечает 200. Чинить код, а не переводить сайт на голый домен: иначе пришлось бы перерегистрировать Telegram-вебхук и менять домен в BotFather. Сделано: `BASE_URL` в `src/lib/seo.ts` → `https://www.duxtur.org`; тот же хост в `metadataBase` и картинках `layout.tsx`, в `clinics/page.tsx`, в JSON-LD `about` и `editorial` (убран `NEXT_PUBLIC_BASE_URL`, он мог переопределить хост), в редиректе `*.vercel.app` (`next.config.ts`, `middleware.ts`). Тест `canonical-host.test.ts` падает, если в страницах, layout, sitemap, robots, feed, SEO-библиотеках, `next.config.ts` или `middleware.ts` снова появится `https://duxtur.org`.
+Не тронуто (работает через редирект, на индексацию не влияет): QR на карточке врача (`DownloadCardButton`), ссылки в письмах (`forgot-password`, `actions/admin.ts` берут `NEXT_PUBLIC_BASE_URL`), список CORS для Edu (там оба хоста).
+Вне репозитория (делает владелец): Vercel → Domains → `duxtur.org` → редирект на `www.duxtur.org` с кодом **308** (если стоит 307, Google держит старый адрес дольше); проверить `NEXT_PUBLIC_BASE_URL` в переменных Vercel (должен быть `https://www.duxtur.org` или не задан); в Search Console добавить свойство «Домен» `duxtur.org` (подтверждение через DNS), оно покрывает оба хоста; sitemap отправлять как `https://www.duxtur.org/sitemap.xml`.
+Ожидаемо после деплоя: ещё несколько недель в выдаче могут быть оба адреса, группа «альтернативная страница» в свойстве www должна стать пустой.
 
 **Почему так (коротко):**
 - Страница специальности теперь читает БД в `generateMetadata`, поэтому на ней стоит `dynamic = 'force-dynamic'`: в CI база пустая, и `noindex` не должен «запечься» при сборке.
@@ -87,6 +93,8 @@ We use Schema.org structured data to help search engines understand our content 
 - Долг `no-explicit-any` в тронутых файлах не разбирал: на уже существовавших строках стоят точечные `eslint-disable`, потому что CI линтит файлы целиком.
 
 **Как проверить после деплоя:**
+- `curl -sI https://duxtur.org/ru`: код 308 и `location: https://www.duxtur.org/ru`; `curl -s https://www.duxtur.org/ru | grep canonical`: canonical на www.
+- `https://www.duxtur.org/robots.txt`: строка `Sitemap: https://www.duxtur.org/sitemap.xml`.
 - `https://duxtur.org/sitemap.xml`: нет `/doctors/map`, нет специальностей без врачей, у специальностей настоящий `lastmod`.
 - `/ru/doctors?specialty=cardiology`: canonical → `/ru/doctors/cardiology`, нет hreflang.
 - `/ru/doctors/map`: `<meta name="robots" content="noindex, follow">`.

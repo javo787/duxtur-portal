@@ -33,13 +33,13 @@ beforeEach(() => {
 describe('doctors directory metadata', () => {
   it('is self-canonical with the full hreflang set on the plain list', async () => {
     const m = await directory();
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/doctors');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/doctors');
     expect(hreflang(m)).toEqual(HREFLANG);
   });
 
   it('points ?specialty= on its own at the landing page of that specialty, without hreflang', async () => {
     const m = await directory({ specialty: 'cardiology' }, 'tg');
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/tg/doctors/cardiology');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/tg/doctors/cardiology');
     expect(hreflang(m)).toEqual([]);
   });
 
@@ -47,7 +47,7 @@ describe('doctors directory metadata', () => {
     const variants: Record<string, string>[] = [{ specialty: 'cardiology', city: 'Душанбе' }, { sort: 'rating' }, { page: '2' }, { specialty: 'nonsense' }];
     for (const sp of variants) {
       const m = await directory(sp);
-      expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/doctors');
+      expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/doctors');
       expect(hreflang(m)).toEqual([]);
     }
   });
@@ -56,7 +56,7 @@ describe('doctors directory metadata', () => {
 describe('doctors specialty page metadata', () => {
   it('is self-canonical with the full hreflang set and indexable when it lists doctors', async () => {
     const m = await specialty('cardiology');
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/doctors/cardiology');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/doctors/cardiology');
     expect(hreflang(m)).toEqual(HREFLANG);
     expect(m.robots).toBeUndefined();
   });
@@ -72,7 +72,7 @@ describe('doctors specialty page metadata', () => {
     const variants: Record<string, string>[] = [{ city: 'Худжанд' }, { type: 'online' }, { sort: 'rating' }, { page: '2' }];
     for (const sp of variants) {
       const m = await specialty('cardiology', sp);
-      expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/doctors/cardiology');
+      expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/doctors/cardiology');
       expect(hreflang(m)).toEqual([]);
       expect(m.robots).toBeUndefined();
     }
@@ -87,7 +87,7 @@ describe('doctors map metadata', () => {
   it('is out of the index (a client-only map has nothing to read) and canonical to itself', async () => {
     const m = await mapMetadata({ params: Promise.resolve({ lang: 'ru' }) });
     expect(m.robots).toEqual({ index: false, follow: true });
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/doctors/map');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/doctors/map');
     expect(hreflang(m)).toEqual([]);
   });
 });
@@ -95,19 +95,19 @@ describe('doctors map metadata', () => {
 describe('blog index metadata', () => {
   it('is self-canonical with the full hreflang set on the plain index', async () => {
     const m = await blog();
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/blog');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/blog');
     expect(hreflang(m)).toEqual(HREFLANG);
   });
 
   it('points ?category= at the landing page when the category has one', async () => {
     const m = await blog({ category: 'cardiology' }, 'uz');
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/uz/blog/c/cardiology');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/uz/blog/c/cardiology');
     expect(hreflang(m)).toEqual([]);
   });
 
   it('points ?category= of a category without a landing page at the plain index', async () => {
     const m = await blog({ category: 'surgery' });
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/blog');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/blog');
     expect(hreflang(m)).toEqual([]);
   });
 });

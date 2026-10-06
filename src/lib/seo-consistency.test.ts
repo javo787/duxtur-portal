@@ -46,7 +46,7 @@ describe('sitemap and robots.txt agree', () => {
 
   it('lists no private area', () => {
     for (const { url } of entries) {
-      expect(url).not.toMatch(/^https:\/\/duxtur\.org\/[a-z]{2}\/(login|register|signup|forgot-password|reset-password|search|admin|patient|clinic\/admin)(\/|\?|$)/);
+      expect(url).not.toMatch(/^https:\/\/www\.duxtur\.org\/[a-z]{2}\/(login|register|signup|forgot-password|reset-password|search|admin|patient|clinic\/admin)(\/|\?|$)/);
     }
   });
 });

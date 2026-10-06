@@ -5,7 +5,7 @@ import { Search, X } from 'lucide-react';
 import { getT, Locale } from '@/i18n';
 import HomeFooter from '@/components/home/HomeFooter';
 import type { Metadata } from 'next';
-import { buildAlternates, buildBreadcrumbJsonLd, buildFilterQuery, ogAlternateLocales, ogLocale, safeJsonLd } from '@/lib/seo';
+import { BASE_URL, buildAlternates, buildBreadcrumbJsonLd, buildFilterQuery, ogAlternateLocales, ogLocale, safeJsonLd } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
 import { getClinicsPage, getIndexableFacets } from '@/lib/clinic-service';
@@ -76,9 +76,9 @@ export async function generateMetadata({ params, searchParams }: {
       url: alternates.canonical,
       locale: ogLocale(lang),
       alternateLocale: ogAlternateLocales(lang),
-      images: [{ url: 'https://duxtur.org/og-default.png', width: 1424, height: 752, alt: title }],
+      images: [{ url: `${BASE_URL}/og-default.png`, width: 1424, height: 752, alt: title }],
     },
-    twitter: { card: 'summary_large_image', title: fullTitle, description, images: ['https://duxtur.org/og-default.png'] },
+    twitter: { card: 'summary_large_image', title: fullTitle, description, images: [`${BASE_URL}/og-default.png`] },
   };
 }
 
