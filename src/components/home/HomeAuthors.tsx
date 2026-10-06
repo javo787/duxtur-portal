@@ -24,13 +24,13 @@ export default function HomeAuthors({ lang, authors }: { lang: string; authors: 
         <SectionHeader title={t('home.authorsTitle')} href={`/${lang}/authors`} linkLabel={t('nav.allAuthors')} />
 
         <ul className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
-          {authors.map(doc => (
-            <li key={doc._id}>
+          {authors.map((doc, i) => (
+            <li key={doc._id} data-reveal="" style={{ '--i': Math.min(i, 5) } as React.CSSProperties}>
               <Link
                 href={`/${lang}/doctor/${doc.slug || doc._id}`}
                 className="group flex flex-col items-center gap-3 rounded-lg text-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
               >
-                <span className="relative flex size-20 items-center justify-center overflow-hidden rounded-full border border-border bg-muted font-clinic text-xl font-semibold text-muted-foreground">
+                <span className="relative flex size-20 items-center justify-center overflow-hidden rounded-full border border-border bg-muted font-clinic text-xl font-semibold text-muted-foreground transition-[transform,border-color] duration-300 ease-premium group-hover:scale-105 group-hover:border-foreground/30">
                   {doc.image ? (
                     <Image src={getOptimizedCloudinaryUrl(doc.image, { width: 160, height: 160, crop: 'fill' })} alt="" fill sizes="80px" className="object-cover" />
                   ) : (

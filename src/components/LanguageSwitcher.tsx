@@ -65,7 +65,7 @@ export default function LanguageSwitcher() {
       </button>
 
       {isOpen && (
-        <ul role="listbox" className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-[10px] border border-border bg-popover py-1 text-popover-foreground shadow-lg">
+        <ul role="listbox" className="absolute right-0 z-50 mt-2 w-48 origin-top-right overflow-hidden rounded-[10px] border border-border bg-popover py-1 text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150 ease-premium">
           {LANGUAGES.map(l => (
             <li key={l.code} role="option" aria-selected={l.code === currentLang}>
               <button

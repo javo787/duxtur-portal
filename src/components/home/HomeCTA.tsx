@@ -10,7 +10,7 @@ export default function HomeCTA({ lang, dict }: { lang: string; dict: Record<str
   return (
     <section className="py-14 md:py-20">
       <div className="mx-auto max-w-6xl px-4 md:px-8">
-        <div className="grid items-center gap-8 rounded-[10px] border border-border bg-card p-6 md:grid-cols-[1fr_auto] md:gap-14 md:p-12">
+        <div data-reveal="" className="grid items-center gap-8 rounded-[10px] border border-border bg-card p-6 md:grid-cols-[1fr_auto] md:gap-14 md:p-12">
           <div>
             <p className="text-sm font-medium text-primary">{t('home.ctaForDoctors')}</p>
             <h2 className="mt-3 font-clinic text-[1.75rem] leading-tight font-semibold tracking-[-0.01em] text-balance md:text-[2.25rem]">{dict.for_doctors}</h2>

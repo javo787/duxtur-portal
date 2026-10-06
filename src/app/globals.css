@@ -12,6 +12,9 @@
   --font-clinic: var(--font-clinic-serif), Georgia, serif;
   --color-ok: var(--ok);
   --color-field: var(--field);
+
+  /* Motion: one decelerating curve for everything that appears or responds (see MOTION.md) */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -200,13 +203,6 @@
 }
 
 /* Shimmer animation for badges */
-@keyframes shimmer {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  50% { opacity: 0.8; box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.2); }
-}
-.animate-shimmer {
-  animation: shimmer 2s ease-in-out infinite;
-}
 
 /* Link hover slide effect */
 .link-hover-slide {
@@ -260,22 +256,6 @@
   50% { background-position: 100% 50%; }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
-  50% { transform: translateY(-20px) rotate(10deg); opacity: 0.5; }
-}
-
-@keyframes float-delayed {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
-  50% { transform: translateY(-15px) rotate(-8deg); opacity: 0.4; }
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
-  33% { transform: translateY(-25px) rotate(5deg); opacity: 0.35; }
-  66% { transform: translateY(10px) rotate(-3deg); opacity: 0.2; }
-}
-
 @keyframes slide-up {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -294,18 +274,6 @@
 .animate-gradient-xy {
   background-size: 200% 200%;
   animation: gradient-xy 8s ease infinite;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-  animation: float-delayed 7s ease-in-out 2s infinite;
-}
-
-.animate-float-slow {
-  animation: float-slow 9s ease-in-out 1s infinite;
 }
 
 .animate-slide-up {
@@ -361,4 +329,56 @@
 }
 .doctor-card-shadow:hover {
   box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ───────── Motion ─────────
+   Only transform and opacity move. 100-150ms for feedback, 200-300ms for UI, up to 700ms for entrances.
+   Ease-out when something appears, never linear. Nothing loops (WCAG 2.2.2). Content is visible without JS.
+   prefers-reduced-motion: the global block above removes every animation and transition, and the
+   guards below make sure nothing stays hidden waiting for one. Rules and examples: MOTION.md */
+:root {
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1); /* same curve as --ease-premium, for plain CSS */
+}
+
+/* Hero entrance: runs from CSS alone (no JS), each block a little after the previous one */
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-rise {
+  animation: rise 650ms var(--motion-ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms + 40ms);
+}
+@keyframes glow-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.hero-glow {
+  animation: glow-in 1400ms ease-out both;
+}
+
+/* Scroll reveal. The server HTML carries only data-reveal="": visible. After hydration ScrollReveal
+   hides what is BELOW the fold ("pending"), then lets it in ("shown") when it scrolls into view. */
+[data-reveal='pending'] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+[data-reveal='shown'] {
+  opacity: 1;
+  transform: none;
+  transition: opacity 650ms var(--motion-ease), transform 650ms var(--motion-ease);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Theme switch: the whole page cross-fades instead of snapping (View Transitions, where supported) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--motion-ease);
 }

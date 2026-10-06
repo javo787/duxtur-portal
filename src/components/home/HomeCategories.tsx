@@ -35,11 +35,11 @@ export default function HomeCategories({ lang, dict, categoryCounts }: { lang: s
       <div className="mx-auto max-w-6xl px-4 md:px-8">
         <SectionHeader title={dict.cat_title ?? t('home.categoriesTitle')} href={`/${lang}/blog`} linkLabel={t('nav.allArticles')} />
         <ul className="flex flex-wrap gap-2">
-          {topics.map(c => (
-            <li key={c.slug}>
+          {topics.map((c, i) => (
+            <li key={c.slug} data-reveal="" style={{ '--i': Math.min(i, 5) } as React.CSSProperties}>
               <Link
                 href={`/${lang}/blog?category=${c.slug}`}
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[0.9375rem] font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[0.9375rem] font-medium transition-[background-color,border-color,transform] duration-200 ease-premium hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-muted active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {c.label}
                 <span className="text-sm text-muted-foreground tabular-nums">{c.count}</span>

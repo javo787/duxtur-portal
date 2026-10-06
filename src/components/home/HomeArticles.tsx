@@ -90,7 +90,7 @@ export default function HomeArticles({ lang, articles, dict }: { lang: string; a
         <SectionHeader title={dict.blog_title} href={`/${lang}/blog`} linkLabel={t('nav.allArticles')} />
 
         {/* Featured: the newest article, with its picture only if it has one */}
-        <article className={`group relative grid overflow-hidden rounded-[10px] border border-border bg-card ${feat.image ? 'md:grid-cols-[1.1fr_1fr]' : ''}`}>
+        <article data-reveal="" className={`group relative grid overflow-hidden rounded-[10px] border border-border bg-card transition-colors duration-300 ease-premium hover:border-foreground/25 ${feat.image ? 'md:grid-cols-[1.1fr_1fr]' : ''}`}>
           {feat.image && (
             <div className="relative aspect-[16/10] bg-muted md:aspect-auto md:min-h-[22rem]">
               <Image
@@ -99,7 +99,7 @@ export default function HomeArticles({ lang, articles, dict }: { lang: string; a
                 fill
                 priority
                 sizes="(min-width: 768px) 560px, 100vw"
-                className="object-cover"
+                className="object-cover transition-transform duration-700 ease-premium group-hover:scale-[1.035]"
               />
             </div>
           )}
@@ -117,15 +117,15 @@ export default function HomeArticles({ lang, articles, dict }: { lang: string; a
             )}
             <Byline {...bylineProps(feat)} />
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:underline underline-offset-4">
-              {dict.read_more} <span aria-hidden="true">→</span>
+              {dict.read_more} <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-premium group-hover:translate-x-0.5">→</span>
             </span>
           </div>
         </article>
 
         {rest.length > 0 && (
           <ul className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-            {rest.slice(0, 6).map(({ a, l }) => (
-              <li key={a._id} className="border-t border-border pt-5">
+            {rest.slice(0, 6).map(({ a, l }, i) => (
+              <li key={a._id} data-reveal="" style={{ '--i': i % 3 } as React.CSSProperties} className="border-t border-border pt-5 transition-colors duration-300 ease-premium has-[a:hover]:border-foreground/40">
                 <article className="group relative flex h-full flex-col gap-2.5">
                   <Meta {...metaProps(a, l)} />
                   <h3 lang={l !== lang ? l : undefined} className="font-clinic text-xl leading-snug font-semibold text-balance">

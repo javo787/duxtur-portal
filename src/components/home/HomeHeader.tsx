@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -26,6 +26,13 @@ const mobileLink =
 const cta =
   'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
+// "Scrolled" read from the window itself, so there is no state to keep in sync and no effect
+const subscribeScroll = (onChange: () => void) => {
+  window.addEventListener('scroll', onChange, { passive: true });
+  return () => window.removeEventListener('scroll', onChange);
+};
+const isScrolled = () => window.scrollY > 8;
+
 interface HomeHeaderProps {
   lang: Locale;
   eduLabel?: string;
@@ -39,6 +46,7 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
   const { t } = useT(lang);
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
   // Open for one page only: a different pathname closes it, with no effect needed
   const [openAt, setOpenAt] = useState<string | null>(null);
   const menuOpen = openAt !== null && openAt === pathname;
@@ -93,7 +101,11 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
+    <header
+      className={`sticky top-0 z-50 border-b backdrop-blur-md transition-[background-color,border-color] duration-300 ease-premium ${
+        scrolled || menuOpen ? 'border-border bg-background/85' : 'border-transparent bg-background/0'
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 md:px-8">
         <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
           <Image src="/logo.png" alt="" width={32} height={32} priority className="size-8 rounded-lg object-contain" />
@@ -132,8 +144,15 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
       </div>
 
       {/* Always in the markup, hidden by CSS while closed: not focusable then, and the links stay crawlable */}
-      <div id="mobile-menu" className={menuOpen ? 'max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border bg-background lg:hidden' : 'hidden'}>
-          <nav aria-label="Main" className="mx-auto max-w-6xl space-y-1 px-4 py-3 md:px-8">
+      <div
+        id="mobile-menu"
+        // Opens a little slower and decelerating, leaves quicker and accelerating (the duration and curve of the state being entered)
+        className={`grid transition-[grid-template-rows,visibility] lg:hidden ${
+          menuOpen ? 'visible grid-rows-[1fr] duration-300 ease-premium' : 'invisible grid-rows-[0fr] duration-200 ease-in'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <nav aria-label="Main" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-6xl space-y-1 overflow-y-auto border-t border-border px-4 py-3 md:px-8">
             {navLinks.map(l => (
               <Link key={l.href} href={l.href} aria-current={current(l.href)} className={mobileLink}>
                 {l.label}
@@ -147,6 +166,7 @@ export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLab
             </a>
             <div className="flex flex-col gap-2 border-t border-border pt-4 pb-2">{auth(true)}</div>
           </nav>
+        </div>
       </div>
     </header>
   );

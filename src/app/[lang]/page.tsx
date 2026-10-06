@@ -11,6 +11,7 @@ import HomeArticles from '@/components/home/HomeArticles';
 import HomeAuthors from '@/components/home/HomeAuthors';
 import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
+import ScrollReveal from '@/components/ScrollReveal';
 import { clinicSerif } from '@/lib/fonts';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { eduNavLabels } from '@/lib/edu-labels';
@@ -154,6 +155,7 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
         <HomeCTA lang={lang} dict={dict} />
       </main>
       <HomeFooter lang={lang} />
+      <ScrollReveal />
     </div>
   );
 }
