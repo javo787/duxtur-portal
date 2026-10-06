@@ -5,7 +5,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getT, T } from '@/i18n';
 import FadeIn from '@/components/FadeIn';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, buildPageUrl, BASE_URL } from '@/lib/seo';
+import { blogListingCanonicalPath } from '@/lib/blog-seo';
 import Image from 'next/image';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 
@@ -18,12 +19,17 @@ export const revalidate = 1800; // ISR — обновление каждые 30 
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang } = await params;
-  const { page } = (await searchParams) as { category?: string; page?: string };
+  const { category, page } = (await searchParams) as { category?: string; page?: string };
+  const isVariant = !!category || (!!page && parseInt(page) > 1);
 
   return {
     title: T('blog.title', lang),
     description: T('home.authorsSubtitle', lang),
-    alternates: buildAlternates('blog', lang),
+    // ?category=cardiology lists what the cardiology landing page lists, so it points there; the plain index is
+    // the only variant that is its own canonical and so the only one that declares hreflang.
+    alternates: isVariant
+      ? { canonical: buildPageUrl(lang, blogListingCanonicalPath(category)) }
+      : buildAlternates('blog', lang),
     ...(page && parseInt(page) > 1 ? { robots: { index: false, follow: true } } : {}),
     other: {
       'link:rss': `${BASE_URL}/${lang}/feed.xml`,

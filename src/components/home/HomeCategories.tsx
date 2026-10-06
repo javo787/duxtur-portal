@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useT } from '@/i18n';
+import { blogCategoryHref } from '@/lib/blog-seo';
 import {
   HeartPulse,
   Brain,
@@ -82,6 +83,7 @@ const ACCENT_COLORS: Record<string, string> = {
 
 interface Props {
   lang: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   dict: any;
   categoryCounts: Record<string, number>;
 }
@@ -131,7 +133,7 @@ export default function HomeCategories({ lang, dict, categoryCounts }: Props) {
                 }}
               >
                 <Link
-                  href={`/${lang}/blog?category=${slug}`}
+                  href={blogCategoryHref(lang, slug)}
                   className="group flex flex-col items-center gap-3 p-5 rounded-2xl 
                              category-card-gradient
                              border border-slate-100/80 

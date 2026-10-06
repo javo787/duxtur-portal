@@ -19,7 +19,7 @@ const base = (over: Partial<SitemapData> = {}): SitemapData => ({
   articles: [],
   doctors: [],
   clinics: [],
-  doctorSpecialtySlugs: [],
+  doctorSpecialties: {},
   ...over,
 });
 
@@ -124,8 +124,39 @@ describe('buildSitemapEntries', () => {
 
   it('has no duplicate URLs', () => {
     const clinics = [clinic('a'), clinic('b'), clinic('c')];
-    const list = urls(base({ clinics, doctorSpecialtySlugs: ['cardiology'] }));
+    const list = urls(
+      base({
+        clinics,
+        doctors: [{ slug: 'a', _id: '1', specialty: { ru: 'Кардиология' } }],
+        doctorSpecialties: { cardiology: 'Кардиология' },
+      }),
+    );
     expect(new Set(list).size).toBe(list.length);
+  });
+
+  it('does not list the doctors map: it is client-only, with nothing for a crawler to read', () => {
+    expect(urls(base()).some((u) => u.includes('/doctors/map'))).toBe(false);
+  });
+
+  it('lists a specialty page only when an approved doctor is on it, dated by its newest doctor', () => {
+    const entries = buildSitemapEntries(
+      base({
+        doctors: [
+          { slug: 'a', _id: '1', specialty: { ru: 'Кардиология' }, updatedAt: '2026-01-10T00:00:00.000Z' },
+          { slug: 'b', _id: '2', specialty: { ru: 'Кардиология' }, updatedAt: '2026-03-05T00:00:00.000Z' },
+          { slug: 'c', _id: '3', specialty: { ru: 'Неврология' }, updatedAt: '2026-02-01T00:00:00.000Z' },
+          { slug: 'd', _id: '4', specialty: { ru: 'Название, которого нет в справочнике' } },
+        ],
+        doctorSpecialties: { cardiology: 'Кардиология', neurology: 'Неврология', dentistry: 'Стоматология' },
+      }),
+    );
+    const find = (url: string) => entries.find((e) => e.url === url);
+    expect(find('https://duxtur.org/ru/doctors/cardiology')?.lastModified).toEqual(new Date('2026-03-05T00:00:00.000Z'));
+    expect(find('https://duxtur.org/ru/doctors/neurology')?.lastModified).toEqual(new Date('2026-02-01T00:00:00.000Z'));
+    // nobody practises dentistry here: an empty page is noindex, so it must not be in the sitemap
+    for (const lang of ['ru', 'uz', 'tg', 'kk', 'ky']) {
+      expect(find(`https://duxtur.org/${lang}/doctors/dentistry`)).toBeUndefined();
+    }
   });
 });
 

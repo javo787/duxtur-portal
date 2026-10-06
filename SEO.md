@@ -50,5 +50,49 @@ We use Schema.org structured data to help search engines understand our content 
 - [ ] **Core Web Vitals Monitoring:** Continuous auditing of LCP (Largest Contentful Paint) and CLS (Cumulative Layout Shift) especially on map-heavy pages.
 - [ ] **User Reviews SEO:** Encourage more detailed text reviews from patients, as they provide unique, high-value long-tail keyword content.
 
+
 ---
-*Last updated: March 2024*
+
+## 📓 Журнал решений
+
+### 2026-10 · Разбор отчёта Search Console «Страницы» (ветка `fix/gsc-indexing-hygiene`)
+
+Снимок отчёта от 2026-10-06 (скриншот владельца): «Альтернативная страница с правильным canonical» 31 · Не найдено (404) 9 · Заблокировано в robots.txt 3 · Страница с редиректом 2 · Просканировано, не в индексе 3.
+
+**Проверено:** код (robots, sitemap, canonical и hreflang на всех страницах, редиректы, ссылки в компонентах), `tsc --noEmit`, eslint по изменённым файлам, `vitest` (461 тест).
+**Не проверено:** живой сайт и выдача (из песочницы недоступны), списки URL внутри отчёта, `next build` (его гоняет CI). Соответствие «причина → URL» ниже — вывод по коду, не по спискам из отчёта.
+
+| Причина в отчёте | Что в коде | Решение |
+|---|---|---|
+| Альтернативная страница с canonical (31) | Дубли с правильным canonical — это норма, не ошибка. Источники: `/doctors?specialty=…` и прочие фильтры, `/blog?category=…`, `?page=`, `?sort=`. | Источник не в самих дублях, а в том, куда они указывают. `?specialty=X` без других фильтров → canonical на посадочную `/doctors/X`; `?category=X` → `/blog/c/X` (только для 5 категорий, у которых есть страница). Ссылки с главной ведут прямо на посадочные. hreflang — только у чистых списков. |
+| Просканировано, не в индексе (3) | `/doctors/map` — целиком клиентская карта, для краулера текста нет, а в sitemap стояла с приоритетом 0.9. Страницы специальностей без врачей лежали в sitemap и не были noindex. | Карта: `noindex,follow`, вне sitemap. Специальность без одобренного врача: `noindex,follow`, вне sitemap; порог — `MIN_INDEXABLE_SPECIALTY_DOCTORS` в `clinic-seo.ts`. `lastmod` специальности — по самому свежему врачу этой специальности, а не «по любому». |
+| 404 (9) | По сетке ссылок в компонентах одна битая: в админке «Открыть на сайте» вела на `/doctors/<slug>` вместо `/doctor/<slug>`. Админка закрыта от краулеров, так что на отчёт это не влияет. | Ссылка исправлена. Остальные 404 — нужны URL из отчёта (вероятно, удалённые врачи/клиники/статьи или старые адреса). |
+| Заблокировано в robots.txt (3) | Ожидаемо: `login`, `register`, `signup`, `search`, `forgot-password`, `reset-password`, `admin`, `patient`, `?sort=`, `?q=`. | Менять нечего. Добавлен тест: ни один URL из sitemap не закрыт в robots.txt. Если среди 3 URL есть нужный для индекса — разбирать отдельно. |
+| Страница с редиректом (2) | `/`→`/ru`, `/blog`, `/authors`, `/doctors` (307), адрес без локали → `/ru/...` (307), `*.vercel.app` → duxtur.org (постоянный). | Норма. Решение владельца ниже. |
+
+**Почему так (коротко):**
+- Страница специальности теперь читает БД в `generateMetadata`, поэтому на ней стоит `dynamic = 'force-dynamic'`: в CI база пустая, и `noindex` не должен «запечься» при сборке.
+- Для `/doctors` пагинация и сортировка по-прежнему не создают отдельный URL: canonical ведёт на первую страницу списка (как и было), чтобы не менять поведение без решения владельца.
+- `HomeCategories` ведёт на `/blog/c/<slug>` только для 5 категорий с посадочной страницей; для `ophthalmology`, `surgery`, `gynecology`, `general` оставлен `?category=` — иначе была бы ссылка на 404.
+
+**Нужны решения владельца:**
+1. Редирект адреса без локали (`/blog/x` → `/ru/blog/x`) сделать постоянным (308)? Сейчас 307. Плюс: старые адреса без локали склеиваются с русскими. Минус: браузеры кэшируют 308.
+2. Чипы специальностей на `/doctors` вести на `/doctors/<специальность>`, а не на `?specialty=`? Лучше для перелинковки, но меняет поведение фильтра (другой шаблон страницы).
+3. `/doctors/map` оставить `noindex`, или делать для карты серверный список врачей, чтобы её можно было индексировать?
+
+**Найдено, но не тронуто (отдельные задачи):**
+- `new RegExp(sp.city, 'i')` на `/doctors` и `/doctors/[specialty]`: пользовательский ввод идёт в регулярное выражение. `?city=(` даёт 500 (краулеру), плюс риск ReDoS. Нужно экранировать ввод.
+- У блога нет пагинации, а `?page=2` отдаёт ту же страницу с `noindex` и canonical на основную: сигналы противоречат друг другу, но вреда нет.
+- Версии статьи на языке без перевода: `noindex` вместе с canonical на другой язык, та же пара сигналов.
+- Долг `no-explicit-any` в тронутых файлах не разбирал: на уже существовавших строках стоят точечные `eslint-disable`, потому что CI линтит файлы целиком.
+
+**Как проверить после деплоя:**
+- `https://duxtur.org/sitemap.xml`: нет `/doctors/map`, нет специальностей без врачей, у специальностей настоящий `lastmod`.
+- `/ru/doctors?specialty=cardiology`: canonical → `/ru/doctors/cardiology`, нет hreflang.
+- `/ru/doctors/map`: `<meta name="robots" content="noindex, follow">`.
+- `/ru/doctors/cardiology` (если врачи есть): без `noindex`, с hreflang.
+- `/ru/blog?category=cardiology`: canonical → `/ru/blog/c/cardiology`.
+- В Search Console: отчёт «Страницы» → «Проверить исправление» по группам 404, redirect, crawled-not-indexed; счётчики смотреть через 2–4 недели, не раньше.
+
+---
+*Last updated: October 2026*
