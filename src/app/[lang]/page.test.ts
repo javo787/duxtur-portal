@@ -16,6 +16,8 @@ function emptyQuery(): unknown {
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/models/Article', () => ({ default: { find: () => emptyQuery(), aggregate: () => emptyQuery() } }));
 vi.mock('@/models/Doctor', () => ({ default: { find: () => emptyQuery() } }));
+// next/font only works inside the Next compiler
+vi.mock('@/lib/fonts', () => ({ clinicSerif: { variable: '' } }));
 
 import Home from './page';
 import HomeHeader from '@/components/home/HomeHeader';
