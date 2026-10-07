@@ -32,7 +32,7 @@ function LoginButton() {
   );
 }
 
-export default function LoginForm({ lang }: { lang: string }) {
+export default function LoginForm({ lang, back = null }: { lang: string; back?: string | null }) {
   const t = getT(lang);
   const [errorMessage, dispatch] = useFormState(authenticate, undefined);
   const [showPassword, setShowPassword] = useState(false);
@@ -42,13 +42,13 @@ export default function LoginForm({ lang }: { lang: string }) {
   useEffect(() => {
     if (status === 'authenticated' && session) {
       const role = (session.user as any)?.role;
-      router.push(homeAfterLogin(role, lang));
+      router.push(back ?? homeAfterLogin(role, lang));
     } else if (errorMessage === 'success') {
       // Signed in on the server, but this page does not know the role yet: /admin sends every role to its own home
       // (doctor stays, admin → /admin/portal, clinic → /clinic/admin, anyone else → the author studio).
-      router.push(`/${lang}/admin`);
+      router.push(back ?? `/${lang}/admin`);
     }
-  }, [errorMessage, session, status, lang, router]);
+  }, [errorMessage, session, status, lang, router, back]);
 
   if (errorMessage === 'success' || status === 'authenticated') {
     return (
@@ -85,12 +85,12 @@ export default function LoginForm({ lang }: { lang: string }) {
             <p className="text-slate-500 text-sm text-center mb-8">Только для верифицированных врачей</p>
 
             {/* Уже вошли в Duxtur Edu: одно нажатие, без пароля */}
-            <EduContinue lang={lang} redirectFor={role => homeAfterLogin(role, lang)} />
+            <EduContinue lang={lang} redirectFor={role => back ?? homeAfterLogin(role, lang)} />
 
             {/* Google Login */}
             <button
               type="button"
-              onClick={() => signIn('google', { callbackUrl: `/${lang}/admin` })}
+              onClick={() => signIn('google', { callbackUrl: back ?? `/${lang}/admin` })}
               className="w-full flex items-center justify-center gap-3 p-4 border-2 border-slate-100 rounded-2xl hover:bg-slate-50 font-bold text-slate-700 transition mb-6"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@ export default function LoginForm({ lang }: { lang: string }) {
                 lang={lang}
                 mode="login"
                 variant="outline"
-                redirectFor={role => homeAfterLogin(role, lang)}
+                redirectFor={role => back ?? homeAfterLogin(role, lang)}
               />
             </div>
 

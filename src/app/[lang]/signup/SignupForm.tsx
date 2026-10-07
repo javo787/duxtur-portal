@@ -6,20 +6,22 @@ import Link from 'next/link';
 import TelegramLogin from '@/components/TelegramLogin';
 import EduContinue from '@/components/EduContinue';
 
-export default function SignupForm({ lang }: { lang: string }) {
+export default function SignupForm({ lang, back = null }: { lang: string; back?: string | null }) {
+  // Where the sign-in ends: Duxtur Edu when the person came from there, the portal otherwise.
+  const after = back ?? `/${lang}`;
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState('');
 
   const handleGoogle = async () => {
     setLoading('google');
-    await signIn('google', { callbackUrl: `/${lang}` });
+    await signIn('google', { callbackUrl: after });
   };
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading('email');
-    await signIn('resend', { email, callbackUrl: `/${lang}`, redirect: false });
+    await signIn('resend', { email, callbackUrl: after, redirect: false });
     setSent(true);
     setLoading('');
   };
@@ -45,18 +47,20 @@ export default function SignupForm({ lang }: { lang: string }) {
           <Link href={`/${lang}`} className="text-3xl font-extrabold text-white">
             duxtur<span className="text-blue-400">.org</span>
           </Link>
-          <p className="text-blue-200 text-sm mt-2">Войдите чтобы связаться с врачами</p>
+          <p className="text-blue-200 text-sm mt-2">
+            {back ? 'Один аккаунт для duxtur.org и Duxtur Edu' : 'Войдите чтобы связаться с врачами'}
+          </p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-slate-800 to-blue-900 px-8 py-6 text-center">
             <h1 className="text-xl font-extrabold text-white">Вход / Регистрация</h1>
-            <p className="text-blue-300 text-sm mt-1">Для пациентов — быстро и бесплатно</p>
+            <p className="text-blue-300 text-sm mt-1">{back ? 'Быстро и бесплатно, без пароля' : 'Для пациентов — быстро и бесплатно'}</p>
           </div>
 
           <div className="p-8 space-y-4">
             {/* Уже вошли в Duxtur Edu: одно нажатие */}
-            <EduContinue lang={lang} className="" redirectFor={() => `/${lang}`} />
+            <EduContinue lang={lang} className="" redirectFor={() => after} />
 
             {/* Google */}
             <button
@@ -74,7 +78,7 @@ export default function SignupForm({ lang }: { lang: string }) {
             </button>
 
             {/* Telegram: вход и регистрация одним подтверждением в боте */}
-            <TelegramLogin lang={lang} mode="login" callbackUrl={`/${lang}`} disabled={!!loading} />
+            <TelegramLogin lang={lang} mode="login" callbackUrl={after} disabled={!!loading} />
 
             {/* Разделитель */}
             <div className="flex items-center gap-3">
