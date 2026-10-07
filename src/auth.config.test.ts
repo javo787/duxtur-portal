@@ -58,3 +58,26 @@ describe('the portal administration', () => {
     expect(visit('/ru/admin/portal')).toBe('/ru/login');
   });
 });
+
+describe('coming back from Duxtur Edu (?next=/edu)', () => {
+  it('sends a signed-in person from the login or signup page straight back to Edu', () => {
+    expect(visit('/ru/signup?next=/edu', 'patient')).toBe('/edu');
+    expect(visit('/ru/login?next=/edu', 'doctor')).toBe('/edu');
+    expect(visit('/tg/signup?next=/edu/dashboard/teacher', 'patient')).toBe('/edu/dashboard/teacher');
+  });
+
+  it('never sends anybody anywhere but Edu', () => {
+    expect(visit('/ru/login?next=https://evil.example', 'doctor')).toBe('/ru/admin');
+    expect(visit('/ru/login?next=//evil.example', 'patient')).toBe('/ru/write');
+    expect(visit('/ru/login?next=/admin/portal', 'portal_admin')).toBe('/ru/admin/portal');
+  });
+
+  it('leaves a signed-out visitor on the page', () => {
+    expect(visit('/ru/signup?next=/edu')).toBe(true);
+    expect(visit('/ru/login?next=/edu')).toBe(true);
+  });
+
+  it('does not touch other pages', () => {
+    expect(visit('/ru/blog?next=/edu', 'patient')).toBe(true);
+  });
+});

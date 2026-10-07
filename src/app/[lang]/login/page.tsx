@@ -1,4 +1,5 @@
 import LoginForm from './LoginForm';
+import { eduReturnPath } from '@/lib/edu-return';
 import type { Metadata } from 'next';
 import { buildAlternates } from '@/lib/seo';
 
@@ -11,7 +12,15 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   };
 }
 
-export default async function LoginPage({ params }: { params: Promise<{ lang: string }> }) {
+export default async function LoginPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
   const { lang } = await params;
-  return <LoginForm lang={lang} />;
+  // Coming from Duxtur Edu ("Sign in with e-mail"): after signing in the person goes back there.
+  const back = eduReturnPath((await searchParams).next);
+  return <LoginForm lang={lang} back={back} />;
 }
