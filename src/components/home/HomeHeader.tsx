@@ -26,12 +26,13 @@ const mobileLink =
 const cta =
   'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
-// "Scrolled" read from the window itself, so there is no state to keep in sync and no effect
+// "Scrolled" read from the window itself, so there is no state to keep in sync and no effect.
 const subscribeScroll = (onChange: () => void) => {
+  if (typeof window === 'undefined') return () => {};
   window.addEventListener('scroll', onChange, { passive: true });
   return () => window.removeEventListener('scroll', onChange);
 };
-const isScrolled = () => window.scrollY > 8;
+const isScrolled = () => typeof window !== 'undefined' && window.scrollY > 8;
 
 /**
  * Translated by the server and passed in. A client component must not call useT: that ships all five
@@ -63,7 +64,6 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
-  // Open for one page only: a different pathname closes it, with no effect needed
   const [openAt, setOpenAt] = useState<string | null>(null);
   const menuOpen = openAt !== null && openAt === pathname;
   const setMenuOpen = (open: boolean) => setOpenAt(open ? pathname : null);
@@ -71,7 +71,6 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   const role = (session?.user as ExtendedUser | undefined)?.role;
   const isDoctor = role === 'doctor' || role === 'portal_admin';
 
-  // Escape closes the menu
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenAt(null);
@@ -88,7 +87,6 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   const current = (href: string) => (pathname === href || pathname?.startsWith(href + '/') ? 'page' : undefined);
 
   const auth = (mobile: boolean) => {
-    // Not decided yet: keep the room free instead of guessing, so nothing jumps and a signed-in doctor never sees "Log in"
     if (status === 'loading') return <span aria-hidden="true" className={mobile ? 'block h-12' : 'block h-10 w-44'} />;
     if (session) {
       return isDoctor ? (
@@ -98,7 +96,14 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
       ) : (
         <>
           <span className="max-w-40 truncate text-sm text-muted-foreground">{session.user?.name || session.user?.email}</span>
-          <button type="button" onClick={() => signOut()} className={mobile ? `${link} justify-center border border-border` : link}>
+          <button
+            type="button"
+            onClick={() => {
+              void signOut();
+              setMenuOpen(false);
+            }}
+            className={mobile ? `${link} justify-center border border-border` : link}
+          >
             {labels.logout}
           </button>
         </>
@@ -130,9 +135,8 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
           </span>
         </Link>
 
-        {/* Full navigation only where it really fits (lg and up); below that it lives in the menu */}
         <nav aria-label="Main" className="ml-4 hidden items-center gap-0.5 lg:flex">
-          {navLinks.map(l => (
+          {navLinks.map((l) => (
             <Link key={l.href} href={l.href} aria-current={current(l.href)} className={link}>
               {l.label}
             </Link>
@@ -159,17 +163,15 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
         </div>
       </div>
 
-      {/* Always in the markup, hidden by CSS while closed: not focusable then, and the links stay crawlable */}
       <div
         id="mobile-menu"
-        // Opens a little slower and decelerating, leaves quicker and accelerating (the duration and curve of the state being entered)
         className={`grid transition-[grid-template-rows,visibility] lg:hidden ${
           menuOpen ? 'visible grid-rows-[1fr] duration-300 ease-premium' : 'invisible grid-rows-[0fr] duration-200 ease-in'
         }`}
       >
         <div className="overflow-hidden">
           <nav aria-label="Main" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-6xl space-y-1 overflow-y-auto border-t border-border px-4 py-3 md:px-8">
-            {navLinks.map(l => (
+            {navLinks.map((l) => (
               <Link key={l.href} href={l.href} aria-current={current(l.href)} className={mobileLink}>
                 {l.label}
               </Link>
