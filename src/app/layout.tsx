@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { BASE_URL } from "@/lib/seo";
+import { bingVerificationOther } from "@/lib/bing-verification";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
   description: "Верифицированные медицинские статьи от врачей Центральной Азии.",
   verification: {
     google: "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
+    // Bing Webmaster Tools (msvalidate.01); only rendered when BING_SITE_VERIFICATION is set
+    other: bingVerificationOther(),
   },
   openGraph: {
     siteName: "Duxtur.org",

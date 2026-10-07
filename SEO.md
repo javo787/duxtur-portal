@@ -55,6 +55,29 @@ We use Schema.org structured data to help search engines understand our content 
 
 ## 📓 Журнал решений
 
+### 2026-10 · Bing и IndexNow: чтобы ChatGPT и Bing видели новые страницы (ветка `feat/bing-indexnow`)
+
+**Зачем.** Поиск ChatGPT опирается на индекс Bing (по публичным данным и отраслевым исследованиям; точные доли в них разные, OpenAI их не подтверждает), а страницу, которой нет в индексе, ИИ процитировать не может. Google в IndexNow не участвует, ему по-прежнему хватает sitemap и Search Console.
+
+**Что сделано.**
+- `src/lib/indexnow.ts`: отправка списка URL в IndexNow (`api.indexnow.org`). Оставляет только https-адреса на `www.duxtur.org`, убирает дубли и XML-экранирование (`&amp;`), режет на пачки по 10 000, ответы 200 и 202 считает успехом, ошибки не выбрасывает.
+- `/<ключ>.txt`: файл ключа отдаёт `src/app/api/indexnow/key/[key]/route.ts`, а `next.config.ts` (`afterFiles`) перенаправляет корневой путь на него. Отвечает только ключ из `INDEXNOW_KEY`, любое другое имя `*.txt` остаётся 404; `robots.txt` и `sitemap.xml` не затронуты.
+- `GET /api/cron/indexnow` + запись в `vercel.json` (ежедневно, 03:00 UTC): берёт `sitemap()`, отправляет URL, у которых `lastmod` свежее 26 часов. `?hours=N` меняет окно, `?all=1` отправляет весь sitemap (разово после первого деплоя). Доступ только с `Authorization: Bearer $CRON_SECRET`; без `CRON_SECRET` всегда 401.
+- `src/lib/bing-verification.ts` + `layout.tsx`: мета-тег `msvalidate.01` из `BING_SITE_VERIFICATION`. Нужен только если сайт добавляют в Bing не импортом из Search Console.
+
+**Переменные окружения (Vercel).** `INDEXNOW_KEY` (8-128 символов: буквы, цифры, дефис; например `openssl rand -hex 16`), `CRON_SECRET` (случайная строка), `BING_SITE_VERIFICATION` (по желанию).
+
+**Что сделать владельцу после деплоя.**
+1. Задать `INDEXNOW_KEY` и `CRON_SECRET` в Vercel, передеплоить.
+2. Открыть `https://www.duxtur.org/<ключ>.txt`: должен вернуться сам ключ.
+3. В Bing Webmaster Tools добавить сайт: проще всего «Импорт из Google Search Console»; либо тег `BING_SITE_VERIFICATION`. Отправить `https://www.duxtur.org/sitemap.xml`.
+4. Один раз отправить всё: `curl -H "Authorization: Bearer $CRON_SECRET" "https://www.duxtur.org/api/cron/indexnow?all=1"`. В ответе `ok: true` и `statuses: [200]` или `[202]`.
+
+**Проверено:** `tsc --noEmit`, eslint по изменённым файлам, `vitest` (юнит-тесты на отправку, нормализацию URL, ключ-файл, cron и мета-тег; в `edu-next-config.test.ts` добавлена проверка шаблона rewrite), живой `next dev`: ключ-файл отдаётся с `text/plain`, чужое имя даёт 404, `robots.txt` на месте, cron без секрета даёт 401, тег `msvalidate.01` появляется в HTML при заданной переменной и отсутствует без неё.
+**Не проверено:** реальный запрос к `api.indexnow.org` (из песочницы недоступен), `next build` (его гоняет CI), поведение на Vercel (cron, переменные), приём sitemap в Bing.
+
+**Побочное наблюдение (не менял).** Существующий cron `/api/admin/places/cleanup` обрабатывает только `POST`, а Vercel Cron вызывает путь методом `GET`. Если это так, он ни разу не отработал: стоит проверить в логах Vercel.
+
 ### 2026-10 · Разбор отчёта Search Console «Страницы» (ветка `fix/gsc-indexing-hygiene`)
 
 Снимок отчёта от 2026-10-06 (скриншот владельца): «Альтернативная страница с правильным canonical» 31 · Не найдено (404) 9 · Заблокировано в robots.txt 3 · Страница с редиректом 2 · Просканировано, не в индексе 3.
