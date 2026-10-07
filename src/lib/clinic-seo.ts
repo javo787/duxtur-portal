@@ -186,6 +186,9 @@ export const MIN_INDEXABLE_DESCRIPTION_CHARS = 80;
 /** A listing (city / type / specialty) with fewer clinics than this is a thin page. */
 export const MIN_INDEXABLE_LISTING_CLINICS = 3;
 
+/** A doctor specialty page with fewer approved doctors than this is an empty page (see doctor-seo.ts). */
+export const MIN_INDEXABLE_SPECIALTY_DOCTORS = 1;
+
 export type IndexabilityReason = 'verified' | 'import-with-text' | 'import-thin';
 
 /**

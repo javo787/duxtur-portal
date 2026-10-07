@@ -55,13 +55,13 @@ describe('clinic profile metadata', () => {
 
   it('is self-canonical with the full hreflang set', async () => {
     const m = await profile('uz');
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/uz/clinics/shifo');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/uz/clinics/shifo');
     expect(Object.keys(m.alternates?.languages ?? {}).sort()).toEqual(['kk', 'ky', 'ru', 'tg', 'uz', 'x-default']);
   });
 
   it('repeats siteName and locale in openGraph, which replaces the root one wholesale', async () => {
     const m = await profile('tg');
-    expect(m.openGraph).toMatchObject({ siteName: 'Duxtur.org', locale: 'tg_TJ', url: 'https://duxtur.org/tg/clinics/shifo', type: 'website' });
+    expect(m.openGraph).toMatchObject({ siteName: 'Duxtur.org', locale: 'tg_TJ', url: 'https://www.duxtur.org/tg/clinics/shifo', type: 'website' });
     expect((m.openGraph as { alternateLocale: string[] }).alternateLocale).toHaveLength(4);
     expect((m.openGraph as { title: string }).title).toBe(`${title(m)} | Duxtur.org`);
   });
@@ -76,7 +76,7 @@ describe('clinic profile metadata', () => {
   it('falls back to the default share image when the clinic has no photo', async () => {
     state.clinic = clinic({ coverImage: undefined, logo: undefined });
     const m = await profile();
-    expect((m.openGraph as { images: unknown[] }).images[0]).toMatchObject({ url: 'https://duxtur.org/og-default.png' });
+    expect((m.openGraph as { images: unknown[] }).images[0]).toMatchObject({ url: 'https://www.duxtur.org/og-default.png' });
   });
 
   it('never leaves the description empty for an import without text', async () => {
@@ -111,21 +111,21 @@ describe('clinic directory metadata', () => {
     expect(m.title).toBe('Клиники: адрес, телефон, отзывы');
     expect(m.description).toContain('Каталог клиник');
     expect(m.robots).toBeUndefined();
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/clinics');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/clinics');
   });
 
   it('gives a city listing its own title, description and canonical', async () => {
     state.listing = { clinics: cards(5), total: 5 };
     const m = await listing({ city: 'душанбе', type: 'dental_clinic' });
     expect(m.title).toBe('Стоматология — Душанбе: адрес, телефон, отзывы');
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&type=dental_clinic');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&type=dental_clinic');
     expect(m.robots).toBeUndefined();
   });
 
   it('self-canonicalizes a later page instead of pointing at page one', async () => {
     state.listing = { clinics: cards(5), total: 45 };
     const m = await listing({ page: '3' });
-    expect(m.alternates?.canonical).toBe('https://duxtur.org/ru/clinics?page=3');
+    expect(m.alternates?.canonical).toBe('https://www.duxtur.org/ru/clinics?page=3');
     expect(title(m)).toContain('(3)');
   });
 
@@ -138,7 +138,7 @@ describe('clinic directory metadata', () => {
     state.listing = { clinics: cards(2), total: 2 };
     const thin = await listing({ city: 'Худжанд' });
     expect(thin.robots).toEqual({ index: false, follow: true });
-    expect(thin.alternates).toEqual({ canonical: 'https://duxtur.org/ru/clinics?city=%D0%A5%D1%83%D0%B4%D0%B6%D0%B0%D0%BD%D0%B4' });
+    expect(thin.alternates).toEqual({ canonical: 'https://www.duxtur.org/ru/clinics?city=%D0%A5%D1%83%D0%B4%D0%B6%D0%B0%D0%BD%D0%B4' });
 
     state.listing = { clinics: [], total: 0 };
     expect((await listing({ city: 'Астана' })).robots).toEqual({ index: false, follow: true });
@@ -151,7 +151,7 @@ describe('clinic directory metadata', () => {
 
   it('does not let sorting create a new canonical URL', async () => {
     state.listing = { clinics: cards(20), total: 45 };
-    expect((await listing({ sort: 'reviews' })).alternates?.canonical).toBe('https://duxtur.org/ru/clinics');
+    expect((await listing({ sort: 'reviews' })).alternates?.canonical).toBe('https://www.duxtur.org/ru/clinics');
   });
 
   it('localizes title and locale', async () => {

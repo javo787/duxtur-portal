@@ -16,7 +16,7 @@ async function main() {
   const filter = {
     status: 'pre_imported',
     // older imports have no dataSource field, so match on the import source instead
-    importSource: { $in: ['ydoc', '2gis', 'osm', 'website'] },
+    importSource: { $in: ['ydoc', 'samt', '2gis', 'osm', 'website'] },
     $or: [{ 'rating.count': { $gt: 0 } }, { 'rating.avg': { $gt: 0 } }],
   };
   const n = await Clinic.countDocuments(filter);

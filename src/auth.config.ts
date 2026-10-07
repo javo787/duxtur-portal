@@ -24,9 +24,15 @@ export const authConfig = {
       // (Старая проверка на "/admin/write" была мёртвой веткой — такого
       // роута больше нет, WriteTab теперь просто вкладка внутри /admin.)
       if (/^\/[a-z]{2}\/admin\/?$/.test(pathname)) {
-        if (!isLoggedIn || role !== 'doctor') {
-          const lang = pathname.split('/')[1] || 'ru';
+        const lang = pathname.split('/')[1] || 'ru';
+        if (!isLoggedIn) {
           return Response.redirect(new URL(`/${lang}/login`, nextUrl));
+        }
+        // Signed in, but not (yet) a doctor: the writing studio is their place. It used to send them to the login
+        // page, which sent them back here (a loop) for anyone signed in as a patient.
+        if (role !== 'doctor') {
+          const home = role === 'portal_admin' ? `/${lang}/admin/portal` : role === 'clinic' ? `/${lang}/clinic/admin` : `/${lang}/write`;
+          return Response.redirect(new URL(home, nextUrl));
         }
         return true;
       }
@@ -39,7 +45,7 @@ export const authConfig = {
         if (role === 'clinic') {
           return Response.redirect(new URL(`/${lang}/clinic/admin`, nextUrl));
         }
-        return Response.redirect(new URL(`/${lang}/admin`, nextUrl));
+        return Response.redirect(new URL(role === 'doctor' ? `/${lang}/admin` : `/${lang}/write`, nextUrl));
       }
 
       return true;

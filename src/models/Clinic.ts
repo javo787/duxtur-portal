@@ -44,7 +44,7 @@ const ClinicSchema = new mongoose.Schema({
   },
   importSource: {
     type: String,
-    enum: ['2gis', 'ydoc', 'osm', 'website', 'manual'],
+    enum: ['2gis', 'ydoc', 'samt', 'osm', 'website', 'manual'],
     default: 'manual'
   },
   dataSource: {

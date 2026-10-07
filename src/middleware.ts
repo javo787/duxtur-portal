@@ -4,16 +4,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { i18n } from "@/i18n-config";
 import { isEduPath } from "@/lib/edu-routes";
+import { BASE_URL } from "@/lib/seo";
 
 const { auth } = NextAuth(authConfig);
 
 export default async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
 
-  // 1. Redirect from *.vercel.app to duxtur.org
+  // 1. Redirect from *.vercel.app to the main host
   if (host.endsWith('.vercel.app')) {
     return NextResponse.redirect(
-      new URL(`https://duxtur.org${pathname}${request.nextUrl.search}`, request.url),
+      new URL(`${BASE_URL}${pathname}${request.nextUrl.search}`, request.url),
       301
     );
   }
@@ -46,6 +47,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   // 4. Auth
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: NextAuth's wrapper is not typed for a plain request
   return (auth as any)(request);
 }
 

@@ -3,7 +3,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { buildAlternates } from '@/lib/seo';
+import { BASE_URL, buildAlternates } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -19,7 +19,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
   const { lang } = await params;
   const t = getT(lang);
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://duxtur.org';
+  const baseUrl = BASE_URL;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',

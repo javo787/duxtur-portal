@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { getT } from '@/i18n';
 import TelegramLogin from '@/components/TelegramLogin';
+import EduContinue from '@/components/EduContinue';
+import { homeAfterLogin } from '@/lib/after-login';
 
 function LoginButton() {
   const { pending } = useFormStatus();
@@ -38,13 +40,13 @@ export default function LoginForm({ lang }: { lang: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (errorMessage === 'success' || (status === 'authenticated' && session)) {
-      const role = (session?.user as any)?.role;
-      if (role === 'portal_admin') {
-        router.push(`/${lang}/admin/portal`);
-      } else {
-        router.push(`/${lang}/admin`);
-      }
+    if (status === 'authenticated' && session) {
+      const role = (session.user as any)?.role;
+      router.push(homeAfterLogin(role, lang));
+    } else if (errorMessage === 'success') {
+      // Signed in on the server, but this page does not know the role yet: /admin sends every role to its own home
+      // (doctor stays, admin → /admin/portal, clinic → /clinic/admin, anyone else → the author studio).
+      router.push(`/${lang}/admin`);
     }
   }, [errorMessage, session, status, lang, router]);
 
@@ -82,6 +84,9 @@ export default function LoginForm({ lang }: { lang: string }) {
             <h1 className="text-2xl font-extrabold text-slate-900 text-center mb-2">Вход в кабинет</h1>
             <p className="text-slate-500 text-sm text-center mb-8">Только для верифицированных врачей</p>
 
+            {/* Уже вошли в Duxtur Edu: одно нажатие, без пароля */}
+            <EduContinue lang={lang} redirectFor={role => homeAfterLogin(role, lang)} />
+
             {/* Google Login */}
             <button
               type="button"
@@ -109,13 +114,13 @@ export default function LoginForm({ lang }: { lang: string }) {
               Войти через Google
             </button>
 
-            {/* Врач, который подключил Telegram в профиле, входит им же. Остальные попадают на главную. */}
+            {/* Вход и регистрация через Telegram одним подтверждением в боте. */}
             <div className="mb-6">
               <TelegramLogin
                 lang={lang}
                 mode="login"
                 variant="outline"
-                redirectFor={role => (role === 'doctor' ? `/${lang}/admin` : `/${lang}`)}
+                redirectFor={role => homeAfterLogin(role, lang)}
               />
             </div>
 

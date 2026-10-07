@@ -39,6 +39,13 @@ export interface VerifiedIdToken {
   /** "telegram" for Edu's custom-token sign-in, "duxtur", otherwise Firebase's own provider (google.com...). */
   provider: string | null;
   authTime: number;
+  /** Profile claims of the verified token. Present only when the token carries them (Google sign-in does). */
+  email?: string;
+  emailVerified?: boolean;
+  name?: string;
+  picture?: string;
+  /** Display name that the portal put into Edu's Telegram custom token. */
+  tgName?: string;
 }
 
 /** Looks up the public key for a key id. Resolves null when Google does not publish that id. */
@@ -147,5 +154,11 @@ export async function verifyFirebaseIdToken(token: unknown, options: VerifyOptio
 
   const firebase = payload.firebase as { sign_in_provider?: unknown } | undefined;
   const provider = typeof firebase?.sign_in_provider === 'string' ? firebase.sign_in_provider : null;
-  return { uid: sub, provider, authTime: payload.auth_time };
+  const result: VerifiedIdToken = { uid: sub, provider, authTime: payload.auth_time };
+  if (typeof payload.email === 'string' && payload.email) result.email = payload.email;
+  if (typeof payload.email_verified === 'boolean') result.emailVerified = payload.email_verified;
+  if (typeof payload.name === 'string' && payload.name) result.name = payload.name;
+  if (typeof payload.picture === 'string' && payload.picture) result.picture = payload.picture;
+  if (typeof payload.tgName === 'string' && payload.tgName) result.tgName = payload.tgName;
+  return result;
 }

@@ -1,13 +1,15 @@
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import type { Metadata } from 'next';
-import { buildAlternates, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd, buildPageUrl } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
+import { doctorsListingCanonicalPath, isPlainDoctorsListing } from '@/lib/doctor-seo';
 import UI from '@/dictionaries/doctor-translations';
 import { getT } from '@/i18n';
 import DoctorsPageContent from './_components/DoctorsPageContent';
 
 // Helper function to determine the best index to use based on query and sort
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
 function determineBestIndex(query: any, sort: any): any {
   // If we have a geospatial query, use the 2dsphere index
   if (query.coordinates?. $geoWithin) {
@@ -63,7 +65,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title: `${title} — Duxtur.org`,
     description: UI.subtitle[lang] || UI.subtitle.ru,
-    alternates: buildAlternates('doctors', lang),
+    // A filtered, sorted or paged view is not a page of its own. ?specialty=cardiology alone is the list of the
+    // cardiology landing page and points there; everything else points at the plain directory. Only the plain
+    // first page is indexable in its own right, so only it declares hreflang.
+    alternates: isPlainDoctorsListing(sp)
+      ? buildAlternates('doctors', lang)
+      : { canonical: buildPageUrl(lang, doctorsListingCanonicalPath(sp, Object.keys(CATEGORY_LABELS))) },
   };
 }
 
@@ -78,6 +85,7 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   const cities: string[] = await Doctor.distinct('city', { status: 'approved' });
 
   // Формируем query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   const query: any = { status: 'approved' };
 
   // Гео-поиск — $geoWithin вместо $near (не требует сортировки)
@@ -115,6 +123,7 @@ export default async function DoctorsPage({ params, searchParams }: Props) {
   }
 
   // Сортировка
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
   let sort: any = { createdAt: -1 };
   if (sp.sort === 'rating') sort = { reviewAvg: -1, reviewCount: -1 };
   if (sp.sort === 'price_asc') sort = { 'priceRange.min': 1 };

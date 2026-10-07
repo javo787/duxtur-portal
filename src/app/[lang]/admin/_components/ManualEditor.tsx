@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { saveArticle } from '@/app/actions/save-article';
+import type { SaveSuccess } from '@/lib/author-types';
 import { SectionEditor } from './SectionEditor';
 import { TagsInput } from './TagsInput';
 import { ReadabilityMeter } from './ReadabilityMeter';
@@ -67,11 +68,12 @@ const Spinner = () => (
 
 interface ManualEditorProps {
   lang: string;
-  onPublished: (slug: string) => void;
+  /** Called with what happened: published, or kept as a draft (see saveArticle). */
+  onSaved: (result: SaveSuccess) => void;
   onBack: () => void;
 }
 
-export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
+export function ManualEditor({ lang, onSaved, onBack }: ManualEditorProps) {
   const [draft, setDraft] = useState<ArticleDraft>(() => {
     // Try restore from localStorage
     if (typeof window !== 'undefined') {
@@ -184,7 +186,7 @@ export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
     setIsSaving(false);
     if (result.success) {
       localStorage.removeItem(AUTOSAVE_KEY);
-      onPublished(result.slug || '');
+      onSaved(result);
     } else {
       alert('Ошибка: ' + result.error);
     }
@@ -250,7 +252,7 @@ export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
             disabled={isSaving}
             className="flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-green-200 transition disabled:opacity-70"
           >
-            {isSaving ? <><Spinner /> Публикация...</> : '🚀 Отправить на модерацию'}
+            {isSaving ? <><Spinner /> Публикация...</> : '🚀 Опубликовать'}
           </button>
         </div>
       </div>
@@ -499,7 +501,7 @@ export function ManualEditor({ lang, onPublished, onBack }: ManualEditorProps) {
               disabled={isSaving}
               className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-green-200 transition disabled:opacity-70"
             >
-              {isSaving ? <><Spinner /> Публикация...</> : '🚀 Отправить на модерацию'}
+              {isSaving ? <><Spinner /> Публикация...</> : '🚀 Опубликовать'}
             </button>
           </div>
         </div>

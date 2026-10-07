@@ -122,7 +122,7 @@ export default function DoctorForm({
             {isNew ? 'Создать врача' : 'Сохранить'}
           </button>
           <a href={`/${lang}/admin/portal/doctors`} className="text-sm text-gray-400 hover:text-white">Отмена</a>
-          {d?.slug && <a href={`/${lang}/doctors/${d.slug}`} target="_blank" className="ml-auto text-sm text-blue-400 hover:underline">Открыть на сайте ↗</a>}
+          {d?.slug && <a href={`/${lang}/doctor/${d.slug}`} target="_blank" className="ml-auto text-sm text-blue-400 hover:underline">Открыть на сайте ↗</a>}
         </div>
       </form>
 

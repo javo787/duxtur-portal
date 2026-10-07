@@ -48,6 +48,6 @@ describe('robots.txt', () => {
   it('declares one group for every crawler and the sitemap', () => {
     expect(rule().userAgent).toBe('*');
     expect(rule()).not.toHaveProperty('crawlDelay');
-    expect(robots().sitemap).toBe('https://duxtur.org/sitemap.xml');
+    expect(robots().sitemap).toBe('https://www.duxtur.org/sitemap.xml');
   });
 });

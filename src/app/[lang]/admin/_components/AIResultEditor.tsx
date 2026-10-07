@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { saveArticle } from '@/app/actions/save-article';
+import type { SaveSuccess } from '@/lib/author-types';
 import { SectionEditor } from './SectionEditor';
 import { TagsInput } from './TagsInput';
 import { ReadabilityMeter } from './ReadabilityMeter';
@@ -26,7 +27,10 @@ interface AIResultEditorProps {
   language: string;
   initialArticle: any; // raw AI output
   onBack: () => void;
-  onPublished: (slug: string) => void;
+  /** Called with what happened: published, or kept as a draft (see saveArticle). */
+  onSaved: (result: SaveSuccess) => void;
+  /** The saved draft this text came from, when an old draft is opened again. */
+  draftId?: string;
 }
 
 // Convert raw AI article object → structured sections array
@@ -52,7 +56,7 @@ function parseTags(raw: any): string[] {
   return String(raw).split(/[,;]/).map((s) => s.trim()).filter(Boolean);
 }
 
-export function AIResultEditor({ lang, language, initialArticle, onBack, onPublished }: AIResultEditorProps) {
+export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved, draftId }: AIResultEditorProps) {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initialArticle.title || '');
@@ -133,10 +137,10 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onPubli
   const handlePublish = async () => {
     if (!validate()) return;
     setIsSaving(true);
-    const result = await saveArticle(buildArticleData(), language);
+    const result = await saveArticle(buildArticleData(), language, draftId);
     setIsSaving(false);
     if (result.success) {
-      onPublished(result.slug || '');
+      onSaved(result);
     } else {
       alert('Ошибка: ' + result.error);
     }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getT } from '@/i18n';
+import { blogCategoryHref } from '@/lib/blog-seo';
 import SectionHeader from './SectionHeader';
 
 // Topic names per language (the slugs match the category filters of the blog)
@@ -38,7 +39,7 @@ export default function HomeCategories({ lang, dict, categoryCounts }: { lang: s
           {topics.map((c, i) => (
             <li key={c.slug} data-reveal="" style={{ '--i': Math.min(i, 5) } as React.CSSProperties}>
               <Link
-                href={`/${lang}/blog?category=${c.slug}`}
+                href={blogCategoryHref(lang, c.slug)}
                 className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-4 text-[0.9375rem] font-medium transition-[background-color,border-color,transform] duration-200 ease-premium hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-muted active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {c.label}
