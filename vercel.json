@@ -3,6 +3,10 @@
     {
       "path": "/api/admin/places/cleanup",
       "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/indexnow",
+      "schedule": "0 3 * * *"
     }
   ]
 }

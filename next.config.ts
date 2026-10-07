@@ -3,6 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import { EDU_CSP, EDU_BRIDGE_CSP } from "./src/lib/edu-csp";
 import { eduLocaleRedirects } from "./src/lib/edu-routes";
 import { BASE_URL } from "./src/lib/seo";
+import { INDEXNOW_KEY_FILE_SOURCE } from "./src/lib/indexnow";
 
 // Origin that serves the static Duxtur Edu build at its ROOT (e.g. a Firebase Hosting site).
 // When unset, /edu is simply not mounted.
@@ -95,12 +96,18 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    if (!EDU_APP_ORIGIN) return [];
     return {
-      beforeFiles: [
-        { source: '/edu', destination: `${EDU_APP_ORIGIN}/` },
-        { source: '/edu/:path*', destination: `${EDU_APP_ORIGIN}/:path*` },
-      ],
+      // IndexNow key file: /<key>.txt -> route handler, which answers only for the configured INDEXNOW_KEY.
+      // afterFiles: real files and routes (robots.txt, sitemap.xml, ...) win, and it runs before the [lang] dynamic route.
+      afterFiles: [{ source: INDEXNOW_KEY_FILE_SOURCE, destination: '/api/indexnow/key/:key' }],
+      ...(EDU_APP_ORIGIN
+        ? {
+            beforeFiles: [
+              { source: '/edu', destination: `${EDU_APP_ORIGIN}/` },
+              { source: '/edu/:path*', destination: `${EDU_APP_ORIGIN}/:path*` },
+            ],
+          }
+        : {}),
     };
   },
 

@@ -13,7 +13,8 @@ async function loadConfig(origin?: string) {
 describe('next.config /edu mount', () => {
   it('is not mounted when EDU_APP_ORIGIN is unset', async () => {
     const cfg = await loadConfig();
-    expect(await cfg.rewrites()).toEqual([]);
+    const rewrites = await cfg.rewrites();
+    expect(rewrites.beforeFiles ?? []).toEqual([]);
   });
 
   it('proxies /edu to the origin root, stripping the prefix', async () => {
@@ -23,6 +24,21 @@ describe('next.config /edu mount', () => {
       { source: '/edu', destination: 'https://duxtur-edu.web.app/' },
       { source: '/edu/:path*', destination: 'https://duxtur-edu.web.app/:path*' },
     ]);
+  });
+
+  it('serves the IndexNow key file from the site root, and nothing else', async () => {
+    // @ts-expect-error Next's compiled path-to-regexp ships no type declarations
+    const { pathToRegexp } = await import('next/dist/compiled/path-to-regexp');
+    const cfg = await loadConfig();
+    const { afterFiles } = await cfg.rewrites();
+    expect(afterFiles).toHaveLength(1);
+    expect(afterFiles[0].destination).toBe('/api/indexnow/key/:key');
+
+    const re = pathToRegexp(afterFiles[0].source);
+    expect(re.test('/a1b2c3d4e5f60718293a4b5c6d7e8f90.txt')).toBe(true);
+    for (const path of ['/robots.txt', '/ru/a1b2c3d4e5f60718293a4b5c6d7e8f90.txt', '/short.txt', '/a1b2c3d4e5f60718293a4b5c6d7e8f90.xml']) {
+      expect(re.test(path)).toBe(false);
+    }
   });
 
   it('gives /edu its own CSP and keeps the portal CSP off it', async () => {
