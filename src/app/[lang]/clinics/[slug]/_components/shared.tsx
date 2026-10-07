@@ -74,9 +74,9 @@ export function initials(name: string): string {
 
 /** Shared button looks: one primary, one quiet. 48px minimum touch target. */
 export const btnPrimary =
-  'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-[0.9375rem] font-semibold text-primary-foreground transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+  'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-[0.9375rem] font-semibold text-primary-foreground transition-[filter,transform] duration-150 ease-premium hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 export const btnQuiet =
-  'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-background px-5 text-[0.9375rem] font-semibold transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+  'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-background px-5 text-[0.9375rem] font-semibold transition-[background-color,transform] duration-150 ease-premium hover:bg-muted active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 export function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
   return (

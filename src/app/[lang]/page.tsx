@@ -1,5 +1,5 @@
 import { getDictionary } from '@/get-dictionary';
-import { Locale } from '@/i18n';
+import { getT, Locale } from '@/i18n';
 import type { Metadata } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
@@ -11,6 +11,8 @@ import HomeArticles from '@/components/home/HomeArticles';
 import HomeAuthors from '@/components/home/HomeAuthors';
 import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
+import ScrollReveal from '@/components/ScrollReveal';
+import { clinicSerif } from '@/lib/fonts';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { eduNavLabels } from '@/lib/edu-labels';
 
@@ -56,14 +58,14 @@ export default async function Home(props: Props) {
 const CATEGORIES = ['cardiology', 'neurology', 'dentistry', 'pediatrics', 'dermatology', 'ophthalmology', 'surgery', 'gynecology', 'general'];
  
 const [articles, authors, categoryAgg] = await Promise.all([
+  // The newest articles in any language: each one is shown in the language it exists in (see lib/article-lang.ts).
+  // Only the fields the cards need: the section texts stay in the database.
   Article.find({
-    $or: [
-      { [`title.${lang}`]: { $exists: true, $ne: '' } },
-      { [`title.ru`]: { $exists: true, $ne: '' } },
-    ],
+    $or: ['ru', 'tg', 'uz', 'kk', 'ky'].map(l => ({ [`title.${l}`]: { $exists: true, $ne: '' } })),
   })
     .sort({ createdAt: -1 })
-    .limit(9)
+    .limit(7)
+    .select('slug title overview image category isVerified authorId createdAt')
     .populate('authorId', 'name specialty image slug')
     .lean(),
  
@@ -83,14 +85,20 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
 }
  
 
-  // Picks one language out of a localized DATABASE field ({ ru, tg, ... }); not for UI strings (see eduLabels below).
-  const t = (field: Partial<Record<string, string>> | null | undefined) => {
-    if (!field) return '';
-    return field[lang] || field['ru'] || '';
-  };
-
-  // UI strings (not DB fields): do not use the local t() above for these
+  // UI strings (not DB fields)
   const eduLabels = eduNavLabels(lang);
+  const t = getT(lang);
+  const headerLabels = {
+    articles: t('nav.articles'),
+    findDoctor: t('nav.findDoctor'),
+    clinics: t('clinic.title'),
+    search: t('common.search'),
+    login: t('nav.login'),
+    logout: t('nav.logout'),
+    becomeAuthor: t('nav.becomeAuthor'),
+    myOffice: t('nav.myOffice'),
+    menu: t('nav.menu'),
+  };
 
   // ── WebSite + Organization + SearchAction JSON-LD ─────────────────────────
   const jsonLd = {
@@ -145,18 +153,21 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 font-sans">
+    <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomeHeader lang={lang} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
-      <HomeHero lang={lang} dict={dict} />
-      <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
-      <HomeArticles lang={lang} articles={articles} dict={dict} t={t} />
-      <HomeAuthors lang={lang} authors={authors} t={t} />
-      <HomeCTA lang={lang} dict={dict} />
+      <HomeHeader lang={lang} labels={headerLabels} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
+      <main>
+        <HomeHero lang={lang} dict={dict} />
+        <HomeCategories lang={lang} dict={dict} categoryCounts={categoryCounts} />
+        <HomeArticles lang={lang} articles={articles} dict={dict} />
+        <HomeAuthors lang={lang} authors={authors} />
+        <HomeCTA lang={lang} dict={dict} />
+      </main>
       <HomeFooter lang={lang} />
-    </main>
+      <ScrollReveal />
+    </div>
   );
 }

@@ -2,87 +2,85 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+
+// Each language in its own name; flags are countries, not languages
+const LANGUAGES = [
+  { code: 'ru', label: 'Русский', short: 'RU' },
+  { code: 'tg', label: 'Тоҷикӣ', short: 'TJ' },
+  { code: 'uz', label: 'Oʻzbekcha', short: 'UZ' },
+  { code: 'kk', label: 'Қазақша', short: 'KZ' },
+  { code: 'ky', label: 'Кыргызча', short: 'KG' },
+] as const;
+
+const rememberLocale = (locale: string) => {
+  document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=31536000;SameSite=Lax`;
+};
 
 export default function LanguageSwitcher() {
   const pathName = usePathname();
   const router = useRouter();
-  const [currentLang, setCurrentLang] = useState('ru');
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (pathName) {
-      setCurrentLang(pathName.split('/')[1]);
-    }
-  }, [pathName]);
+  const currentLang = pathName?.split('/')[1] ?? 'ru';
+  const current = LANGUAGES.find(l => l.code === currentLang) ?? LANGUAGES[0];
 
-  // Закрывать при клике вне
+  // Close on outside click and on Escape
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen]);
 
   const changeLanguage = (locale: string) => {
     if (!pathName) return;
     const segments = pathName.split('/');
     segments[1] = locale;
-    const newUrl = segments.join('/');
-    document.cookie = `NEXT_LOCALE=${locale};path=/;max-age=31536000;SameSite=Lax`;
+    rememberLocale(locale);
     setIsOpen(false);
-    router.push(newUrl);
+    router.push(segments.join('/'));
   };
-
-  const languages = [
-    { code: 'ru', label: '🇷🇺 Русский',  short: 'RU' },
-    { code: 'uz', label: '🇺🇿 Oʻzbek',   short: 'UZ' },
-    { code: 'tg', label: '🇹🇯 Тоҷикӣ',   short: 'TJ' },
-    { code: 'kk', label: '🇰🇿 Қазақ',    short: 'KZ' },
-    { code: 'ky', label: '🇰🇬 Кыргыз',   short: 'KG' },
-  ];
-
-  const current = languages.find(l => l.code === currentLang) || languages[0];
 
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+        type="button"
+        onClick={() => setIsOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={current.label}
+        className="inline-flex h-10 items-center gap-1 rounded-lg px-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <span>{current.short}</span>
-        <svg
-          className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-        </svg>
+        {current.short}
+        <ChevronDown className={`size-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1">
-          {languages.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => changeLanguage(lang.code)}
-              className={`flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm transition ${
-                currentLang === lang.code
-                  ? 'bg-blue-50 text-blue-600 font-bold'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {lang.label}
-              {currentLang === lang.code && (
-                <svg className="w-4 h-4 ml-auto text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
-            </button>
+        <ul role="listbox" className="absolute right-0 z-50 mt-2 w-48 origin-top-right overflow-hidden rounded-[10px] border border-border bg-popover py-1 text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150 ease-premium">
+          {LANGUAGES.map(l => (
+            <li key={l.code} role="option" aria-selected={l.code === currentLang}>
+              <button
+                type="button"
+                onClick={() => changeLanguage(l.code)}
+                className={`flex min-h-11 w-full items-center justify-between gap-3 px-4 text-left text-sm transition-colors hover:bg-muted ${
+                  l.code === currentLang ? 'font-semibold' : ''
+                }`}
+              >
+                {l.label}
+                {l.code === currentLang && <Check className="size-4 text-primary" aria-hidden="true" />}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

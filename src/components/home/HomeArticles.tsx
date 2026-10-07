@@ -1,199 +1,149 @@
 import Link from 'next/link';
-import FadeIn from '@/components/FadeIn';
 import Image from 'next/image';
+import { ShieldCheck } from 'lucide-react';
 import { getT } from '@/i18n';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
+import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
+import { btnPrimary } from '@/app/[lang]/clinics/[slug]/_components/shared';
+import SectionHeader from './SectionHeader';
 
-export default function HomeArticles({
-  lang,
-  articles,
-  dict,
-  t: dbT,
-}: {
-  lang: string;
-  articles: any[];
-  dict: any;
-  t: (f: any) => string;
-}) {
+type Ml = Record<string, string> | null | undefined;
+type ListedArticle = {
+  _id: string;
+  slug: string;
+  title?: Ml;
+  overview?: Ml;
+  image?: string;
+  category?: string;
+  isVerified?: boolean;
+  authorId?: { name?: string; specialty?: Ml } | null;
+};
+
+const excerpt = (md: string) => md.replace(/[#*`_>\[\]]/g, '').replace(/\s+/g, ' ').trim();
+
+function Meta({ category, verified, foreign }: { category: string; verified: string; foreign: { code: string; name: string } | null }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      {category && <span className="font-medium text-primary">{category}</span>}
+      {verified && (
+        <span className="inline-flex items-center gap-1 font-medium text-ok">
+          <ShieldCheck className="size-4" aria-hidden="true" />
+          {verified}
+        </span>
+      )}
+      {foreign && <span lang={foreign.code}>{foreign.name}</span>}
+    </p>
+  );
+}
+
+function Byline({ name, specialty }: { name: string; specialty: string }) {
+  if (!name) return null;
+  return (
+    <p className="text-sm">
+      <span className="font-medium">{name}</span>
+      {specialty && <span className="text-muted-foreground">, {specialty}</span>}
+    </p>
+  );
+}
+
+export default function HomeArticles({ lang, articles, dict }: { lang: string; articles: ListedArticle[]; dict: Record<string, string> }) {
   const t = getT(lang);
 
-  if (articles.length === 0) {
+  // One language per article, taken from the same text; marked when it is not the reader's
+  const items = articles
+    .map(a => ({ a, l: resolveListLanguage(a, lang).contentLang as ArticleLang }))
+    .filter(({ a, l }) => !!a.title?.[l]);
+
+  if (items.length === 0) {
     return (
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <FadeIn>
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-              <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
-              </svg>
-            </div>
-            <p className="font-display text-2xl font-semibold text-slate-800 mb-2">{t('home.articlesComingSoon')}</p>
-            <p className="text-slate-400 mb-8 text-[15px]">{t('home.articlesComingSoonSub')}</p>
-            <Link
-              href={`/${lang}/register`}
-              className="inline-flex items-center gap-2 px-7 py-3.5 text-white font-semibold rounded-xl text-[14px] bg-blue-600 hover:bg-blue-700 transition active:scale-95"
-            >
-              {t('home.articlesBecomeFirst')}
-            </Link>
-          </FadeIn>
+      <section className="border-b border-border py-16 text-center md:py-24">
+        <div className="mx-auto max-w-xl px-4">
+          <p className="font-clinic text-2xl font-semibold">{t('home.articlesComingSoon')}</p>
+          <p className="mt-2 text-muted-foreground">{t('home.articlesComingSoonSub')}</p>
+          <Link href={`/${lang}/register`} className={`${btnPrimary} mt-6`}>
+            {t('home.articlesBecomeFirst')}
+          </Link>
         </div>
       </section>
     );
   }
 
-  const [featured, ...rest] = articles;
+  const specialtyOf = (a: ListedArticle) => a.authorId?.specialty?.[lang] || a.authorId?.specialty?.ru || '';
+  const categoryOf = (a: ListedArticle) => {
+    if (!a.category || a.category === 'general') return '';
+    const key = `blog.category${a.category[0].toUpperCase()}${a.category.slice(1)}`;
+    return t(key) === key ? '' : t(key);
+  };
+  const metaProps = (a: ListedArticle, l: ArticleLang) => ({
+    category: categoryOf(a),
+    verified: a.isVerified ? dict.blog_verified : '',
+    foreign: l !== lang ? { code: l, name: LANG_ENDONYMS[l] } : null,
+  });
+  const bylineProps = (a: ListedArticle) => ({ name: a.authorId?.name ?? '', specialty: specialtyOf(a) });
+
+  const [first, ...rest] = items;
+  const feat = first.a;
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <FadeIn>
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p className="text-blue-600 font-semibold text-sm mb-2">
-                {t('home.articlesTitle')}
+    <section className="border-b border-border py-14 md:py-20">
+      <div className="mx-auto max-w-6xl px-4 md:px-8">
+        <SectionHeader title={dict.blog_title} href={`/${lang}/blog`} linkLabel={t('nav.allArticles')} />
+
+        {/* Featured: the newest article, with its picture only if it has one */}
+        <article data-reveal="" className={`group relative grid overflow-hidden rounded-[10px] border border-border bg-card transition-colors duration-300 ease-premium hover:border-foreground/25 ${feat.image ? 'md:grid-cols-[1.1fr_1fr]' : ''}`}>
+          {feat.image && (
+            <div className="relative aspect-[16/10] bg-muted md:aspect-auto md:min-h-[22rem]">
+              <Image
+                src={getOptimizedCloudinaryUrl(feat.image, { width: 900, height: 600, crop: 'fill' })}
+                alt=""
+                fill
+                priority
+                sizes="(min-width: 768px) 560px, 100vw"
+                className="object-cover transition-transform duration-700 ease-premium group-hover:scale-[1.035]"
+              />
+            </div>
+          )}
+          <div className="flex flex-col justify-center gap-4 p-6 md:p-10">
+            <Meta {...metaProps(feat, first.l)} />
+            <h3 lang={first.l !== lang ? first.l : undefined} className="font-clinic text-[1.625rem] leading-[1.15] font-semibold tracking-[-0.01em] text-balance md:text-[2.125rem]">
+              <Link href={`/${lang}/blog/${feat.slug}`} className="after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+                {feat.title?.[first.l]}
+              </Link>
+            </h3>
+            {feat.overview?.[first.l] && (
+              <p lang={first.l !== lang ? first.l : undefined} className="line-clamp-3 max-w-[56ch] leading-7 text-muted-foreground">
+                {excerpt(feat.overview[first.l])}
               </p>
-              <h2 className="font-display text-[28px] font-bold text-slate-900 tracking-tight leading-none">
-                {dict.blog_title}
-              </h2>
-              <div className="section-accent-line" />
-            </div>
-            <Link
-              href={`/${lang}/blog`}
-              className="flex items-center gap-1.5 text-[13.5px] font-medium text-blue-600 hover:text-blue-700 transition-colors pb-0.5 group"
-            >
-              {t('nav.allArticles')}
-              <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
+            )}
+            <Byline {...bylineProps(feat)} />
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:underline underline-offset-4">
+              {dict.read_more} <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-premium group-hover:translate-x-0.5">→</span>
+            </span>
           </div>
-        </FadeIn>
+        </article>
 
-        {/* Featured article */}
-        <FadeIn delay={80}>
-          <Link href={`/${lang}/blog/${featured.slug}`} className="group block mb-10">
-            <div className="rounded-[1.5rem] overflow-hidden border border-slate-100 bg-white hover:border-slate-200 transition-all duration-300 md:grid md:grid-cols-[3fr_2fr] shadow-card hover:shadow-card-hover card-hover-lift">
-              <div className="h-64 md:h-[380px] overflow-hidden relative">
-                <Image
-                  src={getOptimizedCloudinaryUrl(featured.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900', { width: 800 })}
-                  alt={dbT(featured.title)}
-                  fill
-                  priority
-                  className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 800px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-              </div>
-              <div className="p-8 md:p-9 flex flex-col justify-between bg-gradient-to-br from-white to-slate-50/30">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-3 py-1.5 rounded-full mb-5 bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {dict.blog_verified}
-                  </span>
-                  <h3 className="font-display text-[22px] md:text-[26px] font-semibold text-slate-900 group-hover:text-blue-700 transition leading-[1.25] line-clamp-3 mb-4" style={{ letterSpacing: '-0.025em' }}>
-                    {dbT(featured.title)}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-3.5 pt-6 border-t border-slate-100">
-                  <div className="relative shrink-0 w-10 h-10">
-                    <Image
-                      src={featured.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                      alt={featured.authorId?.name || 'Doctor'}
-                      fill
-                      className="rounded-xl object-cover ring-2 ring-white shadow-sm"
-                    />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-amber-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-semibold text-slate-900 truncate">
-                      {featured.authorId?.name || 'Dr. Expert'}
-                    </p>
-                    <p className="text-[12px] font-medium truncate text-blue-600">
-                      {dbT(featured.authorId?.specialty) || 'Врач'}
-                    </p>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1 text-[13px] font-medium text-blue-600 group-hover:gap-2 transition-all">
-                    {dict.read_more}
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-        </FadeIn>
-
-        {/* Grid of articles */}
         {rest.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-            {rest.slice(0, 8).map((article: any, i: number) => (
-              <FadeIn key={article._id} delay={i * 55} direction="up">
-                <Link href={`/${lang}/blog/${article.slug}`} className="group block h-full">
-                  <div
-                    className="rounded-2xl overflow-hidden border bg-white h-full flex flex-col shadow-card hover:shadow-card-hover card-hover-lift border-slate-100"
-                  >
-                    <div className="h-44 overflow-hidden relative flex-shrink-0">
-                      <Image
-                        src={getOptimizedCloudinaryUrl(article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400', { width: 400 })}
-                        alt={dbT(article.title)}
-                        fill
-                        className="object-cover group-hover:scale-[1.06] transition-transform duration-600 ease-out"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-3">
-                        <span className="flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-emerald-700 border border-emerald-100">
-                          <svg className="w-2.5 h-2.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {dict.blog_verified}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="font-display text-[14.5px] font-semibold text-slate-800 group-hover:text-blue-700 transition-colors leading-snug line-clamp-2 flex-1 mb-4" style={{ letterSpacing: '-0.015em' }}>
-                        {dbT(article.title)}
-                      </h3>
-                      <div className="pt-3.5 border-t border-slate-50 flex items-center gap-2.5">
-                        <div className="relative w-6 h-6">
-                          <Image
-                            src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
-                          alt={article.authorId?.name || 'Doctor'}
-                            fill
-                            className="rounded-lg object-cover border border-slate-100"
-                          />
-                        </div>
-                        <span className="text-[12px] text-slate-400 truncate font-normal flex-1">
-                          {article.authorId?.name || 'Dr. Expert'}
-                        </span>
-                        <svg className="w-3 h-3 text-blue-300 group-hover:translate-x-0.5 transition-transform shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </FadeIn>
+          <ul className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {rest.slice(0, 6).map(({ a, l }, i) => (
+              <li key={a._id} data-reveal="" style={{ '--i': i % 3 } as React.CSSProperties} className="border-t border-border pt-5 transition-colors duration-300 ease-premium has-[a:hover]:border-foreground/40">
+                <article className="group relative flex h-full flex-col gap-2.5">
+                  <Meta {...metaProps(a, l)} />
+                  <h3 lang={l !== lang ? l : undefined} className="font-clinic text-xl leading-snug font-semibold text-balance">
+                    <Link href={`/${lang}/blog/${a.slug}`} className="after:absolute after:inset-0 group-hover:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+                      {a.title?.[l]}
+                    </Link>
+                  </h3>
+                  {a.overview?.[l] && (
+                    <p lang={l !== lang ? l : undefined} className="line-clamp-2 text-[0.9375rem] leading-6 text-muted-foreground">
+                      {excerpt(a.overview[l])}
+                    </p>
+                  )}
+                  <Byline {...bylineProps(a)} />
+                </article>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-
-        <FadeIn delay={180}>
-          <div className="text-center">
-            <Link
-              href={`/${lang}/blog`}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl border border-slate-200 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 btn-spring"
-            >
-              {t('home.articlesViewAll')}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
-          </div>
-        </FadeIn>
       </div>
     </section>
   );

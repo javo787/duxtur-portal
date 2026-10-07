@@ -1,128 +1,94 @@
 import Link from 'next/link';
-import { getT, Locale } from '@/i18n';
 import Image from 'next/image';
+import { ExternalLink } from 'lucide-react';
+import { getT, Locale } from '@/i18n';
 
+const linkCls =
+  'inline-flex min-h-8 items-center text-[0.9375rem] text-muted-foreground transition-colors hover:text-foreground hover:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+type FooterLink = { href: string; label: string; kind?: 'hard' | 'external' };
+
+/** Shared by every public page. Theme tokens only, so it is correct in both themes. */
 export default function HomeFooter({ lang }: { lang: Locale }) {
   const year = new Date().getFullYear();
   const t = getT(lang);
 
+  const columns: { title: string; links: FooterLink[] }[] = [
+    {
+      title: t('home.footerForReaders'),
+      links: [
+        { href: `/${lang}/blog`, label: t('nav.allArticles') },
+        { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
+        { href: `/${lang}/clinics`, label: t('clinic.title') },
+        { href: `/${lang}/authors`, label: t('nav.authors') },
+        { href: `/${lang}/search`, label: t('common.search') },
+        // Duxtur Edu is a separate app at /edu: a plain <a> (a full page load), not next/link.
+        { href: '/edu', label: t('nav.eduFull'), kind: 'hard' },
+      ],
+    },
+    {
+      title: t('home.footerForDoctors'),
+      links: [
+        { href: `/${lang}/register`, label: t('nav.becomeAuthor') },
+        { href: `/${lang}/clinic/register`, label: t('clinic.registerClinic') },
+        { href: `/${lang}/login`, label: t('nav.myOffice') },
+      ],
+    },
+    {
+      title: t('home.footerAbout'),
+      links: [
+        { href: `/${lang}/about`, label: t('nav.aboutUs') },
+        { href: `/${lang}/editorial`, label: t('nav.editorialPolicy') },
+        { href: 'https://t.me/duxturcom', label: 'Telegram', kind: 'external' },
+      ],
+    },
+  ];
+
   return (
-    <footer className="border-t border-slate-200/80 dark:border-white/5 bg-slate-50/50 dark:bg-background/50 transition-colors duration-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-8">
-        <div className="grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-12">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
-            <Link href={`/${lang}`} className="inline-flex items-center gap-3 mb-5 group">
-              <Image
-                src="/logo.png"
-                alt="Duxtur logo"
-                width={32}
-                height={32}
-                className="rounded-lg object-contain group-hover:opacity-90 transition"
-              />
-              <span className="font-display font-bold text-[18px] text-slate-900 dark:text-white tracking-[-0.03em]">
-                duxtur<span className="text-blue-600">.org</span>
+    <footer className="border-t border-border bg-card text-card-foreground">
+      <div className="mx-auto max-w-6xl px-4 pt-12 pb-8 md:px-8 md:pt-16">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+          <div>
+            <Link href={`/${lang}`} className="inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+              <Image src="/logo.png" alt="" width={32} height={32} className="size-8 rounded-lg object-contain" />
+              <span className="font-clinic text-lg font-semibold tracking-[-0.01em]">
+                duxtur<span className="text-primary">.org</span>
               </span>
             </Link>
-            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px]">
-              {t('home.footerTagline')}
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-5">
-              {['RU', 'TJ', 'UZ', 'KZ', 'KG'].map((l) => (
-                <span key={l} className="text-[11px] font-semibold px-2 py-0.5 rounded-md border border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 bg-white dark:bg-transparent">
-                  {l}
-                </span>
-              ))}
-            </div>
+            <p className="mt-4 max-w-[26ch] text-[0.9375rem] leading-6 text-muted-foreground">{t('home.footerTagline')}</p>
           </div>
 
-          {/* Читателям */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-4">{t('home.footerForReaders')}</h4>
-            <ul className="space-y-3">
-              {[
-                { href: `/${lang}/blog`, label: t('nav.allArticles') },
-                { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
-                { href: `/${lang}/clinics`, label: t('clinic.title') },
-                { href: `/${lang}/authors`, label: t('nav.authors') },
-                { href: `/${lang}/search`, label: t('common.search') },
-                // Duxtur Edu is a separate app at /edu: a plain <a> (a full page load), not next/link.
-                { href: '/edu', label: t('nav.eduFull'), hardNav: true },
-              ].map((link) => (
-                <li key={link.href}>
-                  {link.hardNav ? (
-                    <a href={link.href} className="footer-link inline-block text-sm text-slate-500">
-                      {link.label}
-                    </a>
-                  ) : (
-                    <Link href={link.href} className="footer-link inline-block text-sm text-slate-500">
-                      {link.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Врачам */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-4">{t('home.footerForDoctors')}</h4>
-            <ul className="space-y-3">
-              {[
-                { href: `/${lang}/register`, label: t('nav.becomeAuthor') },
-                { href: `/${lang}/clinic/register`, label: t('clinic.registerClinic') },
-                { href: `/${lang}/login`, label: t('nav.myOffice') },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="footer-link inline-block text-sm text-slate-500">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* О портале */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-4">{t('home.footerAbout')}</h4>
-            <ul className="space-y-3">
-              {[
-                { href: `/${lang}/about`, label: t('nav.aboutUs'), external: false },
-                { href: `/${lang}/editorial`, label: t('nav.editorialPolicy'), external: false },
-                { href: 'https://t.me/duxturcom', label: 'Telegram', external: true },
-              ].map((link) => (
-                <li key={link.href}>
-                  {link.external ? (
-                    <a
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="footer-link inline-flex items-center gap-1 text-sm text-slate-500"
-                    >
-                      {link.label}
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <Link href={link.href} className="footer-link inline-block text-sm text-slate-500">
-                      {link.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {columns.map(col => (
+            <nav key={col.title} aria-label={col.title}>
+              <h2 className="mb-3 text-sm font-semibold [font-family:inherit]">{col.title}</h2>
+              <ul className="space-y-1">
+                {col.links.map(l => (
+                  <li key={l.href}>
+                    {l.kind === 'external' ? (
+                      <a href={l.href} target="_blank" rel="noopener noreferrer" className={`${linkCls} gap-1.5`}>
+                        {l.label}
+                        <ExternalLink className="size-3.5" aria-hidden="true" />
+                      </a>
+                    ) : l.kind === 'hard' ? (
+                      <a href={l.href} className={linkCls}>
+                        {l.label}
+                      </a>
+                    ) : (
+                      <Link href={l.href} className={linkCls}>
+                        {l.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
-        <div className="pt-8 border-t border-slate-200/80 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-400 dark:text-slate-500">© {year} Duxtur.org</p>
-          <p className="text-xs text-slate-400 dark:text-slate-600 text-center max-w-lg">
-            {t('home.footerDisclaimer')}
-          </p>
-          <Link href={`/${lang}/editorial`} className="text-sm text-slate-400 dark:text-slate-500 hover:text-blue-600 transition-colors">
-            {t('nav.editorialPolicy')}
-          </Link>
+        {/* A medical site says this where everybody sees it */}
+        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted-foreground md:flex-row md:items-start md:justify-between md:gap-10">
+          <p className="max-w-[60ch] leading-6">{t('home.footerDisclaimer')}</p>
+          <p className="shrink-0 tabular-nums">© {year} Duxtur.org</p>
         </div>
       </div>
     </footer>

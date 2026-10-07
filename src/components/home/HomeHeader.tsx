@@ -1,241 +1,194 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useSession, signOut } from 'next-auth/react';
-import { Locale } from '@/i18n';
-import { useScrollVisibility } from '@/hooks/useScrollVisibility';
+import type { Locale } from '@/i18n';
 import { EDU_LINKS } from '@/lib/edu-routes';
 
 interface ExtendedUser {
   name?: string | null;
   email?: string | null;
-  image?: string | null;
   role?: string;
 }
 
 // Duxtur Edu is a separate app mounted at /edu (see next.config.ts). It is reached with a plain <a>, never next/link:
 // Link would try to prefetch and client-navigate to a route this app does not own.
-// One style per menu, used by the regular links AND the Edu links, so they cannot drift apart.
-const DESKTOP_LINK_CLASS =
-  'relative px-4 py-2 text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-white/10 rounded-full transition-all duration-200';
-const MOBILE_LINK_CLASS =
-  'flex items-center px-4 py-3 text-[14px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition';
+const link =
+  'inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 text-[0.9375rem] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[current=page]:text-foreground';
+const mobileLink =
+  'flex min-h-12 items-center rounded-lg px-3 text-base font-medium transition-colors hover:bg-muted aria-[current=page]:bg-muted';
+const cta =
+  'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+// "Scrolled" read from the window itself, so there is no state to keep in sync and no effect
+const subscribeScroll = (onChange: () => void) => {
+  window.addEventListener('scroll', onChange, { passive: true });
+  return () => window.removeEventListener('scroll', onChange);
+};
+const isScrolled = () => window.scrollY > 8;
+
+/**
+ * Translated by the server and passed in. A client component must not call useT: that ships all five
+ * dictionaries to the browser (about 64 KB gzipped) for nine words.
+ */
+export interface HeaderLabels {
+  articles: string;
+  findDoctor: string;
+  clinics: string;
+  search: string;
+  login: string;
+  logout: string;
+  becomeAuthor: string;
+  myOffice: string;
+  menu: string;
+}
 
 interface HomeHeaderProps {
   lang: Locale;
+  labels: HeaderLabels;
   eduLabel?: string;
   eduTeacherLabel?: string;
 }
 
-export default function HomeHeader({ lang, eduLabel: eduLabelProp, eduTeacherLabel: eduTeacherLabelProp }: HomeHeaderProps) {
+export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTeacherLabel: eduTeacherLabelProp }: HomeHeaderProps) {
   // '' is not "missing" for a default parameter, and an empty label renders an invisible link: fall back explicitly.
   const eduLabel = eduLabelProp || 'Студентам';
   const eduTeacherLabel = eduTeacherLabelProp || 'Преподавателям';
-  const { data: session } = useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { visible, scrolled } = useScrollVisibility();
+  const { data: session, status } = useSession();
+  const pathname = usePathname();
+  const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
+  // Open for one page only: a different pathname closes it, with no effect needed
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const menuOpen = openAt !== null && openAt === pathname;
+  const setMenuOpen = (open: boolean) => setOpenAt(open ? pathname : null);
 
-  const role = (session?.user as ExtendedUser)?.role;
+  const role = (session?.user as ExtendedUser | undefined)?.role;
   const isDoctor = role === 'doctor' || role === 'portal_admin';
 
+  // Escape closes the menu
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpenAt(null);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   const navLinks = [
-    { href: `/${lang}/blog`,    label: 'Статьи'      },
-    { href: `/${lang}/doctors`, label: 'Найти врача' },
-    { href: `/${lang}/clinics`, label: 'Клиники'     },
-    { href: `/${lang}/search`,  label: 'Поиск'       },
+    { href: `/${lang}/blog`, label: labels.articles },
+    { href: `/${lang}/doctors`, label: labels.findDoctor },
+    { href: `/${lang}/clinics`, label: labels.clinics },
+    { href: `/${lang}/search`, label: labels.search },
   ];
+  const current = (href: string) => (pathname === href || pathname?.startsWith(href + '/') ? 'page' : undefined);
+
+  const auth = (mobile: boolean) => {
+    // Not decided yet: keep the room free instead of guessing, so nothing jumps and a signed-in doctor never sees "Log in"
+    if (status === 'loading') return <span aria-hidden="true" className={mobile ? 'block h-12' : 'block h-10 w-44'} />;
+    if (session) {
+      return isDoctor ? (
+        <Link href={`/${lang}/admin`} className={mobile ? `${cta} h-12 w-full` : cta}>
+          {labels.myOffice}
+        </Link>
+      ) : (
+        <>
+          <span className="max-w-40 truncate text-sm text-muted-foreground">{session.user?.name || session.user?.email}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void signOut();
+              setMenuOpen(false);
+            }}
+            className={mobile ? `${link} justify-center border border-border` : link}
+          >
+            {labels.logout}
+          </button>
+        </>
+      );
+    }
+    return (
+      <>
+        <Link href={`/${lang}/login`} className={mobile ? `${link} justify-center border border-border` : link}>
+          {labels.login}
+        </Link>
+        <Link href={`/${lang}/register`} className={mobile ? `${cta} h-12 w-full` : cta}>
+          {labels.becomeAuthor}
+        </Link>
+      </>
+    );
+  };
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        visible ? 'translate-y-0' : '-translate-y-full'
-      } ${
-        scrolled
-          ? 'bg-white/80 dark:bg-[#0C1222]/80 backdrop-blur-xl shadow-sm'
-          : 'bg-transparent'
+      className={`sticky top-0 z-50 border-b backdrop-blur-md transition-[background-color,border-color] duration-300 ease-premium ${
+        scrolled || menuOpen ? 'border-border bg-background/85' : 'border-transparent bg-background/0'
       }`}
-      aria-hidden={!visible}
     >
-      {/* Accent line with glow */}
-      <div className="h-[3px] brand-line-glow" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-
-        {/* ── Logo ── */}
-        <Link href={`/${lang}`} className="flex items-center gap-2.5 group">
-          <div className="relative w-8 h-8 shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Duxtur logo"
-              fill
-              priority
-              className="rounded-lg object-contain group-hover:opacity-90 transition"
-              sizes="32px"
-            />
-          </div>
-          <span className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">
-            duxtur<span className="text-blue-600">.org</span>
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 md:px-8">
+        <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+          <Image src="/logo.png" alt="" width={32} height={32} priority className="size-8 rounded-lg object-contain" />
+          <span className="font-clinic text-lg font-semibold tracking-[-0.01em]">
+            duxtur<span className="text-primary">.org</span>
           </span>
         </Link>
 
-        {/* ── Desktop nav ── */}
-        <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={DESKTOP_LINK_CLASS}
-            >
-              {link.label}
+        {/* Full navigation only where it really fits (lg and up); below that it lives in the menu */}
+        <nav aria-label="Main" className="ml-4 hidden items-center gap-0.5 lg:flex">
+          {navLinks.map(l => (
+            <Link key={l.href} href={l.href} aria-current={current(l.href)} className={link}>
+              {l.label}
             </Link>
           ))}
-          <a href={EDU_LINKS.students} className={DESKTOP_LINK_CLASS}>
+          <a href={EDU_LINKS.students} className={link}>
             {eduLabel}
           </a>
         </nav>
 
-        {/* ── Right actions ── */}
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
           <LanguageSwitcher />
-
-          {session ? (
-            isDoctor ? (
-              <Link
-                href={`/${lang}/admin`}
-                className="hidden md:flex items-center gap-2 px-5 py-2 text-[13px] font-semibold text-white rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all btn-spring"
-              >
-                Мой кабинет →
-              </Link>
-            ) : (
-              <div className="hidden md:flex items-center gap-3">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                  {session.user?.name || session.user?.email}
-                </span>
-                <button
-                  onClick={() => signOut()}
-                  className="text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition px-3 py-2"
-                >
-                  Выйти
-                </button>
-              </div>
-            )
-          ) : (
-            <>
-              <Link
-                href={`/${lang}/login`}
-                className="hidden md:block text-[13.5px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition px-3 py-2"
-              >
-                Войти
-              </Link>
-              <Link
-                href={`/${lang}/register`}
-                className="hidden md:flex items-center gap-2 px-5 py-2 text-[13px] font-semibold text-white rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 transition-all btn-spring"
-              >
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Я врач
-              </Link>
-            </>
-          )}
-
-          {/* Mobile burger */}
+          <div className="ml-2 hidden items-center gap-1 lg:flex">{auth(false)}</div>
           <button
+            type="button"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            aria-label="Меню"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            aria-label={labels.menu}
+            className="inline-flex size-10 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:hidden"
           >
-            <div className="w-5 flex flex-col gap-1.5">
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? 'opacity-0' : ''}`} />
-              <span className={`h-[1.5px] bg-slate-700 dark:bg-slate-300 rounded transition-all duration-200 ${menuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
-            </div>
+            {menuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
-      {/* ── Mobile menu ── */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-[36rem]' : 'max-h-0'}`}>
-        <div className="bg-white dark:bg-card border-t border-slate-100 dark:border-white/5 px-5 py-4 space-y-1 shadow-xl">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className={MOBILE_LINK_CLASS}
-            >
-              {link.label}
-            </Link>
-          ))}
-          {[
-            { href: EDU_LINKS.students, label: eduLabel },
-            { href: EDU_LINKS.teachers, label: eduTeacherLabel },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className={MOBILE_LINK_CLASS}
-            >
-              {link.label}
+      {/* Always in the markup, hidden by CSS while closed: not focusable then, and the links stay crawlable */}
+      <div
+        id="mobile-menu"
+        // Opens a little slower and decelerating, leaves quicker and accelerating (the duration and curve of the state being entered)
+        className={`grid transition-[grid-template-rows,visibility] lg:hidden ${
+          menuOpen ? 'visible grid-rows-[1fr] duration-300 ease-premium' : 'invisible grid-rows-[0fr] duration-200 ease-in'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <nav aria-label="Main" className="mx-auto max-h-[calc(100dvh-4rem)] max-w-6xl space-y-1 overflow-y-auto border-t border-border px-4 py-3 md:px-8">
+            {navLinks.map(l => (
+              <Link key={l.href} href={l.href} aria-current={current(l.href)} className={mobileLink}>
+                {l.label}
+              </Link>
+            ))}
+            <a href={EDU_LINKS.students} className={mobileLink}>
+              {eduLabel}
             </a>
-          ))}
-
-          <div className="pt-3 border-t border-slate-100 dark:border-white/5 mt-3 flex flex-col gap-2">
-            {session ? (
-              isDoctor ? (
-                <Link
-                  href={`/${lang}/admin`}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-full text-[14px] bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition"
-                >
-                  Мой кабинет →
-                </Link>
-              ) : (
-                <>
-                  <div className="px-4 py-2 text-center">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                      {session.user?.name || session.user?.email}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { signOut(); setMenuOpen(false); }}
-                    className="flex items-center justify-center py-2.5 text-[14px] font-medium text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                  >
-                    Выйти
-                  </button>
-                </>
-              )
-            ) : (
-              <>
-                <Link
-                  href={`/${lang}/login`}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center py-2.5 text-[14px] font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  Войти
-                </Link>
-                <Link
-                  href={`/${lang}/register`}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 py-3 text-white font-semibold rounded-full text-[14px] bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 transition"
-                >
-                  Я врач — стать автором
-                </Link>
-              </>
-            )}
-          </div>
+            <a href={EDU_LINKS.teachers} className={mobileLink}>
+              {eduTeacherLabel}
+            </a>
+            <div className="flex flex-col gap-2 border-t border-border pt-4 pb-2">{auth(true)}</div>
+          </nav>
         </div>
       </div>
     </header>

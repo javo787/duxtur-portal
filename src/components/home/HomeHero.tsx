@@ -1,279 +1,86 @@
-'use client';
-
-import { useEffect, useRef, useId } from 'react';
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { useT } from '@/i18n';
+import { Search, ShieldCheck } from 'lucide-react';
+import { getT } from '@/i18n';
+import { btnPrimary } from '@/app/[lang]/clinics/[slug]/_components/shared';
 
-// ─── Живая иллюстрация (крест + ECG + орбиты) ──────────────────────────────
-function HeroIllustration() {
-  const uid = useId().replace(/:/g, '');
-  const gradId = `cg-${uid}`;
-  const glowId = `gl-${uid}`;
+/**
+ * One headline, one line of support, one action (search), then the way into the three
+ * sections of the site and the reasons to trust it. Server component: no client JavaScript,
+ * nothing hidden until hydration.
+ */
+/** Entrance order: the lower the number, the earlier the block appears (70ms apart, CSS only). The heading, the largest paint, starts at once. */
+const rise = (i: number) => ({ className: 'hero-rise', style: { '--i': i } as CSSProperties });
 
-  const orbitDots = [
-    { cls: 'bg-blue-500 ring-blue-100', anim: 'orbit1 8s linear infinite' },
-    { cls: 'bg-violet-500 ring-violet-100', anim: 'orbit2 8s linear infinite' },
-    { cls: 'bg-amber-400 ring-amber-100', anim: 'orbit3 8s linear infinite' },
-  ];
-
-  const crossRects = [
-    [40, 8, 40, 44],
-    [40, 68, 40, 44],
-    [8, 40, 44, 40],
-    [68, 40, 44, 40],
-    [40, 40, 40, 40],
-  ] as const;
+export default function HomeHero({ lang, dict }: { lang: string; dict: Record<string, string> }) {
+  const t = getT(lang);
+  // The content dictionary is the source; if a key is ever missing there, use the interface dictionary (same texts)
+  const badge = dict.hero_badge ?? t('home.heroBadge');
+  const subtitle = dict.hero_subtitle ?? t('home.heroSubtitle');
+  const readMore = dict.hero_cta_read ?? t('home.heroCtaRead');
 
   return (
-    <div
-      className="aspect-square w-full max-w-sm rounded-[2.8rem] flex items-center justify-center relative overflow-hidden shadow-2xl shadow-blue-900/10 hover:rotate-1 transition-transform duration-700"
-      style={{
-        background: 'var(--card)',
-        opacity: 0.9,
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
-        border: '1px solid var(--border)',
-      }}
-    >
-      {/* Фоновые пятна глубины */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-200 rounded-full blur-2xl" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-200 rounded-full blur-2xl" />
-      </div>
-
-      {/* Дышащие круги */}
+    <section className="relative isolate border-b border-border">
+      {/* One static, token-based glow instead of animated blobs: works in both themes */}
       <div
-        className="absolute rounded-full flex items-center justify-center"
-        style={{
-          width: '280px',
-          height: '280px',
-          background: 'var(--secondary)',
-          opacity: 0.2,
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          border: '2px solid var(--border)',
-          animation: 'breatheRing 3s ease-in-out infinite',
-        }}
-      />
-      <div
-        className="absolute rounded-full flex items-center justify-center"
-        style={{
-          width: '320px',
-          height: '320px',
-          background: 'var(--secondary)',
-          opacity: 0.1,
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          border: '2px solid var(--border)',
-          animation: 'breatheRing 3s ease-in-out infinite 0.5s',
-        }}
+        aria-hidden="true"
+        className="hero-glow pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_70%_at_50%_0%,color-mix(in_oklab,var(--primary)_11%,transparent),transparent_72%)]"
       />
 
-      {/* Орбитальные точки */}
-      {orbitDots.map((dot, i) => (
-        <div key={i} className="absolute w-0 h-0" style={{ top: '50%', left: '50%' }}>
-          <div
-            className={`absolute w-3 h-3 rounded-full ring-2 -ml-[6px] -mt-[6px] ${dot.cls}`}
-            style={{ animation: dot.anim, willChange: 'transform' }}
-          />
-        </div>
-      ))}
+      <div className="mx-auto max-w-6xl px-4 pt-14 text-center md:px-8 md:pt-24">
+        <p {...rise(0)} className="hero-rise text-sm font-medium text-primary">{badge}</p>
 
-      {/* Пульсирующий сигнал */}
-      <div
-        className="absolute w-11 h-11 rounded-full bg-blue-400/20"
-        style={{
-          top: '50%',
-          left: '50%',
-          margin: '-22px',
-          animation: 'ping 2.4s ease-out infinite',
-        }}
-      />
+        <h1 {...rise(0)} className="hero-rise mx-auto mt-4 max-w-3xl font-clinic text-[2.5rem] leading-[1.06] font-semibold tracking-[-0.02em] text-balance md:text-[4rem]">
+          {dict.hero_title}
+        </h1>
 
-      {/* Крест */}
-      <svg
-        viewBox="0 0 120 120"
-        width="180"
-        height="180"
-        fill="none"
-        className="drop-shadow-lg"
-        style={{ animation: 'breathe 3s ease-in-out infinite', willChange: 'transform, opacity' }}
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#378ADD" />
-            <stop offset="100%" stopColor="#6D4AE8" />
-          </linearGradient>
-          <filter id={glowId}>
-            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+        <p {...rise(1)} className="hero-rise mx-auto mt-5 max-w-[36rem] text-[1.0625rem] leading-7 text-muted-foreground md:text-lg md:leading-8">{subtitle}</p>
 
-        {crossRects.map(([x, y, w, h], i) => (
-          <rect
-            key={i}
-            x={x}
-            y={y}
-            width={w}
-            height={h}
-            rx="12"
-            fill={`url(#${gradId})`}
-            opacity="0.92"
-          />
-        ))}
-
-        <polyline
-          points="22,60 34,60 40,44 48,76 54,52 60,68 66,60 98,60"
-          stroke="white"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          filter={`url(#${glowId})`}
-          pathLength="600"
-          style={{
-            strokeDasharray: '600',
-            strokeDashoffset: '600',
-            animation: 'ecgDraw 2.8s ease-in-out infinite',
-          }}
-        />
-      </svg>
-    </div>
-  );
-}
-
-// ─── Основной компонент HomeHero ────────────────────────────────────────────
-export default function HomeHero({ lang, dict }: { lang: string; dict: any }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { t } = useT(lang);
-
-  // Анимация появления текста
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.querySelectorAll('[data-animate]').forEach((child, i) => {
-      const c = child as HTMLElement;
-      c.style.opacity = '0';
-      c.style.transform = 'translateY(28px)';
-      setTimeout(() => {
-        c.style.transition =
-          'opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1)';
-        c.style.opacity = '1';
-        c.style.transform = 'translateY(0)';
-      }, 80 + i * 110);
-    });
-  }, []);
-
-  const stats = [
-    { num: '5', label: t('home.heroStatLanguages') },
-    { num: '100%', label: t('home.heroStatVerification') },
-    { num: '24ч', label: t('home.heroStatTime') },
-  ];
-
-  return (
-    <section className="relative overflow-hidden hero-gradient" style={{ minHeight: '540px' }}>
-      {/* Animated mesh gradient blobs */}
-      <div
-        className="mesh-blob-1 w-[400px] h-[400px] bg-blue-300/30 dark:bg-blue-600/15"
-        style={{ top: '-100px', right: '5%' }}
-      />
-      <div
-        className="mesh-blob-2 w-[350px] h-[350px] bg-amber-300/20 dark:bg-amber-600/10"
-        style={{ bottom: '-80px', left: '-50px' }}
-      />
-      <div
-        className="mesh-blob-3 w-[300px] h-[300px] bg-emerald-300/15 dark:bg-emerald-600/8"
-        style={{ top: '40%', left: '30%' }}
-      />
-
-      <div ref={ref} className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-20">
-        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-14 items-center">
-          {/* Левая колонка */}
-          <div className="text-center lg:text-left">
-            {/* Pill badge */}
-            <div
-              data-animate
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-slate-200/80 bg-white/90 backdrop-blur-sm shadow-sm text-[12px] font-semibold text-slate-500 uppercase tracking-[0.08em] mb-8"
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-shimmer" />
-              {t('home.heroBadge')}
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-shimmer" />
-            </div>
-
-            <h1
-              data-animate
-              className="font-display font-bold leading-[1.05] tracking-[-0.03em] mb-6 dark:text-white"
-              style={{ fontSize: 'clamp(2.6rem, 6vw, 4.2rem)', color: 'var(--foreground)', textShadow: '0 2px 30px rgba(0,0,0,0.05)' }}
-            >
-              {dict.hero_title}
-            </h1>
-
-            <p
-              data-animate
-              className="text-[17px] leading-[1.7] text-slate-500 mb-10 max-w-[560px] mx-auto lg:mx-0 font-light"
-            >
-              {dict.hero_subtitle}
-            </p>
-
-            <div data-animate className="flex flex-col sm:flex-row items-center lg:items-start gap-4">
-              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Link
-                  href={`/${lang}/blog`}
-                  className="inline-flex items-center gap-2.5 px-7 py-4 bg-slate-900 dark:bg-blue-600 text-white font-semibold rounded-2xl hover:bg-slate-800 dark:hover:bg-blue-700 transition-all btn-spring shadow-lg shadow-slate-200 dark:shadow-none hover:shadow-xl hover:shadow-slate-900/20 dark:hover:shadow-blue-600/30 hover:-translate-y-0.5"
-                >
-                  {dict.hero_cta_read}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </Link>
-                <Link
-                  href={`/${lang}/register`}
-                  className="inline-flex items-center gap-2.5 px-7 py-4 border-2 border-slate-200 dark:border-white/15 text-slate-700 dark:text-slate-300 font-semibold rounded-2xl hover:border-slate-300 dark:hover:border-white/25 hover:bg-slate-50 dark:hover:bg-white/5 transition-all btn-spring"
-                >
-                  {dict.hero_cta_write}
-                </Link>
-              </div>
-
-              <Link
-                href={`/${lang}/doctors`}
-                className="inline-flex items-center gap-2 px-7 py-4 text-blue-600 font-bold hover:text-blue-700 transition-colors group"
-              >
-                {t('home.heroCtaFindDoctor')}
-                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </div>
+        <form action={`/${lang}/search`} method="get" role="search" {...rise(2)} className="hero-rise mx-auto mt-9 flex max-w-xl gap-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="search"
+              name="q"
+              placeholder={t('home.searchPlaceholder')}
+              aria-label={t('home.searchPlaceholder')}
+              className="h-12 w-full rounded-lg border border-field bg-card pr-3 pl-12 text-base text-card-foreground transition-[border-color,box-shadow] duration-200 ease-premium placeholder:text-muted-foreground focus-visible:border-primary focus-visible:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_16%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
           </div>
+          <button type="submit" className={btnPrimary}>
+            {t('common.search')}
+          </button>
+        </form>
 
-          {/* Правая иллюстрация */}
-          <div className="hidden lg:flex justify-end">
-            <HeroIllustration />
-          </div>
-        </div>
-
-        {/* Statistics bar */}
-        <div
-          data-animate
-          className="stats-glass flex items-center justify-center gap-6 sm:gap-10 flex-wrap mt-14 px-8 py-4 max-w-lg mx-auto lg:mx-0"
-        >
-          {stats.map((stat, i) => (
-            <div key={i} className="flex items-center gap-2.5">
-              <span className="font-display font-bold text-[22px] tracking-[-0.04em] gradient-text">
-                {stat.num}
-              </span>
-              <span className="text-[13px] text-slate-400 font-normal leading-tight max-w-[90px] text-left">
-                {stat.label}
-              </span>
-              {i < stats.length - 1 && (
-                <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-slate-300 ml-4" />
-              )}
-            </div>
+        <p {...rise(3)} className="hero-rise mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[0.9375rem]">
+          {[
+            { href: `/${lang}/blog`, label: readMore },
+            { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
+            { href: `/${lang}/clinics`, label: t('clinic.title') },
+          ].map(l => (
+            <Link key={l.href} href={l.href} className="group inline-flex min-h-11 items-center gap-1 font-medium text-primary underline-offset-4 hover:underline">
+              {l.label} <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-premium group-hover:translate-x-0.5">→</span>
+            </Link>
           ))}
-        </div>
+        </p>
+
+        {/* Why trust it: stated plainly, with the policy one click away */}
+        <ul {...rise(4)} className="hero-rise mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-x-8 gap-y-5 border-t border-border py-7 text-left sm:grid-cols-3 sm:text-center">
+          <li className="flex items-baseline gap-3 sm:flex-col sm:items-center sm:gap-1">
+            <span className="font-clinic text-3xl leading-none font-semibold tabular-nums">5</span>
+            <span className="text-sm text-muted-foreground">{t('home.heroStatLanguages')}</span>
+          </li>
+          <li className="flex items-baseline gap-3 sm:flex-col sm:items-center sm:gap-1">
+            <span className="font-clinic text-3xl leading-none font-semibold tabular-nums">100%</span>
+            <span className="text-sm text-muted-foreground">{t('home.heroStatVerification')}</span>
+          </li>
+          <li className="flex items-center sm:justify-center">
+            <Link href={`/${lang}/editorial`} className="inline-flex min-h-11 items-center gap-2 text-left text-sm font-medium text-primary underline-offset-4 hover:underline">
+              <ShieldCheck className="size-5 shrink-0" aria-hidden="true" />
+              {t('home.trustHow')}
+            </Link>
+          </li>
+        </ul>
       </div>
     </section>
   );

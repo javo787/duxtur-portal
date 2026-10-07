@@ -1,54 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-/**
- * ThemeToggle Component
- *
- * Provides a button to toggle between light and dark themes.
- * Persistence: Saves the user preference in `localStorage` under the key 'theme'.
- * Sync: Observes system preference (prefers-color-scheme) if no saved preference exists.
- * Implementation: Toggles the '.dark' class on the document's root element (html).
- */
+// The `.dark` class on <html> is the single source of truth. It is set before first paint by the inline
+// script in [lang]/layout.tsx (saved choice in localStorage "theme", else the system preference).
+const subscribe = (onChange: () => void) => {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+};
+const isDark = () => document.documentElement.classList.contains('dark');
+
+const icon = 'absolute inset-0 transition-[transform,opacity] duration-300 ease-premium';
+
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const dark = useSyncExternalStore(subscribe, isDark, () => false);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      // Immediate sync to avoid waiting for the next effect in case of fast hydration
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
+  const toggle = () => {
+    const next = !dark;
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    const apply = () => document.documentElement.classList.toggle('dark', next);
+    // The page cross-fades between the themes where the browser can do it; elsewhere it simply switches
+    if (typeof document.startViewTransition === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(apply);
     } else {
-      setTheme('light');
-      document.documentElement.classList.remove('dark');
+      apply();
     }
-  }, []);
-
-  useEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark');
   };
 
   return (
     <button
-      onClick={toggleTheme}
-      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+      type="button"
+      onClick={toggle}
       aria-label="Toggle theme"
+      className="inline-flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+      {/* Both icons are always there; the one that is not current turns away and fades */}
+      <span className="relative size-[18px]" aria-hidden="true">
+        <Sun size={18} className={`${icon} ${dark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0'}`} />
+        <Moon size={18} className={`${icon} ${dark ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100'}`} />
+      </span>
     </button>
   );
 }
