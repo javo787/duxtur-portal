@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:seo": "node scripts/validate-jsonld.js",
     "ingest": "tsx scripts/ingest.ts",
-    "ingest:strip-ratings": "tsx scripts/strip-imported-ratings.ts"
+    "ingest:strip-ratings": "tsx scripts/strip-imported-ratings.ts",
+    "geo:audit": "tsx scripts/geo-audit.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.2",
