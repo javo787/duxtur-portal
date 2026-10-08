@@ -10,6 +10,7 @@ import { Resend } from 'resend';
 import { requireRole } from '@/lib/authGuards';
 import { afterDoctorApproved } from '@/lib/author-approval';
 import { realEmail } from '@/lib/placeholder-email';
+import { revalidateReviewPages } from '@/lib/review-service';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -306,8 +307,8 @@ export async function approveReview(reviewId: string) {
 
   await Review.findByIdAndUpdate(reviewId, { isVerified: true });
 
-  // Recalculate doctor stats
-  const doctor = await Doctor.findById(review.doctorId);
+  // Recalculate doctor stats (reviews of a clinic or an article have no doctor)
+  const doctor = review.doctorId ? await Doctor.findById(review.doctorId) : null;
   if (doctor) {
     const allReviews = await Review.find({ doctorId: review.doctorId, isVerified: true });
     const count = allReviews.length;
@@ -329,7 +330,7 @@ export async function approveReview(reviewId: string) {
   }
 
   revalidatePath('/admin/portal');
-  if (doctor?.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
+  await revalidateReviewPages(review);
 }
 
 export async function deleteReview(reviewId: string) {
@@ -346,8 +347,8 @@ export async function deleteReview(reviewId: string) {
   await Review.findByIdAndDelete(reviewId);
 
   if (wasVerified) {
-    // Recalculate doctor stats
-    const doctor = await Doctor.findById(doctorId);
+    // Recalculate doctor stats (reviews of a clinic or an article have no doctor)
+    const doctor = doctorId ? await Doctor.findById(doctorId) : null;
     if (doctor) {
       const allReviews = await Review.find({ doctorId, isVerified: true });
       const count = allReviews.length;
@@ -359,7 +360,6 @@ export async function deleteReview(reviewId: string) {
         reviewSum: sum,
         reviewAvg: avg,
       });
-      if (doctor.slug) revalidatePath(`/ru/doctor/${doctor.slug}`);
     }
 
     // Recalculate clinic stats
@@ -371,4 +371,5 @@ export async function deleteReview(reviewId: string) {
   }
 
   revalidatePath('/admin/portal');
+  if (wasVerified) await revalidateReviewPages(review);
 }

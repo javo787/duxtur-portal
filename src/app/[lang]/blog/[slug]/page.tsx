@@ -7,6 +7,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ArticleShare from '@/components/ArticleShare';
+import ArticleReviews from '@/components/reviews/ArticleReviews';
+import { articleRatingSummary, listPublicReviews } from '@/lib/review-service';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
@@ -177,15 +179,11 @@ export default async function BlogPage({
   const wordCount = fullText.split(/\s+/).length;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
 
-  // ── Средний рейтинг ───────────────────────────────────────────────────────
-  const avgRating =
-    article.ratings?.length > 0
-      ? Math.round(
-          (article.ratings.reduce((a: number, b: number) => a + b, 0) /
-            article.ratings.length) *
-            10
-        ) / 10
-      : 0;
+  // ── Рейтинг и отзывы: старые оценки статьи + одобренные отзывы читателей ──────
+  const [{ avg: avgRating, count: ratingCount }, reviews] = await Promise.all([
+    articleRatingSummary(article),
+    listPublicReviews({ articleId: article._id }),
+  ]);
 
   // ── Похожие статьи — по категории, fallback по автору ────────────────────
   // Related articles: only ones that exist in the language this page is shown in
@@ -324,7 +322,7 @@ export default async function BlogPage({
       aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: avgRating,
-        ratingCount: article.ratings?.length,
+        ratingCount,
         bestRating: 5,
         worstRating: 1,
       },
@@ -509,10 +507,15 @@ export default async function BlogPage({
             <div className="max-w-[42rem]">
               <ArticleEngagement
                 slug={article.slug}
-                initialRating={avgRating}
-                initialRatingCount={article.ratings?.length || 0}
                 initialLikesUp={article.likesUp || 0}
                 initialLikesDown={article.likesDown || 0}
+                lang={lang}
+              />
+              <ArticleReviews
+                articleId={article._id.toString()}
+                title={title}
+                rating={{ avg: avgRating, count: ratingCount }}
+                reviews={reviews}
                 lang={lang}
               />
             </div>

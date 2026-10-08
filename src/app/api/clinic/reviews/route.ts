@@ -5,7 +5,9 @@ import Review from '@/models/Review';
 import Clinic from '@/models/Clinic';
 import Doctor from '@/models/Doctor';
 import { auth } from '@/auth';
+import { toPublicReview } from '@/lib/reviews';
 
+// The clinic owner sees every review of the clinic, waiting ones included, with the same masked names as visitors.
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -22,7 +24,12 @@ export async function GET(request: NextRequest) {
       .populate({ path: 'doctorId', model: Doctor, select: 'name' })
       .sort({ createdAt: -1 })
       .lean();
-    return NextResponse.json(reviews);
+    return NextResponse.json(
+      (reviews as Array<Parameters<typeof toPublicReview>[0] & { isVerified?: boolean }>).map(review => ({
+        ...toPublicReview(review),
+        approved: review.isVerified === true,
+      })),
+    );
   } catch (error: any) {
     Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

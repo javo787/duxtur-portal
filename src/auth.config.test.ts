@@ -66,7 +66,18 @@ describe('coming back from Duxtur Edu (?next=/edu)', () => {
     expect(visit('/tg/signup?next=/edu/dashboard/teacher', 'patient')).toBe('/edu/dashboard/teacher');
   });
 
-  it('never sends anybody anywhere but Edu', () => {
+  it('sends a signed-in person back to the doctor, clinic or article page they wanted to review', () => {
+    expect(visit('/ru/signup?next=/ru/doctor/dr-ivanov', 'patient')).toBe('/ru/doctor/dr-ivanov');
+    expect(visit('/tg/signup?next=/tg/clinics/city-clinic', 'patient')).toBe('/tg/clinics/city-clinic');
+    expect(visit('/uz/login?next=/uz/blog/gipertoniya', 'doctor')).toBe('/uz/blog/gipertoniya');
+  });
+
+  it('does not take any other page of the site as a way back', () => {
+    expect(visit('/ru/login?next=/ru/admin/portal', 'patient')).toBe('/ru/write');
+    expect(visit('/ru/login?next=/ru/doctor/a/b', 'patient')).toBe('/ru/write');
+  });
+
+  it('never sends anybody anywhere but Edu or a page to review', () => {
     expect(visit('/ru/login?next=https://evil.example', 'doctor')).toBe('/ru/admin');
     expect(visit('/ru/login?next=//evil.example', 'patient')).toBe('/ru/write');
     expect(visit('/ru/login?next=/admin/portal', 'portal_admin')).toBe('/ru/admin/portal');

@@ -1,5 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
-import { eduReturnPath } from '@/lib/edu-return';
+import { returnPath } from '@/lib/return-path';
 
 export const authConfig = {
   pages: {
@@ -38,8 +38,8 @@ export const authConfig = {
         return true;
       }
 
-      // Came here from Duxtur Edu ("Sign in with e-mail") and is signed in already: straight back to Edu.
-      const back = eduReturnPath(nextUrl.searchParams.get('next'));
+      // Came here from Duxtur Edu ("Sign in with e-mail") or from a page to review, and is signed in already: straight back.
+      const back = returnPath(nextUrl.searchParams.get('next'));
       if (isLoggedIn && back && /^\/[a-z]{2}\/(login|signup)\/?$/.test(pathname)) {
         return Response.redirect(new URL(back, nextUrl));
       }

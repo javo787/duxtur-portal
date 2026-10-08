@@ -13,7 +13,7 @@ import { EduSession, forgetEduSession, loadEduSession } from '@/lib/edu-bridge-c
  * The button shows nothing until Edu answers, and nothing at all when nobody is signed in to Edu here.
  */
 
-type Phase = 'checking' | 'none' | 'ready' | 'signing' | 'failed';
+type Phase = 'checking' | 'none' | 'ready' | 'signing' | 'failed' | 'done';
 export type EduFailure = 'errorGeneric' | 'errorNotApproved' | 'errorEmailInUse' | 'errorRole';
 
 const FAILURE_BY_CODE: Record<string, EduFailure> = {
@@ -23,19 +23,26 @@ const FAILURE_BY_CODE: Record<string, EduFailure> = {
 };
 
 interface Options {
-  /** Where to go once signed in, by the role the account turned out to have. */
-  redirectFor: (role: string | undefined) => string;
+  /**
+   * Where to go once signed in, by the role the account turned out to have (a full navigation).
+   * Without it the person stays on the page: the session is updated in place and `onSignedIn` is called, which is
+   * what a form half filled in (a review) needs.
+   */
+  redirectFor?: (role: string | undefined) => string;
+  onSignedIn?: (role: string | undefined) => void;
   /** Sign in as soon as Edu says who is there (the person already asked for the page that needs it). */
   auto?: boolean;
 }
 
-export function useEduContinue({ redirectFor, auto = false }: Options) {
+export function useEduContinue({ redirectFor, onSignedIn, auto = false }: Options) {
   const [phase, setPhase] = useState<Phase>('checking');
   const [session, setSession] = useState<EduSession | null>(null);
   const [failure, setFailure] = useState<EduFailure | null>(null);
   const redirectRef = useRef(redirectFor);
+  const signedInRef = useRef(onSignedIn);
   useEffect(() => {
     redirectRef.current = redirectFor;
+    signedInRef.current = onSignedIn;
   });
   const started = useRef(false);
 
@@ -54,6 +61,11 @@ export function useEduContinue({ redirectFor, auto = false }: Options) {
         return;
       }
       const role = ((await getSession())?.user as { role?: string } | undefined)?.role;
+      if (!redirectRef.current) {
+        setPhase('done');
+        signedInRef.current?.(role);
+        return;
+      }
       // A full navigation, so every server-rendered part of the page sees the new session cookie.
       window.location.assign(redirectRef.current(role));
     } catch {

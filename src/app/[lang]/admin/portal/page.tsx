@@ -41,7 +41,11 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
     Article.countDocuments(),
     User.countDocuments(),
-    Review.find({ isVerified: false }).sort({ createdAt: -1 }).populate('doctorId').lean(),
+    Review.find({ isVerified: false }).sort({ createdAt: -1 })
+      .populate('doctorId')
+      .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
+      .populate({ path: 'articleId', model: Article, select: 'title slug' })
+      .lean(),
     Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
     Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
   ]);
@@ -230,12 +234,16 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                         ⭐ {review.rating}/5
                       </span>
                       <span className="text-xs text-gray-400">
-                        Врач: {(review.doctorId as any)?.name || 'Неизвестен'}
+                        {review.doctorId
+                          ? `Врач: ${(review.doctorId as any)?.name || 'Неизвестен'}`
+                          : review.articleId
+                            ? `Статья: ${(review.articleId as any)?.title?.ru || (review.articleId as any)?.slug || 'Неизвестна'}`
+                            : `Клиника: ${(review.clinicId as any)?.name?.ru || 'Неизвестна'}`}
                       </span>
                     </div>
                     <p className="text-sm text-white italic">"{review.text}"</p>
                     <p className="text-[10px] text-gray-500 mt-1">
-                      📅 {new Date(review.createdAt).toLocaleDateString('ru')} · {review.isAnonymous ? 'Анонимно' : 'От пациента'}
+                      📅 {new Date(review.createdAt).toLocaleDateString('ru')} · {review.isAnonymous ? 'Анонимно' : `Автор: ${review.authorName || 'без имени'}`}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">

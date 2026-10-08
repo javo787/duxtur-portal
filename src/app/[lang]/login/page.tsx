@@ -1,5 +1,5 @@
 import LoginForm from './LoginForm';
-import { eduReturnPath } from '@/lib/edu-return';
+import { returnPath } from '@/lib/return-path';
 import type { Metadata } from 'next';
 import { buildAlternates } from '@/lib/seo';
 
@@ -21,6 +21,6 @@ export default async function LoginPage({
 }) {
   const { lang } = await params;
   // Coming from Duxtur Edu ("Sign in with e-mail"): after signing in the person goes back there.
-  const back = eduReturnPath((await searchParams).next);
+  const back = returnPath((await searchParams).next);
   return <LoginForm lang={lang} back={back} />;
 }

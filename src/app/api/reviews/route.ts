@@ -1,66 +1,42 @@
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import dbConnect from '@/lib/mongodb';
-import Review from '@/models/Review';
-import Doctor from '@/models/Doctor';
 import mongoose from 'mongoose';
-import { rateLimit } from '@/lib/rate-limit';
+import { listPublicReviews } from '@/lib/review-service';
+import { postReview } from '@/lib/review-http';
+
+// Reviews of a doctor (doctorId) or an article (articleId). Clinics have their own address: /api/clinic/[slug]/review.
+
+function pick(value: unknown): string | null {
+  return typeof value === 'string' && mongoose.isValidObjectId(value) ? value : null;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const doctorId = searchParams.get('doctorId');
+  const doctorId = pick(searchParams.get('doctorId'));
+  const articleId = pick(searchParams.get('articleId'));
 
-  if (!doctorId) return NextResponse.json({ error: 'Missing doctorId' }, { status: 400 });
+  if (!doctorId && !articleId) return NextResponse.json({ error: 'Missing doctorId or articleId' }, { status: 400 });
 
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
-  const skip = (page - 1) * limit;
-
-  await dbConnect();
-  const reviews = await Review.find({ doctorId, isVerified: true })
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .lean();
-
-  return NextResponse.json(reviews);
+  try {
+    const reviews = await listPublicReviews(doctorId ? { doctorId } : { articleId }, {
+      page: Number(searchParams.get('page')),
+      limit: Number(searchParams.get('limit')),
+    });
+    return NextResponse.json(reviews);
+  } catch (error) {
+    console.error('Reviews fetch error:', error);
+    Sentry.captureException(error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
-  const { success } = await rateLimit(ip, 3, 60 * 1000); // 3 per minute
-  if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  try {
-    const { doctorId, rating, text, isAnonymous } = await request.json();
-
-    if (!doctorId || !rating || !text) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    await dbConnect();
-
-    // Check if doctor exists
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
-
-    const review = await Review.create({
-      doctorId,
-      clinicId: doctor.clinicId || undefined,
-      patientId: session.user?.id,
-      rating,
-      text,
-      isAnonymous: isAnonymous ?? true,
-      isVerified: false, // Default to false, needs admin approval
-    });
-
-    return NextResponse.json({ success: true, review });
-  } catch (error: any) {
-    console.error('Review submission error:', error);
-    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+  return postReview(request, body => {
+    const doctorId = pick(body.doctorId);
+    const articleId = pick(body.articleId);
+    // Exactly one subject.
+    if (doctorId && !articleId) return { kind: 'doctor', id: doctorId };
+    if (articleId && !doctorId) return { kind: 'article', id: articleId };
+    return null;
+  });
 }

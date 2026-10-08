@@ -5,9 +5,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import TelegramLogin from '@/components/TelegramLogin';
 import EduContinue from '@/components/EduContinue';
+import { T } from '@/i18n';
 
 export default function SignupForm({ lang, back = null }: { lang: string; back?: string | null }) {
-  // Where the sign-in ends: Duxtur Edu when the person came from there, the portal otherwise.
+  // Where the sign-in ends: Duxtur Edu or the doctor/clinic/article page they came from, the portal otherwise.
   const after = back ?? `/${lang}`;
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -48,7 +49,7 @@ export default function SignupForm({ lang, back = null }: { lang: string; back?:
             duxtur<span className="text-blue-400">.org</span>
           </Link>
           <p className="text-blue-200 text-sm mt-2">
-            {back ? 'Один аккаунт для duxtur.org и Duxtur Edu' : 'Войдите чтобы связаться с врачами'}
+            {back ? (back.startsWith('/edu') ? 'Один аккаунт для duxtur.org и Duxtur Edu' : T('reviews.signInTitle', lang)) : 'Войдите чтобы связаться с врачами'}
           </p>
         </div>
 
