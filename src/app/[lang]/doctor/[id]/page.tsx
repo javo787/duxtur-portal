@@ -16,9 +16,11 @@ import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
 import Image from 'next/image';
 import DoctorViewTracker from '@/components/DoctorViewTracker';
-import ReviewModal from './_components/ReviewModal';
+import ReviewDialog from '@/components/reviews/ReviewDialog';
 import BookingButton from './_components/BookingButton';
-import ReviewList from './_components/ReviewList';
+import ReviewList from '@/components/reviews/ReviewList';
+import { listPublicReviews, REVIEWS_PAGE_SIZE } from '@/lib/review-service';
+import type { PublicReview } from '@/lib/reviews';
 import DoctorGallery from './_components/DoctorGallery';
 import VideoIntro from './_components/VideoIntro';
 import AchievementsSection from './_components/AchievementsSection';
@@ -93,11 +95,10 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   if (!doctor) notFound();
 
-  const Review = (await import('@/models/Review')).default;
-
-  const [articles, reviews]: [any[], any[]] = await Promise.all([
+  const [articles, reviews]: [any[], PublicReview[]] = await Promise.all([
     Article.find({ authorId: doctor._id }).sort({ createdAt: -1 }).lean(),
-    Review.find({ doctorId: doctor._id, isVerified: true }).sort({ createdAt: -1 }).limit(5).lean(),
+    // Public shape only: the masked name, never the author's account
+    listPublicReviews({ doctorId: doctor._id }),
   ]);
 
   const dbT = (field: any) => {
@@ -222,12 +223,12 @@ export default async function DoctorProfilePage({ params }: Props) {
       "reviewCount": doctor.reviewCount,
       "bestRating": 5
     } : undefined,
-    review: reviews.length > 0 ? reviews.slice(0, 3).map((r: any) => ({
+    review: reviews.length > 0 ? reviews.slice(0, 3).map(r => ({
       "@type": "Review",
       "reviewRating": { "@type": "Rating", "ratingValue": r.rating },
-      "author": { "@type": "Person", "name": r.isAnonymous ? T('common.anonymous', lang) : T('common.patient', lang) },
+      "author": { "@type": "Person", "name": r.author || (r.anonymous ? T('common.anonymous', lang) : T('common.patient', lang)) },
       "reviewBody": r.text,
-      "datePublished": r.createdAt.toISOString().split('T')[0]
+      "datePublished": r.createdAt.split('T')[0]
     })) : undefined,
     lastReviewed: lastReviewedArticle?.lastMedicalReview || undefined,
     knowsAbout: specialtyLabel || undefined,
@@ -544,10 +545,17 @@ export default async function DoctorProfilePage({ params }: Props) {
                   <span className="text-xs text-gray-400">({doctor.reviewCount || 0} {t('blog.ratings')})</span>
                 </div>
               </div>
-              <ReviewModal doctorId={doctor._id.toString()} doctorName={doctor.name} lang={lang} />
+              <ReviewDialog subject={{ kind: 'doctor', id: doctor._id.toString() }} name={doctor.name} lang={lang} />
             </div>
 
-            <ReviewList initialReviews={reviews} doctorId={doctor._id.toString()} lang={lang} />
+            <ReviewList
+              // a new key when the reviews change (a review was just added), so the list starts again from the fresh ones
+              key={reviews.map(review => review.id).join(',') || 'none'}
+              initialReviews={reviews}
+              loadUrl={`/api/reviews?doctorId=${doctor._id.toString()}`}
+              pageSize={REVIEWS_PAGE_SIZE}
+              lang={lang}
+            />
           </div>
 
           {/* Награды и достижения */}

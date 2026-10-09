@@ -1,11 +1,9 @@
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
-import Review from '@/models/Review';
-import Doctor from '@/models/Doctor';
-import { auth } from '@/auth';
-import { rateLimit } from '@/lib/rate-limit';
+import { listPublicReviews } from '@/lib/review-service';
+import { postReview } from '@/lib/review-http';
 
 export async function GET(
   request: NextRequest,
@@ -20,15 +18,12 @@ export async function GET(
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
 
-    const reviews = await Review.find({ clinicId: clinic._id, isVerified: true })
-      .populate({ path: 'doctorId', model: Doctor, select: 'name' })
-      .sort({ createdAt: -1 })
-      .lean();
-
+    const reviews = await listPublicReviews({ clinicId: clinic._id }, { limit: 20, withDoctorName: true });
     return NextResponse.json(reviews);
   } catch (error) {
     console.error('Clinic reviews fetch error:', error);
-    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    Sentry.captureException(error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -36,44 +31,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-    const limitResult = await rateLimit(ip, 3, 60 * 1000); // 3 per minute
-    if (!limitResult.success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-    }
-
-    const { slug } = await params;
-    const { rating, text, isAnonymous } = await request.json();
-
-    if (!rating || !text) {
-      return NextResponse.json({ error: 'Rating and text are required' }, { status: 400 });
-    }
-
-    await dbConnect();
-
-    const clinic = await Clinic.findOne({ slug });
-    if (!clinic) {
-      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
-    }
-
-    const review = await Review.create({
-      clinicId: clinic._id,
-      patientId: session.user?.id,
-      rating,
-      text,
-      isAnonymous: !!isAnonymous,
-      isVerified: false // Requires admin approval
-    });
-
-    return NextResponse.json(review, { status: 201 });
-  } catch (error) {
-    console.error('Clinic review error:', error);
-    Sentry.captureException(error); console.error(error); return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  const { slug } = await params;
+  return postReview(request, () => ({ kind: 'clinic', slug }));
 }

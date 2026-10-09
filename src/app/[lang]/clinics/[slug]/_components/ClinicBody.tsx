@@ -44,14 +44,14 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
   const services = clinic.services ?? [];
   const photos = clinic.photos ?? [];
   const hasAbout = !!(description.text || quote.text || history.text || specialties.length);
-  const hasReviews = (clinic.rating?.count ?? 0) > 0;
   const hasHours = hasRealWorkingHours(clinic as never) && !!clinic.workingHours;
 
   const nav: NavItem[] = [
     hasAbout && { id: 'about', label: t('clinic.about') },
     doctors.length > 0 && { id: 'doctors', label: t('clinic.doctors') },
     services.length > 0 && { id: 'services', label: t('clinic.services') },
-    hasReviews && { id: 'reviews', label: t('clinic.reviews') },
+    // Always there: a clinic with no reviews yet is where the first one is written.
+    { id: 'reviews', label: t('clinic.reviews') },
     photos.length > 0 && { id: 'gallery', label: t('clinic.gallery') },
     { id: 'contacts', label: t('clinic.contacts') },
   ].filter(Boolean) as NavItem[];
@@ -146,11 +146,9 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
         </Section>
       )}
 
-      {hasReviews && (
-        <Section id="reviews" title={t('clinic.reviews')}>
-          <ClinicReviews slug={clinic.slug} lang={lang} rating={clinic.rating!} />
-        </Section>
-      )}
+      <Section id="reviews" title={t('clinic.reviews')}>
+        <ClinicReviews slug={clinic.slug} name={name.text} lang={lang} rating={clinic.rating ?? { avg: 0, count: 0 }} />
+      </Section>
 
       {photos.length > 0 && (
         <Section id="gallery" title={t('clinic.gallery')}>
