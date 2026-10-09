@@ -24,7 +24,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: Record<st
       {/* One static, token-based glow instead of animated blobs: works in both themes */}
       <div
         aria-hidden="true"
-        className="hero-glow pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_70%_at_50%_0%,color-mix(in_oklab,var(--primary)_11%,transparent),transparent_72%)]"
+        className="hero-glow pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_70%_at_50%_0%,color-mix(in_oklab,var(--primary)_5%,transparent),transparent_72%)] dark:bg-[radial-gradient(60%_70%_at_50%_0%,color-mix(in_oklab,var(--primary)_11%,transparent),transparent_72%)]"
       />
 
       <div className="mx-auto max-w-6xl px-4 pt-14 text-center md:px-8 md:pt-24">
@@ -52,7 +52,7 @@ export default function HomeHero({ lang, dict }: { lang: string; dict: Record<st
           </button>
         </form>
 
-        <p {...rise(3)} className="hero-rise mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[0.9375rem]">
+        <p {...rise(3)} className="hero-rise mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[0.9375rem] sm:gap-x-6">
           {[
             { href: `/${lang}/blog`, label: readMore },
             { href: `/${lang}/doctors`, label: t('nav.findDoctor') },
