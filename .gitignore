@@ -50,3 +50,6 @@ next-env.d.ts
 # ingest pipeline output/cache
 import-output/
 .ingest-cache/
+
+# GEO audit output (answers from paid API calls)
+/reports/

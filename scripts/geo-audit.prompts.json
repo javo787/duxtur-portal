@@ -1,0 +1,29 @@
+[
+  { "id": "ru-clinic-private-dushanbe", "lang": "ru", "intent": "clinic", "text": "Лучшие частные клиники в Душанбе" },
+  { "id": "ru-clinic-mri-dushanbe", "lang": "ru", "intent": "clinic", "text": "Где сделать МРТ в Душанбе и сколько это стоит" },
+  { "id": "ru-clinic-dental-khujand", "lang": "ru", "intent": "clinic", "text": "Хорошая стоматологическая клиника в Худжанде" },
+  { "id": "ru-clinic-multi-online", "lang": "ru", "intent": "clinic", "text": "Многопрофильная клиника в Душанбе с записью онлайн" },
+  { "id": "ru-doctor-cardio-dushanbe", "lang": "ru", "intent": "doctor", "text": "Хороший кардиолог в Душанбе, к кому обратиться" },
+  { "id": "ru-doctor-pediatrician-dushanbe", "lang": "ru", "intent": "doctor", "text": "Хороший детский врач педиатр в Душанбе" },
+  { "id": "ru-doctor-neuro-dushanbe", "lang": "ru", "intent": "doctor", "text": "Невролог в Душанбе отзывы" },
+  { "id": "ru-doctor-gyneco-dushanbe", "lang": "ru", "intent": "doctor", "text": "Гинеколог в Душанбе с хорошими отзывами" },
+  { "id": "ru-booking-online-tj", "lang": "ru", "intent": "booking", "text": "Как записаться к врачу онлайн в Таджикистане" },
+  { "id": "ru-booking-directory-tj", "lang": "ru", "intent": "booking", "text": "Сайт для поиска врачей и клиник в Таджикистане" },
+  { "id": "ru-symptom-chest-pain", "lang": "ru", "intent": "symptom", "text": "Боль в груди при физической нагрузке: к какому врачу идти" },
+  { "id": "ru-symptom-diabetes2", "lang": "ru", "intent": "symptom", "text": "Симптомы диабета 2 типа и какие анализы сдать" },
+
+  { "id": "tg-clinic-best-dushanbe", "lang": "tg", "intent": "clinic", "text": "Беҳтарин клиникаҳо дар Душанбе кадомҳоянд?" },
+  { "id": "tg-clinic-mri-dushanbe", "lang": "tg", "intent": "clinic", "text": "МРТ дар Душанбе дар куҷо кардан мумкин аст?" },
+  { "id": "tg-doctor-cardio-dushanbe", "lang": "tg", "intent": "doctor", "text": "Духтури кардиолог дар Душанбе аз куҷо ёфтан мумкин?" },
+  { "id": "tg-doctor-dentist-khujand", "lang": "tg", "intent": "doctor", "text": "Духтури дандон дар Хуҷанд, кӣ хуб аст?" },
+  { "id": "tg-booking-online-tj", "lang": "tg", "intent": "booking", "text": "Дар Тоҷикистон ба назди духтур онлайн навбат гирифтан мумкин аст?" },
+  { "id": "tg-symptom-diabetes", "lang": "tg", "intent": "symptom", "text": "Аломатҳои диабети қанд чӣ гунаанд?" },
+  { "id": "tg-symptom-child-fever", "lang": "tg", "intent": "symptom", "text": "Агар кӯдак таб дошта бошад, чӣ бояд кард?" },
+
+  { "id": "en-clinic-private-dushanbe", "lang": "en", "intent": "clinic", "text": "Best private clinics in Dushanbe, Tajikistan" },
+  { "id": "en-doctor-cardio-dushanbe", "lang": "en", "intent": "doctor", "text": "Cardiologist in Dushanbe Tajikistan" },
+  { "id": "en-doctor-english-dushanbe", "lang": "en", "intent": "doctor", "text": "English-speaking doctor in Dushanbe" },
+  { "id": "en-booking-online-tj", "lang": "en", "intent": "booking", "text": "How to book a doctor appointment online in Tajikistan" },
+  { "id": "en-booking-directory-tj", "lang": "en", "intent": "booking", "text": "Directory of doctors and clinics in Tajikistan" },
+  { "id": "en-symptom-diabetes2", "lang": "en", "intent": "symptom", "text": "Type 2 diabetes symptoms and when to see a doctor" }
+]
