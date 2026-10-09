@@ -4,7 +4,7 @@ import Article from '@/models/Article';
 import User from '@/models/User';
 import Clinic from '@/models/Clinic';
 import {
-  updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle, approveReview, deleteReview,
+  updateDoctorStatus, deleteDoctor, deleteArticle, toggleDoctorBan, approveArticle, approveReview, hideReview, deleteReview,
   approveClinic, rejectClinic, deleteClinic, banClinic
 } from '@/app/actions/admin';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors,
     pendingArticles, publishedArticles, totalArticles,
     totalUsers,
-    pendingReviews,
+    reviews,
     pendingClinics, approvedClinics
   ] = await Promise.all([
     Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
@@ -41,10 +41,12 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
     Article.countDocuments(),
     User.countDocuments(),
-    Review.find({ isVerified: false }).sort({ createdAt: -1 })
+    // Every review, newest first: they are published when written, the administrator hides or deletes what should not stay
+    Review.find({}).sort({ createdAt: -1 }).limit(100)
       .populate('doctorId')
       .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
       .populate({ path: 'articleId', model: Article, select: 'title slug' })
+      .populate({ path: 'patientId', model: User, select: 'name email role provider' })
       .lean(),
     Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
     Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
@@ -220,47 +222,79 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
           )}
         </Section>
 
-        {/* ОТЗЫВЫ НА МОДЕРАЦИИ */}
-        <Section title="Отзывы на модерации" badge={pendingReviews.length} badgeColor="bg-purple-500">
-          {pendingReviews.length === 0 ? (
-            <Empty icon="⭐" text="Нет новых отзывов" />
+        {/* ОТЗЫВЫ */}
+        <Section title="Отзывы" badge={reviews.filter((review: any) => !review.isVerified).length} badgeColor="bg-purple-500">
+          <p className="text-xs text-gray-500 -mt-3 mb-4">
+            Отзывы публикуются сразу. Здесь видно, кто написал, и можно скрыть отзыв (он останется в списке и вернётся кнопкой «Показать») или удалить. Фиолетовый счётчик показывает скрытые.
+          </p>
+          {reviews.length === 0 ? (
+            <Empty icon="⭐" text="Отзывов пока нет" />
           ) : (
             <div className="space-y-3">
-              {pendingReviews.map((review: any) => (
-                <div key={review._id} className="bg-gray-900 p-4 rounded-2xl border border-purple-900/40 flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded-full">
-                        ⭐ {review.rating}/5
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {review.doctorId
-                          ? `Врач: ${(review.doctorId as any)?.name || 'Неизвестен'}`
-                          : review.articleId
-                            ? `Статья: ${(review.articleId as any)?.title?.ru || (review.articleId as any)?.slug || 'Неизвестна'}`
-                            : `Клиника: ${(review.clinicId as any)?.name?.ru || 'Неизвестна'}`}
-                      </span>
+              {reviews.map((review: any) => {
+                const doctor = review.doctorId;
+                const clinic = review.clinicId;
+                const article = review.articleId;
+                const account = review.patientId;
+                const subject = doctor
+                  ? { label: `Врач: ${doctor.name || 'Неизвестен'}`, href: `/${lang}/doctor/${doctor.slug || doctor._id}` }
+                  : article
+                    ? { label: `Статья: ${article.title?.ru || article.slug || 'Неизвестна'}`, href: `/${lang}/blog/${article.slug}` }
+                    : { label: `Клиника: ${clinic?.name?.ru || 'Неизвестна'}`, href: clinic?.slug ? `/${lang}/clinics/${clinic.slug}` : '' };
+                return (
+                  <div key={review._id} className={`bg-gray-900 p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center gap-4 ${review.isVerified ? 'border-gray-800' : 'border-purple-900/60'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs font-bold bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded-full">
+                          ⭐ {review.rating}/5
+                        </span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${review.isVerified ? 'bg-green-900/50 text-green-400' : 'bg-purple-900/60 text-purple-300'}`}>
+                          {review.isVerified ? 'Опубликован' : 'Скрыт'}
+                        </span>
+                        {subject.href ? (
+                          <a href={subject.href} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">
+                            {subject.label}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">{subject.label}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-white italic whitespace-pre-line break-words">&quot;{review.text}&quot;</p>
+                      <p className="text-[11px] text-gray-400 mt-1">
+                        ✍️ Автор: {account
+                          ? <>{account.name || 'без имени'} · {account.email} · {account.provider || 'credentials'} · {account.role}</>
+                          : 'аккаунт неизвестен (старый отзыв)'}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        👁 На сайте: {review.authorName || (review.isAnonymous ? 'Анонимный пациент' : 'без имени')}
+                        {review.isAnonymous && review.authorName ? ' (автор скрыл имя)' : ''}
+                        {' · '}📅 {new Date(review.createdAt).toLocaleDateString('ru')}
+                      </p>
                     </div>
-                    <p className="text-sm text-white italic">"{review.text}"</p>
-                    <p className="text-[10px] text-gray-500 mt-1">
-                      📅 {new Date(review.createdAt).toLocaleDateString('ru')} · {review.isAnonymous ? 'Анонимно' : `Автор: ${review.authorName || 'без имени'}`}
-                    </p>
+                    <div className="flex sm:flex-col gap-2 shrink-0">
+                      {review.isVerified ? (
+                        <ActionBtn
+                          action={hideReview.bind(null, review._id.toString())}
+                          label="🙈 Скрыть"
+                          color="bg-gray-700 hover:bg-gray-600"
+                        />
+                      ) : (
+                        <ActionBtn
+                          action={approveReview.bind(null, review._id.toString())}
+                          label="✅ Показать"
+                          color="bg-green-600 hover:bg-green-700"
+                        />
+                      )}
+                      <ActionBtn
+                        action={deleteReview.bind(null, review._id.toString())}
+                        label="🗑 Удалить"
+                        color="bg-red-800 hover:bg-red-700"
+                        confirm="Удалить отзыв насовсем?"
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <ActionBtn
-                      action={approveReview.bind(null, review._id.toString())}
-                      label="✅ Одобрить"
-                      color="bg-green-600 hover:bg-green-700"
-                    />
-                    <ActionBtn
-                      action={deleteReview.bind(null, review._id.toString())}
-                      label="🗑 Удалить"
-                      color="bg-red-800 hover:bg-red-700"
-                      confirm="Удалить отзыв?"
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Section>

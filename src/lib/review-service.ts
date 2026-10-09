@@ -5,7 +5,8 @@ import Doctor from '@/models/Doctor';
 import Clinic from '@/models/Clinic';
 import Article from '@/models/Article';
 import User from '@/models/User';
-import { PublicReview, ReviewInput, averageRating, maskName, toPublicReview } from '@/lib/reviews';
+import { PublicReview, ReviewInput, averageRating, displayName, toPublicReview } from '@/lib/reviews';
+import { notifyAdminNewReview } from '@/lib/telegram';
 import { i18n } from '@/i18n-config';
 
 /**
@@ -13,8 +14,8 @@ import { i18n } from '@/i18n-config';
  *
  *  - only a signed-in account writes; the caller has already checked the session and passes the user id;
  *  - one review per person and subject, and nobody reviews their own profile, clinic or article;
- *  - every review waits for the admin (isVerified) before it is shown, as reviews of doctors always did;
- *  - what comes out is PublicReview: the masked name, never the account.
+ *  - a review is published at once; the administrator sees who wrote it and can hide or delete it (actions/admin.ts);
+ *  - what comes out is PublicReview: the name or masked name the author chose, never the account.
  */
 
 export type ReviewTarget =
@@ -22,46 +23,42 @@ export type ReviewTarget =
   | { kind: 'clinic'; slug: string }
   | { kind: 'article'; id: string };
 
-export type CreateReviewResult =
-  | { ok: true }
-  | { ok: false; code: 'no_user' | 'not_found' | 'own' | 'duplicate' };
-
 type Owned = { userId?: unknown } | null;
 
-/** What a review of this subject is stored with, whom the subject belongs to, and how to find an earlier review. */
+type Ids = { doctorId?: unknown; clinicId?: unknown; articleId?: unknown };
+
+/** What a review of this subject is stored with, whom the subject belongs to, and what to call it in messages. */
 interface Resolved {
   ownerUserId: string | null;
-  /** Fields identifying the subject; also the "have they already reviewed this?" filter. */
-  subject: Record<string, unknown>;
-  /** Fields stored with the review beyond the subject. */
-  extra: Record<string, unknown>;
+  ids: Ids;
+  label: string;
 }
 
 async function resolveTarget(target: ReviewTarget): Promise<Resolved | null> {
   if (target.kind === 'clinic') {
-    const clinic = await Clinic.findOne({ slug: target.slug }).select('userId').lean<{ _id: unknown; userId?: unknown } | null>();
+    const clinic = await Clinic.findOne({ slug: target.slug }).select('userId name').lean<{ _id: unknown; userId?: unknown; name?: { ru?: string } } | null>();
     if (!clinic) return null;
     return {
       ownerUserId: clinic.userId ? String(clinic.userId) : null,
-      // A review of the clinic itself has neither a doctor nor an article.
-      subject: { clinicId: clinic._id, doctorId: { $exists: false }, articleId: { $exists: false } },
-      extra: {},
+      ids: { clinicId: clinic._id },
+      label: clinic.name?.ru || target.slug,
     };
   }
 
   if (!mongoose.isValidObjectId(target.id)) return null;
 
   if (target.kind === 'doctor') {
-    const doctor = await Doctor.findById(target.id).select('userId clinicId').lean<({ _id: unknown; clinicId?: unknown } & NonNullable<Owned>) | null>();
+    const doctor = await Doctor.findById(target.id).select('userId clinicId name').lean<({ _id: unknown; clinicId?: unknown; name?: string } & NonNullable<Owned>) | null>();
     if (!doctor) return null;
     return {
       ownerUserId: doctor.userId ? String(doctor.userId) : null,
-      subject: { doctorId: doctor._id },
-      extra: doctor.clinicId ? { clinicId: doctor.clinicId } : {},
+      // a review of a doctor also counts for the doctor's clinic
+      ids: { doctorId: doctor._id, ...(doctor.clinicId ? { clinicId: doctor.clinicId } : {}) },
+      label: doctor.name || '',
     };
   }
 
-  const article = await Article.findById(target.id).select('authorId isVerified').lean<{ _id: unknown; authorId?: unknown; isVerified?: boolean } | null>();
+  const article = await Article.findById(target.id).select('authorId isVerified title').lean<{ _id: unknown; authorId?: unknown; isVerified?: boolean; title?: { ru?: string } } | null>();
   // An article nobody can read yet cannot be reviewed.
   if (!article || article.isVerified !== true) return null;
   const author = article.authorId
@@ -69,39 +66,71 @@ async function resolveTarget(target: ReviewTarget): Promise<Resolved | null> {
     : null;
   return {
     ownerUserId: author?.userId ? String(author.userId) : null,
-    subject: { articleId: article._id },
-    extra: {},
+    ids: { articleId: article._id },
+    label: article.title?.ru || '',
   };
+}
+
+export type CreateReviewResult =
+  | { ok: true; id: string }
+  | { ok: false; code: 'no_user' | 'not_found' | 'own' | 'duplicate' };
+
+/** "Has this person reviewed this already?": the subject of the review, and nothing else, so a clinic review is not mixed up with reviews of its doctors. */
+function subjectFilter(target: ReviewTarget, ids: Ids): Record<string, unknown> {
+  if (target.kind === 'doctor') return { doctorId: ids.doctorId };
+  if (target.kind === 'article') return { articleId: ids.articleId };
+  return { clinicId: ids.clinicId, doctorId: { $exists: false }, articleId: { $exists: false } };
 }
 
 export async function createReview(target: ReviewTarget, userId: string, input: ReviewInput): Promise<CreateReviewResult> {
   await dbConnect();
 
   if (!mongoose.isValidObjectId(userId)) return { ok: false, code: 'no_user' };
-  const user = await User.findById(userId).select('name').lean<{ name?: string } | null>();
+  const user = await User.findById(userId).select('name email').lean<{ name?: string; email?: string } | null>();
   if (!user) return { ok: false, code: 'no_user' };
 
   const resolved = await resolveTarget(target);
   if (!resolved) return { ok: false, code: 'not_found' };
   if (resolved.ownerUserId === userId) return { ok: false, code: 'own' };
 
+  const authorName = displayName(user.name, input.isAnonymous);
+
   // One query that either finds the earlier review (and changes nothing) or writes this one: two taps at the same
   // moment cannot make two reviews. Validation is done by parseReviewInput, as updates skip schema validators.
   const result = await Review.updateOne(
-    { patientId: userId, ...resolved.subject },
+    { patientId: userId, ...subjectFilter(target, resolved.ids) },
     {
       $setOnInsert: {
-        ...resolved.extra,
+        // the doctor's clinic too (a clinic review has only its clinic, which is already in the filter)
+        ...(target.kind === 'doctor' && resolved.ids.clinicId ? { clinicId: resolved.ids.clinicId } : {}),
         rating: input.rating,
         text: input.text,
         isAnonymous: input.isAnonymous,
-        authorName: maskName(user.name),
-        isVerified: false,
+        authorName,
+        // published at once; the administrator hides or deletes what should not stay
+        isVerified: true,
       },
     },
     { upsert: true },
   );
-  return result.upsertedCount > 0 ? { ok: true } : { ok: false, code: 'duplicate' };
+  if (!(result.upsertedCount > 0)) return { ok: false, code: 'duplicate' };
+
+  // The review is saved: whatever goes wrong below must not turn into "could not send" for the person.
+  try {
+    await reviewChanged(resolved.ids);
+  } catch (error) {
+    console.error('Review stats error:', error);
+  }
+  await notifyAdminNewReview({
+    kind: target.kind,
+    subject: resolved.label,
+    rating: input.rating,
+    text: input.text,
+    shownAs: authorName,
+    account: [user.name, user.email].filter(Boolean).join(', '),
+  });
+
+  return { ok: true, id: String(result.upsertedId) };
 }
 
 export const REVIEWS_PAGE_SIZE = 10;
@@ -126,23 +155,50 @@ export async function listPublicReviews(
 }
 
 /**
- * Stars of an article: the votes it collected before reviews needed an account (Article.ratings) plus the approved
+ * Stars of an article: the votes it collected before reviews needed an account (Article.ratings) plus the published
  * reviews. Both count, so an article does not lose its history.
  */
 export async function articleRatingSummary(article: { _id: unknown; ratings?: number[] }): Promise<{ avg: number; count: number }> {
   await dbConnect();
   const legacy = article.ratings ?? [];
-  const [row] = await Review.aggregate<{ sum: number; count: number }>([
-    { $match: { articleId: new mongoose.Types.ObjectId(String(article._id)), isVerified: true } },
-    { $group: { _id: null, sum: { $sum: '$rating' }, count: { $sum: 1 } } },
-  ]);
-  const sum = legacy.reduce((total, stars) => total + stars, 0) + (row?.sum ?? 0);
-  const count = legacy.length + (row?.count ?? 0);
+  const rows = await Review.find({ articleId: article._id, isVerified: true }).select('rating').lean<{ rating: number }[]>();
+  const sum = legacy.reduce((total, stars) => total + stars, 0) + rows.reduce((total, row) => total + row.rating, 0);
+  const count = legacy.length + rows.length;
   return { avg: averageRating(sum, count), count };
 }
 
-/** After a review is approved or removed: let every language version of the page it is on show the change. */
-export async function revalidateReviewPages(review: { doctorId?: unknown; clinicId?: unknown; articleId?: unknown }): Promise<void> {
+/**
+ * The numbers shown for a doctor and a clinic come from their published reviews. Call after one is added, hidden,
+ * shown again or deleted. A review of a doctor counts for the doctor's clinic too.
+ */
+export async function refreshReviewStats(ids: { doctorId?: unknown; clinicId?: unknown }): Promise<void> {
+  await dbConnect();
+  let clinicId = ids.clinicId;
+
+  if (ids.doctorId) {
+    const rows = await Review.find({ doctorId: ids.doctorId, isVerified: true }).select('rating').lean<{ rating: number }[]>();
+    const sum = rows.reduce((total, row) => total + row.rating, 0);
+    await Doctor.findByIdAndUpdate(ids.doctorId, { reviewCount: rows.length, reviewSum: sum, reviewAvg: averageRating(sum, rows.length) });
+    if (!clinicId) {
+      const doctor = await Doctor.findById(ids.doctorId).select('clinicId').lean<{ clinicId?: unknown } | null>();
+      clinicId = doctor?.clinicId;
+    }
+  }
+
+  if (clinicId) {
+    const { recalculateClinicRating } = await import('@/app/actions/clinic');
+    await recalculateClinicRating(String(clinicId));
+  }
+}
+
+/** Something changed in the published reviews of these subjects: new numbers, and fresh pages in every language. */
+export async function reviewChanged(review: Ids): Promise<void> {
+  await refreshReviewStats(review);
+  await revalidateReviewPages(review);
+}
+
+/** Let every language version of the pages these reviews are on show the change. */
+export async function revalidateReviewPages(review: Ids): Promise<void> {
   try {
     const { revalidatePath } = await import('next/cache');
     const paths: string[] = [];

@@ -2,11 +2,12 @@
 
 import { FormEvent, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Star, X } from 'lucide-react';
 import { useT } from '@/i18n';
 import { useEduContinue } from '@/components/EduContinue';
-import { REVIEW_TEXT_MAX, REVIEW_TEXT_MIN, maskName } from '@/lib/reviews';
+import { REVIEW_TEXT_MAX, REVIEW_TEXT_MIN, displayName } from '@/lib/reviews';
 import { reviewReturnPath } from '@/lib/return-path';
 
 /**
@@ -17,8 +18,8 @@ import { reviewReturnPath } from '@/lib/return-path';
  *  - signed in to Duxtur Edu in this browser (the students and teachers): the dialog signs in by itself, in place, so
  *    nothing typed is lost, and the form appears;
  *  - nobody: one button to sign up or sign in, which brings the person back to this page.
- * The name on the page is masked ("Жа*** Н.") and the form shows exactly what will be shown; "hide the name" turns it
- * into "Анонимный пациент".
+ * The review is published at once, under the person's name; "hide the name" turns it into the masked one
+ * ("Жа*** Н."). The form shows exactly what will be shown.
  */
 
 export type ReviewSubject =
@@ -32,6 +33,8 @@ interface Props {
   name: string;
   lang: string;
   className?: string;
+  /** Called once the review is published (a list that loaded itself can load again). */
+  onPublished?: () => void;
 }
 
 const ERROR_KEY: Record<string, string> = {
@@ -47,8 +50,9 @@ const ERROR_KEY: Record<string, string> = {
 const TRIGGER =
   'inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
-export default function ReviewDialog({ subject, name, lang, className = TRIGGER }: Props) {
+export default function ReviewDialog({ subject, name, lang, className = TRIGGER, onPublished }: Props) {
   const { t } = useT(lang);
+  const router = useRouter();
   const { data: session, status } = useSession();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const ids = useId();
@@ -74,8 +78,8 @@ export default function ReviewDialog({ subject, name, lang, className = TRIGGER 
   const title = t(`reviews.title${subject.kind === 'doctor' ? 'Doctor' : subject.kind === 'clinic' ? 'Clinic' : 'Article'}`);
   const placeholder = t(`reviews.placeholder${subject.kind === 'doctor' ? 'Doctor' : subject.kind === 'clinic' ? 'Clinic' : 'Article'}`);
 
-  const masked = maskName(session?.user?.name);
-  const shownName = hideName ? t('common.anonymous') : masked || t('common.patient');
+  // What will be under the review: the name as it is in the account, or the masked one
+  const shownName = displayName(session?.user?.name, hideName) || t('common.patient');
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -96,7 +100,13 @@ export default function ReviewDialog({ subject, name, lang, className = TRIGGER 
           isAnonymous: hideName,
         }),
       });
-      if (res.ok) return setDone(true);
+      if (res.ok) {
+        setDone(true);
+        onPublished?.();
+        // pages the server draws (doctor, article) show the new review
+        router.refresh();
+        return;
+      }
 
       const code = ((await res.json().catch(() => null)) as { error?: string } | null)?.error ?? '';
       if (res.status === 401) return setSignedOut(true);

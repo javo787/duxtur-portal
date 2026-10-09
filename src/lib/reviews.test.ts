@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REVIEW_TEXT_MAX, REVIEW_TEXT_MIN, averageRating, maskName, parseReviewInput, toPublicReview } from './reviews';
+import { REVIEW_TEXT_MAX, REVIEW_TEXT_MIN, averageRating, cleanName, displayName, maskName, parseReviewInput, toPublicReview } from './reviews';
 
 describe('maskName', () => {
   it.each([
@@ -70,6 +70,26 @@ describe('parseReviewInput', () => {
   });
 });
 
+describe('cleanName / displayName', () => {
+  it('keeps the name as it is in the account, tidied up', () => {
+    expect(cleanName('  Жавохир   Нурматов ')).toBe('Жавохир Нурматов');
+    expect(cleanName('Anna\nSmith\t')).toBe('Anna Smith');
+    expect(cleanName('🔥 javo_77')).toBe('🔥 javo_77');
+    expect(cleanName('Ж'.repeat(300))).toHaveLength(100);
+  });
+
+  it.each([undefined, null, 7, '', '   ', '12345', '🔥🔥'])('shows nothing for %j', name => {
+    expect(cleanName(name)).toBe('');
+    expect(displayName(name, false)).toBe('');
+    expect(displayName(name, true)).toBe('');
+  });
+
+  it('shows the name, or the masked name when the author hides it', () => {
+    expect(displayName('Жавохир Нурматов', false)).toBe('Жавохир Нурматов');
+    expect(displayName('Жавохир Нурматов', true)).toBe('Жа*** Н.');
+  });
+});
+
 describe('toPublicReview', () => {
   const stored = {
     _id: { toString: () => '65f0c0ffee0c0ffee0c0ffee' },
@@ -80,7 +100,7 @@ describe('toPublicReview', () => {
     text: 'Всё хорошо',
     isVerified: true,
     isAnonymous: false,
-    authorName: 'Жа*** Н.',
+    authorName: 'Жавохир Нурматов',
     createdAt: new Date('2026-10-01T10:00:00Z'),
     updatedAt: new Date('2026-10-02T10:00:00Z'),
     __v: 0,
@@ -93,34 +113,27 @@ describe('toPublicReview', () => {
       rating: 4,
       text: 'Всё хорошо',
       createdAt: '2026-10-01T10:00:00.000Z',
+      author: 'Жавохир Нурматов',
       anonymous: false,
-      author: 'Жа*** Н.',
       doctorName: 'Др. Каримов',
     });
     expect(JSON.stringify(view)).not.toMatch(/patientId|65f0aaaa|secret|clinicId|isVerified/);
   });
 
-  it('hides the masked name too when the review is anonymous', () => {
-    const view = toPublicReview({ ...stored, isAnonymous: true });
-    expect(view.anonymous).toBe(true);
-    expect(view.author).toBe('');
+  it('shows the label the author chose, the masked name included', () => {
+    expect(toPublicReview({ ...stored, isAnonymous: true, authorName: 'Жа*** Н.' })).toMatchObject({ author: 'Жа*** Н.', anonymous: false });
   });
 
-  it('treats a review with no flag as anonymous', () => {
-    const { isAnonymous: _ignored, ...rest } = stored;
+  it('an old anonymous review with no name says anonymous; an old named one with no name says patient', () => {
+    const { authorName: _ignored, ...rest } = stored;
     void _ignored;
-    expect(toPublicReview(rest)).toMatchObject({ anonymous: true, author: '' });
+    expect(toPublicReview({ ...rest, isAnonymous: true })).toMatchObject({ author: '', anonymous: true });
+    expect(toPublicReview({ ...rest, isAnonymous: false })).toMatchObject({ author: '', anonymous: false });
   });
 
   it('has no doctor name when the doctor is not loaded', () => {
     expect(toPublicReview({ ...stored, doctorId: '65f0dddddddddddddddddddd' })).not.toHaveProperty('doctorName');
     expect(toPublicReview({ ...stored, doctorId: undefined })).not.toHaveProperty('doctorName');
-  });
-
-  it('reviews written before names were stored show no author', () => {
-    const { authorName: _ignored, ...rest } = stored;
-    void _ignored;
-    expect(toPublicReview(rest)).toMatchObject({ anonymous: false, author: '' });
   });
 });
 

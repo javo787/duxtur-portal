@@ -1,8 +1,10 @@
 /**
  * Reviews of doctors, clinics and articles: the rules that do not need a database.
  *
- * What a visitor sees of the author is only ever the masked name ("Жа*** Н."), never the account or its full name.
- * The mask is made when the review is written and stored with it, so reading reviews does not touch accounts at all.
+ * Under a review visitors see one label, chosen by the author: their name as it is in the account ("Жавохир Нурматов"),
+ * or, with "hide the name", the masked one ("Жа*** Н."). The label is made when the review is written and stored with
+ * it, so reading reviews never touches accounts, and a hidden name is never stored in full next to the review: who
+ * wrote it is for the administrator to see through the account link, nobody else.
  */
 
 export const REVIEW_TEXT_MIN = 10;
@@ -30,10 +32,28 @@ export function maskName(raw: unknown): string {
   return masked;
 }
 
+/** The account name as people write it: letters and spaces, one line, not too long. '' when there is nothing to show. */
+export function cleanName(raw: unknown): string {
+  if (typeof raw !== 'string') return '';
+  const name = raw
+    .normalize('NFC')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100)
+    .trim();
+  return /\p{L}/u.test(name) ? name : '';
+}
+
+/** What goes under the review: the name, or the masked name when the author chose to hide it. */
+export function displayName(raw: unknown, hide: boolean): string {
+  return hide ? maskName(raw) : cleanName(raw);
+}
+
 export interface ReviewInput {
   rating: number;
   text: string;
-  /** true: the page says "Анонимный пациент" instead of the masked name. */
+  /** true: "hide the name", the page shows the masked name instead of the full one. */
   isAnonymous: boolean;
 }
 
@@ -65,9 +85,10 @@ export interface PublicReview {
   rating: number;
   text: string;
   createdAt: string;
-  anonymous: boolean;
-  /** The masked name; '' when anonymous or when the account had no usable name. */
+  /** The name, or the masked name, as the author chose; '' when the account had none (or an old anonymous review). */
   author: string;
+  /** Old review written as anonymous, with no name under it: the page says "Анонимный пациент". */
+  anonymous: boolean;
   /** Clinic page only: the doctor the review is about. */
   doctorName?: string;
 }
@@ -83,7 +104,7 @@ interface StoredReview {
 }
 
 export function toPublicReview(doc: StoredReview): PublicReview {
-  const anonymous = doc.isAnonymous !== false;
+  const author = typeof doc.authorName === 'string' ? doc.authorName : '';
   const doctor = doc.doctorId as { name?: unknown } | null | undefined;
   const doctorName = doctor && typeof doctor === 'object' && typeof doctor.name === 'string' ? doctor.name : undefined;
   return {
@@ -91,8 +112,8 @@ export function toPublicReview(doc: StoredReview): PublicReview {
     rating: doc.rating,
     text: doc.text,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : '',
-    anonymous,
-    author: anonymous ? '' : doc.authorName || '',
+    author,
+    anonymous: !author && doc.isAnonymous !== false,
     ...(doctorName ? { doctorName } : {}),
   };
 }

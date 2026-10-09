@@ -20,8 +20,8 @@ export function Stars({ value, label, className = 'size-4' }: { value: number; l
 }
 
 /**
- * One review as a visitor sees it. The author line is the masked name, "Анонимный пациент" when they chose to hide it
- * and "Пациент" for an old review that has no name; never anything more.
+ * One review as a visitor sees it. The author line is the name the author chose to show (their own or the masked one);
+ * an old review with no name says "Анонимный пациент" or "Пациент"; never anything more.
  */
 export default function ReviewItem({
   review,
@@ -32,7 +32,7 @@ export default function ReviewItem({
   lang: string;
   labels: { stars: string; anonymous: string; patient: string; doctor: string };
 }) {
-  const author = review.anonymous ? labels.anonymous : review.author || labels.patient;
+  const author = review.author || (review.anonymous ? labels.anonymous : labels.patient);
   return (
     <li className="py-5">
       <div className="flex items-center justify-between gap-3">

@@ -10,7 +10,7 @@ import { Resend } from 'resend';
 import { requireRole } from '@/lib/authGuards';
 import { afterDoctorApproved } from '@/lib/author-approval';
 import { realEmail } from '@/lib/placeholder-email';
-import { revalidateReviewPages } from '@/lib/review-service';
+import { reviewChanged } from '@/lib/review-service';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -298,39 +298,29 @@ export async function approveArticle(articleId: string) {
   revalidatePath('/admin/portal');
 }
 
-export async function approveReview(reviewId: string) {
+// ─── Reviews ─────────────────────────────────────────────────────────────────
+// Reviews are published when they are written. The administrator can hide one (it stays in the list, with its author,
+// and can be shown again) or delete it for good. Every change refreshes the numbers of the doctor and the clinic.
+
+async function setReviewShown(reviewId: string, shown: boolean) {
   await requireRole('portal_admin');
   await dbConnect();
   const Review = (await import('@/models/Review')).default;
   const review = await Review.findById(reviewId);
-  if (!review || review.isVerified) return;
+  if (!review || review.isVerified === shown) return;
 
-  await Review.findByIdAndUpdate(reviewId, { isVerified: true });
-
-  // Recalculate doctor stats (reviews of a clinic or an article have no doctor)
-  const doctor = review.doctorId ? await Doctor.findById(review.doctorId) : null;
-  if (doctor) {
-    const allReviews = await Review.find({ doctorId: review.doctorId, isVerified: true });
-    const count = allReviews.length;
-    const sum = allReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
-    const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
-
-    await Doctor.findByIdAndUpdate(review.doctorId, {
-      reviewCount: count,
-      reviewSum: sum,
-      reviewAvg: avg,
-    });
-  }
-
-  // Recalculate clinic stats
-  const clinicId = review.clinicId || doctor?.clinicId;
-  if (clinicId) {
-    const { recalculateClinicRating } = await import('./clinic');
-    await recalculateClinicRating(clinicId.toString());
-  }
-
+  await Review.findByIdAndUpdate(reviewId, { isVerified: shown });
+  await reviewChanged(review);
   revalidatePath('/admin/portal');
-  await revalidateReviewPages(review);
+}
+
+/** Show a review again (or publish an old one that was waiting for approval). */
+export async function approveReview(reviewId: string) {
+  await setReviewShown(reviewId, true);
+}
+
+export async function hideReview(reviewId: string) {
+  await setReviewShown(reviewId, false);
 }
 
 export async function deleteReview(reviewId: string) {
@@ -340,36 +330,8 @@ export async function deleteReview(reviewId: string) {
   const review = await Review.findById(reviewId);
   if (!review) return;
 
-  const doctorId = review.doctorId;
-  const wasVerified = review.isVerified;
-  const reviewClinicId = review.clinicId;
-
   await Review.findByIdAndDelete(reviewId);
-
-  if (wasVerified) {
-    // Recalculate doctor stats (reviews of a clinic or an article have no doctor)
-    const doctor = doctorId ? await Doctor.findById(doctorId) : null;
-    if (doctor) {
-      const allReviews = await Review.find({ doctorId, isVerified: true });
-      const count = allReviews.length;
-      const sum = allReviews.reduce((acc: number, r: any) => acc + r.rating, 0);
-      const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : 0;
-
-      await Doctor.findByIdAndUpdate(doctorId, {
-        reviewCount: count,
-        reviewSum: sum,
-        reviewAvg: avg,
-      });
-    }
-
-    // Recalculate clinic stats
-    const clinicId = reviewClinicId || doctor?.clinicId;
-    if (clinicId) {
-      const { recalculateClinicRating } = await import('./clinic');
-      await recalculateClinicRating(clinicId.toString());
-    }
-  }
-
+  // A hidden review was not in the numbers or on the pages, so there is nothing to refresh
+  if (review.isVerified) await reviewChanged(review);
   revalidatePath('/admin/portal');
-  if (wasVerified) await revalidateReviewPages(review);
 }

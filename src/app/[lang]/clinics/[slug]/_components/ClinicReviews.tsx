@@ -10,6 +10,8 @@ export default function ClinicReviews({ slug, name, lang, rating }: { slug: stri
   const { t } = useT(lang);
   const [reviews, setReviews] = useState<PublicReview[] | null>(null);
 
+  const [reload, setReload] = useState(0);
+
   useEffect(() => {
     let live = true;
     fetch(`/api/clinic/${encodeURIComponent(slug)}/review`)
@@ -19,7 +21,7 @@ export default function ClinicReviews({ slug, name, lang, rating }: { slug: stri
     return () => {
       live = false;
     };
-  }, [slug]);
+  }, [slug, reload]);
 
   return (
     <div>
@@ -37,7 +39,7 @@ export default function ClinicReviews({ slug, name, lang, rating }: { slug: stri
         ) : (
           <p className="text-foreground/70">{t('clinic.noReviewsYet')}</p>
         )}
-        <ReviewDialog subject={{ kind: 'clinic', slug }} name={name} lang={lang} />
+        <ReviewDialog subject={{ kind: 'clinic', slug }} name={name} lang={lang} onPublished={() => setReload(n => n + 1)} />
       </div>
 
       {reviews === null ? (

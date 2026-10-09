@@ -42,7 +42,12 @@ export default function ArticleReviews({
       </div>
 
       <div className="mt-4">
-        <ReviewList initialReviews={reviews} loadUrl={`/api/reviews?articleId=${articleId}`} lang={lang} />
+        <ReviewList
+          key={reviews.map(review => review.id).join(',') || 'none'}
+          initialReviews={reviews}
+          loadUrl={`/api/reviews?articleId=${articleId}`}
+          lang={lang}
+        />
       </div>
     </section>
   );

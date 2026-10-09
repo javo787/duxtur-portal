@@ -226,7 +226,7 @@ export default async function DoctorProfilePage({ params }: Props) {
     review: reviews.length > 0 ? reviews.slice(0, 3).map(r => ({
       "@type": "Review",
       "reviewRating": { "@type": "Rating", "ratingValue": r.rating },
-      "author": { "@type": "Person", "name": r.anonymous ? T('common.anonymous', lang) : r.author || T('common.patient', lang) },
+      "author": { "@type": "Person", "name": r.author || (r.anonymous ? T('common.anonymous', lang) : T('common.patient', lang)) },
       "reviewBody": r.text,
       "datePublished": r.createdAt.split('T')[0]
     })) : undefined,
@@ -549,6 +549,8 @@ export default async function DoctorProfilePage({ params }: Props) {
             </div>
 
             <ReviewList
+              // a new key when the reviews change (a review was just added), so the list starts again from the fresh ones
+              key={reviews.map(review => review.id).join(',') || 'none'}
               initialReviews={reviews}
               loadUrl={`/api/reviews?doctorId=${doctor._id.toString()}`}
               pageSize={REVIEWS_PAGE_SIZE}
