@@ -60,7 +60,7 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   // '' is not "missing" for a default parameter, and an empty label renders an invisible link: fall back explicitly.
   const eduLabel = eduLabelProp || 'Студентам';
   const eduTeacherLabel = eduTeacherLabelProp || 'Преподавателям';
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const scrolled = useSyncExternalStore(subscribeScroll, isScrolled, () => false);
   // Open for one page only: a different pathname closes it, with no effect needed
@@ -88,8 +88,8 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   const current = (href: string) => (pathname === href || pathname?.startsWith(href + '/') ? 'page' : undefined);
 
   const auth = (mobile: boolean) => {
-    // Not decided yet: keep the room free instead of guessing, so nothing jumps and a signed-in doctor never sees "Log in"
-    if (status === 'loading') return <span aria-hidden="true" className={mobile ? 'block h-12' : 'block h-10 w-44'} />;
+    // While the session loads (on a weak connection that can take seconds) the anonymous buttons are shown: most visitors
+    // are readers, and an empty header hides the main action. A signed-in doctor sees "Log in" for a moment, then "My office".
     if (session) {
       return isDoctor ? (
         <Link href={`/${lang}/admin`} className={mobile ? `${cta} h-12 w-full` : cta}>
