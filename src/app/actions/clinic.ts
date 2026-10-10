@@ -10,6 +10,7 @@ import { generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
 import { normalizeClinicContacts } from '@/lib/clinic-contacts';
+import { revalidateClinicPage } from '@/lib/revalidate';
 
 export async function registerClinic(formData: Record<string, any>) {
   await dbConnect();
@@ -247,14 +248,8 @@ export async function recalculateClinicRating(clinicId: string) {
   });
 
   try {
-    const { revalidatePath } = await import('next/cache');
-    if (clinic.slug) {
-      revalidatePath(`/ru/clinics/${clinic.slug}`);
-      revalidatePath(`/uz/clinics/${clinic.slug}`);
-      revalidatePath(`/tj/clinics/${clinic.slug}`);
-      revalidatePath(`/kk/clinics/${clinic.slug}`);
-      revalidatePath(`/ky/clinics/${clinic.slug}`);
-    }
+    // Every language version (this list used to spell Tajik "tj", but the route is /tg, so it was never refreshed)
+    if (clinic.slug) revalidateClinicPage(clinic.slug);
   } catch (e) {
     console.error('Revalidation error:', e);
   }
