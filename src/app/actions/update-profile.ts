@@ -7,6 +7,7 @@ import { stripHtml } from '@/lib/utils';
 import { updateDoctorProfileByUserId, findDoctorByEmail } from '@/lib/db-doctor';
 import { translateFields, translateText } from '@/lib/translation-service';
 import { normalizeFacebookUrl } from '@/lib/social';
+import { revalidateDoctorPages } from '@/lib/revalidate';
 
 /**
  * Данные профиля врача, которые могут быть обновлены.
@@ -201,6 +202,7 @@ export async function updateDoctorProfile(data: DoctorProfileData) {
 
     // 6. Сохраняем в БД
     await updateDoctorProfileByUserId((user as any)._id.toString(), updateFields);
+    revalidateDoctorPages();
 
     return { success: true };
   } catch (error: any) {

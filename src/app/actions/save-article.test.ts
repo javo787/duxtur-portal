@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { authMock, publishArticle } = vi.hoisted(() => ({ authMock: vi.fn(), publishArticle: vi.fn() }));
+const { authMock, publishArticle, revalidateDoctorPages } = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  publishArticle: vi.fn(),
+  revalidateDoctorPages: vi.fn(),
+}));
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn() }));
 vi.mock('@/lib/author-articles', () => ({ publishArticle }));
+vi.mock('@/lib/revalidate', () => ({ revalidateDoctorPages }));
 
 interface Draft { _id: { toString(): string }; userId: string; language: string; title: string; data: unknown }
 let user: Record<string, unknown> | null;
@@ -63,10 +68,13 @@ describe('saveArticle', () => {
     expect(await saveArticle(article, 'ru', 'old')).toEqual({ success: true, outcome: 'published', slug: 'migren-12345' });
     expect(publishArticle).toHaveBeenCalledWith(article, 'ru', 'doc1');
     expect(drafts).toHaveLength(0);
+    // the new article must show on the (ISR) profile of its author without waiting for the hourly refresh
+    expect(revalidateDoctorPages).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a draft and says what is missing for a new account', async () => {
     const res = await saveArticle(article, 'ru');
+    expect(revalidateDoctorPages).not.toHaveBeenCalled();
     expect(res).toEqual({ success: true, outcome: 'draft', draftId: 'd1', missing: ['specialty', 'phone', 'documentImage'] });
     expect(publishArticle).not.toHaveBeenCalled();
     expect(drafts).toHaveLength(1);

@@ -1,16 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { authMock, notifyAdmin, translate, publishDraftsOf } = vi.hoisted(() => ({
+const { authMock, notifyAdmin, translate, publishDraftsOf, revalidateDoctorPages } = vi.hoisted(() => ({
   authMock: vi.fn(),
   notifyAdmin: vi.fn(),
   translate: vi.fn(),
   publishDraftsOf: vi.fn(),
+  revalidateDoctorPages: vi.fn(),
 }));
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn() }));
 vi.mock('@/lib/telegram', () => ({ notifyAdminNewDoctor: notifyAdmin }));
 vi.mock('@/lib/translation-service', () => ({ translateText: translate }));
 vi.mock('@/lib/author-articles', () => ({ publishDraftsOf }));
+vi.mock('@/lib/revalidate', () => ({ revalidateDoctorPages }));
 // after() runs its callback right away here, so the test can look at what it did
 vi.mock('next/server', () => ({ after: (fn: () => Promise<void>) => void fn() }));
 
@@ -102,6 +104,7 @@ describe('completeAuthorProfile', () => {
     });
     expect(notifyAdmin).toHaveBeenCalledWith('Alisher Karimov', '+992 900 11 22 33', 'Кардиолог', DIPLOMA);
     expect(userUpdates).toEqual([{ $set: { name: 'Alisher Karimov' } }]);
+    expect(revalidateDoctorPages).toHaveBeenCalledTimes(1);
   });
 
   it('translates the specialty in the background', async () => {
@@ -118,6 +121,7 @@ describe('completeAuthorProfile', () => {
     });
     expect(createdDoctors).toHaveLength(0);
     expect(notifyAdmin).not.toHaveBeenCalled();
+    expect(revalidateDoctorPages).not.toHaveBeenCalled();
   });
 
   it('completes an existing pending profile with just the missing field', async () => {
@@ -181,5 +185,9 @@ describe('drafts', () => {
     doctor = { _id: 'doc1', status: 'approved' };
     expect(await publishMyDrafts()).toEqual({ success: true, published: 2 });
     expect(publishDraftsOf).toHaveBeenCalledWith('u1', 'doc1');
+    expect(revalidateDoctorPages).toHaveBeenCalledTimes(1);
+    publishDraftsOf.mockResolvedValue([]);
+    await publishMyDrafts();
+    expect(revalidateDoctorPages).toHaveBeenCalledTimes(1); // nothing was published, nothing to refresh
   });
 });

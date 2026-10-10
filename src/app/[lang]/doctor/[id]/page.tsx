@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
+import { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -32,28 +33,43 @@ import { getMission, getCategoryKey } from '@/lib/doctor-mission';
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
-// ВРЕМЕННЫЙ ОТКАТ (2026-09-13): generateStaticParams/revalidate ниже вызывали
-// "Page changed from static to dynamic at runtime, reason: headers" — что-то
-// в дереве рендера (сам код страницы чист, вероятный источник — авто-
-// инструментация Sentry через withSentryConfig) всё ещё дёргает headers()
-// после того как страница уже помечена ISR-кандидатом, и Next.js это
-// специально запрещает. Возвращено к полностью динамическому рендерингу
-// (как было до PR #82) — работает, просто без ISR-кэша. TODO: правильный
-// фикс — кэшировать сам запрос к Doctor через unstable_cache вместо кэша
-// всей страницы, это даёт тот же выигрыш по нагрузке на Mongo, но не
-// конфликтует с headers().
-export const dynamic = 'force-dynamic';
+// ISR: the profile is built on the first visit, then served from the CDN cache and rebuilt in the background at most
+// once an hour. Anything that changes it earlier calls revalidateDoctorPages() (profile edits, moderation, new articles)
+// or revalidateReviewPages() (reviews), see lib/revalidate.ts and lib/review-service.ts.
+//
+// This route used to be force-dynamic after ISR failed at runtime with "Page changed from static to dynamic, reason:
+// headers". The only request-time API in the render tree was app/not-found.tsx (notFound() is called below), which
+// read headers(). It no longer does (see components/NotFoundView.tsx), so the page can be static again.
+export const revalidate = 3600;
+
+const OBJECT_ID = /^[a-f\d]{24}$/i;
+
+// React cache(): generateMetadata and the page run in the same request and share these two queries
+// (previously each of them hit the database on its own).
+const getDoctor = cache(async (id: string) => {
+  await dbConnect();
+  return Doctor.findOne({
+    $or: [{ slug: id }, ...(OBJECT_ID.test(id) ? [{ _id: id }] : [])],
+  }).lean();
+});
+
+// Only what the profile shows. The article body (sections, images) stays in the database: this list is also
+// passed to a client component, so every extra field would be serialised into the page.
+const getDoctorArticles = cache(async (doctorId: string) => {
+  await dbConnect();
+  return Article.find({ authorId: doctorId })
+    .select('slug title overview symptoms category image createdAt views lastMedicalReview')
+    .sort({ createdAt: -1 })
+    .lean();
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  await dbConnect();
   const { id, lang } = await params;
-  const doctor = await Doctor.findOne({
-    $or: [{ slug: id }, { _id: id.match(/^[a-f\d]{24}$/i) ? id : null }],
-  });
+  const doctor = await getDoctor(id);
   if (!doctor) return { title: T('doctor.notFound', lang) };
   const specialty = doctor.specialty?.[lang] || doctor.specialty?.ru || '';
 
-  const articlesCount = await Article.countDocuments({ authorId: doctor._id });
+  const articlesCount = (await getDoctorArticles(String(doctor._id))).length;
 
   const description = `${doctor.name} — ${specialty}. ${doctor.city}. ${doctor.experience} ${T('common.yearsExp', lang)}. ${articlesCount} ${T('common.articles', lang)} Duxtur.org`;
 
@@ -77,13 +93,10 @@ function getReadingTime(article: any): number {
 }
 
 export default async function DoctorProfilePage({ params }: Props) {
-  await dbConnect();
   const { lang, id } = await params;
   const t = getT(lang);
 
-  const doctor: any = await Doctor.findOne({
-    $or: [{ slug: id }, ...(id.match(/^[a-f\d]{24}$/i) ? [{ _id: id }] : [])],
-  }).lean();
+  const doctor: any = await getDoctor(id);
 
   if (!doctor || (doctor.status === 'pre_imported' && doctor.isClaimed === false)) {
     // We might want to allow viewing pre_imported profiles but definitely not bookable.
@@ -96,7 +109,7 @@ export default async function DoctorProfilePage({ params }: Props) {
   if (!doctor) notFound();
 
   const [articles, reviews]: [any[], PublicReview[]] = await Promise.all([
-    Article.find({ authorId: doctor._id }).sort({ createdAt: -1 }).lean(),
+    getDoctorArticles(String(doctor._id)),
     // Public shape only: the masked name, never the author's account
     listPublicReviews({ doctorId: doctor._id }),
   ]);

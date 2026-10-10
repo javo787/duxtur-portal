@@ -11,6 +11,7 @@ import { stableSlug } from '@/lib/ingest/normalize';
 import { parseClinicForm } from '@/lib/admin-content/clinic-form';
 import { parseDoctorForm } from '@/lib/admin-content/doctor-form';
 import { buildPublicId, uploadImage, validateImageFile, type ImageRole } from '@/lib/cloudinary-upload';
+import { revalidateDoctorPages } from '@/lib/revalidate';
 
 /**
  * Content editor for the portal admin: edit any clinic/doctor (including scraped
@@ -46,7 +47,9 @@ function revalidateClinics() {
 }
 function revalidateDoctors() {
   revalidatePath('/[lang]/doctors', 'page');
-  revalidatePath('/[lang]/doctors/[slug]', 'page');
+  // The profile route is /[lang]/doctor/[id] (there is no /doctors/[slug]); a clinic page lists its doctors too
+  revalidateDoctorPages();
+  revalidatePath('/[lang]/clinics/[slug]', 'page');
   revalidatePath('/[lang]/admin/portal/doctors', 'page');
 }
 

@@ -11,6 +11,7 @@ import { requireRole } from '@/lib/authGuards';
 import { afterDoctorApproved } from '@/lib/author-approval';
 import { realEmail } from '@/lib/placeholder-email';
 import { reviewChanged } from '@/lib/review-service';
+import { revalidateDoctorPages } from '@/lib/revalidate';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -211,6 +212,7 @@ export async function updateDoctorStatus(id: string, status: string) {
   }
 
   revalidatePath('/admin/portal');
+  revalidateDoctorPages();
 }
 
 export async function approveClinic(id: string) {
@@ -265,6 +267,7 @@ export async function deleteDoctor(id: string) {
   // Удаляем профиль врача
   await Doctor.findByIdAndDelete(id);
   revalidatePath('/admin/portal');
+  revalidateDoctorPages();
 }
 
 export async function deleteArticle(id: string) {
@@ -272,6 +275,7 @@ export async function deleteArticle(id: string) {
   await dbConnect();
   await Article.findByIdAndDelete(id);
   revalidatePath('/admin/portal');
+  revalidateDoctorPages(); // the author's profile lists their articles
 }
 
 export async function toggleDoctorBan(id: string, banned: boolean) {
@@ -289,6 +293,7 @@ export async function toggleDoctorBan(id: string, banned: boolean) {
   }
 
   revalidatePath('/admin/portal');
+  revalidateDoctorPages();
 }
 
 export async function approveArticle(articleId: string) {

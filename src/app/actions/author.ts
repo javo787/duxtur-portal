@@ -12,6 +12,7 @@ import { notifyAdminNewDoctor } from '@/lib/telegram';
 import { translateText } from '@/lib/translation-service';
 import { generateSlug, stripHtml } from '@/lib/utils';
 import type { StudioState } from '@/lib/author-types';
+import { revalidateDoctorPages } from '@/lib/revalidate';
 
 /**
  * The writing studio (/write) and the one-screen "finish your profile" step.
@@ -160,6 +161,8 @@ export async function completeAuthorProfile(input: Partial<ProfileInput>): Promi
       notifyAdminNewDoctor(merged.name, merged.phone, provided.specialty ?? '', merged.documentImage)?.catch?.(() => undefined);
     }
 
+    revalidateDoctorPages();
+
     // The byline of the articles is this name.
     if (provided.name !== undefined && user.name !== provided.name) {
       await User.updateOne({ _id: user._id }, { $set: { name: provided.name } });
@@ -225,6 +228,7 @@ export async function publishMyDrafts(): Promise<{ success: boolean; published: 
       return { success: false, published: 0, error: 'Профиль врача ещё не подтверждён' };
     }
     const slugs = await publishDraftsOf(user._id, doctor._id);
+    if (slugs.length > 0) revalidateDoctorPages();
     return { success: true, published: slugs.length };
   } catch (error: unknown) {
     console.error('publishMyDrafts error:', error);

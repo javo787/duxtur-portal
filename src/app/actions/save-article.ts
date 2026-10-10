@@ -7,6 +7,7 @@ import User from '@/models/User';
 import { auth } from '@/auth';
 import { evaluateAuthor } from '@/lib/author-profile';
 import { publishArticle } from '@/lib/author-articles';
+import { revalidateDoctorPages } from '@/lib/revalidate';
 import { ARTICLE_LANGUAGES, MAX_DRAFTS_PER_AUTHOR, MAX_DRAFT_BYTES, type SaveOutcome } from '@/lib/author-types';
 
 /**
@@ -51,6 +52,7 @@ export async function saveArticle(articleData: unknown, language: string, draftI
 
     if (state.canPublishNow && doctor) {
       const slug = await publishArticle(data, language, doctor._id);
+      revalidateDoctorPages(); // the new article shows on the author's profile
       if (draftId) await ArticleDraft.deleteOne({ _id: draftId, userId: user._id }).catch(() => undefined);
       return { success: true, outcome: 'published', slug };
     }
