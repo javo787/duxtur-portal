@@ -42,6 +42,14 @@ type Props = { params: Promise<{ lang: string; id: string }> };
 // read headers(). It no longer does (see components/NotFoundView.tsx), so the page can be static again.
 export const revalidate = 3600;
 
+// Without generateStaticParams (an empty one is enough) Next renders a dynamic-segment route on every request and
+// ignores `revalidate`. With it the first visit renders the page, then it is served from the cache until `revalidate`
+// passes or a mutation calls revalidatePath (lib/revalidate.ts). Nothing is rendered at build time, so the build does
+// not need the database.
+export function generateStaticParams() {
+  return [];
+}
+
 const OBJECT_ID = /^[a-f\d]{24}$/i;
 
 // React cache(): generateMetadata and the page run in the same request and share these two queries

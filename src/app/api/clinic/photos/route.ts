@@ -5,6 +5,7 @@ import Clinic from '@/models/Clinic';
 import { auth } from '@/auth';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { rateLimit } from '@/lib/rate-limit';
+import { revalidateClinicPages } from '@/lib/revalidate';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 'anonymous';
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
 
+    revalidateClinicPages();
     return NextResponse.json({ url: result.url, photos: clinic.photos }, { status: 200 });
   } catch (error) {
     console.error('Clinic photo upload error:', error);
@@ -69,6 +71,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
     }
 
+    revalidateClinicPages();
     return NextResponse.json({ photos: clinic.photos }, { status: 200 });
   } catch (error) {
     console.error('Clinic photo delete error:', error);

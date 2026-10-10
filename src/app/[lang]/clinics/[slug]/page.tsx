@@ -30,6 +30,14 @@ import { whatsappUrl } from '@/lib/clinic-display';
 
 export const revalidate = 3600; // 1 hour
 
+// Without generateStaticParams (an empty one is enough) Next renders a dynamic-segment route on every request and
+// ignores `revalidate`. With it the first visit renders the page, then it is served from the cache until `revalidate`
+// passes or a mutation calls revalidatePath (lib/revalidate.ts). Nothing is rendered at build time, so the build does
+// not need the database.
+export function generateStaticParams() {
+  return [];
+}
+
 const getClinic = cache(async (slug: string) => {
   await dbConnect();
   return Clinic.findOne({ slug, status: { $in: ['approved', 'pre_imported'] } })

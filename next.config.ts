@@ -86,12 +86,9 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=86400' },
         ],
       },
-      {
-        source: '/:lang/doctor/:slug',
-        headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=21600, stale-while-revalidate=86400' },
-        ],
-      },
+      // /:lang/doctor/:slug had its own Cache-Control (6 h) here. The page is ISR now (revalidate = 3600 plus
+      // revalidateDoctorPages() after changes) and Next sets the matching header itself, so a second, longer TTL would
+      // only keep stale profiles at the CDN after the page was regenerated.
     ];
   },
 

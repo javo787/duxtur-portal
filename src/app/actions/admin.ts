@@ -11,7 +11,7 @@ import { requireRole } from '@/lib/authGuards';
 import { afterDoctorApproved } from '@/lib/author-approval';
 import { realEmail } from '@/lib/placeholder-email';
 import { reviewChanged } from '@/lib/review-service';
-import { revalidateDoctorPages } from '@/lib/revalidate';
+import { revalidateClinicPages, revalidateDoctorPages } from '@/lib/revalidate';
 
 async function sendClinicStatusEmail(
   clinicId: string,
@@ -223,6 +223,7 @@ export async function approveClinic(id: string) {
     console.error('Email send error:', err)
   );
   revalidatePath('/admin/portal');
+  revalidateClinicPages();
 }
 
 export async function rejectClinic(id: string) {
@@ -233,6 +234,7 @@ export async function rejectClinic(id: string) {
     console.error('Email send error:', err)
   );
   revalidatePath('/admin/portal');
+  revalidateClinicPages();
 }
 
 export async function deleteClinic(id: string) {
@@ -245,6 +247,7 @@ export async function deleteClinic(id: string) {
   // Удаляем саму клинику
   await Clinic.findByIdAndDelete(id);
   revalidatePath('/admin/portal');
+  revalidateClinicPages();
 }
 
 export async function banClinic(id: string, banned: boolean) {
@@ -253,6 +256,7 @@ export async function banClinic(id: string, banned: boolean) {
   const status = banned ? 'banned' : 'approved';
   await Clinic.findByIdAndUpdate(id, { status });
   revalidatePath('/admin/portal');
+  revalidateClinicPages();
 }
 
 export async function deleteDoctor(id: string) {

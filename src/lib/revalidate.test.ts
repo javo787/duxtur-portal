@@ -3,16 +3,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const { revalidatePath } = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath }));
 
-import { revalidateClinicPage, revalidateDoctorPages } from './revalidate';
+import { revalidateClinicPage, revalidateClinicPages, revalidateDoctorPages } from './revalidate';
 import { i18n } from '@/i18n-config';
 
 beforeEach(() => vi.clearAllMocks());
 
 describe('revalidateDoctorPages', () => {
-  it('drops every doctor profile in every language with one route-pattern call', () => {
+  it('drops the profiles, the authors list and the home page with route-pattern calls', () => {
     revalidateDoctorPages();
-    expect(revalidatePath).toHaveBeenCalledTimes(1);
-    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/doctor/[id]', 'page');
+    expect(revalidatePath.mock.calls).toEqual([
+      ['/[lang]/doctor/[id]', 'page'],
+      ['/[lang]/authors', 'page'],
+      ['/[lang]', 'page'],
+    ]);
+  });
+});
+
+describe('revalidateClinicPages', () => {
+  it('drops every clinic page with one route-pattern call', () => {
+    revalidateClinicPages();
+    expect(revalidatePath.mock.calls).toEqual([['/[lang]/clinics/[slug]', 'page']]);
   });
 });
 

@@ -10,7 +10,7 @@ import { generateSlug } from '@/lib/utils';
 import { sendMessageToAdmin } from '@/lib/telegram';
 import { auth } from '@/auth';
 import { normalizeClinicContacts } from '@/lib/clinic-contacts';
-import { revalidateClinicPage } from '@/lib/revalidate';
+import { revalidateClinicPage, revalidateClinicPages } from '@/lib/revalidate';
 
 export async function registerClinic(formData: Record<string, any>) {
   await dbConnect();
@@ -127,6 +127,8 @@ export async function registerClinic(formData: Record<string, any>) {
     }
 
     await session.commitTransaction();
+    // A claimed profile changes status (and owner), so its public page changes too
+    if (claimClinicId) revalidateClinicPages();
 
     // Notify admin
     const message = `🏥 *Новая заявка: Клиника*\n\n` +
@@ -187,6 +189,7 @@ export async function updateClinicProfile(id: string, data: Record<string, any>,
     if (contactError) return { success: false, error: contactError };
 
     await Clinic.findByIdAndUpdate(id, { $set: updateData }, { runValidators: true });
+    revalidateClinicPages();
     return { success: true };
   } catch (error: any) {
     console.error('Update Clinic Error:', error);
