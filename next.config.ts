@@ -75,6 +75,17 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Edu is installable as an app (PWA). Its service worker lives at /edu/sw.js, and a worker may only control
+        // paths below its own folder unless the script says otherwise: with this header it controls /edu itself (the
+        // page the installed app opens), not just /edu/... . Without it Edu still works, with the narrower scope /edu/.
+        source: '/edu/sw.js',
+        headers: [
+          { key: 'Service-Worker-Allowed', value: '/edu' },
+          // A worker script must never be served from a stale cache, or an update would not reach anyone.
+          { key: 'Cache-Control', value: 'no-cache' },
+        ],
+      },
+      {
         source: '/(.*)\\.(ico|png|jpg|jpeg|webp|avif|svg|woff2)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },

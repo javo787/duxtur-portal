@@ -80,4 +80,27 @@ describe('next.config /edu mount', () => {
       expect(header(rule[0], 'X-Frame-Options'), path).toBe('DENY');
     }
   });
+
+  it("lets Edu's service worker control /edu itself, and nothing else", async () => {
+    // @ts-expect-error Next's compiled path-to-regexp ships no type declarations
+    const { pathToRegexp } = await import('next/dist/compiled/path-to-regexp');
+    const cfg = await loadConfig('https://duxtur-edu.web.app');
+    const rules = await cfg.headers();
+    const header = (r: any, key: string) => r.headers.find((h: any) => h.key === key)?.value as string | undefined;
+    const matching = (path: string, key: string) => rules.filter((r: any) => pathToRegexp(r.source).test(path) && header(r, key));
+
+    const worker = matching('/edu/sw.js', 'Service-Worker-Allowed');
+    expect(worker).toHaveLength(1);
+    expect(header(worker[0], 'Service-Worker-Allowed')).toBe('/edu');
+    expect(header(worker[0], 'Cache-Control')).toBe('no-cache');
+
+    for (const path of ['/sw.js', '/edu/other.js', '/edu/x/sw.js', '/ru/edu/sw.js', '/edu']) {
+      expect(matching(path, 'Service-Worker-Allowed'), path).toHaveLength(0);
+    }
+
+    // The worker script is still an Edu page: it keeps the Edu CSP and the portal CSP stays off it.
+    const csp = matching('/edu/sw.js', 'Content-Security-Policy');
+    expect(csp).toHaveLength(1);
+    expect(header(csp[0], 'Content-Security-Policy')).toContain('https://apis.google.com');
+  });
 });
