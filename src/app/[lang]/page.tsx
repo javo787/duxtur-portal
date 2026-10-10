@@ -76,7 +76,9 @@ const [articles, authors, categoryAgg] = await Promise.all([
     { $match: { category: { $in: CATEGORIES } } },
     { $group: { _id: '$category', count: { $sum: 1 } } },
   ]).read('secondaryPreferred'),
-]).catch(() => [[], [], []]);
+]);
+// No .catch() here on purpose: if the database is down while this page is being regenerated, a thrown error makes
+// Next keep serving the last good page, whereas swallowing it would cache an empty home page for an hour.
  
 // Превращаем массив [{ _id: 'cardiology', count: 5 }, ...] в объект
 const categoryCounts: Record<string, number> = {};
