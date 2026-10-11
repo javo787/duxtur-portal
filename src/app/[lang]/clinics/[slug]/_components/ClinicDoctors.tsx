@@ -3,12 +3,16 @@
 import { useState } from 'react';
 import CloudinaryImage from '@/components/CloudinaryImage';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Star } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
 import { useT } from '@/i18n/client';
-import BookingModal from '@/components/BookingModal';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import { initials } from './shared';
+
+// Loaded on the first click only. Keeping it behind dynamic() also keeps framer-motion (used by the
+// modal) out of the clinic page's initial JS. Note: without an <AnimatePresence> parent the modal's
+// slide-out `exit` animation no longer plays on this page; it simply closes.
+const BookingModal = dynamic(() => import('@/components/BookingModal'), { ssr: false });
 
 interface Doctor {
   _id: string;
@@ -82,18 +86,16 @@ export default function ClinicDoctors({ doctors, lang }: { doctors: Doctor[]; la
         })}
       </ul>
 
-      <AnimatePresence>
-        {selected && (
-          <BookingModal
-            doctorId={selected._id}
-            doctorName={selected.name}
-            doctorSchedule={selected.schedule}
-            doctorConsultationTypes={selected.consultationTypes || ['in_person']}
-            lang={lang}
-            onClose={() => setSelected(null)}
-          />
-        )}
-      </AnimatePresence>
+      {selected && (
+        <BookingModal
+          doctorId={selected._id}
+          doctorName={selected.name}
+          doctorSchedule={selected.schedule}
+          doctorConsultationTypes={selected.consultationTypes || ['in_person']}
+          lang={lang}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </>
   );
 }

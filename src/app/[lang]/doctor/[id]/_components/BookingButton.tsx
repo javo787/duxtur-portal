@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { CalendarCheck2 } from 'lucide-react';
-import BookingModal from '@/components/BookingModal';
 import { useT } from '@/i18n/client';
+
+// The modal (and framer-motion with it) is only needed after a click, so it must not weigh on first load.
+const BookingModal = dynamic(() => import('@/components/BookingModal'), { ssr: false });
 
 export default function BookingButton({ doctor, lang }: { doctor: any; lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
