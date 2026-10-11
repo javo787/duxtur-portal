@@ -80,10 +80,14 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: EDU_BRIDGE_CSP },
         ],
       },
+      // Files from public/ (og-default.png, favicon.svg, logo.png …) keep their name when they change, so they
+      // must NOT be `immutable` for a year: a replaced image would never reach browsers that have it cached.
+      // A day of freshness plus a week of stale-while-revalidate keeps repeat visits free of requests.
+      // /_next/ is excluded on purpose: hashed build output gets its own immutable header from Next.
       {
-        source: '/(.*)\\.(ico|png|jpg|jpeg|webp|avif|svg|woff2)',
+        source: '/((?!_next/).*)\\.(ico|png|jpg|jpeg|webp|avif|svg|woff2)',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
       {
