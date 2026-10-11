@@ -125,5 +125,15 @@ We use Schema.org structured data to help search engines understand our content 
 - `/ru/blog?category=cardiology`: canonical → `/ru/blog/c/cardiology`.
 - В Search Console: отчёт «Страницы» → «Проверить исправление» по группам 404, redirect, crawled-not-indexed; счётчики смотреть через 2–4 недели, не раньше.
 
+### 2026-10 · Навыки для агента из OpenSEO (ветка `chore/seo-skills-from-openseo`)
+
+**Зачем.** OpenSEO (MIT) даёт готовые рабочие процедуры для SEO-агента. Его MCP и большинство навыков завязаны на платный DataForSEO, а для Таджикистана там только объёмы Google Ads (без сложности и интента); Яндекса, Яндекс Карт и 2ГИС в нём нет. Поэтому берём только то, что работает без платных данных.
+
+**Что сделано.** В `.claude/skills/` добавлены три навыка, переписанные под Duxtur по-русски: `keyword-mapping` (карта ключей по выгрузке Search Console, с учётом порогов из `src/lib/clinic-seo.ts`), `pr-review-brief` (сводка и текст PR), `vitest-gate` (проверка, нужен ли тест). Лицензия оригинала сохранена в `.claude/skills/NOTICE.md`.
+
+**Что сознательно не взято.** `seo-audit`, `competitor-analysis`, `local-seo`, `ai-visibility-audit`, `keyword-research`, `link-prospecting`, `seo-report`: требуют подключения MCP и платных данных. Аудит кода и страниц портала остаётся за нашими тестами (`seo-consistency`, `sitemap-entries`, `robots`).
+
+**Код портала не менялся.** Только Markdown-файлы.
+
 ---
 *Last updated: October 2026*
