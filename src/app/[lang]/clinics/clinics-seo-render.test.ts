@@ -18,6 +18,7 @@ vi.mock('@/lib/clinic-service', () => ({
   getClinicsPage: async () => state.listing,
   getClinics: async () => state.listing,
   getIndexableFacets: async () => state.facets,
+  getDirectoryTotal: async () => 100,
 }));
 vi.mock('next/navigation', () => ({
   notFound: () => {

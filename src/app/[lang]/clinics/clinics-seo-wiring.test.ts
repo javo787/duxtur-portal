@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The pages are wired to the database and to next/font; replace both so generateMetadata can run in node.
-const state = vi.hoisted(() => ({ clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 }, facets: [] as unknown[] }));
+const state = vi.hoisted(() => ({ clinic: null as unknown, listing: { clinics: [] as unknown[], total: 0 }, facets: [] as unknown[], directoryTotal: 100 }));
 
 vi.mock('next/font/google', () => ({ Source_Serif_4: () => ({ variable: 'font-var', className: 'font-cls' }) }));
 vi.mock('@/lib/mongodb', () => ({ default: async () => undefined }));
@@ -12,6 +12,7 @@ vi.mock('@/lib/clinic-service', () => ({
   getClinicsPage: async () => state.listing,
   getClinics: async () => state.listing,
   getIndexableFacets: async () => state.facets,
+  getDirectoryTotal: async () => state.directoryTotal,
 }));
 vi.mock('@/components/ClinicViewTracker', () => ({ default: () => null }));
 vi.mock('@/components/home/HomeFooter', () => ({ default: () => null }));
@@ -43,6 +44,7 @@ const title = (m: { title?: unknown }) => m.title as string;
 beforeEach(() => {
   state.clinic = clinic();
   state.listing = { clinics: [], total: 0 };
+  state.directoryTotal = 100;
 });
 
 describe('clinic profile metadata', () => {
@@ -132,6 +134,18 @@ describe('clinic directory metadata', () => {
   it('noindexes a page beyond the last one', async () => {
     state.listing = { clinics: [], total: 45 };
     expect((await listing({ page: '99' })).robots).toEqual({ index: false, follow: true });
+  });
+
+  it('noindexes a filter that lists the whole directory and keeps the plain directory indexable', async () => {
+    state.directoryTotal = 11;
+    state.listing = { clinics: cards(11), total: 11 };
+    const same = await listing({ city: 'Душанбе' });
+    expect(same.robots).toEqual({ index: false, follow: true });
+    expect(same.alternates).toEqual({ canonical: 'https://www.duxtur.org/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5' });
+    expect((await listing({})).robots).toBeUndefined();
+    // the same filter with fewer clinics than the directory is a page of its own
+    state.listing = { clinics: cards(10), total: 10 };
+    expect((await listing({ city: 'Душанбе' })).robots).toBeUndefined();
   });
 
   it('noindexes a thin facet, an empty result and a search', async () => {

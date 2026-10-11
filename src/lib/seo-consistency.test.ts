@@ -26,8 +26,9 @@ describe('sitemap and robots.txt agree', () => {
   const entries = buildSitemapEntries({
     articles: [{ slug: 'a', title: { ru: 'Заголовок на русском', tg: 'Сарлавҳаи тоҷикӣ' } }],
     doctors: [{ slug: 'ivanov', _id: '1', specialty: { ru: 'Кардиология' } }],
-    // Enough clinics for city, type and specialty listings to pass the thin-page threshold
-    clinics: [clinic('a'), clinic('b'), clinic('c')],
+    // Enough clinics for city, type and specialty listings to pass the thin-page threshold, and one more elsewhere
+    // so that those listings are a real subset of the directory (a listing with every clinic is not indexed)
+    clinics: [clinic('a'), clinic('b'), clinic('c'), clinic('d', { city: 'Худжанд', type: 'hospital', specialties: [] })],
     doctorSpecialties: { cardiology: 'Кардиология', dentistry: 'Стоматология' },
   });
 

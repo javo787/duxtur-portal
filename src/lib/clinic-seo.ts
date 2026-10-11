@@ -549,12 +549,23 @@ export function buildListingMetadataText(args: { filters: ListingFilters; total:
  * Which listing URLs belong in the index. Search (`q`) results and empty pages never do, and a filtered
  * listing needs enough clinics to be more than a thin page. Sorting never creates a new URL (see
  * buildFilterQuery), so it does not matter here.
+ *
+ * `directoryTotal` is the number of clinics in the whole directory. A filter that keeps all of them
+ * (every clinic is in Dushanbe, so ?city=Душанбе) shows the same list as the plain directory: one page
+ * under two URLs, so only the plain one is indexed. Such a filter becomes a page of its own again once a
+ * clinic from another city or of another type appears. Omit it when the directory size is unknown.
  */
-export function listingIndexable(filters: Pick<ListingFilters, 'city' | 'type' | 'specialty' | 'q'>, total: number): boolean {
+export function listingIndexable(
+  filters: Pick<ListingFilters, 'city' | 'type' | 'specialty' | 'q'>,
+  total: number,
+  directoryTotal?: number,
+): boolean {
   if (filters.q) return false;
   if (total === 0) return false;
   const isFiltered = !!(filters.city || filters.type || filters.specialty);
-  return !isFiltered || total >= MIN_INDEXABLE_LISTING_CLINICS;
+  if (!isFiltered) return true;
+  if (directoryTotal !== undefined && total >= directoryTotal) return false;
+  return total >= MIN_INDEXABLE_LISTING_CLINICS;
 }
 
 export function buildClinicListJsonLd(args: {
@@ -633,7 +644,7 @@ export function indexableListingFacets(clinics: FacetSource[]): ListingFacet[] {
   }
 
   return [...groups.values()]
-    .filter(f => listingIndexable(f, f.count))
+    .filter(f => listingIndexable(f, f.count, clinics.length))
     .sort((a, b) => b.count - a.count || (a.city ?? '').localeCompare(b.city ?? '') || (a.type ?? '').localeCompare(b.type ?? '') || (a.specialty ?? '').localeCompare(b.specialty ?? ''))
     .slice(0, MAX_FACETS_IN_SITEMAP);
 }
