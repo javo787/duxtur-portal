@@ -62,7 +62,8 @@ export default async function LangLayout({
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
         <I18nProvider lang={lang}>
           <ErrorBoundary>
-            <SessionProvider>
+            {/* refetchOnWindowFocus off: otherwise every tab switch fires a /api/auth/session request (and a serverless invocation) */}
+            <SessionProvider refetchOnWindowFocus={false}>
               <CspViolationLogger />
               {children}
             </SessionProvider>
