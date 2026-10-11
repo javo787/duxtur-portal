@@ -2,7 +2,9 @@ import { Inter, Fraunces } from "next/font/google";
 import "../globals.css";
 import { SessionProvider } from 'next-auth/react';
 import { BASE_URL } from "@/lib/seo";
-import { Locale } from "@/i18n";
+import type { Locale } from "@/i18n/types";
+import I18nProvider from "@/i18n/Provider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import CspViolationLogger from "@/components/_temp/CspViolationLogger";
 
 const inter = Inter({
@@ -60,10 +62,14 @@ export default async function LangLayout({
         />
       </head>
       <body className={`${inter.variable} ${fraunces.variable} antialiased`}>
-        <SessionProvider>
-          <CspViolationLogger />
-          {children}
-        </SessionProvider>
+        <I18nProvider lang={lang}>
+          <ErrorBoundary>
+            <SessionProvider>
+              <CspViolationLogger />
+              {children}
+            </SessionProvider>
+          </ErrorBoundary>
+        </I18nProvider>
       </body>
     </html>
   );

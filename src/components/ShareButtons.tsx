@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react'; // npm install qrcode.react
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
-type Props = { url: string; title: string; lang: string };
+type Props = { url: string; title: string };
 
-export default function ShareButtons({ url, title, lang }: Props) {
-  const { t } = useT(lang);
+export default function ShareButtons({ url, title }: Props) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const encoded = encodeURIComponent(url);

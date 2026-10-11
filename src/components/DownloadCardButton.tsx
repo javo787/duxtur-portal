@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface DownloadCardButtonProps {
   doctorSlug: string;
@@ -16,7 +16,7 @@ const W = 255.12;
 const H = 141.73;
 
 export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardButtonProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [format, setFormat] = useState<'pdf' | 'image'>('pdf');

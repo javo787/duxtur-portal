@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import ErrorBoundary from "@/components/ErrorBoundary";
 import { BASE_URL } from "@/lib/seo";
 import { bingVerificationOther } from "@/lib/bing-verification";
 
@@ -72,9 +71,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <ErrorBoundary>
-      {children}
-    </ErrorBoundary>
-  );
+  // <html> and the page chrome (providers, error boundary) live in app/[lang]/layout.tsx
+  return children;
 }

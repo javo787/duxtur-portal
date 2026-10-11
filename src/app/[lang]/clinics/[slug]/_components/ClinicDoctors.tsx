@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import BookingModal from '@/components/BookingModal';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import { initials } from './shared';
@@ -24,7 +24,7 @@ interface Doctor {
 }
 
 export default function ClinicDoctors({ doctors, lang }: { doctors: Doctor[]; lang: string }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [selected, setSelected] = useState<Doctor | null>(null);
 
   return (

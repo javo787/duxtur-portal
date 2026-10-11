@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 type BottomSheetState = 'collapsed' | 'half' | 'full';
 
@@ -29,7 +29,7 @@ export function MapMobileBottomSheet({
   onDoctorSelect,
   expandSearch,
 }: MapMobileBottomSheetProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 

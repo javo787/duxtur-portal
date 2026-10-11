@@ -5,7 +5,7 @@ import { registerDoctor, checkForExistingDoctorProfile } from '@/app/actions/reg
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-import { getT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 const Spinner = ({ dark = false }: { dark?: boolean }) => (
   <svg className={`animate-spin h-5 w-5 ${dark ? 'text-slate-900' : 'text-white'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -40,7 +40,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function RegisterForm({ lang }: { lang: string }) {
-  const t = getT(lang);
+  const { t } = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);

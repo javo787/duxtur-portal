@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import SearchForm from './SearchForm';
 import SpecialtyChips from './SpecialtyChips';
-import { getT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface DoctorsHeroProps {
   lang: string;
@@ -12,7 +12,7 @@ interface DoctorsHeroProps {
 }
 
 export default function DoctorsHero({ lang, searchParams, cities, activeSpecialty, L }: DoctorsHeroProps) {
-  const t = getT(lang);
+  const { t } = useT();
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-amber-50/40 pt-8 pb-7 border-b border-slate-200/60">
       

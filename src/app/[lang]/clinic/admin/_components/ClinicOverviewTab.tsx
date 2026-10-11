@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
-export default function ClinicOverviewTab({ lang, stats }: { lang: string, stats: any }) {
-  const { t } = useT(lang);
+export default function ClinicOverviewTab({ stats }: { stats: any }) {
+  const { t } = useT();
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

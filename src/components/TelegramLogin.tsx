@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSession, signIn } from 'next-auth/react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 /**
  * Sign in or register with Telegram, or connect Telegram to the account that is signed in.
@@ -43,7 +43,7 @@ function TelegramIcon({ className }: { className?: string }) {
 }
 
 export default function TelegramLogin({ lang, mode, callbackUrl, redirectFor, onLinked, variant = 'solid', disabled, label }: Props) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [phase, setPhase] = useState<Phase>('idle');
   const [failure, setFailure] = useState<FailureKey | null>(null);
   const [botUrl, setBotUrl] = useState('');

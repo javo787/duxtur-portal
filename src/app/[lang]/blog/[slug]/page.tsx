@@ -422,7 +422,7 @@ export default async function BlogPage({
               </div>
 
               <div className="mt-5 hidden md:block">
-                <ArticleShare url={articleUrl} title={title} lang={lang} />
+                <ArticleShare url={articleUrl} title={title} />
               </div>
             </header>
 
@@ -521,7 +521,7 @@ export default async function BlogPage({
             </div>
 
             <div className="mt-8 max-w-[42rem] border-t border-border pt-6">
-              <ArticleShare url={articleUrl} title={title} lang={lang} />
+              <ArticleShare url={articleUrl} title={title} />
             </div>
 
             {author && (

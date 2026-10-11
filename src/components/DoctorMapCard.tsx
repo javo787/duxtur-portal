@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface DoctorMapCardProps {
   doctor: any;
@@ -14,7 +14,7 @@ interface DoctorMapCardProps {
 }
 
 export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, hasLocation }: DoctorMapCardProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   if (!doctor) return null;
 
   const dbT = (field: any) => field?.[lang] || field?.ru || '';

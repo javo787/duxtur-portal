@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { facebookHref } from '@/lib/social';
 import TelegramLogin from '@/components/TelegramLogin';
 
@@ -38,7 +38,7 @@ function BlurredContact({ icon, color }: { icon: React.ReactNode; color: string 
 }
 
 export default function ContactDoctorButton({ doctor, lang, className }: Props) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');

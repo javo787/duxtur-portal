@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 const btn =
   'inline-flex min-h-10 items-center rounded-lg border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 /** Telegram, WhatsApp and copy-link: what people here actually use. No QR, no brand colours. */
-export default function ArticleShare({ url, title, lang }: { url: string; title: string; lang: string }) {
-  const { t } = useT(lang);
+export default function ArticleShare({ url, title }: { url: string; title: string }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   const u = encodeURIComponent(url);
   const ti = encodeURIComponent(title);

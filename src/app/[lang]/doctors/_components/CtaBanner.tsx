@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { getT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 export default function CtaBanner({ lang }: { lang: string }) {
-  const t = getT(lang);
+  const { t } = useT();
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-7">
       {/* Декор */}

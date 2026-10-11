@@ -152,7 +152,7 @@ export default function ClinicBody({ clinic, lang, doctors }: { clinic: ClinicVi
 
       {photos.length > 0 && (
         <Section id="gallery" title={t('clinic.gallery')}>
-          <ClinicGallery photos={photos} lang={lang} alt={name.text} />
+          <ClinicGallery photos={photos} alt={name.text} />
         </Section>
       )}
 

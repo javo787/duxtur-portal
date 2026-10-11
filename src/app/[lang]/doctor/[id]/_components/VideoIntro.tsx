@@ -1,7 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { useT } from '@/i18n';
-import { useParams } from 'next/navigation';
+import { useT } from '@/i18n/client';
 import * as Sentry from '@sentry/nextjs';
 
 // Cloudinary отдаёт превью-кадр видео, если заменить расширение файла на .jpg
@@ -15,8 +14,7 @@ function getVideoPoster(videoUrl: string): string | undefined {
 }
 
 export default function VideoIntro({ videoUrl }: { videoUrl: string; doctorName?: string }) {
-  const { lang } = useParams() as { lang: string };
-  const { t } = useT(lang);
+  const { t } = useT();
   const [playing, setPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);

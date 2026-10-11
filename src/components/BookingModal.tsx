@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -16,7 +16,7 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ doctorId, doctorName, doctorSchedule, doctorConsultationTypes, lang, onClose }: BookingModalProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);

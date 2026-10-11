@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
-export default function NearMeButton({ lang }: { lang: string }) {
-  const { t } = useT(lang);
+export default function NearMeButton() {
+  const { t } = useT();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();

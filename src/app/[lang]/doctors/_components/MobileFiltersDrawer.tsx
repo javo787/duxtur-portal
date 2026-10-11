@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import UI from '@/dictionaries/doctor-translations';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 type Props = {
   lang: string;
@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function MobileFiltersDrawer({ lang, cities, sp }: Props) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
 

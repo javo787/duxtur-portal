@@ -8,7 +8,7 @@ import { WriteTab, type ResumedDraft } from '../admin/_components/WriteTab';
 import { AuthorCompletion } from '../admin/_components/AuthorCompletion';
 import TelegramLogin from '@/components/TelegramLogin';
 import EduContinue, { useEduContinue } from '@/components/EduContinue';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import type { AuthorField } from '@/lib/author-profile';
 import type { StudioState } from '@/lib/author-types';
 
@@ -73,7 +73,7 @@ export default function AuthorStudio({ lang }: { lang: string }) {
 // ─── Not signed in ──────────────────────────────────────────────────────────
 
 function StudioSignIn({ lang }: { lang: string }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const target = `/${lang}/write`;
   // "Write an article" in Duxtur Edu opens this page with ?from=edu: the person is already known there, so sign in at once.
   const [fromEdu] = useState(() => new URLSearchParams(window.location.search).get('from') === 'edu');
@@ -101,7 +101,7 @@ function StudioSignIn({ lang }: { lang: string }) {
                 {t(`eduBridge.${edu.failure}`)}
               </p>
             )}
-            {!fromEdu && <EduContinue lang={lang} className="" redirectFor={() => target} />}
+            {!fromEdu && <EduContinue className="" redirectFor={() => target} />}
             <TelegramLogin lang={lang} mode="login" redirectFor={() => target} />
             <button
               type="button"

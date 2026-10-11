@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ClinicDoctorsTab({ lang, clinicId }: { lang: string, clinicId: string }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

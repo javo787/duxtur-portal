@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AcceptsToggle } from './AcceptsToggle';
 import NearMeButton from '@/components/NearMeButton';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface FiltersSidebarProps {
   lang: string;
@@ -14,7 +14,7 @@ interface FiltersSidebarProps {
 }
 
 export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebarProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const router = useRouter();
   const sp = searchParams;
 
@@ -132,7 +132,7 @@ export default function FiltersSidebar({ lang, searchParams, L }: FiltersSidebar
 
         {/* Рядом со мной */}
         <div>
-          <NearMeButton lang={lang} />
+          <NearMeButton />
         </div>
 
         <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-blue-100">

@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface TrustBadgesProps {
   lastMedicalReviewDate: string | null;
@@ -12,7 +12,7 @@ interface TrustBadgesProps {
 }
 
 export default function TrustBadges({ lastMedicalReviewDate, lastArticleDate, lang, licenseNumber }: TrustBadgesProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

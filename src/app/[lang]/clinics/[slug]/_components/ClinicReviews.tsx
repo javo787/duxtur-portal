@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import ReviewDialog from '@/components/reviews/ReviewDialog';
 import ReviewItem, { Stars } from '@/components/reviews/ReviewItem';
 import type { PublicReview } from '@/lib/reviews';
 
 export default function ClinicReviews({ slug, name, lang, rating }: { slug: string; name: string; lang: string; rating: { avg: number; count: number } }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [reviews, setReviews] = useState<PublicReview[] | null>(null);
 
   const [reload, setReload] = useState(0);

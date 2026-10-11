@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
-export default function ClinicGallery({ photos, lang, alt }: { photos: string[]; lang: string; alt: string }) {
-  const { t } = useT(lang);
+export default function ClinicGallery({ photos, alt }: { photos: string[]; alt: string }) {
+  const { t } = useT();
   const [open, setOpen] = useState<number | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const tiles = photos.slice(0, 7);

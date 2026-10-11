@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { SectionHeader } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 
 export default function ClinicMarketingTab({ lang, slug }: { lang: string, slug: string }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 type Hours = Record<string, { open: string; close: string; isWorking: boolean }> | undefined;
 
@@ -37,7 +37,7 @@ export default function ClinicHours({
   /** What the status variant renders before the visitor's clock is known (server HTML). Default: link to the schedule. */
   fallback?: React.ReactNode;
 }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const minute = useSyncExternalStore(subscribe, getMinute, getServerMinute);
   const now = minute === null ? null : new Date(minute * 60_000);
 

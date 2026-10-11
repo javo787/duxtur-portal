@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import ClinicOverviewTab from './ClinicOverviewTab';
 import ClinicProfileTab from './ClinicProfileTab';
 import ClinicDoctorsTab from './ClinicDoctorsTab';
@@ -10,7 +10,7 @@ import ClinicReviewsTab from './ClinicReviewsTab';
 import ClinicMarketingTab from './ClinicMarketingTab';
 
 export default function ClinicAdminTabs({ lang, clinic, stats }: { lang: string, clinic: any, stats: any }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [activeTab, setActiveTab] = useState('overview');
 
   const tabs = [
@@ -57,11 +57,11 @@ export default function ClinicAdminTabs({ lang, clinic, stats }: { lang: string,
 
       {/* Tab Content */}
       <div className="pb-10">
-        {activeTab === 'overview' && <ClinicOverviewTab lang={lang} stats={stats} />}
+        {activeTab === 'overview' && <ClinicOverviewTab stats={stats} />}
         {activeTab === 'profile' && <ClinicProfileTab lang={lang} clinic={clinic} />}
         {activeTab === 'doctors' && <ClinicDoctorsTab lang={lang} clinicId={clinic._id} />}
-        {activeTab === 'appointments' && <ClinicAppointmentsTab lang={lang} clinicId={clinic._id} />}
-        {activeTab === 'reviews' && <ClinicReviewsTab lang={lang} clinicId={clinic._id} />}
+        {activeTab === 'appointments' && <ClinicAppointmentsTab clinicId={clinic._id} />}
+        {activeTab === 'reviews' && <ClinicReviewsTab clinicId={clinic._id} />}
         {activeTab === 'marketing' && <ClinicMarketingTab lang={lang} slug={clinic.slug} />}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
-import { getT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import TelegramLogin from '@/components/TelegramLogin';
 import EduContinue from '@/components/EduContinue';
 import { homeAfterLogin } from '@/lib/after-login';
@@ -33,7 +33,7 @@ function LoginButton() {
 }
 
 export default function LoginForm({ lang, back = null }: { lang: string; back?: string | null }) {
-  const t = getT(lang);
+  const { t } = useT();
   const [errorMessage, dispatch] = useFormState(authenticate, undefined);
   const [showPassword, setShowPassword] = useState(false);
   const { data: session, status } = useSession();
@@ -85,7 +85,7 @@ export default function LoginForm({ lang, back = null }: { lang: string; back?: 
             <p className="text-slate-500 text-sm text-center mb-8">Только для верифицированных врачей</p>
 
             {/* Уже вошли в Duxtur Edu: одно нажатие, без пароля */}
-            <EduContinue lang={lang} redirectFor={role => back ?? homeAfterLogin(role, lang)} />
+            <EduContinue redirectFor={role => back ?? homeAfterLogin(role, lang)} />
 
             {/* Google Login */}
             <button

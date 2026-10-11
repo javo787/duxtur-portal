@@ -816,7 +816,7 @@ export default async function DoctorProfilePage({ params }: Props) {
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.12em]">
                 {t('doctor.shareProfile')}
               </h3>
-              <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} lang={lang} />
+              <ShareButtons url={doctorUrl} title={`${doctor.name} — ${specialtyLabel}`} />
               <DownloadCardButton doctorSlug={doctor.slug} lang={lang} />
             </div>
           </div>
@@ -828,7 +828,6 @@ export default async function DoctorProfilePage({ params }: Props) {
         doctorUrl={doctorUrl}
         doctorName={doctor.name}
         specialtyLabel={specialtyLabel}
-        lang={lang}
       />
     </div>
   );

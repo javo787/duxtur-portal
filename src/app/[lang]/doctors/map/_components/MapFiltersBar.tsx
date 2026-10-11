@@ -1,6 +1,6 @@
 import React from 'react';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface MapFiltersBarProps {
   lang: string;
@@ -9,7 +9,7 @@ interface MapFiltersBarProps {
 }
 
 export function MapFiltersBar({ lang, activeSpecialty, onChange }: MapFiltersBarProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   return (
     <div className="flex overflow-x-auto gap-2 px-4 py-3 bg-white/80 backdrop-blur-md border-b z-10 no-scrollbar scroll-smooth snap-x snap-mandatory">
       <button

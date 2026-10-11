@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import TelegramLogin from '@/components/TelegramLogin';
 
 /**
@@ -10,7 +10,7 @@ import TelegramLogin from '@/components/TelegramLogin';
  * the one they want to keep.
  */
 export default function TelegramConnect({ lang, className = '' }: { lang: string; className?: string }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [connected, setConnected] = useState<boolean | null>(null);
 
   useEffect(() => {

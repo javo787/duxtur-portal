@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { CalendarCheck2 } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 export default function BookingButton({ doctor, lang }: { doctor: any; lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { t } = useT(lang);
+  const { t } = useT();
 
   return (
     <>

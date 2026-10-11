@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Star, X } from 'lucide-react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { useEduContinue } from '@/components/EduContinue';
 import { REVIEW_TEXT_MAX, REVIEW_TEXT_MIN, displayName } from '@/lib/reviews';
 import { reviewReturnPath } from '@/lib/return-path';
@@ -51,7 +51,7 @@ const TRIGGER =
   'inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 export default function ReviewDialog({ subject, name, lang, className = TRIGGER, onPublished }: Props) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const router = useRouter();
   const { data: session, status } = useSession();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -267,7 +267,7 @@ export default function ReviewDialog({ subject, name, lang, className = TRIGGER,
  * sign-in happens here without a click; the button below is for everybody else and is always there.
  */
 function SignInStep({ lang, onSignedIn }: { lang: string; onSignedIn: () => void }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const edu = useEduContinue({ auto: true, onSignedIn });
   const back = reviewReturnPath(window.location.pathname);
   const href = `/${lang}/signup${back ? `?next=${encodeURIComponent(back)}` : ''}`;

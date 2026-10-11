@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import type { PublicReview } from '@/lib/reviews';
 import ReviewItem from './ReviewItem';
 
@@ -22,7 +22,7 @@ export default function ReviewList({
   pageSize?: number;
   emptyText?: string;
 }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [reviews, setReviews] = useState(initialReviews);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialReviews.length >= pageSize);

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 
-export default function ClinicAppointmentsTab({ lang, clinicId }: { lang: string, clinicId: string }) {
-  const { t } = useT(lang);
+export default function ClinicAppointmentsTab({ clinicId }: { clinicId: string }) {
+  const { t } = useT();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');

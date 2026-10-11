@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { signIn } from 'next-auth/react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { ALLOWED_CITIES } from '@/lib/clinic-constants';
-import { getT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { Spinner, ClinicPreviewCard } from './_components/PreviewAndSpinner';
 import { useOnlineStatus } from './_hooks/useOnlineStatus';
 import { useMapPreview } from './_hooks/useMapPreview';
@@ -30,7 +30,7 @@ export default function RegisterClinicForm({ lang }: { lang: string }) {
 }
 
 function RegisterClinicFormContent({ lang }: { lang: string }) {
-  const t = getT(lang);
+  const { t } = useT();
   const searchParams = useSearchParams();
   const claimSlug = searchParams.get('claim');
 

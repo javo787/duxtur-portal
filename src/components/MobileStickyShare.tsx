@@ -3,22 +3,20 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface MobileStickyShareProps {
   doctorUrl: string;
   doctorName: string;
   specialtyLabel: string;
-  lang: string;
 }
 
 export default function MobileStickyShare({
   doctorUrl,
   doctorName,
   specialtyLabel,
-  lang,
 }: MobileStickyShareProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [visible, setVisible] = useState(true);

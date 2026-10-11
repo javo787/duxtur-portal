@@ -3,7 +3,7 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import FadeIn from '@/components/FadeIn';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Search, X, BookOpen, User, ArrowRight } from 'lucide-react';
@@ -22,7 +22,7 @@ const CATEGORIES = [
 export default function SearchPage({ params, searchParams: searchParamsPromise }: { params: Promise<{ lang: string }>, searchParams: Promise<{ q?: string }> }) {
   const { lang } = use(params);
   const { q: initialQ } = use(searchParamsPromise);
-  const { t } = useT(lang);
+  const { t } = useT();
 
   const [q, setQ] = useState(initialQ || '');
   const [results, setResults] = useState<any>({ articles: [], doctors: [], totalArticles: 0, totalDoctors: 0 });

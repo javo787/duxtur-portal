@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import DownloadCardButton from '@/components/DownloadCardButton';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { CATEGORY_GRADIENTS } from '@/lib/doctor-constants';
 import {
   Stethoscope,
@@ -38,7 +38,7 @@ export function PremiumMobileProfile({
   lang,
   categoryKey,
 }: PremiumMobileProfileProps) {
-  const { t: i18nT } = useT(lang);
+  const { t: i18nT } = useT();
   const [bioExpanded, setBioExpanded] = useState(false);
 
   const t = (field: any) => {

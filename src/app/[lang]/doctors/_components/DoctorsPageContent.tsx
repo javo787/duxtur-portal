@@ -11,7 +11,7 @@ import MobileFiltersDrawer from './MobileFiltersDrawer';
 import ActiveFilters from './ActiveFilters';
 import { DoctorsSortSelect } from './DoctorsSortSelect';
 import UI from '@/dictionaries/doctor-translations';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface DoctorsPageContentProps {
   lang: string;
@@ -34,7 +34,7 @@ export default function DoctorsPageContent({
   cities,
   breadcrumbJsonLd,
 }: DoctorsPageContentProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const sp = searchParams;
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
   const activeSpecialty = (sp.specialty as string) || '';

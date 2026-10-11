@@ -1,5 +1,5 @@
 import React from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 
 interface MapDesktopSidebarProps {
   filters: any;
@@ -24,7 +24,7 @@ export function MapDesktopSidebar({
   expandSearch,
   lang,
 }: MapDesktopSidebarProps) {
-  const { t } = useT(lang);
+  const { t } = useT();
   return (
     <aside className="hidden lg:block w-[320px] border-r overflow-y-auto p-6 space-y-8 bg-slate-50/50">
       <div>

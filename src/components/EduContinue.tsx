@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSession, signIn } from 'next-auth/react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { EduSession, forgetEduSession, loadEduSession } from '@/lib/edu-bridge-client';
 
 /**
@@ -93,8 +93,8 @@ export function useEduContinue({ redirectFor, onSignedIn, auto = false }: Option
   return { phase, session, failure, signInNow: () => session && go(session) };
 }
 
-export default function EduContinue({ lang, redirectFor, className = 'mb-6' }: { lang: string; redirectFor: (role: string | undefined) => string; className?: string }) {
-  const { t } = useT(lang);
+export default function EduContinue({ redirectFor, className = 'mb-6' }: { redirectFor: (role: string | undefined) => string; className?: string }) {
+  const { t } = useT();
   const { phase, session, failure, signInNow } = useEduContinue({ redirectFor });
 
   if (phase === 'checking' || phase === 'none' || !session) return null;

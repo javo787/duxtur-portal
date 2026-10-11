@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useT } from '@/i18n';
+import { useT } from '@/i18n/client';
 import { Field, SectionHeader, Spinner } from '@/app/[lang]/admin/_components/_profile-sections/_shared';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { translateFieldAction } from '@/app/actions/clinic';
@@ -29,7 +29,7 @@ const LANGUAGES = [
 ];
 
 export default function ClinicProfileTab({ lang, clinic }: { lang: string, clinic: any }) {
-  const { t } = useT(lang);
+  const { t } = useT();
   const [profile, setProfile] = useState(clinic);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
