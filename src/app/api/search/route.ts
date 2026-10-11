@@ -4,20 +4,31 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
 import { rateLimit } from '@/lib/rate-limit';
+import { escapeRegExp } from '@/lib/utils/string';
+import { i18n } from '@/i18n-config';
+
+/** Longest query we search for; anything beyond is cut so a huge `q` cannot become a huge regex or text scan. */
+const MAX_QUERY_LENGTH = 100;
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || 'anonymous';
+  // x-forwarded-for is "client, proxy1, proxy2": the rate limit key must be the client alone
+  const ip = (req.headers.get('x-forwarded-for') || 'anonymous').split(',')[0].trim();
   const { success } = await rateLimit(ip, 30, 60 * 1000); // 30 per minute
   if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   try {
     await dbConnect();
     const { searchParams } = new URL(req.url);
-    const q = searchParams.get('q');
+    const q = searchParams.get('q')?.trim().slice(0, MAX_QUERY_LENGTH);
     const type = searchParams.get('type') || 'all';
-    const lang = searchParams.get('lang') || 'ru';
+    // `lang` becomes part of a field path (title.<lang>), so only known locales are allowed
+    const requestedLang = searchParams.get('lang') || 'ru';
+    const lang = (i18n.locales as readonly string[]).includes(requestedLang) ? requestedLang : 'ru';
 
     if (!q) return NextResponse.json({ articles: [], doctors: [] });
+
+    // The query is user text, not a pattern: escape it before it reaches $regex
+    const pattern = escapeRegExp(q);
 
     let articles: any[] = [];
     let doctors: any[] = [];
@@ -36,8 +47,8 @@ export async function GET(req: NextRequest) {
       if (articles.length === 0) {
         articles = await Article.find({
           $or: [
-            { [`title.${lang}`]: { $regex: q, $options: 'i' } },
-            { [`overview.${lang}`]: { $regex: q, $options: 'i' } }
+            { [`title.${lang}`]: { $regex: pattern, $options: 'i' } },
+            { [`overview.${lang}`]: { $regex: pattern, $options: 'i' } }
           ]
         }).limit(10).populate('authorId', 'name image specialty slug').lean();
       }
@@ -57,8 +68,8 @@ export async function GET(req: NextRequest) {
         doctors = await Doctor.find({
           status: 'approved',
           $or: [
-            { name: { $regex: q, $options: 'i' } },
-            { city: { $regex: q, $options: 'i' } }
+            { name: { $regex: pattern, $options: 'i' } },
+            { city: { $regex: pattern, $options: 'i' } }
           ]
         }).limit(10).lean();
       }
