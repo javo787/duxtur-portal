@@ -27,7 +27,8 @@ export default function BookingButton({ doctor, lang }: { doctor: any; lang: str
           doctorId={doctor.id}
           doctorName={doctor.name}
           doctorSchedule={doctor.schedule}
-          doctorConsultationTypes={doctor.consultationTypes}
+          // lean() skips schema defaults, so a doctor saved before the field existed has none; the modal reads [0]
+          doctorConsultationTypes={doctor.consultationTypes?.length ? doctor.consultationTypes : ['in_person']}
           lang={lang}
           onClose={() => setIsOpen(false)}
         />
