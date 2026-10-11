@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { ShieldCheck, Star } from 'lucide-react';
 import { getT } from '@/i18n';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -13,7 +13,7 @@ export function ClinicCover({ clinic, lang = 'ru' }: { clinic: ClinicView; lang?
   const alt = [pick(clinic.name, lang).text, clinic.city].filter(Boolean).join(', ');
   return (
     <div className="relative aspect-[16/9] w-full bg-muted md:aspect-[21/7] md:max-h-[400px]">
-      <Image
+      <CloudinaryImage
         src={getOptimizedCloudinaryUrl(clinic.coverImage, { width: 1600, height: 700, crop: 'fill' })}
         alt={alt}
         fill
@@ -36,7 +36,7 @@ export default function ClinicHero({ clinic, lang }: { clinic: ClinicView; lang:
       <div className="flex items-center gap-3">
         {clinic.logo && (
           <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-white">
-            <Image
+            <CloudinaryImage
               src={getOptimizedCloudinaryUrl(clinic.logo, { width: 200, height: 200, crop: 'limit' })}
               alt=""
               fill

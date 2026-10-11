@@ -8,6 +8,7 @@ import FadeIn from '@/components/FadeIn';
 import { buildAlternates, buildPageUrl, BASE_URL } from '@/lib/seo';
 import { blogListingCanonicalPath } from '@/lib/blog-seo';
 import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 
 type Props = {
@@ -259,7 +260,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                     <div className="lg:col-span-6 relative min-h-[300px] lg:min-h-full">
                        <Link href={`/${lang}/blog/${validArticles[0].slug}`}>
-                        <Image
+                        <CloudinaryImage
                           src={validArticles[0].image || 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900'}
                           alt={pick(validArticles[0], validArticles[0].title)}
                           fill
@@ -299,7 +300,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                       <div className="pt-6 border-t border-[#eaedff]">
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           <div className="flex items-center gap-3">
-                            <Image
+                            <CloudinaryImage
                               src={validArticles[0].authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                               alt={validArticles[0].authorId?.name || 'Doctor'}
                               className="w-12 h-12 rounded-full object-cover border-2 border-[#89f5e7]"
@@ -356,7 +357,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                         <article className="bg-white border border-[#bcc9c6] rounded-2xl p-6 flex flex-col justify-between hover:border-[#00685f]/50 hover:shadow-md transition-all duration-300 group h-full">
                           <div>
                             <Link href={`/${lang}/blog/${article.slug}`} className="block relative rounded-xl overflow-hidden mb-4 aspect-video">
-                              <Image
+                              <CloudinaryImage
                                 src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                                 alt={pick(article, article.title)}
                                 fill
@@ -396,7 +397,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
                           </div>
                           <div className="pt-4 border-t border-[#eaedff] flex items-center justify-between mt-auto">
                             <div className="flex items-center gap-2 min-w-0">
-                               <Image
+                               <CloudinaryImage
                                   src={article.authorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                                   alt={article.authorId?.name || 'Doctor'}
                                   className="w-8 h-8 rounded-full object-cover border border-[#bcc9c6] shrink-0"

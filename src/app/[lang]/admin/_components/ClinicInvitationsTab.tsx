@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { Spinner, SectionHeader } from './_profile-sections/_shared';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -113,7 +113,7 @@ export function ClinicInvitationsTab({ lang }: { lang: string }) {
             <div key={inv._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:border-blue-100 transition-colors">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden relative bg-slate-50 shrink-0 border border-slate-50 shadow-sm">
-                    <Image
+                    <CloudinaryImage
                     src={inv.clinicId.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                     alt={inv.clinicId.name?.[lang] || inv.clinicId.name?.ru || ''}
                     fill

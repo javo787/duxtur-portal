@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -38,7 +38,7 @@ export default function ClinicDoctors({ doctors, lang }: { doctors: Doctor[]; la
               <Link href={href} tabIndex={-1} aria-hidden="true" className="shrink-0">
                 <span className="relative flex size-14 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-foreground/60">
                   {doc.image ? (
-                    <Image
+                    <CloudinaryImage
                       src={getOptimizedCloudinaryUrl(doc.image, { width: 200, height: 200, crop: 'fill' })}
                       alt=""
                       fill

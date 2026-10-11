@@ -11,7 +11,7 @@ import ArticleReviews from '@/components/reviews/ArticleReviews';
 import { articleRatingSummary, listPublicReviews } from '@/lib/review-service';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import ViewCounter from '@/components/ViewCounter';
 import ArticleLanguageNotice from '@/components/ArticleLanguageNotice';
@@ -429,7 +429,7 @@ export default async function BlogPage({
             {article.image && (
               <figure className="mt-8">
                 <div className="relative aspect-[16/9] overflow-hidden rounded-[10px] bg-muted">
-                  <Image src={article.image} alt={title} fill priority sizes="(min-width: 1024px) 704px, 100vw" className="object-cover" />
+                  <CloudinaryImage src={article.image} alt={title} fill priority sizes="(min-width: 1024px) 704px, 100vw" className="object-cover" />
                 </div>
               </figure>
             )}
@@ -566,7 +566,7 @@ export default async function BlogPage({
                   <Link href={`/${lang}/blog/${rel.slug}`} className="group block">
                     {rel.image && (
                       <div className="relative mb-3 aspect-[16/10] overflow-hidden rounded-lg bg-muted">
-                        <Image src={rel.image} alt="" fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
+                        <CloudinaryImage src={rel.image} alt="" fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
                       </div>
                     )}
                     <h3 lang={contentLangAttr} className="font-clinic text-lg leading-snug font-semibold group-hover:underline">{dbT(rel.title)}</h3>

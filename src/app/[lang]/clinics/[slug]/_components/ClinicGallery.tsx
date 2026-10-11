@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useT } from '@/i18n/client';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -36,7 +36,7 @@ export default function ClinicGallery({ photos, alt }: { photos: string[]; alt: 
               i === 0 ? 'col-span-2 row-span-2 aspect-square' : 'aspect-square'
             }`}
           >
-            <Image
+            <CloudinaryImage
               src={getOptimizedCloudinaryUrl(photo, { width: i === 0 ? 800 : 400, height: i === 0 ? 800 : 400, crop: 'fill' })}
               alt={`${alt} ${i + 1}`}
               fill

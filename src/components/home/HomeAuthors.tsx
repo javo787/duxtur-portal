@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { getT } from '@/i18n';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 import { initials } from '@/app/[lang]/clinics/[slug]/_components/shared';
@@ -34,7 +34,7 @@ export default function HomeAuthors({ lang, authors }: { lang: string; authors: 
               >
                 <span className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted font-clinic text-lg font-semibold text-muted-foreground">
                   {doc.image ? (
-                    <Image src={getOptimizedCloudinaryUrl(doc.image, { width: 112, height: 112, crop: 'fill' })} alt="" fill sizes="56px" className="object-cover" />
+                    <CloudinaryImage src={getOptimizedCloudinaryUrl(doc.image, { width: 112, height: 112, crop: 'fill' })} alt="" fill sizes="56px" className="object-cover" />
                   ) : (
                     initials(doc.name)
                   )}

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
 
 export default function DoctorGallery({ photos }: { photos: string[] }) {
@@ -17,7 +17,7 @@ export default function DoctorGallery({ photos }: { photos: string[] }) {
             onClick={() => setOpenIndex(i)}
             className="relative aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow group cursor-zoom-in"
           >
-            <Image
+            <CloudinaryImage
               src={getOptimizedCloudinaryUrl(photo, { width: 400, height: 400, crop: 'fill' })}
               alt={`Фото ${i + 1}`}
               fill
@@ -55,7 +55,7 @@ export default function DoctorGallery({ photos }: { photos: string[] }) {
             </button>
           )}
           <div className="relative w-full max-w-3xl aspect-square" onClick={(e) => e.stopPropagation()}>
-            <Image
+            <CloudinaryImage
               src={getOptimizedCloudinaryUrl(photos[openIndex], { width: 1200, height: 1200, crop: 'fit' })}
               alt={`Фото ${openIndex + 1}`}
               fill

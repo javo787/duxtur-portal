@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { useT } from '@/i18n/client';
 
@@ -40,7 +40,7 @@ export default function DoctorMapCard({ doctor, lang, onClose, onBuildRoute, has
 
       <div className="p-5 flex gap-4">
         <div className="relative shrink-0">
-          <Image
+          <CloudinaryImage
             src={doctor.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
             alt={doctor.name}
             width={64}

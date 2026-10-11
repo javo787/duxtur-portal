@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import Link from 'next/link';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { CATEGORY_LABELS, SPECIALTY_ICONS } from '@/lib/doctor-constants';
@@ -49,7 +49,7 @@ export default function DoctorCard({ doctor, lang, L }: DoctorCardProps) {
 
         {/* Фото */}
         <div className="relative flex-shrink-0 w-16 h-16">
-          <Image
+          <CloudinaryImage
             src={doctor.image || fallbackImage}
             alt={`Фото врача ${doctor.name}`}
             fill

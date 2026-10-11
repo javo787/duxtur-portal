@@ -15,7 +15,7 @@ import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/doctor-constants';
 import DownloadCardButton from '@/components/DownloadCardButton';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
 import { PremiumMobileProfile } from './_components/PremiumMobileProfile';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import DoctorViewTracker from '@/components/DoctorViewTracker';
 import ReviewDialog from '@/components/reviews/ReviewDialog';
 import BookingButton from './_components/BookingButton';
@@ -493,7 +493,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                   >
                     {/* Картинка */}
                     <div className="w-28 md:w-44 shrink-0 overflow-hidden relative">
-                      <Image
+                      <CloudinaryImage
                         src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                         alt={dbT(article.title)}
                         fill
@@ -599,7 +599,7 @@ export default async function DoctorProfilePage({ params }: Props) {
                 {articles.slice(0, 3).map((a) => (
                   <Link key={a._id} href={`/${lang}/blog/${a.slug}`} prefetch={false} className="group block">
                     <div className="aspect-video rounded-xl overflow-hidden mb-3 relative">
-                      <Image
+                      <CloudinaryImage
                         src={a.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                         alt={dbT(a.title)}
                         fill

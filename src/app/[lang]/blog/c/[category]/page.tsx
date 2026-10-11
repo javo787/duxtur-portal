@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 import FadeIn from '@/components/FadeIn';
 import { buildAlternates, BASE_URL } from '@/lib/seo';
 import { getT, T } from '@/i18n';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 import { notFound } from 'next/navigation';
 
@@ -155,7 +155,7 @@ export default async function BlogCategoryPage({ params }: Props) {
                   className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition duration-300 h-full"
                 >
                   <div className="h-52 overflow-hidden relative shrink-0">
-                    <Image
+                    <CloudinaryImage
                       src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                       alt={dbT(article, article.title)}
                       fill

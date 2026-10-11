@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { useT } from '@/i18n/client';
 
 type BottomSheetState = 'collapsed' | 'half' | 'full';
@@ -117,7 +117,7 @@ export function MapMobileBottomSheet({
                   key={doc._id}
                   className="relative shrink-0 w-12 h-12 rounded-2xl overflow-hidden border border-slate-100"
                 >
-                  <Image
+                  <CloudinaryImage
                     src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                     alt=""
                     fill
@@ -264,7 +264,7 @@ export function MapMobileBottomSheet({
                       }}
                     >
                       <div className="relative w-16 h-16 shrink-0">
-                        <Image
+                        <CloudinaryImage
                           src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                           alt=""
                           fill

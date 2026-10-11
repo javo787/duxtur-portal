@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { ShieldCheck } from 'lucide-react';
 import { getT } from '@/i18n';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -93,7 +93,7 @@ export default function HomeArticles({ lang, articles, dict }: { lang: string; a
         <article data-reveal="" className={`group relative grid overflow-hidden rounded-[10px] border border-border bg-card transition-colors duration-300 ease-premium hover:border-foreground/25 ${feat.image ? 'md:grid-cols-[1.1fr_1fr]' : ''}`}>
           {feat.image && (
             <div className="relative aspect-[16/10] bg-muted md:aspect-auto md:min-h-[22rem]">
-              <Image
+              <CloudinaryImage
                 src={getOptimizedCloudinaryUrl(feat.image, { width: 900, height: 600, crop: 'fill' })}
                 alt=""
                 fill

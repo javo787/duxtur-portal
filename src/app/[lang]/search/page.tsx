@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { useT } from '@/i18n/client';
 import FadeIn from '@/components/FadeIn';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -183,7 +184,7 @@ export default function SearchPage({ params, searchParams: searchParamsPromise }
                         className="group bg-white p-4 rounded-2xl border border-slate-100 flex gap-3 hover:shadow-xl hover:border-blue-100 transition-all duration-200 active:scale-95"
                       >
                         <div className="relative shrink-0">
-                          <Image
+                          <CloudinaryImage
                             src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                             alt={doc.name}
                             width={48}
@@ -224,7 +225,7 @@ export default function SearchPage({ params, searchParams: searchParamsPromise }
                         className="group bg-white p-4 rounded-2xl border border-slate-100 flex gap-3 hover:shadow-xl hover:border-blue-100 transition-all duration-200 active:scale-95"
                       >
                         <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-sm border border-slate-50">
-                          <Image
+                          <CloudinaryImage
                             src={art.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400'}
                             alt={dbT(art.title)}
                             fill

@@ -50,6 +50,8 @@ export default async function LangLayout({
             `,
           }}
         />
+        {/* Pictures come straight from Cloudinary (components/CloudinaryImage.tsx): open the connection early */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
         <link
           rel="alternate"
           type="application/rss+xml"

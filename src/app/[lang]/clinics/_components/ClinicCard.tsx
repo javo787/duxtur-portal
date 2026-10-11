@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import { ChevronRight, ShieldCheck, Star } from 'lucide-react';
 import { getT, Locale } from '@/i18n';
 import { ClinicDocument } from '@/lib/clinic-constants';
@@ -16,7 +16,7 @@ function Thumb({ clinic, name, priority }: { clinic: ListedClinic; name: string;
   if (clinic.logo) {
     return (
       <div className={box}>
-        <Image
+        <CloudinaryImage
           src={getOptimizedCloudinaryUrl(clinic.logo, { width: 240, height: 240, crop: 'limit' })}
           alt=""
           fill
@@ -30,7 +30,7 @@ function Thumb({ clinic, name, priority }: { clinic: ListedClinic; name: string;
   if (clinic.coverImage) {
     return (
       <div className={box}>
-        <Image
+        <CloudinaryImage
           src={getOptimizedCloudinaryUrl(clinic.coverImage, { width: 240, height: 240, crop: 'fill' })}
           alt=""
           fill

@@ -25,6 +25,12 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
     formats: ['image/avif', 'image/webp'],
+    // Cloudinary pictures bypass this optimizer (components/CloudinaryImage.tsx); it still serves local files, Unsplash,
+    // Google avatars. Next 16 only accepts the qualities listed here (default [75]): 85 is used by the map cards.
+    qualities: [75, 85],
+    // Default is 4 hours: every such image would be fetched and re-encoded again that often. These sources do not
+    // change under the same URL.
+    minimumCacheTTL: 60 * 60 * 24 * 7,
   },
 
   async headers() {

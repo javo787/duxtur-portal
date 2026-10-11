@@ -3,7 +3,7 @@ import Appointment from '@/models/Appointment';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import CloudinaryImage from '@/components/CloudinaryImage';
 import CancelButton from './_components/CancelButton';
 
 export default async function PatientAppointmentsPage({ params }: { params: Promise<{ lang: string }> }) {
@@ -34,7 +34,7 @@ export default async function PatientAppointmentsPage({ params }: { params: Prom
             {appointments.map((apt: any) => (
               <div key={apt._id.toString()} className="bg-white rounded-2xl p-6 border shadow-sm flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                   <Image
+                   <CloudinaryImage
                      src={apt.doctorId?.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                      alt={apt.doctorId?.name || 'Doctor'}
                      width={56} height={56}
