@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+// Bundled with the app instead of <link>/URLs pointing at unpkg: no extra origin, no render-blocking
+// third-party stylesheet, and the map no longer breaks when that CDN is slow or unreachable.
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { fromPin } from '@/lib/coordinates';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -10,9 +17,9 @@ if (typeof window !== 'undefined') {
   // @ts-ignore
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconRetinaUrl: markerIcon2x.src,
+    iconUrl: markerIcon.src,
+    shadowUrl: markerShadow.src,
   });
 }
 
@@ -151,22 +158,6 @@ export default function MapInner({
             // Dynamic import markercluster only on client
             await import('leaflet.markercluster');
             if (!mountedRef.current) return;
-
-            // Inject styles if not already present
-            if (!document.getElementById('leaflet-markercluster-css')) {
-                const link = document.createElement('link');
-                link.id = 'leaflet-markercluster-css';
-                link.rel = 'stylesheet';
-                link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
-                document.head.appendChild(link);
-            }
-            if (!document.getElementById('leaflet-markercluster-default-css')) {
-                const link = document.createElement('link');
-                link.id = 'leaflet-markercluster-default-css';
-                link.rel = 'stylesheet';
-                link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
-                document.head.appendChild(link);
-            }
         } catch (err) {
             console.error("Failed to load markercluster:", err);
         }
