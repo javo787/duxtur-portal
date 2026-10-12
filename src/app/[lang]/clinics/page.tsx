@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import { BASE_URL, buildAlternates, buildBreadcrumbJsonLd, buildFilterQuery, ogAlternateLocales, ogLocale, safeJsonLd } from '@/lib/seo';
 import { ALLOWED_CITIES, CLINIC_TYPES, ClinicDocument } from '@/lib/clinic-constants';
 import { sanitizeSearchParams } from '@/lib/validation';
-import { getClinicsPage, getIndexableFacets } from '@/lib/clinic-service';
+import { getClinicsPage, getDirectoryTotal, getIndexableFacets } from '@/lib/clinic-service';
 import {
   buildClinicListJsonLd,
   buildListingHeading,
@@ -29,19 +29,22 @@ type SearchParams = { city?: string; type?: string; specialty?: string; q?: stri
 /** The one place that turns the query string into data, shared by generateMetadata and the page. */
 async function loadListing(lang: string, rawParams: SearchParams) {
   const filters = sanitizeSearchParams(rawParams);
-  const { clinics, total } = await getClinicsPage(
-    filters.city ?? '',
-    filters.type ?? '',
-    filters.specialty ?? '',
-    filters.q ?? '',
-    filters.sort ?? '',
-    filters.page,
-    PAGE_SIZE,
-  );
+  const [{ clinics, total }, directoryTotal] = await Promise.all([
+    getClinicsPage(
+      filters.city ?? '',
+      filters.type ?? '',
+      filters.specialty ?? '',
+      filters.q ?? '',
+      filters.sort ?? '',
+      filters.page,
+      PAGE_SIZE,
+    ),
+    getDirectoryTotal(),
+  ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   // ?page=99 on a three-page listing is empty: not worth indexing, whatever the total says.
   const pageInRange = filters.page === 1 || filters.page <= totalPages;
-  const indexable = listingIndexable(filters, total) && pageInRange;
+  const indexable = listingIndexable(filters, total, directoryTotal) && pageInRange;
   return { lang, filters: filters as ListingFilters, clinics: clinics as ClinicDocument[], total, totalPages, indexable };
 }
 

@@ -108,11 +108,22 @@ describe('buildSitemapEntries', () => {
     expect(find('https://www.duxtur.org/ru/doctors')).not.toHaveProperty('lastModified');
   });
 
-  it('lists articles only in the languages that have a title', () => {
-    const list = urls(base({ articles: [{ slug: 'a', title: { ru: 'Заголовок на русском', uz: 'Sarlavha oʻzbekcha' } }, { slug: 'none', title: {} }] }));
+  it('lists articles only in the languages the article page can show', () => {
+    const list = urls(
+      base({
+        articles: [
+          // ru has a title, an overview and a section. uz has a translated title only: /uz/blog/a is a noindex page.
+          { slug: 'a', title: { ru: 'Заголовок на русском', uz: 'Sarlavha oʻzbekcha' }, overview: { ru: 'Краткое описание' }, section1_content: { ru: 'Текст раздела' } },
+          // a short article without any section: title and overview are enough
+          { slug: 'short', title: { tg: 'Сарлавҳа' }, overview: { tg: 'Тавсиф' } },
+          { slug: 'none', title: {} },
+        ],
+      }),
+    );
     expect(list).toContain('https://www.duxtur.org/ru/blog/a');
-    expect(list).toContain('https://www.duxtur.org/uz/blog/a');
-    expect(list).not.toContain('https://www.duxtur.org/tg/blog/a');
+    expect(list).not.toContain('https://www.duxtur.org/uz/blog/a');
+    expect(list).toContain('https://www.duxtur.org/tg/blog/short');
+    expect(list).not.toContain('https://www.duxtur.org/ru/blog/short');
     expect(list.some((u) => u.includes('/blog/none'))).toBe(false);
   });
 
@@ -162,7 +173,8 @@ describe('buildSitemapEntries', () => {
 
 describe('the sitemap as Next writes it', () => {
   const data = base({
-    clinics: [clinic('a', { type: 'dental_clinic' }), clinic('b', { type: 'dental_clinic' }), clinic('c', { type: 'dental_clinic' })],
+    // d keeps the Dushanbe and dental facets a real subset of the directory (a facet with every clinic is not listed)
+    clinics: [clinic('a', { type: 'dental_clinic' }), clinic('b', { type: 'dental_clinic' }), clinic('c', { type: 'dental_clinic' }), clinic('d', { city: 'Худжанд', type: 'hospital' })],
   });
   const xml = resolveSitemap(buildSitemapEntries(data));
 

@@ -63,7 +63,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   }
   if (city) title += ` ${lang === 'ru' ? 'в ' : ''}${city}`;
   return {
-    title: `${title} — Duxtur.org`,
+    title, // the root layout's title template adds the site name
     description: UI.subtitle[lang] || UI.subtitle.ru,
     // A filtered, sorted or paged view is not a page of its own. ?specialty=cardiology alone is the list of the
     // cardiology landing page and points there; everything else points at the plain directory. Only the plain

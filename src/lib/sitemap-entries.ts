@@ -1,15 +1,29 @@
 import type { MetadataRoute } from 'next';
+import { articleLanguages } from './article-lang';
 import { clinicIndexability, indexableListingFacets, type ClinicSeoInput } from './clinic-seo';
 import { specialtyIndexable, specialtyStats } from './doctor-seo';
 import { BASE_URL, SEO_LANGS, buildFilterQuery } from './seo';
 
 type DateLike = Date | string | undefined | null;
 
-export interface SitemapArticle {
+type Multilingual = Partial<Record<string, string>> | null | undefined;
+
+/** The fields articleLanguages() reads: a language is listed only if the article page can really show it. */
+export type SitemapArticle = {
   slug: string;
   updatedAt?: DateLike;
-  title?: Partial<Record<string, string>>;
-}
+  title?: Multilingual;
+  overview?: Multilingual;
+  symptoms?: Multilingual;
+  causes?: Multilingual;
+  diagnosis_treatment?: Multilingual;
+  prevention?: Multilingual;
+  section1_content?: Multilingual;
+  section2_content?: Multilingual;
+  section3_content?: Multilingual;
+  section4_content?: Multilingual;
+  section5_content?: Multilingual;
+};
 
 export interface SitemapDoctor {
   slug?: string;
@@ -80,8 +94,10 @@ export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
   const facets = indexableListingFacets(data.clinics);
 
   const articlePages = data.articles.flatMap((article) => {
-    // Only the languages that actually have a translated title.
-    const available = languages.filter((lang) => (article.title?.[lang]?.trim().length ?? 0) > 5);
+    // Only the languages the article page itself treats as available (title, overview and a body). A language with
+    // a translated title alone opens a noindex page that points at the real version, and must not be listed.
+    const readable = new Set<string>(articleLanguages(article));
+    const available = languages.filter((lang) => readable.has(lang));
     return available.map((lang) =>
       entry(`${lang}/blog/${article.slug}`, { lastModified: toDate(article.updatedAt), changeFrequency: 'weekly', priority: 0.85 }),
     );

@@ -57,20 +57,33 @@ export const getClinicsPage = cache(
     }),
 );
 
-let facetMemo: { at: number; facets: ListingFacet[] } | null = null;
+let facetMemo: { at: number; facets: ListingFacet[]; directoryTotal: number } | null = null;
 const FACET_TTL_MS = 10 * 60 * 1000;
 
 /**
  * City / type / specialty listings that have enough clinics to be indexable (the same list the sitemap uses).
  * Kept for a few minutes in memory: it changes only when clinics are added, and every directory render wants it.
  */
-export async function getIndexableFacets(): Promise<ListingFacet[]> {
-  if (facetMemo && Date.now() - facetMemo.at < FACET_TTL_MS) return facetMemo.facets;
+async function loadFacetMemo() {
+  if (facetMemo && Date.now() - facetMemo.at < FACET_TTL_MS) return facetMemo;
   await dbConnect();
+  // The same status filter as buildClinicQuery({}): the clinics the plain directory lists.
   const docs = await Clinic.find({ status: { $in: ['approved', 'pre_imported'] } })
     .select('city type specialties updatedAt')
     .lean();
-  const facets = indexableListingFacets(docs as unknown as FacetSource[]);
-  facetMemo = { at: Date.now(), facets };
-  return facets;
+  facetMemo = {
+    at: Date.now(),
+    facets: indexableListingFacets(docs as unknown as FacetSource[]),
+    directoryTotal: docs.length,
+  };
+  return facetMemo;
+}
+
+export async function getIndexableFacets(): Promise<ListingFacet[]> {
+  return (await loadFacetMemo()).facets;
+}
+
+/** How many clinics the plain directory lists; a filter that keeps all of them is not a page of its own. */
+export async function getDirectoryTotal(): Promise<number> {
+  return (await loadFacetMemo()).directoryTotal;
 }

@@ -12,7 +12,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await dbConnect();
 
   const [articles, doctors, clinics] = await Promise.all([
-    Article.find({}).select("slug updatedAt title").lean(),
+    Article.find({})
+      .select(
+        "slug updatedAt title overview symptoms causes diagnosis_treatment prevention section1_content section2_content section3_content section4_content section5_content",
+      )
+      .lean(),
     // specialty.ru: which specialty pages have a doctor (an empty page is noindex and must not be listed)
     Doctor.find({ status: "approved" }).select("slug _id updatedAt specialty.ru").lean(),
     // The directory lists approved and pre_imported clinics, so facet counts need both.

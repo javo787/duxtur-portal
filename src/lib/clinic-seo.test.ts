@@ -443,6 +443,16 @@ describe('directory pages', () => {
     expect(listingIndexable({ q: 'шифо' }, 25)).toBe(false);
   });
 
+  it('does not index a filter that shows the whole directory under another URL', () => {
+    expect(listingIndexable({ city: 'Душанбе' }, 11, 11)).toBe(false);
+    expect(listingIndexable({ city: 'Душанбе', type: 'clinic' }, 11, 11)).toBe(false);
+    expect(listingIndexable({ city: 'Душанбе' }, 10, 11)).toBe(true);
+    // the plain directory is always the one page for that list
+    expect(listingIndexable({}, 11, 11)).toBe(true);
+    // directory size unknown: the old rule
+    expect(listingIndexable({ city: 'Душанбе' }, 11)).toBe(true);
+  });
+
   it('keeps counting list positions across pages and links to the profile pages', () => {
     const ld = buildClinicListJsonLd({
       clinics: [
@@ -511,8 +521,20 @@ describe('indexableListingFacets', () => {
 
   it('copes with empty input and clinics without a city or specialties', () => {
     expect(indexableListingFacets([])).toEqual([]);
-    expect(indexableListingFacets([{ type: 'clinic' }, { type: 'clinic' }, { type: 'clinic' }] as never)).toEqual([
+    // 3 clinics out of 4: a real subset of the directory
+    expect(indexableListingFacets([{ type: 'clinic' }, { type: 'clinic' }, { type: 'clinic' }, {}] as never)).toEqual([
       expect.objectContaining({ type: 'clinic', count: 3 }),
     ]);
+  });
+
+  it('leaves out facets that list every clinic of the directory', () => {
+    const all = [c('Душанбе', 'clinic', ['dentistry']), c('Душанбе', 'clinic', ['dentistry']), c('Душанбе', 'clinic', ['dentistry'])];
+    // city, type, city+type and specialty all keep the same 3 clinics as the plain directory
+    expect(indexableListingFacets(all)).toEqual([]);
+    // the first clinic outside Dushanbe turns the city facet into a real subset again
+    const more = [...all, c('Худжанд', 'clinic', ['cardiology'])];
+    const facets = indexableListingFacets(more);
+    expect(facets.some((f) => f.city === 'Душанбе' && !f.type && !f.specialty && f.count === 3)).toBe(true);
+    expect(facets.some((f) => f.type === 'clinic' && !f.city && f.count === 4)).toBe(false);
   });
 });
