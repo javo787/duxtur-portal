@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
-import { EDU_CSP, EDU_BRIDGE_CSP } from "./src/lib/edu-csp";
+import { eduCsp, EDU_BRIDGE_CSP } from "./src/lib/edu-csp";
+import { httpsOrigin } from "./src/lib/study-api";
 import { eduLocaleRedirects } from "./src/lib/edu-routes";
 import { BASE_URL } from "./src/lib/seo";
 import { INDEXNOW_KEY_FILE_SOURCE } from "./src/lib/indexnow";
@@ -8,6 +9,14 @@ import { INDEXNOW_KEY_FILE_SOURCE } from "./src/lib/indexnow";
 // Origin that serves the static Duxtur Edu build at its ROOT (e.g. a Firebase Hosting site).
 // When unset, /edu is simply not mounted.
 const EDU_APP_ORIGIN = (process.env.EDU_APP_ORIGIN || '').replace(/\/$/, '');
+
+// Study.tj API of Duxtur Edu (a Node service, not part of the static Edu build). Both variables are optional; unset = no effect.
+// STUDY_API_ORIGIN: /edu/api/study/* is forwarded to the service, so the browser only ever talks to duxtur.org (same origin,
+//   no CORS, works even where the service's own domain is blocked).
+// STUDY_API_CONNECT_ORIGIN: the Edu CSP also allows the browser to call this origin directly (the Edu build then uses
+//   NEXT_PUBLIC_STUDY_API_URL).
+const STUDY_API_ORIGIN = httpsOrigin(process.env.STUDY_API_ORIGIN);
+const STUDY_API_CONNECT_ORIGIN = httpsOrigin(process.env.STUDY_API_CONNECT_ORIGIN);
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -58,7 +67,7 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
-          { key: 'Content-Security-Policy', value: EDU_CSP },
+          { key: 'Content-Security-Policy', value: eduCsp(STUDY_API_CONNECT_ORIGIN) },
         ],
       },
       {
@@ -114,6 +123,11 @@ const nextConfig: NextConfig = {
       ...(EDU_APP_ORIGIN
         ? {
             beforeFiles: [
+              // Must stay above the generic /edu/:path* rule (the first match wins). The proxy file does not run for this
+              // path (see its matcher), so it costs an edge request and the response bytes, no function invocation.
+              ...(STUDY_API_ORIGIN
+                ? [{ source: '/edu/api/study/:path*', destination: `${STUDY_API_ORIGIN}/api/study/:path*` }]
+                : []),
               { source: '/edu', destination: `${EDU_APP_ORIGIN}/` },
               { source: '/edu/:path*', destination: `${EDU_APP_ORIGIN}/:path*` },
             ],
