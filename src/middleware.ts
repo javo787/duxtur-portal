@@ -52,5 +52,6 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // edu/api/: Study.tj API calls under /edu are forwarded by a rewrite in next.config.ts and need none of the logic above.
+  matcher: ['/((?!api|edu/api/|_next/static|_next/image|favicon.ico).*)'],
 };
