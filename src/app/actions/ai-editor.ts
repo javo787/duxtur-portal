@@ -14,7 +14,7 @@ const languageNames: Record<string, string> = {
 
 // ─── РЕЖИМ 1: Написать статью из черновика ───
 export async function processMedicalDraft(draftText: string, language: string = 'ru') {
-  const { email } = await requireRole('doctor');
+  const { email } = await requireRole('doctor', 'portal_admin');
   const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
   if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
 
@@ -68,7 +68,7 @@ OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
 
 // ─── РЕЖИМ 2: Обработать готовую статью ───
 export async function processMedicalArticle(articleText: string, language: string = 'ru') {
-  const { email } = await requireRole('doctor');
+  const { email } = await requireRole('doctor', 'portal_admin');
   const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
   if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
 
@@ -121,7 +121,7 @@ OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
 
 // ─── РЕЖИМ 3: Перевести статью ───
 export async function translateMedicalArticle(articleText: string, language: string = 'ru') {
-  const { email } = await requireRole('doctor');
+  const { email } = await requireRole('doctor', 'portal_admin');
   const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
   if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
 

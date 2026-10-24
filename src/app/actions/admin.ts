@@ -267,11 +267,19 @@ export async function deleteDoctor(id: string) {
   revalidatePath('/admin/portal');
 }
 
+/** The article lists of the public site and of the portal, after an article went live, was hidden or was removed. */
+function revalidateArticles() {
+  revalidatePath('/admin/portal');
+  revalidatePath('/[lang]/admin/portal', 'page');
+  revalidatePath('/[lang]/admin/portal/articles', 'page');
+  revalidatePath('/[lang]/blog', 'page');
+}
+
 export async function deleteArticle(id: string) {
   await requireRole('portal_admin');
   await dbConnect();
   await Article.findByIdAndDelete(id);
-  revalidatePath('/admin/portal');
+  revalidateArticles();
 }
 
 export async function toggleDoctorBan(id: string, banned: boolean) {
@@ -295,7 +303,15 @@ export async function approveArticle(articleId: string) {
   await requireRole('portal_admin');
   await dbConnect();
   await Article.findByIdAndUpdate(articleId, { isVerified: true });
-  revalidatePath('/admin/portal');
+  revalidateArticles();
+}
+
+/** Takes a published article off the site without deleting it: it goes back to the moderation queue. */
+export async function unpublishArticle(articleId: string) {
+  await requireRole('portal_admin');
+  await dbConnect();
+  await Article.findByIdAndUpdate(articleId, { isVerified: false });
+  revalidateArticles();
 }
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────

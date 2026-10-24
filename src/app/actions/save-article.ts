@@ -5,8 +5,10 @@ import ArticleDraft from '@/models/ArticleDraft';
 import Doctor from '@/models/Doctor';
 import User from '@/models/User';
 import { auth } from '@/auth';
+import { revalidatePath } from 'next/cache';
 import { evaluateAuthor } from '@/lib/author-profile';
 import { publishArticle } from '@/lib/author-articles';
+import { ensureEditorialAuthor } from '@/lib/editorial-author';
 import { ARTICLE_LANGUAGES, MAX_DRAFTS_PER_AUTHOR, MAX_DRAFT_BYTES, type SaveOutcome } from '@/lib/author-types';
 
 /**
@@ -16,6 +18,8 @@ import { ARTICLE_LANGUAGES, MAX_DRAFTS_PER_AUTHOR, MAX_DRAFT_BYTES, type SaveOut
  * - Anybody else who may write (a new account, or a doctor still waiting for the check): the article is kept as a
  *   draft. `missing` lists what the profile still lacks, or is empty when the profile is complete and only the
  *   team's verification is left; the draft is published by itself when the doctor is approved.
+ *
+ * - The super admin (`portal_admin`): the article is published at once under the editorial byline, already approved.
  *
  * `draftId` is the draft this text came from (when an old draft is opened again): it is updated, not duplicated, and
  * removed once the article is published.
@@ -38,6 +42,13 @@ export async function saveArticle(articleData: unknown, language: string, draftI
 
     const user = await User.findOne({ email: session.user.email });
     if (!user) return { success: false, error: 'Пользователь не найден' };
+    if (user.role === 'portal_admin') {
+      const editorial = await ensureEditorialAuthor(user._id);
+      const slug = await publishArticle(data, language, editorial._id, { verified: true });
+      revalidatePath('/[lang]/blog', 'page');
+      revalidatePath('/[lang]/admin/portal/articles', 'page');
+      return { success: true, outcome: 'published', slug };
+    }
     if (user.role !== 'patient' && user.role !== 'doctor') {
       return { success: false, error: 'Статьи пишут врачи и преподаватели. Войдите под своим аккаунтом.' };
     }

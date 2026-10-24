@@ -38,7 +38,7 @@ type EditorData = Record<string, unknown>;
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
 
 /** The Article document for what an editor produced, in one language. */
-export function buildArticleDoc(data: EditorData, language: string, authorId: unknown) {
+export function buildArticleDoc(data: EditorData, language: string, authorId: unknown, verified = false) {
   const references = Array.isArray(data.references) ? data.references : [];
   const doc: Record<string, unknown> = {
     slug: articleSlug(str(data.title)),
@@ -47,7 +47,7 @@ export function buildArticleDoc(data: EditorData, language: string, authorId: un
     title: { [language]: stripHtml(str(data.title)) },
     overview: { [language]: stripHtml(str(data.overview)) },
     references,
-    isVerified: false,
+    isVerified: verified,
     aiGenerated: typeof data.aiGenerated === 'boolean' ? data.aiGenerated : true,
   };
   for (let i = 1; i <= 5; i++) {
@@ -57,9 +57,15 @@ export function buildArticleDoc(data: EditorData, language: string, authorId: un
   return doc;
 }
 
-export async function publishArticle(data: EditorData, language: string, authorId: unknown): Promise<string> {
+/**
+ * `options.verified`: the article goes live at once, without the moderation queue. Only the super admin's own
+ * articles use it (there is nobody above them to check the text); articles of doctors are always moderated.
+ */
+export async function publishArticle(
+  data: EditorData, language: string, authorId: unknown, options: { verified?: boolean } = {}
+): Promise<string> {
   await dbConnect();
-  const created = await Article.create(buildArticleDoc(data, language, authorId));
+  const created = await Article.create(buildArticleDoc(data, language, authorId, options.verified === true));
   return created.slug as string;
 }
 

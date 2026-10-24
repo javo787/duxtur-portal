@@ -52,7 +52,7 @@ export async function registerDoctor(formData: FormData) {
     const translatedSpecialty = await translateText(specialty);
 
     if (claimDoctorId) {
-      const existingDoctor = await Doctor.findOne({ _id: claimDoctorId, status: 'pre_imported' });
+      const existingDoctor = await Doctor.findOne({ _id: claimDoctorId, status: 'pre_imported', isEditorial: { $ne: true } });
       if (!existingDoctor) {
         return { success: false, error: 'Профиль уже занят или не существует.' };
       }

@@ -32,7 +32,7 @@ export async function createDoctor(data: Record<string, unknown>) {
 export async function claimDoctorProfile(doctorId: string, data: { userId: any; phone: string; documentImage: string }) {
   await dbConnect();
   return Doctor.findOneAndUpdate(
-    { _id: doctorId, status: 'pre_imported' },
+    { _id: doctorId, status: 'pre_imported', isEditorial: { $ne: true } },
     {
       $set: {
         userId: data.userId,
@@ -49,7 +49,7 @@ export async function claimDoctorProfile(doctorId: string, data: { userId: any; 
 
 export async function findSimilarPreImportedDoctors(name: string, specialty: string) {
   await dbConnect();
-  const candidates = await Doctor.find({ status: 'pre_imported' }).lean();
+  const candidates = await Doctor.find({ status: 'pre_imported', isEditorial: { $ne: true } }).lean();
 
   const scoredCandidates = candidates
     .map((doc: any) => {

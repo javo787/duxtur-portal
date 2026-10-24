@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
-import Doctor from '@/models/Doctor';
-import User from '@/models/User';
 import { rateLimit } from '@/lib/rate-limit';
+import { getArticleActor } from '@/lib/article-access';
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const session = await auth();
-  if (!session?.user) return NextResponse.json(null, { status: 401 });
+  const actor = await getArticleActor();
+  if (actor.kind === 'denied') {
+    return NextResponse.json(actor.status === 401 ? null : { error: actor.error }, { status: actor.status });
+  }
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email });
-  const doctor = await Doctor.findOne({ userId: user?._id });
-  if (!doctor) return NextResponse.json(null, { status: 403 });
-  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
-
-  const article = await Article.findOne({ slug, authorId: doctor._id }).lean();
+  const article = await Article.findOne(actor.kind === 'admin' ? { slug } : { slug, authorId: actor.doctorId }).lean();
   if (!article) return NextResponse.json(null, { status: 404 });
 
   return NextResponse.json(article);
@@ -35,17 +30,15 @@ export async function PATCH(
   if (!success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
   const { slug } = await params;
-  const session = await auth();
-  if (!session?.user) return NextResponse.json(null, { status: 401 });
+  const actor = await getArticleActor();
+  if (actor.kind === 'denied') {
+    return NextResponse.json(actor.status === 401 ? null : { error: actor.error }, { status: actor.status });
+  }
 
   await dbConnect();
-  const user = await User.findOne({ email: session.user.email });
-  const doctor = await Doctor.findOne({ userId: user?._id });
-  if (!doctor) return NextResponse.json({ error: 'Нет доступа' }, { status: 403 });
-  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
 
-  // Проверяем что статья принадлежит этому врачу
-  const existing = await Article.findOne({ slug, authorId: doctor._id });
+  // A doctor edits only their own articles. The super admin edits any article.
+  const existing = await Article.findOne(actor.kind === 'admin' ? { slug } : { slug, authorId: actor.doctorId });
   if (!existing) return NextResponse.json({ error: 'Статья не найдена' }, { status: 404 });
 
   const body = await req.json();
@@ -59,7 +52,8 @@ export async function PATCH(
     image: articleData.image || existing.image,
     category: articleData.category || existing.category,
     references: Array.isArray(articleData.references) ? articleData.references : existing.references,
-    isVerified: false, // после редактирования — снова на модерацию
+    // A doctor's edit goes back to moderation; the super admin's edit keeps the article as it was.
+    isVerified: actor.kind === 'admin' ? existing.isVerified : false,
     updatedAt: new Date(),
   };
 
