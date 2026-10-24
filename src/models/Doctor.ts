@@ -103,6 +103,10 @@ const DoctorSchema = new mongoose.Schema({
   profileViews: { type: Number, default: 0 },
   contactClicks: { type: Number, default: 0 },
 
+  // Byline of the portal team ("Редакция Duxtur"): the author of articles written by the super admin.
+  // Never a real doctor: it is kept as `pre_imported`, so it stays out of every public doctor list.
+  isEditorial: { type: Boolean, default: false },
+
   // Import info
   importSourceUrl: { type: String, default: '' },
   importedAt: { type: Date },

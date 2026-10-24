@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
-import Doctor from '@/models/Doctor';
-import User from '@/models/User';
+import { getArticleActor } from '@/lib/article-access';
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json(null, { status: 401 });
+  const actor = await getArticleActor();
+  if (actor.kind === 'denied') {
+    return NextResponse.json(actor.status === 401 ? null : { error: actor.error }, { status: actor.status });
+  }
+  // The super admin works with every article through the portal, not through the doctor's cabinet.
+  if (actor.kind === 'admin') return NextResponse.json([]);
 
   await dbConnect();
-
-  const user = await User.findOne({ email: session.user.email });
-  if (!user) return NextResponse.json([], { status: 404 });
-
-  const doctor = await Doctor.findOne({ userId: user._id });
-  if (!doctor) return NextResponse.json([], { status: 404 });
-  if (doctor.status !== 'approved') return NextResponse.json({ error: 'Doctor not approved' }, { status: 403 });
-
-  const articles = await Article.find({ authorId: doctor._id })
+  const articles = await Article.find({ authorId: actor.doctorId })
     .select('slug title image category isVerified views createdAt updatedAt')
     .sort({ createdAt: -1 })
     .lean();

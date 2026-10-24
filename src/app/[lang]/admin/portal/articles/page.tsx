@@ -1,0 +1,184 @@
+import Link from 'next/link';
+import { Eye, EyeOff, CircleCheck, Trash2, PenLine, Search, FileText, BadgeCheck } from 'lucide-react';
+import dbConnect from '@/lib/mongodb';
+import Article from '@/models/Article';
+import { assertAdminPage } from '@/lib/admin-content/guard';
+import { approveArticle, unpublishArticle, deleteArticle } from '@/app/actions/admin';
+import AdminShell from '../_shared/AdminShell';
+import { ActionButton } from '../_components/ActionButton';
+import { Avatar, Card, EmptyState, Pill } from '../_components/ui';
+import { EditArticleButton } from './_components/EditArticleButton';
+
+const PAGE_SIZE = 20;
+const STATUSES = ['all', 'published', 'pending'] as const;
+type StatusFilter = (typeof STATUSES)[number];
+const FALLBACK_ARTICLE_IMAGE = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200';
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+interface Row {
+  _id: unknown;
+  slug: string;
+  image?: string;
+  title?: Record<string, string | undefined>;
+  category?: string;
+  isVerified?: boolean;
+  views?: number;
+  createdAt?: Date;
+  authorId?: { name?: string; isEditorial?: boolean } | null;
+}
+
+const titleOf = (a: Row) => a.title?.ru || a.title?.uz || a.title?.tg || a.title?.ky || a.title?.kk || 'Без названия';
+
+export default async function ArticlesAdminPage({
+  params, searchParams,
+}: {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+}) {
+  const { lang } = await params;
+  const sp = await searchParams;
+  await assertAdminPage(lang);
+
+  const q = (sp.q ?? '').trim().slice(0, 80);
+  const status: StatusFilter = (STATUSES as readonly string[]).includes(sp.status ?? '') ? (sp.status as StatusFilter) : 'all';
+  const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1);
+
+  const filter: Record<string, unknown> = {};
+  if (status === 'published') filter.isVerified = true;
+  if (status === 'pending') filter.isVerified = false;
+  if (q) {
+    const rx = { $regex: escapeRegex(q), $options: 'i' };
+    filter.$or = ['ru', 'uz', 'tg', 'ky', 'kk'].map(l => ({ [`title.${l}`]: rx }));
+  }
+
+  await dbConnect();
+  const [rows, total, publishedTotal, pendingTotal] = await Promise.all([
+    Article.find(filter)
+      .select('slug image title category isVerified views createdAt authorId')
+      .populate('authorId', 'name isEditorial')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * PAGE_SIZE)
+      .limit(PAGE_SIZE)
+      .lean<Row[]>(),
+    Article.countDocuments(filter),
+    Article.countDocuments({ isVerified: true }),
+    Article.countDocuments({ isVerified: false }),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const base = `/${lang}/admin/portal/articles`;
+  const href = (next: { status?: StatusFilter; page?: number }) => {
+    const qs = new URLSearchParams();
+    const s = next.status ?? status;
+    if (q) qs.set('q', q);
+    if (s !== 'all') qs.set('status', s);
+    if (next.page && next.page > 1) qs.set('page', String(next.page));
+    const str = qs.toString();
+    return str ? `${base}?${str}` : base;
+  };
+
+  const filters: { id: StatusFilter; label: string; count: number }[] = [
+    { id: 'all', label: 'Все', count: publishedTotal + pendingTotal },
+    { id: 'published', label: 'Опубликованные', count: publishedTotal },
+    { id: 'pending', label: 'На проверке', count: pendingTotal },
+  ];
+
+  return (
+    <AdminShell
+      lang={lang}
+      active="articles"
+      title="Статьи"
+      description="Все статьи портала: свои, врачей и редакции. Правьте, скрывайте и публикуйте."
+      action={
+        <Link
+          href={`${base}/new`}
+          className="inline-flex items-center gap-2 rounded-xl bg-linear-to-b from-sky-400 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(37,99,235,0.8)] ring-1 ring-inset ring-white/25 transition-[transform,filter] duration-200 ease-premium hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+        >
+          <PenLine className="h-4 w-4" aria-hidden /> Написать статью
+        </Link>
+      }
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Фильтр статей" className="flex gap-1 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.06]">
+          {filters.map(f => (
+            <Link
+              key={f.id}
+              href={href({ status: f.id, page: 1 })}
+              aria-current={f.id === status ? 'page' : undefined}
+              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors duration-200 ${
+                f.id === status ? 'bg-white/10 font-medium text-white shadow-sm' : 'text-gray-400 hover:text-gray-100'
+              }`}
+            >
+              {f.label}
+              <span className="text-[11px] tabular-nums text-gray-500">{f.count}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <form action={base} className="relative w-full sm:w-72">
+          {status !== 'all' && <input type="hidden" name="status" value={status} />}
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" aria-hidden />
+          <input
+            name="q" defaultValue={q} placeholder="Поиск по названию…" aria-label="Поиск по названию"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2 pl-9 pr-3 text-sm text-white placeholder-gray-600 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+          />
+        </form>
+      </div>
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title={q || status !== 'all' ? 'Ничего не найдено' : 'Статей пока нет'}
+          text={q || status !== 'all' ? 'Измените поиск или фильтр.' : 'Напишите первую статью — она сразу появится на сайте.'}
+        />
+      ) : (
+        <div className="grid gap-3">
+          {rows.map(article => {
+            const id = String(article._id);
+            const isEditorial = article.authorId?.isEditorial === true;
+            return (
+              <Card key={id} as="article" className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <Avatar src={article.image || FALLBACK_ARTICLE_IMAGE} name={titleOf(article)} size={64} rounded="xl" />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      {article.isVerified ? <Pill tone="emerald">Опубликована</Pill> : <Pill tone="amber">На проверке</Pill>}
+                      {isEditorial && <Pill tone="sky"><BadgeCheck className="h-3 w-3" aria-hidden /> Редакция</Pill>}
+                      {article.category && <Pill tone="violet">{article.category}</Pill>}
+                    </div>
+                    <p className="truncate text-sm font-medium text-white">{titleOf(article)}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                      <span>{article.authorId?.name || 'Автор неизвестен'}</span>
+                      {article.createdAt && <span>{new Date(article.createdAt).toLocaleDateString('ru')}</span>}
+                      <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" aria-hidden /> {(article.views ?? 0).toLocaleString('ru-RU')}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Link
+                    href={`/${lang}/blog/${article.slug}`} target="_blank"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-gray-200 ring-1 ring-inset ring-white/10 transition-colors duration-150 hover:bg-white/[0.09]"
+                  >
+                    <Eye className="h-3.5 w-3.5" aria-hidden /> Открыть
+                  </Link>
+                  <EditArticleButton slug={article.slug} lang={lang} />
+                  {article.isVerified
+                    ? <ActionButton action={unpublishArticle.bind(null, id)} label="Скрыть" variant="warning" icon={EyeOff} confirm="Снять статью с публикации?" />
+                    : <ActionButton action={approveArticle.bind(null, id)} label="Опубликовать" variant="success" icon={CircleCheck} />}
+                  <ActionButton action={deleteArticle.bind(null, id)} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить статью безвозвратно?" />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {pages > 1 && (
+        <nav aria-label="Страницы" className="flex items-center justify-center gap-4 text-sm">
+          {page > 1 && <Link href={href({ page: page - 1 })} className="text-sky-300 hover:underline">← Назад</Link>}
+          <span className="tabular-nums text-gray-500">{page} / {pages}</span>
+          {page < pages && <Link href={href({ page: page + 1 })} className="text-sky-300 hover:underline">Вперёд →</Link>}
+        </nav>
+      )}
+    </AdminShell>
+  );
+}

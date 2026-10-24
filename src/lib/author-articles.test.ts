@@ -100,3 +100,10 @@ describe('publishDraftsOf', () => {
     expect(drafts[0]).toMatchObject({ userId: 'u1', title: 'Сломается' });
   });
 });
+
+describe('articles of the super admin', () => {
+  it('is moderated by default and goes live at once only when asked', () => {
+    expect(buildArticleDoc({ title: 'Мигрень' }, 'ru', 'a1').isVerified).toBe(false);
+    expect(buildArticleDoc({ title: 'Мигрень' }, 'ru', 'a1', true).isVerified).toBe(true);
+  });
+});

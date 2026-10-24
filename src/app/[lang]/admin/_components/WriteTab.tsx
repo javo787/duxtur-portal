@@ -76,6 +76,8 @@ interface WriteTabProps {
   autoTutorial?: boolean;
   /** The "finish your profile" form is open inside the editor (the page around it may hide its own reminder). */
   onCompletionChange?: (open: boolean) => void;
+  /** The super admin writes: the article is published under the editorial byline and needs no moderation. */
+  adminMode?: boolean;
 }
 
 type Saved =
@@ -83,7 +85,7 @@ type Saved =
   | { kind: 'draft'; missing: AuthorField[] }
   | { kind: 'sent' };
 
-export function WriteTab({ lang, resume = null, accountName = '', onChanged, autoTutorial = true, onCompletionChange }: WriteTabProps) {
+export function WriteTab({ lang, resume = null, accountName = '', onChanged, autoTutorial = true, onCompletionChange, adminMode = false }: WriteTabProps) {
   const [mode, setMode] = useState<Mode>('write');
   const [step, setStep] = useState<1 | 2>(resume ? 2 : 1);
   const [draft, setDraft] = useState('');
@@ -167,13 +169,27 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
       <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-md w-full text-center border-t-4 border-green-400">
         <div className="text-5xl mb-4">🎉</div>
         <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Статья опубликована</h2>
-        <p className="text-gray-500 mb-2">Она уже на сайте. Редакция проверит текст и поставит отметку «Проверено».</p>
-        <p className="text-xs text-gray-400 mb-8">Все статьи и их статус — во вкладке «Мои статьи» кабинета.</p>
+        <p className="text-gray-500 mb-2">
+          {adminMode
+            ? 'Она уже на сайте под подписью «Редакция Duxtur» и сразу отмечена как проверенная.'
+            : 'Она уже на сайте. Редакция проверит текст и поставит отметку «Проверено».'}
+        </p>
+        <p className="text-xs text-gray-400 mb-8">
+          {adminMode
+            ? 'Скрыть, исправить или удалить статью можно в разделе «Статьи» портала.'
+            : 'Все статьи и их статус — во вкладке «Мои статьи» кабинета.'}
+        </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link href={`/${lang}/blog/${saved.slug}`}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
             Посмотреть →
           </Link>
+          {adminMode && (
+            <Link href={`/${lang}/admin/portal/articles`}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
+              Все статьи
+            </Link>
+          )}
           <button onClick={startOver}
             className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">
             Написать ещё
