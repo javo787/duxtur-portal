@@ -53,3 +53,6 @@ import-output/
 
 # GEO audit output (answers from paid API calls)
 /reports/
+
+# auto-blog dry run output
+auto-blog-dry-run.json
