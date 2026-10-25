@@ -594,6 +594,7 @@ export const ru = {
     downloadCard: 'Скачать визитку',
     generating: 'Генерируем PDF…',
     downloadError: 'Ошибка. Попробуйте ещё раз',
+    imageUnavailable: 'Сервис картинок просыпается. Попробуйте через минуту или скачайте PDF',
   },
   search: {
     title: 'Поиск',

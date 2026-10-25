@@ -56,3 +56,8 @@ import-output/
 
 # auto-blog dry run output
 auto-blog-dry-run.json
+
+# render-service build output and dependencies
+services/render-service/dist/
+services/render-service/node_modules/
+services/render-service/preview-*.html

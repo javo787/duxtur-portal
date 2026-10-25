@@ -593,6 +593,7 @@ export const uz = {
     downloadCard: 'Vizitkani yuklab olish',
     generating: 'PDF yaratilmoqda…',
     downloadError: 'Xatolik. Qayta urinib koʻring',
+    imageUnavailable: 'Rasm xizmati uygʻonmoqda. Bir daqiqadan soʻng qayta urinib koʻring yoki PDF yuklab oling',
   },
   search: {
     title: 'Qidiruv',

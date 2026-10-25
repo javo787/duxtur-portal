@@ -23,8 +23,24 @@ export function servingHostOf(headers: Headers): string {
   return (headers.get('x-forwarded-host') || headers.get('host') || '').split(',')[0].trim();
 }
 
+/**
+ * EDU_BOT_WEBHOOK_URL: where the webhook is registered when the bot runs on another host (the Render service, see
+ * docs/RENDER_SETUP.md). Only a plain https URL counts; anything else is ignored and the default applies.
+ */
+export function customWebhookUrl(): string | null {
+  const raw = process.env.EDU_BOT_WEBHOOK_URL?.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || url.search || url.hash || url.username || url.password) return null;
+    return `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return null;
+  }
+}
+
 export function expectedWebhookUrl(servingHost: string): string {
-  return `https://${servingHost}/api/edu-auth/telegram/webhook`;
+  return customWebhookUrl() ?? `https://${servingHost}/api/edu-auth/telegram/webhook`;
 }
 
 /** Human-readable reasons why updates would not arrive. An empty list means the registration looks right. */
@@ -33,6 +49,8 @@ export function webhookProblems(info: WebhookInfo, servingHost: string): string[
   const problems: string[] = [];
   if (!info.url) {
     problems.push('no webhook is registered: Telegram sends nothing to the server');
+  } else if (info.url !== expectedUrl && customWebhookUrl()) {
+    problems.push(`webhook points to ${info.url}, but EDU_BOT_WEBHOOK_URL says the bot runs at ${expectedUrl}`);
   } else if (info.url !== expectedUrl) {
     // Telegram does not follow redirects, so a webhook on the bare domain is silently dropped when it redirects to www.
     problems.push(
