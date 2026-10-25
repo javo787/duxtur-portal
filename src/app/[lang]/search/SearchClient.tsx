@@ -23,7 +23,7 @@ export default function SearchClient({ lang, initialQ }: { lang: Locale, initial
   const { t } = useT(lang);
 
   const [q, setQ] = useState(initialQ || '');
-  const [results, setResults] = useState<any>({ articles: [], doctors: [], totalArticles: 0, totalDoctors: 0 });
+  const [results, setResults] = useState<{ articles: any[]; doctors: any[]; totalArticles: number; totalDoctors: number }>({ articles: [], doctors: [], totalArticles: 0, totalDoctors: 0 });
   const [type, setType] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export default function SearchClient({ lang, initialQ }: { lang: Locale, initial
     return () => clearTimeout(timer);
   }, [q, type, handleSearch]);
 
-  const dbT = (field: any) => field?.[lang] || field?.ru || '';
+  const dbT = (field: Record<string, string> | null | undefined) => field?.[lang] || field?.ru || '';
 
   return (
     <div className="bg-background min-h-screen text-foreground pb-24 font-sans">
@@ -161,7 +161,7 @@ export default function SearchClient({ lang, initialQ }: { lang: Locale, initial
                   <h2 className="text-xl font-bold text-foreground">{t('search.foundDoctors')}: {results.totalDoctors}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {results.doctors.map((doc: any, i: number) => (
+                  {results.doctors.map((doc: Record<string, any>, i: number) => (
                     <FadeIn key={doc._id} delay={i * 60} direction="up">
                       <Link
                         href={`/${lang}/doctor/${doc.slug || doc._id}`}
@@ -202,7 +202,7 @@ export default function SearchClient({ lang, initialQ }: { lang: Locale, initial
                   <h2 className="text-xl font-bold text-foreground">{t('search.foundArticles')}: {results.totalArticles}</h2>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  {results.articles.map((art: any, i: number) => (
+                  {results.articles.map((art: Record<string, any>, i: number) => (
                     <FadeIn key={art._id} delay={i * 60} direction="up">
                       <Link
                         href={`/${lang}/blog/${art.slug}`}
