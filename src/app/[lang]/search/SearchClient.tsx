@@ -5,18 +5,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useT } from '@/i18n';
 import FadeIn from '@/components/FadeIn';
-import { Search, X, BookOpen, User, ArrowRight } from 'lucide-react';
+import { Search, X, BookOpen, User, ArrowRight, Heart, Brain, Scissors, Stethoscope, Baby, Eye, Activity, Sparkles } from 'lucide-react';
 import { type Locale } from '@/i18n';
 
 const CATEGORIES = [
-  { slug: 'cardiology', icon: '❤️' },
-  { slug: 'neurology', icon: '🧠' },
-  { slug: 'dentistry', icon: '🦷' },
-  { slug: 'pediatrics', icon: '👶' },
-  { slug: 'dermatology', icon: '🩺' },
-  { slug: 'ophthalmology', icon: '👁️' },
-  { slug: 'surgery', icon: '✂️' },
-  { slug: 'gynecology', icon: '🌸' },
+  { slug: 'cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+  { slug: 'neurology', icon: Brain, color: 'text-violet-500', bg: 'bg-violet-500/10' },
+  { slug: 'dentistry', icon: Sparkles, color: 'text-sky-500', bg: 'bg-sky-500/10' },
+  { slug: 'pediatrics', icon: Baby, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  { slug: 'dermatology', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  { slug: 'ophthalmology', icon: Eye, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  { slug: 'surgery', icon: Scissors, color: 'text-red-500', bg: 'bg-red-500/10' },
+  { slug: 'gynecology', icon: Stethoscope, color: 'text-pink-500', bg: 'bg-pink-500/10' },
 ];
 
 export default function SearchClient({ lang, initialQ }: { lang: Locale, initialQ: string }) {
@@ -144,7 +144,9 @@ export default function SearchClient({ lang, initialQ }: { lang: Locale, initial
                     href={`/${lang}/blog?category=${cat.slug}`}
                     className="flex flex-col items-center gap-3 p-5 md:p-6 bg-card rounded-3xl border border-border shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 group"
                   >
-                    <span className="text-3xl group-hover:scale-110 transition-transform duration-300">{cat.icon}</span>
+                    <div className={`p-3 sm:p-4 rounded-2xl ${cat.bg} group-hover:scale-110 transition-transform duration-300`}>
+                      <cat.icon className={`w-8 h-8 sm:w-10 sm:h-10 ${cat.color}`} strokeWidth={1.5} />
+                    </div>
                     <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors duration-200">
                       {t(`blog.category${cat.slug.charAt(0).toUpperCase() + cat.slug.slice(1)}`)}
                     </span>
