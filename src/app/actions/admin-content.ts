@@ -6,7 +6,8 @@ import { revalidatePath } from 'next/cache';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import Doctor from '@/models/Doctor';
-import { requireRole } from '@/lib/authGuards';
+import { requireStaff } from '@/lib/authGuards';
+import { checkAccess } from '@/lib/admin-scope';
 import { stableSlug } from '@/lib/ingest/normalize';
 import { parseClinicForm } from '@/lib/admin-content/clinic-form';
 import { parseDoctorForm } from '@/lib/admin-content/doctor-form';
@@ -54,7 +55,7 @@ function revalidateDoctors() {
 
 /** id === 'new' creates; otherwise edits the clinic with that id. */
 export async function saveClinic(id: string, fd: FormData) {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   const lang = langOf(fd);
   const isNew = id === 'new';
   const back = `${base(lang)}/clinics/${isNew ? 'new' : id}`;
@@ -64,6 +65,10 @@ export async function saveClinic(id: string, fd: FormData) {
   const d = parsed.data;
 
   await dbConnect();
+  if (!isNew) {
+    const access = await checkAccess(staff, 'edit', 'clinic', id);
+    if (!access.ok) return failTo(`${base(lang)}/clinics`, [access.error]);
+  }
   const existing = isNew ? null : await Clinic.findById(id).lean<{ _id: unknown; slug: string }>();
   if (!isNew && !existing) return failTo(`${base(lang)}/clinics`, ['Клиника не найдена']);
 
@@ -103,7 +108,11 @@ export async function saveClinic(id: string, fd: FormData) {
 
   let savedId = id;
   if (isNew) {
-    const created = await Clinic.create({ ...fields, slug, importSource: 'manual', dataSource: 'admin_verified' });
+    const created = await Clinic.create({
+      ...fields, slug, importSource: 'manual', dataSource: 'admin_verified',
+      // a manager manages what they add; the administrator's records stay the administrator's
+      ...(staff.role === 'portal_manager' ? { managedBy: staff.userId } : {}),
+    });
     savedId = String(created?._id ?? '');
   } else {
     await Clinic.updateOne(
@@ -112,7 +121,7 @@ export async function saveClinic(id: string, fd: FormData) {
     );
   }
   await recordAudit({
-    actor: admin, action: isNew ? 'clinic.created' : 'clinic.updated', entityType: 'clinic',
+    actor: staff, action: isNew ? 'clinic.created' : 'clinic.updated', entityType: 'clinic',
     entityId: savedId, entityLabel: d.name.ru, meta: { status: d.status },
   });
 
@@ -122,15 +131,17 @@ export async function saveClinic(id: string, fd: FormData) {
 
 /** Deletes only clinics without an owner account; owned clinics go through the existing moderation flow. */
 export async function deleteManagedClinic(id: string, fd: FormData) {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   const lang = langOf(fd);
   await dbConnect();
+  const access = await checkAccess(staff, 'delete', 'clinic', id);
+  if (!access.ok) return failTo(`${base(lang)}/clinics`, [access.error]);
   const clinic = await Clinic.findById(id).lean<{ userId?: unknown }>();
   if (!clinic) return failTo(`${base(lang)}/clinics`, ['Клиника не найдена']);
   if (clinic.userId) {
     return failTo(`${base(lang)}/clinics/${id}`, ['У клиники есть аккаунт владельца: удаляйте её через раздел модерации, чтобы не потерять аккаунт']);
   }
-  const result = await trashClinic(id, admin);
+  const result = await trashClinic(id, staff);
   if (!result.ok) return failTo(`${base(lang)}/clinics/${id}`, [result.error]);
   revalidateClinics();
   revalidateDoctors();
@@ -138,7 +149,7 @@ export async function deleteManagedClinic(id: string, fd: FormData) {
 }
 
 export async function saveDoctor(id: string, fd: FormData) {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   const lang = langOf(fd);
   const isNew = id === 'new';
   const back = `${base(lang)}/doctors/${isNew ? 'new' : id}`;
@@ -148,6 +159,10 @@ export async function saveDoctor(id: string, fd: FormData) {
   const d = parsed.data;
 
   await dbConnect();
+  if (!isNew) {
+    const access = await checkAccess(staff, 'edit', 'doctor', id);
+    if (!access.ok) return failTo(`${base(lang)}/doctors`, [access.error]);
+  }
   const existing = isNew ? null : await Doctor.findById(id).lean<{ _id: unknown; slug?: string; userId?: unknown }>();
   if (!isNew && !existing) return failTo(`${base(lang)}/doctors`, ['Врач не найден']);
 
@@ -179,13 +194,16 @@ export async function saveDoctor(id: string, fd: FormData) {
 
   let savedId = id;
   if (isNew) {
-    const created = await Doctor.create({ ...fields, slug, importedAt: new Date() });
+    const created = await Doctor.create({
+      ...fields, slug, importedAt: new Date(),
+      ...(staff.role === 'portal_manager' ? { managedBy: staff.userId } : {}),
+    });
     savedId = String(created?._id ?? '');
   } else {
     await Doctor.updateOne({ _id: id }, { $set: fields, ...(d.coordinates ? {} : { $unset: { coordinates: '' } }) });
   }
   await recordAudit({
-    actor: admin, action: isNew ? 'doctor.created' : 'doctor.updated', entityType: 'doctor',
+    actor: staff, action: isNew ? 'doctor.created' : 'doctor.updated', entityType: 'doctor',
     entityId: savedId, entityLabel: d.name, meta: { status: d.status },
   });
 
@@ -194,15 +212,17 @@ export async function saveDoctor(id: string, fd: FormData) {
 }
 
 export async function deleteManagedDoctor(id: string, fd: FormData) {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   const lang = langOf(fd);
   await dbConnect();
+  const access = await checkAccess(staff, 'delete', 'doctor', id);
+  if (!access.ok) return failTo(`${base(lang)}/doctors`, [access.error]);
   const doctor = await Doctor.findById(id).lean<{ userId?: unknown }>();
   if (!doctor) return failTo(`${base(lang)}/doctors`, ['Врач не найден']);
   if (doctor.userId) {
     return failTo(`${base(lang)}/doctors/${id}`, ['У врача есть аккаунт: удаляйте его через раздел модерации, чтобы не потерять аккаунт и статьи']);
   }
-  const result = await trashDoctor(id, admin);
+  const result = await trashDoctor(id, staff);
   if (!result.ok) return failTo(`${base(lang)}/doctors/${id}`, [result.error]);
   revalidateDoctors();
   redirect(`${base(lang)}/doctors?deleted=1`);

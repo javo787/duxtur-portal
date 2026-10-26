@@ -8,11 +8,12 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const role = (auth?.user as any)?.role;
+      const role = (auth?.user as { role?: string } | undefined)?.role;
       const pathname = nextUrl.pathname;
 
       if (pathname.includes('/admin/portal')) {
-        if (!isLoggedIn || role !== 'portal_admin') {
+        // The administrator and the managers; a manager's role is rechecked in the database by every page and action
+        if (!isLoggedIn || (role !== 'portal_admin' && role !== 'portal_manager')) {
           const lang = pathname.split('/')[1] || 'ru';
           return Response.redirect(new URL(`/${lang}/login`, nextUrl));
         }
@@ -32,7 +33,7 @@ export const authConfig = {
         // Signed in, but not (yet) a doctor: the writing studio is their place. It used to send them to the login
         // page, which sent them back here (a loop) for anyone signed in as a patient.
         if (role !== 'doctor') {
-          const home = role === 'portal_admin' ? `/${lang}/admin/portal` : role === 'clinic' ? `/${lang}/clinic/admin` : `/${lang}/write`;
+          const home = role === 'portal_admin' || role === 'portal_manager' ? `/${lang}/admin/portal` : role === 'clinic' ? `/${lang}/clinic/admin` : `/${lang}/write`;
           return Response.redirect(new URL(home, nextUrl));
         }
         return true;
@@ -46,7 +47,7 @@ export const authConfig = {
 
       if (isLoggedIn && pathname.includes('/login')) {
         const lang = pathname.split('/')[1] || 'ru';
-        if (role === 'portal_admin') {
+        if (role === 'portal_admin' || role === 'portal_manager') {
           return Response.redirect(new URL(`/${lang}/admin/portal`, nextUrl));
         }
         if (role === 'clinic') {
@@ -57,6 +58,7 @@ export const authConfig = {
 
       return true;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: NextAuth's callback types do not describe the id and role we add to the session
     async session({ session, token }: any) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
@@ -67,7 +69,7 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
-        token.role = (user as any).role;
+        token.role = (user as { role?: string }).role;
       }
       return token;
     }

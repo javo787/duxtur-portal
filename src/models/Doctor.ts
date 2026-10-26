@@ -12,13 +12,13 @@ const DoctorSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: function(this: any) { return this.status !== 'pre_imported'; }
+    required: function(this: { status?: string }) { return this.status !== 'pre_imported'; }
   },
   name: { type: String, required: true },
   slug: { type: String, unique: true },
   phone: {
     type: String,
-    required: function(this: any) { return this.status !== 'pre_imported'; }
+    required: function(this: { status?: string }) { return this.status !== 'pre_imported'; }
   },
   specialty: MultilingualString,
   experience: { type: Number, default: 0 },
@@ -30,7 +30,7 @@ const DoctorSchema = new mongoose.Schema({
   image: { type: String },
   documentImage: {
     type: String,
-    required: function(this: any) { return this.status !== 'pre_imported'; }
+    required: function(this: { status?: string }) { return this.status !== 'pre_imported'; }
   },
   status: {
     type: String,
@@ -64,6 +64,10 @@ const DoctorSchema = new mongoose.Schema({
   },
   clinicName: { type: String, default: '' },
   clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', default: null },
+  // Portal manager who added this record or approved it: only they (and the administrator) manage it afterwards.
+  // Empty on everything that existed before managers: those records are the administrator's.
+  managedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+
 
   // Booking & Schedule
   acceptsNewPatients: { type: Boolean, default: true },

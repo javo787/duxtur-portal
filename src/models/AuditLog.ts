@@ -7,8 +7,9 @@ import mongoose from 'mongoose';
 const AuditLogSchema = new mongoose.Schema({
   actorId:     { type: String, required: true },
   actorEmail:  { type: String, default: '' },
+  actorRole:   { type: String, default: '' },
   action:      { type: String, required: true },
-  entityType:  { type: String, enum: ['doctor', 'clinic', 'article', 'review'], required: true },
+  entityType:  { type: String, enum: ['doctor', 'clinic', 'article', 'review', 'user'], required: true },
   entityId:    { type: String, required: true },
   entityLabel: { type: String, default: '' },
   meta:        { type: mongoose.Schema.Types.Mixed, default: {} },

@@ -69,7 +69,7 @@ export default function HomeHeader({ lang, labels, eduLabel: eduLabelProp, eduTe
   const setMenuOpen = (open: boolean) => setOpenAt(open ? pathname : null);
 
   const role = (session?.user as ExtendedUser | undefined)?.role;
-  const isDoctor = role === 'doctor' || role === 'portal_admin';
+  const isDoctor = role === 'doctor' || role === 'portal_admin' || role === 'portal_manager';
 
   // Escape closes the menu
   useEffect(() => {

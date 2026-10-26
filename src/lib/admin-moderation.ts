@@ -52,11 +52,11 @@ export function trashDaysLeft(expiresAt: Date | string, now: Date = new Date()):
 }
 
 // ─── Audit log ─────────────────────────────────────────────────────────────────────────────────────────────────────
-export const AUDIT_ENTITY_TYPES = ['doctor', 'clinic', 'article', 'review'] as const;
+export const AUDIT_ENTITY_TYPES = ['doctor', 'clinic', 'article', 'review', 'user'] as const;
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
 
 export const AUDIT_ENTITY_LABELS: Record<AuditEntityType, string> = {
-  doctor: 'Врач', clinic: 'Клиника', article: 'Статья', review: 'Отзыв',
+  doctor: 'Врач', clinic: 'Клиника', article: 'Статья', review: 'Отзыв', user: 'Пользователь',
 };
 
 export const AUDIT_ACTIONS = {
@@ -79,6 +79,8 @@ export const AUDIT_ACTIONS = {
   'review.shown': 'Отзыв показан',
   'review.hidden': 'Отзыв скрыт',
   'review.trashed': 'Отзыв удалён (в корзину)',
+  'team.manager_added': 'Назначен менеджер',
+  'team.manager_removed': 'Роль менеджера снята',
   'trash.restored': 'Восстановлено из корзины',
   'trash.purged': 'Удалено из корзины навсегда',
 } as const;
@@ -86,7 +88,7 @@ export type AuditAction = keyof typeof AUDIT_ACTIONS;
 export const isAuditAction = (v: unknown): v is AuditAction => typeof v === 'string' && v in AUDIT_ACTIONS;
 
 export interface AuditInput {
-  actor: { userId: string; email: string };
+  actor: { userId: string; email: string; role?: string };
   action: AuditAction;
   entityType: AuditEntityType;
   entityId: string;
@@ -95,7 +97,7 @@ export interface AuditInput {
 }
 
 export interface AuditEntry {
-  actorId: string; actorEmail: string; action: AuditAction; entityType: AuditEntityType;
+  actorId: string; actorEmail: string; actorRole: string; action: AuditAction; entityType: AuditEntityType;
   entityId: string; entityLabel: string; meta: Record<string, string | number | boolean | null>;
 }
 
@@ -120,6 +122,7 @@ export function buildAuditEntry(input: AuditInput): AuditEntry {
   return {
     actorId: String(input.actor.userId),
     actorEmail: String(input.actor.email).toLowerCase(),
+    actorRole: String(input.actor.role ?? ''),
     action: input.action,
     entityType: input.entityType,
     entityId: String(input.entityId),

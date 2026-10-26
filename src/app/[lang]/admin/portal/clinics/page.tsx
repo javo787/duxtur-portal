@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
-import { assertAdminPage } from '@/lib/admin-content/guard';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { scopeFilter } from '@/lib/admin-access';
 import { clinicCompleteness, CLINIC_STATUSES } from '@/lib/admin-content/clinic-form';
 import { hasRealWorkingHours } from '@/lib/clinic-hours';
 import AdminShell, { Banner, StatusBadge, STATUS_LABELS } from '../_shared/AdminShell';
@@ -20,17 +21,18 @@ export default async function ClinicsAdminPage({
   params, searchParams,
 }: {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ q?: string; status?: string; page?: string; saved?: string; deleted?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string; saved?: string; deleted?: string; error?: string }>;
 }) {
   const { lang } = await params;
   const sp = await searchParams;
-  await assertAdminPage(lang);
+  const staff = await assertStaffPage(lang);
 
   const q = (sp.q ?? '').trim().slice(0, 80);
   const status = (CLINIC_STATUSES as readonly string[]).includes(sp.status ?? '') ? sp.status : '';
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1);
 
-  const filter: Record<string, unknown> = {};
+  // a manager sees only the records they manage
+  const filter: Record<string, unknown> = { ...scopeFilter(staff) };
   if (status) filter.status = status;
   if (q) filter['name.ru'] = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
 
@@ -51,9 +53,11 @@ export default async function ClinicsAdminPage({
     <AdminShell
       lang={lang}
       active="clinics"
+      role={staff.role}
       title={`Клиники (${total})`}
       action={<Link href={`/${lang}/admin/portal/clinics/new`} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl font-bold text-sm">＋ Создать клинику</Link>}
     >
+      {sp.error && <Banner kind="error">{sp.error.slice(0, 300)}</Banner>}
       {sp.saved && <Banner kind="ok">Сохранено</Banner>}
       {sp.deleted && <Banner kind="ok">Клиника удалена</Banner>}
 

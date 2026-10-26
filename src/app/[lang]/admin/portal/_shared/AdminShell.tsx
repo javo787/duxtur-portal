@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import type { StaffRole } from '@/lib/admin-access';
 
 const NAV = [
   { key: 'portal', label: 'Панель', href: (l: string) => `/${l}/admin/portal` },
@@ -7,20 +8,22 @@ const NAV = [
   { key: 'doctors', label: 'Врачи', href: (l: string) => `/${l}/admin/portal/doctors` },
   { key: 'audit', label: 'Журнал', href: (l: string) => `/${l}/admin/portal/audit` },
   { key: 'trash', label: 'Корзина', href: (l: string) => `/${l}/admin/portal/trash` },
+  { key: 'team', label: 'Команда', href: (l: string) => `/${l}/admin/portal/team`, adminOnly: true },
 ] as const;
 
 export default function AdminShell({
-  lang, active, title, action, children,
-}: { lang: string; active: (typeof NAV)[number]['key']; title: string; action?: ReactNode; children: ReactNode }) {
+  lang, active, title, action, children, role = 'portal_admin',
+}: { lang: string; active: (typeof NAV)[number]['key']; title: string; action?: ReactNode; children: ReactNode; role?: StaffRole }) {
+  const items = NAV.filter(n => !('adminOnly' in n) || role === 'portal_admin');
   return (
     <div className="min-h-screen bg-gray-950 font-sans text-white">
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex flex-wrap items-center gap-4 sticky top-0 z-40">
         <h1 className="font-extrabold text-lg">
           duxtur<span className="text-blue-400">.com</span>
-          <span className="ml-2 text-xs bg-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Admin Portal</span>
+          <span className="ml-2 text-xs bg-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">{role === 'portal_manager' ? 'Менеджер' : 'Admin Portal'}</span>
         </h1>
         <nav className="flex gap-1 text-sm">
-          {NAV.map(n => (
+          {items.map(n => (
             <Link
               key={n.key}
               href={n.href(lang)}
