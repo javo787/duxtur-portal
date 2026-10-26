@@ -10,15 +10,39 @@ import {
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn'; 
+import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn';
+import { RejectButton } from '@/app/[lang]/admin/_components/RejectButton';
 import PlacesSection from './_components/PlacesSection';
 import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
+
+// What the page reads from the database (lean documents), so the lists below are typed instead of `any`
+interface Oid { toString(): string }
+interface DoctorRow {
+  _id: Oid; name?: string; image?: string; phone?: string; documentImage?: string; isClaimed?: boolean;
+  importSourceUrl?: string; slug?: string; specialty?: { ru?: string }; createdAt: Date;
+}
+interface ClinicRow {
+  _id: Oid; name?: { ru?: string }; slug?: string; type?: string; city?: string; phone?: string; logo?: string;
+  licenseDocument?: string; doctorIds?: unknown[];
+}
+interface Titles { ru?: string; uz?: string; tg?: string }
+interface ArticleRow {
+  _id: Oid; title?: Titles; slug?: string; image?: string; category?: string; aiGenerated?: boolean; views?: number;
+  createdAt: Date; authorId?: { name?: string } | null;
+}
+interface ReviewRow {
+  _id: Oid; rating: number; text: string; isVerified?: boolean; isAnonymous?: boolean; authorName?: string; createdAt: Date;
+  doctorId?: { _id: Oid; name?: string; slug?: string } | null;
+  clinicId?: { name?: { ru?: string }; slug?: string } | null;
+  articleId?: { title?: Titles; slug?: string } | null;
+  patientId?: { name?: string; email?: string; provider?: string; role?: string } | null;
+}
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
   const session = await auth();
   const { lang } = await params;
 
-  if (!session || (session.user as any)?.role !== 'portal_admin') {
+  if (!session || (session.user as { role?: string } | undefined)?.role !== 'portal_admin') {
     redirect(`/${lang}/login`);
   }
 
@@ -33,12 +57,12 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     reviews,
     pendingClinics, approvedClinics
   ] = await Promise.all([
-    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
-    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean(),
-    Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean(),
+    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
+    Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean<ArticleRow[]>(),
     Article.countDocuments(),
     User.countDocuments(),
     // Every review, newest first: they are published when written, the administrator hides or deletes what should not stay
@@ -47,9 +71,9 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
       .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
       .populate({ path: 'articleId', model: Article, select: 'title slug' })
       .populate({ path: 'patientId', model: User, select: 'name email role provider' })
-      .lean(),
-    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean(),
+      .lean<ReviewRow[]>(),
+    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
+    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
   ]);
 
   return (
@@ -74,6 +98,14 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         <PlacesSection />
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href={`/${lang}/admin/portal/audit`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
+            <div className="font-bold text-lg">🧾 Журнал действий</div>
+            <p className="text-sm text-gray-500 mt-1">Кто, что и когда одобрил, отклонил, скрыл или удалил</p>
+          </Link>
+          <Link href={`/${lang}/admin/portal/trash`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
+            <div className="font-bold text-lg">🗑 Корзина</div>
+            <p className="text-sm text-gray-500 mt-1">Удалённое хранится 30 дней: можно восстановить или стереть сразу</p>
+          </Link>
           <Link href={`/${lang}/admin/portal/clinics`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
             <div className="font-bold text-lg">🏥 Клиники</div>
             <p className="text-sm text-gray-500 mt-1">Редактировать любую клинику (в том числе импортированные) или создать новую</p>
@@ -101,8 +133,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <Empty icon="🎉" text="Все заявки обработаны" />
           ) : (
             <div className="grid gap-4">
-              {pendingDoctors.map((doc: any) => (
-                <div key={doc._id} className="bg-gray-900 p-6 rounded-2xl border border-yellow-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
+              {pendingDoctors.map((doc: DoctorRow) => (
+                <div key={String(doc._id)} className="bg-gray-900 p-6 rounded-2xl border border-yellow-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
                   {/* Диплом */}
                   <div className="flex flex-col gap-2">
                     <a href={doc.documentImage} target="_blank" rel="noopener noreferrer"
@@ -149,15 +181,12 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                         label="✅ Одобрить"
                         color="bg-green-600 hover:bg-green-700"
                       />
-                      <ActionBtn
-                        action={updateDoctorStatus.bind(null, doc._id.toString(), 'rejected')}
-                        label="❌ Отклонить"
-                        color="bg-red-600 hover:bg-red-700"
-                      />
+                      <RejectButton action={updateDoctorStatus.bind(null, doc._id.toString(), 'rejected')} />
                       <ActionBtn
                         action={deleteDoctor.bind(null, doc._id.toString())}
                         label="🗑 Удалить"
                         color="bg-gray-600 hover:bg-gray-700"
+                        confirm="Удалить заявку, аккаунт и статьи врача? Копия хранится в корзине 30 дней."
                       />
                     </div>
                   </div>
@@ -173,8 +202,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <Empty icon="🏥" text="Нет новых заявок от клиник" />
           ) : (
             <div className="grid gap-4">
-              {pendingClinics.map((clinic: any) => (
-                <div key={clinic._id} className="bg-gray-900 p-6 rounded-2xl border border-blue-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
+              {pendingClinics.map((clinic: ClinicRow) => (
+                <div key={String(clinic._id)} className="bg-gray-900 p-6 rounded-2xl border border-blue-900/50 flex flex-col md:flex-row gap-6 items-start md:items-center">
                   <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
                     <img src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
                   </div>
@@ -203,16 +232,12 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                         label="✅ Одобрить"
                         color="bg-green-600 hover:bg-green-700"
                       />
-                      <ActionBtn
-                        action={rejectClinic.bind(null, clinic._id.toString())}
-                        label="❌ Отклонить"
-                        color="bg-red-600 hover:bg-red-700"
-                      />
+                      <RejectButton action={rejectClinic.bind(null, clinic._id.toString())} />
                       <ActionBtn
                         action={deleteClinic.bind(null, clinic._id.toString())}
                         label="🗑 Удалить"
                         color="bg-gray-600 hover:bg-gray-700"
-                        confirm="Удалить клинику и аккаунт владельца?"
+                        confirm="Удалить клинику и аккаунт владельца? Копия хранится в корзине 30 дней."
                       />
                     </div>
                   </div>
@@ -223,7 +248,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         </Section>
 
         {/* ОТЗЫВЫ */}
-        <Section title="Отзывы" badge={reviews.filter((review: any) => !review.isVerified).length} badgeColor="bg-purple-500">
+        <Section title="Отзывы" badge={reviews.filter((review: ReviewRow) => !review.isVerified).length} badgeColor="bg-purple-500">
           <p className="text-xs text-gray-500 -mt-3 mb-4">
             Отзывы публикуются сразу. Здесь видно, кто написал, и можно скрыть отзыв (он останется в списке и вернётся кнопкой «Показать») или удалить. Фиолетовый счётчик показывает скрытые.
           </p>
@@ -231,7 +256,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <Empty icon="⭐" text="Отзывов пока нет" />
           ) : (
             <div className="space-y-3">
-              {reviews.map((review: any) => {
+              {reviews.map((review: ReviewRow) => {
                 const doctor = review.doctorId;
                 const clinic = review.clinicId;
                 const article = review.articleId;
@@ -242,7 +267,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                     ? { label: `Статья: ${article.title?.ru || article.slug || 'Неизвестна'}`, href: `/${lang}/blog/${article.slug}` }
                     : { label: `Клиника: ${clinic?.name?.ru || 'Неизвестна'}`, href: clinic?.slug ? `/${lang}/clinics/${clinic.slug}` : '' };
                 return (
-                  <div key={review._id} className={`bg-gray-900 p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center gap-4 ${review.isVerified ? 'border-gray-800' : 'border-purple-900/60'}`}>
+                  <div key={String(review._id)} className={`bg-gray-900 p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center gap-4 ${review.isVerified ? 'border-gray-800' : 'border-purple-900/60'}`}>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="text-xs font-bold bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded-full">
@@ -289,7 +314,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                         action={deleteReview.bind(null, review._id.toString())}
                         label="🗑 Удалить"
                         color="bg-red-800 hover:bg-red-700"
-                        confirm="Удалить отзыв насовсем?"
+                        confirm="Удалить отзыв? Копия хранится в корзине 30 дней."
                       />
                     </div>
                   </div>
@@ -305,8 +330,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <Empty icon="🏥" text="Нет одобренных клиник" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {approvedClinics.map((clinic: any) => (
-                <div key={clinic._id} className="bg-gray-900 p-5 rounded-2xl border border-gray-800 flex items-center gap-4">
+              {approvedClinics.map((clinic: ClinicRow) => (
+                <div key={String(clinic._id)} className="bg-gray-900 p-5 rounded-2xl border border-gray-800 flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-800">
                     <img src={clinic.logo || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'} alt="" className="w-full h-full object-cover" />
                   </div>
@@ -332,7 +357,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                       action={deleteClinic.bind(null, clinic._id.toString())}
                       label="🗑 Удалить"
                       color="bg-red-800 hover:bg-red-700"
-                      confirm="Удалить клинику безвозвратно?"
+                      confirm="Удалить клинику? Копия хранится в корзине 30 дней."
                     />
                   </div>
                 </div>
@@ -347,8 +372,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <Empty icon="👨‍⚕️" text="Нет активных авторов" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {approvedDoctors.map((doc: any) => (
-                <DoctorCard key={doc._id} doc={doc} lang={lang} />
+              {approvedDoctors.map((doc: DoctorRow) => (
+                <DoctorCard key={String(doc._id)} doc={doc} lang={lang} />
               ))}
             </div>
           )}
@@ -360,8 +385,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     <Empty icon="🎉" text="Нет статей на модерации" />
   ) : (
     <div className="space-y-3">
-      {pendingArticles.map((article: any) => (
-        <div key={article._id} className="bg-gray-900 p-4 rounded-2xl border border-amber-900/40 flex items-center gap-4">
+      {pendingArticles.map((article: ArticleRow) => (
+        <div key={String(article._id)} className="bg-gray-900 p-4 rounded-2xl border border-amber-900/40 flex items-center gap-4">
           <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
             <img src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'} alt="" className="w-full h-full object-cover" />
           </div>
@@ -376,7 +401,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
               {article.title?.ru || article.title?.uz || article.title?.tg || 'Без названия'}
             </p>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="text-xs text-gray-400">👤 {(article.authorId as any)?.name || 'Неизвестен'}</span>
+              <span className="text-xs text-gray-400">👤 {article.authorId?.name || 'Неизвестен'}</span>
               <span className="text-xs text-gray-500">📅 {new Date(article.createdAt).toLocaleDateString('ru')}</span>
               {article.category && <span className="text-xs text-gray-500">{article.category}</span>}
             </div>
@@ -391,7 +416,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
               action={deleteArticle.bind(null, article._id.toString())}
               label="🗑 Удалить"
               color="bg-red-800 hover:bg-red-700"
-              confirm="Удалить статью безвозвратно?"
+              confirm="Удалить статью? Копия хранится в корзине 30 дней."
             />
           </div>
         </div>
@@ -406,8 +431,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     <Empty icon="📄" text="Нет статей" />
   ) : (
     <div className="space-y-3">
-      {publishedArticles.map((article: any) => (
-        <div key={article._id} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
+      {publishedArticles.map((article: ArticleRow) => (
+        <div key={String(article._id)} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
           <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
             <img src={article.image || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200'} alt="" className="w-full h-full object-cover" />
           </div>
@@ -416,7 +441,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
               {article.title?.ru || article.title?.uz || article.title?.tg || 'Без названия'}
             </p>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="text-xs text-gray-400">👤 {(article.authorId as any)?.name || 'Неизвестен'}</span>
+              <span className="text-xs text-gray-400">👤 {article.authorId?.name || 'Неизвестен'}</span>
               <span className="text-xs text-gray-500">📅 {new Date(article.createdAt).toLocaleDateString('ru')}</span>
               <span className="text-xs text-green-500">👁 {article.views || 0}</span>
             </div>
@@ -430,7 +455,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
               action={deleteArticle.bind(null, article._id.toString())}
               label="🗑 Удалить"
               color="bg-red-800 hover:bg-red-700"
-              confirm="Удалить статью?"
+              confirm="Удалить статью? Копия хранится в корзине 30 дней."
             />
           </div>
         </div>
@@ -443,8 +468,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         {bannedDoctors.length > 0 && (
           <Section title="Забаненные" badge={bannedDoctors.length} badgeColor="bg-red-600">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {bannedDoctors.map((doc: any) => (
-                <div key={doc._id} className="bg-gray-900 p-4 rounded-2xl border border-red-900/50 flex items-center gap-4">
+              {bannedDoctors.map((doc: DoctorRow) => (
+                <div key={String(doc._id)} className="bg-gray-900 p-4 rounded-2xl border border-red-900/50 flex items-center gap-4">
                   <img
                     src={doc.image || 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png'}
                     alt={doc.name}
@@ -464,6 +489,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                       action={deleteDoctor.bind(null, doc._id.toString())}
                       label="🗑"
                       color="bg-red-800 hover:bg-red-700"
+                      confirm="Удалить врача, его аккаунт и статьи? Копия хранится в корзине 30 дней."
                     />
                   </div>
                 </div>
@@ -476,8 +502,8 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         {rejectedDoctors.length > 0 && (
           <Section title="Отклонённые заявки" badge={rejectedDoctors.length} badgeColor="bg-gray-600">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {rejectedDoctors.map((doc: any) => (
-                <div key={doc._id} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
+              {rejectedDoctors.map((doc: DoctorRow) => (
+                <div key={String(doc._id)} className="bg-gray-900 p-4 rounded-2xl border border-gray-800 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-400 truncate">{doc.name}</p>
                     <p className="text-xs text-gray-500">{doc.specialty?.ru} · {doc.phone}</p>
@@ -493,6 +519,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
                       action={deleteDoctor.bind(null, doc._id.toString())}
                       label="🗑"
                       color="bg-red-800 hover:bg-red-700"
+                      confirm="Удалить врача, его аккаунт и статьи? Копия хранится в корзине 30 дней."
                     />
                   </div>
                 </div>
@@ -508,7 +535,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
 }
 
 // ─── Карточка врача с действиями ───
-function DoctorCard({ doc, lang }: { doc: any; lang: string }) {
+function DoctorCard({ doc, lang }: { doc: DoctorRow; lang: string }) {
   return (
     <div className="bg-gray-900 p-5 rounded-2xl border border-gray-800 flex items-center gap-4">
       <img
@@ -538,6 +565,7 @@ function DoctorCard({ doc, lang }: { doc: any; lang: string }) {
           action={deleteDoctor.bind(null, doc._id.toString())}
           label="🗑 Удалить"
           color="bg-red-800 hover:bg-red-700"
+          confirm="Удалить врача, его аккаунт и статьи? Копия хранится в корзине 30 дней."
         />
       </div>
     </div>

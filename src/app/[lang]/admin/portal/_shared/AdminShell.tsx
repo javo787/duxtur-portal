@@ -5,11 +5,13 @@ const NAV = [
   { key: 'portal', label: 'Панель', href: (l: string) => `/${l}/admin/portal` },
   { key: 'clinics', label: 'Клиники', href: (l: string) => `/${l}/admin/portal/clinics` },
   { key: 'doctors', label: 'Врачи', href: (l: string) => `/${l}/admin/portal/doctors` },
+  { key: 'audit', label: 'Журнал', href: (l: string) => `/${l}/admin/portal/audit` },
+  { key: 'trash', label: 'Корзина', href: (l: string) => `/${l}/admin/portal/trash` },
 ] as const;
 
 export default function AdminShell({
   lang, active, title, action, children,
-}: { lang: string; active: 'portal' | 'clinics' | 'doctors'; title: string; action?: ReactNode; children: ReactNode }) {
+}: { lang: string; active: (typeof NAV)[number]['key']; title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-950 font-sans text-white">
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex flex-wrap items-center gap-4 sticky top-0 z-40">
