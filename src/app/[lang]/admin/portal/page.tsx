@@ -8,8 +8,9 @@ import {
   approveClinic, rejectClinic, deleteClinic, banClinic
 } from '@/app/actions/admin';
 import Link from 'next/link';
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { queueFilter, scopeFilter } from '@/lib/admin-access';
+import { managedIds } from '@/lib/admin-scope';
 import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn';
 import { RejectButton } from '@/app/[lang]/admin/_components/RejectButton';
 import PlacesSection from './_components/PlacesSection';
@@ -39,16 +40,21 @@ interface ReviewRow {
 }
 
 export default async function PortalAdminPage({ params }: { params: Promise<{ lang: string }> }) {
-  const session = await auth();
   const { lang } = await params;
-
-  if (!session || (session.user as { role?: string } | undefined)?.role !== 'portal_admin') {
-    redirect(`/${lang}/login`);
-  }
+  const staff = await assertStaffPage(lang);
+  const isAdmin = staff.role === 'portal_admin';
 
   await dbConnect();
 
   const Review = (await import('@/models/Review')).default;
+
+  // An administrator sees everything. A manager sees the queue (applications nobody has taken) and, of everything
+  // else, only the records they manage: their doctors and clinics, those doctors' articles, reviews of both.
+  const queue = queueFilter(staff);
+  const scope = scopeFilter(staff);
+  const own = isAdmin ? null : await managedIds(staff);
+  const articleScope = own ? { authorId: { $in: own.doctorIds } } : {};
+  const reviewScope = own ? { $or: [{ doctorId: { $in: own.doctorIds } }, { clinicId: { $in: own.clinicIds } }] } : {};
 
   const [
     pendingDoctors, approvedDoctors, bannedDoctors, rejectedDoctors,
@@ -57,23 +63,23 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
     reviews,
     pendingClinics, approvedClinics
   ] = await Promise.all([
-    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
-    Article.find({ isVerified: true }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean<ArticleRow[]>(),
-    Article.countDocuments(),
-    User.countDocuments(),
-    // Every review, newest first: they are published when written, the administrator hides or deletes what should not stay
-    Review.find({}).sort({ createdAt: -1 }).limit(100)
+    Doctor.find({ status: 'pending', ...queue }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'approved', ...scope }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'banned', ...scope }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find({ status: 'rejected', ...scope }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Article.find({ isVerified: false, ...articleScope }).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
+    Article.find({ isVerified: true, ...articleScope }).sort({ createdAt: -1 }).limit(20).populate('authorId').lean<ArticleRow[]>(),
+    Article.countDocuments(articleScope),
+    isAdmin ? User.countDocuments() : Promise.resolve(0),
+    // Every review, newest first: they are published when written, the team hides or deletes what should not stay
+    Review.find(reviewScope).sort({ createdAt: -1 }).limit(100)
       .populate('doctorId')
       .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
       .populate({ path: 'articleId', model: Article, select: 'title slug' })
       .populate({ path: 'patientId', model: User, select: 'name email role provider' })
       .lean<ReviewRow[]>(),
-    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
-    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
+    Clinic.find({ status: 'pending', ...queue }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
+    Clinic.find({ status: 'approved', ...scope }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
   ]);
 
   return (
@@ -89,15 +95,21 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
             <span className="ml-2 text-xs bg-blue-600 px-2 py-0.5 rounded-full font-bold uppercase">Admin Portal</span>
           </h1>
         </div>
-        <span className="text-xs text-gray-500 hidden md:block">Супер-администратор</span>
+        <span className="text-xs text-gray-500 hidden md:block">{isAdmin ? 'Супер-администратор' : 'Менеджер: только ваши записи и очередь заявок'}</span>
       </header>
 
       <div className="max-w-7xl mx-auto p-6 md:p-10 space-y-10">
 
         {/* МЕСТА (КЛИНИКИ И Т.Д.) */}
-        <PlacesSection />
+        {isAdmin && <PlacesSection />}
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {isAdmin && (
+            <Link href={`/${lang}/admin/portal/team`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
+              <div className="font-bold text-lg">👥 Команда</div>
+              <p className="text-sm text-gray-500 mt-1">Назначить менеджеров, которые ведут только свои записи</p>
+            </Link>
+          )}
           <Link href={`/${lang}/admin/portal/audit`} className="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-2xl p-5 transition">
             <div className="font-bold text-lg">🧾 Журнал действий</div>
             <p className="text-sm text-gray-500 mt-1">Кто, что и когда одобрил, отклонил, скрыл или удалил</p>
@@ -124,7 +136,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
           <StatCard label="Статей" value={totalArticles} color="bg-blue-900/40 border-blue-700 text-blue-400" icon="📄" />
           <StatCard label="На модерации" value={pendingArticles.length} color="bg-amber-900/40 border-amber-700 text-amber-400" icon="📝" urgent={pendingArticles.length > 0} />
           <StatCard label="Забанено" value={bannedDoctors.length} color="bg-red-900/40 border-red-700 text-red-400" icon="🚫" />
-          <StatCard label="Пользователей" value={totalUsers} color="bg-purple-900/40 border-purple-700 text-purple-400" icon="👥" />
+          {isAdmin && <StatCard label="Пользователей" value={totalUsers} color="bg-purple-900/40 border-purple-700 text-purple-400" icon="👥" />}
         </div>
 
         {/* НОВЫЕ ЗАЯВКИ */}
@@ -529,7 +541,7 @@ export default async function PortalAdminPage({ params }: { params: Promise<{ la
         )}
 
       </div>
-      <AdminAIAssistantWrapper />
+      {isAdmin && <AdminAIAssistantWrapper />}
     </div>
   );
 }

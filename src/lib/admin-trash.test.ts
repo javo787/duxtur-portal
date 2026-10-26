@@ -28,7 +28,8 @@ import {
 
 const ID = '507f1f77bcf86cd799439011';
 const TRASH_ID = '607f1f77bcf86cd799439022';
-const ACTOR = { userId: 'admin1', email: 'a@duxtur.org' };
+const ACTOR = { userId: 'admin1', email: 'a@duxtur.org', role: 'portal_admin' };
+const MANAGER = { userId: 'm1', email: 'm@duxtur.org', role: 'portal_manager' };
 const chain = (v: unknown): { select: () => unknown; lean: () => Promise<unknown> } => ({ select: () => chain(v), lean: async () => v });
 const order = (fn: ReturnType<typeof vi.fn>) => fn.mock.invocationCallOrder[0];
 
@@ -239,5 +240,39 @@ describe('purgeTrashItem', () => {
     m.trash.findById.mockReturnValue(chain(null));
     expect(await purgeTrashItem(TRASH_ID, ACTOR)).toMatchObject({ ok: false });
     expect(m.recordAudit).not.toHaveBeenCalled();
+  });
+});
+
+describe('who may use the trash', () => {
+  const item = (deletedById: string) =>
+    chain({ _id: TRASH_ID, entityType: 'article', entityId: ID, label: 'Статья', deletedById, payload: { article: { _id: ID, slug: 's' } } });
+
+  it('a manager restores and erases what they deleted themselves', async () => {
+    m.trash.findById.mockReturnValue(item('m1'));
+    expect(await restoreTrashItem(TRASH_ID, MANAGER)).toEqual({ ok: true });
+    m.trash.findById.mockReturnValue(item('m1'));
+    expect(await purgeTrashItem(TRASH_ID, MANAGER)).toEqual({ ok: true });
+  });
+
+  it('a manager cannot touch what the administrator or another manager deleted', async () => {
+    for (const deletedBy of ['admin1', 'm2', '']) {
+      m.trash.findById.mockReturnValue(item(deletedBy));
+      expect(await restoreTrashItem(TRASH_ID, MANAGER)).toMatchObject({ ok: false, error: expect.stringContaining('не ваша') });
+      expect(await purgeTrashItem(TRASH_ID, MANAGER)).toMatchObject({ ok: false });
+    }
+    expect(m.article.collection.updateOne).not.toHaveBeenCalled();
+    expect(m.trash.deleteOne).not.toHaveBeenCalled();
+  });
+
+  it('the administrator may use everything', async () => {
+    m.trash.findById.mockReturnValue(item('m2'));
+    expect(await restoreTrashItem(TRASH_ID, ACTOR)).toEqual({ ok: true });
+  });
+
+  it('anybody without a staff role may use nothing', async () => {
+    m.trash.findById.mockReturnValue(item('someone'));
+    expect(await restoreTrashItem(TRASH_ID, { userId: 'someone', email: 'x@x.tj' })).toMatchObject({ ok: false });
+    expect(await restoreTrashItem(TRASH_ID, { userId: 'someone', email: 'x@x.tj', role: 'doctor' })).toMatchObject({ ok: false });
+    expect(m.trash.deleteOne).not.toHaveBeenCalled();
   });
 });

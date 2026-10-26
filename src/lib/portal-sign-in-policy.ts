@@ -29,12 +29,12 @@ export const toSignInUser = (doc: UserDoc): PortalSignInUser => ({
 });
 
 /**
- * A portal administrator signs in with a password or Google: administrator power does not hang on a chat
+ * A portal administrator or manager signs in with a password or Google: staff power does not hang on a chat
  * confirmation. A doctor account that has not been approved is refused for the same reason the password sign-in
  * refuses it.
  */
 export async function mayEnter(doc: UserDoc): Promise<SignInRefusal | null> {
-  if (doc.role === 'portal_admin') return { ok: false, code: 'role_not_allowed' };
+  if (doc.role === 'portal_admin' || doc.role === 'portal_manager') return { ok: false, code: 'role_not_allowed' };
   if (doc.role === 'doctor') {
     const doctor = await Doctor.findOne({ userId: doc._id }).select('status').lean<{ status?: string } | null>();
     if (doctor?.status !== 'approved') return { ok: false, code: 'doctor_not_approved' };

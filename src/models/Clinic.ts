@@ -29,6 +29,10 @@ const BranchSchema = new mongoose.Schema({
 
 const ClinicSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  // Portal manager who added this record or approved it: only they (and the administrator) manage it afterwards.
+  // Empty on everything that existed before managers: those records are the administrator's.
+  managedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+
   name: MultilingualString,
   slug: { type: String, unique: true, required: true },
   description: MultilingualString,
@@ -139,6 +143,7 @@ ClinicSchema.index({ city: 1 });
 ClinicSchema.index({ status: 1, city: 1, type: 1, specialties: 1, 'rating.avg': -1 });
 
 // Clean string fields before validation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongoose's hook typings do not accept a narrower `this` here
 ClinicSchema.pre('validate', function(this: any, next: any) {
   if (this.logo && typeof this.logo === 'string') {
     this.logo = this.logo
