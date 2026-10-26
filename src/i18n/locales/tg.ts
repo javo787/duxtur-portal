@@ -593,6 +593,7 @@ export const tg = {
     downloadCard: 'Боргирии визитка',
     generating: 'PDF сохта шуда истодааст…',
     downloadError: 'Хатогӣ. Боз кӯшиш кунед',
+    imageUnavailable: 'Хидмати тасвир бедор мешавад. Пас аз як дақиқа дубора кӯшиш кунед ё PDF боргирӣ кунед',
   },
   search: {
     title: 'Ҷустуҷӯ',

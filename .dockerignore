@@ -1,0 +1,14 @@
+# The Render image is built from the repository root (services/render-service/Dockerfile): keep the context small.
+**/node_modules
+.next
+.git
+.github
+.vercel
+public
+docs
+test
+*.log
+.env*
+tsconfig.tsbuildinfo
+services/render-service/dist
+services/render-service/preview-*.html

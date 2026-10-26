@@ -2,6 +2,7 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from "@sentry/nextjs";
 import { eduCsp, EDU_BRIDGE_CSP } from "./src/lib/edu-csp";
 import { httpsOrigin } from "./src/lib/study-api";
+import { mainCsp } from "./src/lib/main-csp";
 import { eduLocaleRedirects } from "./src/lib/edu-routes";
 import { BASE_URL } from "./src/lib/seo";
 import { INDEXNOW_KEY_FILE_SOURCE } from "./src/lib/indexnow";
@@ -17,6 +18,8 @@ const EDU_APP_ORIGIN = (process.env.EDU_APP_ORIGIN || '').replace(/\/$/, '');
 //   NEXT_PUBLIC_STUDY_API_URL).
 const STUDY_API_ORIGIN = httpsOrigin(process.env.STUDY_API_ORIGIN);
 const STUDY_API_CONNECT_ORIGIN = httpsOrigin(process.env.STUDY_API_CONNECT_ORIGIN);
+// Render service (business cards): the browser calls it directly, so the main CSP must allow it (see src/lib/main-csp.ts).
+const CARD_SERVICE_ORIGIN = httpsOrigin(process.env.NEXT_PUBLIC_CARD_SERVICE_URL);
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -53,7 +56,7 @@ const nextConfig: NextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://cdn-icons-png.flaticon.com https://*.tile.openstreetmap.org https://*.mapbox.com; media-src 'self' https://res.cloudinary.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.mapbox.com https://api.cloudinary.com; frame-src 'self';",
+            value: mainCsp(CARD_SERVICE_ORIGIN ? [CARD_SERVICE_ORIGIN] : []),
           },
         ],
       },

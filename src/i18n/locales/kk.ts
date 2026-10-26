@@ -593,6 +593,7 @@ export const kk = {
     downloadCard: 'Визитканы жүктеу',
     generating: 'PDF жасалуда…',
     downloadError: 'Қате. Қайта көріңіз',
+    imageUnavailable: 'Сурет қызметі оянуда. Бір минуттан кейін қайталап көріңіз немесе PDF жүктеңіз',
   },
   search: {
     title: 'Іздеу',

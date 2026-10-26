@@ -593,6 +593,7 @@ export const ky = {
     downloadCard: 'Визитканы жүктөө',
     generating: 'PDF түзүлүүдө…',
     downloadError: 'Ката. Кайра аракет кылыңыз',
+    imageUnavailable: 'Сүрөт кызматы ойгонууда. Бир мүнөттөн кийин кайра аракет кылыңыз же PDF жүктөп алыңыз',
   },
   search: {
     title: 'Издөө',
