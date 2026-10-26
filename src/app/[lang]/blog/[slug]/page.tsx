@@ -233,8 +233,10 @@ export default async function BlogPage({
   // ── URLs ──────────────────────────────────────────────────────────────────
   // The URL of the version that has the text: what search engines and shared links should use
   const articleUrl = `${BASE_URL}/${contentLang}/blog/${article.slug}`;
+  // The editorial byline ("Редакция Duxtur") is the portal team, not a doctor: it has no doctor page.
+  const isEditorialAuthor = article.authorId?.isEditorial === true;
   const authorSlug = article.authorId?.slug || article.authorId?._id;
-  const authorUrl = `${BASE_URL}/${lang}/doctor/${authorSlug}`;
+  const authorUrl = isEditorialAuthor ? `${BASE_URL}/${lang}/editorial` : `${BASE_URL}/${lang}/doctor/${authorSlug}`;
 
   // ── FAQ из секций (для Google "People Also Ask") ──────────────────────────
   const faqSections = sections.slice(0, 4);
@@ -256,7 +258,7 @@ export default async function BlogPage({
   // ── Автор, проверяющий, рубрика ───────────────────────────────────────────
   // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.
   const author = article.authorId || null;
-  const authorHref = author ? `/${lang}/doctor/${author.slug || author._id}` : null;
+  const authorHref = author ? (isEditorialAuthor ? `/${lang}/editorial` : `/${lang}/doctor/${author.slug || author._id}`) : null;
   const authorSpecialty = uiT(author?.specialty);
   const reviewer = article.reviewedById || null;
   const reviewerName: string = reviewer?.name || article.reviewedBy || '';
@@ -296,16 +298,19 @@ export default async function BlogPage({
           url: `${BASE_URL}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
         }
       : undefined,
-    // Editorial (auto-blog) articles have no doctor: the author is the portal, never an invented person.
-    author: article.authorId
-      ? {
-          '@type': 'Person',
-          '@id': authorUrl,
-          name: article.authorId?.name,
-          jobTitle: uiT(article.authorId?.specialty),
-          url: authorUrl,
-        }
-      : { '@type': 'Organization', name: 'Duxtur.org', url: BASE_URL },
+    // Three kinds of author: the editorial byline of the super admin («Редакция Duxtur», an Organization with its own
+    // page), a doctor (a Person), and auto-blog articles that have no doctor (the portal itself, never an invented person).
+    author: isEditorialAuthor
+      ? { '@type': 'Organization', '@id': authorUrl, name: article.authorId?.name, url: authorUrl }
+      : article.authorId
+        ? {
+            '@type': 'Person',
+            '@id': authorUrl,
+            name: article.authorId?.name,
+            jobTitle: uiT(article.authorId?.specialty),
+            url: authorUrl,
+          }
+        : { '@type': 'Organization', name: 'Duxtur.org', url: BASE_URL },
     publisher: {
       '@type': 'Organization',
       name: 'Duxtur.org',
