@@ -7,7 +7,9 @@ import User from '@/models/User';
 import Clinic from '@/models/Clinic';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
-import { requireRole } from '@/lib/authGuards';
+import { requireStaff } from '@/lib/authGuards';
+import { checkAccess } from '@/lib/admin-scope';
+import { claimUpdate, queueFilter, scopeFilter } from '@/lib/admin-access';
 import { afterDoctorApproved } from '@/lib/author-approval';
 import { realEmail } from '@/lib/placeholder-email';
 import { reviewChanged } from '@/lib/review-service';
@@ -216,13 +218,19 @@ async function sendDoctorStatusEmail(
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-// Every action checks the role first (Server Actions are public POST endpoints), validates what arrives, records the
-// change in the audit log and returns `{ error }` instead of throwing, so the button can show what went wrong.
-// Deleting never destroys data at once: see src/lib/admin-trash.ts.
+// Every action checks who is calling first (Server Actions are public POST endpoints), then whether this person may
+// touch this record (an administrator any, a manager only what they added or approved: src/lib/admin-access.ts),
+// validates what arrives, records the change in the audit log and returns `{ error }` instead of throwing, so the
+// button can show what went wrong. Deleting never destroys data at once: see src/lib/admin-trash.ts.
 
 export type AdminActionResult = void | { error: string };
 
 const BAD_ID = { error: 'Некорректный идентификатор' } as const;
+// The only way an update finds nothing after the access check passed: the record is gone, or (for a manager) another
+// manager took the application a moment ago
+const notAvailable = (staff: { role: string }, what: string) => ({
+  error: staff.role === 'portal_manager' ? `${what}: запись не найдена или её уже взял другой менеджер` : `${what}: запись не найдена`,
+});
 
 function revalidateAdmin() {
   for (const path of ['', '/doctors', '/clinics', '/trash', '/audit']) {
@@ -250,18 +258,27 @@ const done = (result: TrashResult): AdminActionResult => (result.ok ? undefined 
 
 /**
  * Approves or rejects a doctor's application. `input` is the submitted form when called from a button with a
- * reason field (reject): the reason goes into the e-mail and the audit log.
+ * reason field (reject): the reason goes into the e-mail and the audit log. A manager who approves or rejects an
+ * application nobody has taken becomes the one who manages that doctor.
  */
 export async function updateDoctorStatus(id: string, status: string, input?: unknown): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   const decision = parseDoctorDecision(status);
   if (!decision) return { error: 'Недопустимый статус заявки' };
   if (!isObjectId(id)) return BAD_ID;
 
   await dbConnect();
+  const access = await checkAccess(staff, decision === 'approved' ? 'approve' : 'reject', 'doctor', id);
+  if (!access.ok) return { error: access.error };
+
   const reason = decision === 'rejected' ? reasonFromForm(input) : '';
-  const doctor = await Doctor.findByIdAndUpdate(id, { status: decision }, { projection: 'name' }).lean<{ name?: string } | null>();
-  if (!doctor) return { error: 'Врач не найден' };
+  // the filter repeats the rule in the database: two managers taking the same application at once cannot both win
+  const doctor = await Doctor.findOneAndUpdate(
+    { _id: id, ...queueFilter(staff) },
+    { status: decision, ...claimUpdate(staff, access.record) },
+    { projection: 'name' }
+  ).lean<{ name?: string } | null>();
+  if (!doctor) return notAvailable(staff, 'Врач');
 
   // Отправить email при одобрении или отклонении
   await sendDoctorStatusEmail(id, decision, 'ru', reason).catch(err => console.error('Email send error:', err));
@@ -272,7 +289,7 @@ export async function updateDoctorStatus(id: string, status: string, input?: unk
   }
 
   await recordAudit({
-    actor: admin, action: decision === 'approved' ? 'doctor.approved' : 'doctor.rejected',
+    actor: staff, action: decision === 'approved' ? 'doctor.approved' : 'doctor.rejected',
     entityType: 'doctor', entityId: id, entityLabel: doctor.name, meta: reason ? { reason } : undefined,
   });
   revalidateAdmin();
@@ -280,28 +297,40 @@ export async function updateDoctorStatus(id: string, status: string, input?: unk
 }
 
 export async function approveClinic(id: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(id)) return BAD_ID;
   await dbConnect();
-  const clinic = await Clinic.findByIdAndUpdate(id, { status: 'approved' }, { projection: 'name' }).lean<{ name?: { ru?: string } } | null>();
-  if (!clinic) return { error: 'Клиника не найдена' };
+  const access = await checkAccess(staff, 'approve', 'clinic', id);
+  if (!access.ok) return { error: access.error };
+  const clinic = await Clinic.findOneAndUpdate(
+    { _id: id, ...queueFilter(staff) },
+    { status: 'approved', ...claimUpdate(staff, access.record) },
+    { projection: 'name' }
+  ).lean<{ name?: { ru?: string } } | null>();
+  if (!clinic) return notAvailable(staff, 'Клиника');
   await sendClinicStatusEmail(id, 'approved').catch(err => console.error('Email send error:', err));
-  await recordAudit({ actor: admin, action: 'clinic.approved', entityType: 'clinic', entityId: id, entityLabel: clinic.name?.ru });
+  await recordAudit({ actor: staff, action: 'clinic.approved', entityType: 'clinic', entityId: id, entityLabel: clinic.name?.ru });
   revalidateAdmin();
   revalidatePublic('clinics');
 }
 
 /** `input` is the submitted form with an optional `reason`. */
 export async function rejectClinic(id: string, input?: unknown): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(id)) return BAD_ID;
   await dbConnect();
+  const access = await checkAccess(staff, 'reject', 'clinic', id);
+  if (!access.ok) return { error: access.error };
   const reason = reasonFromForm(input);
-  const clinic = await Clinic.findByIdAndUpdate(id, { status: 'rejected' }, { projection: 'name' }).lean<{ name?: { ru?: string } } | null>();
-  if (!clinic) return { error: 'Клиника не найдена' };
+  const clinic = await Clinic.findOneAndUpdate(
+    { _id: id, ...queueFilter(staff) },
+    { status: 'rejected', ...claimUpdate(staff, access.record) },
+    { projection: 'name' }
+  ).lean<{ name?: { ru?: string } } | null>();
+  if (!clinic) return notAvailable(staff, 'Клиника');
   await sendClinicStatusEmail(id, 'rejected', 'ru', reason).catch(err => console.error('Email send error:', err));
   await recordAudit({
-    actor: admin, action: 'clinic.rejected', entityType: 'clinic', entityId: id,
+    actor: staff, action: 'clinic.rejected', entityType: 'clinic', entityId: id,
     entityLabel: clinic.name?.ru, meta: reason ? { reason } : undefined,
   });
   revalidateAdmin();
@@ -309,13 +338,17 @@ export async function rejectClinic(id: string, input?: unknown): Promise<AdminAc
 }
 
 export async function banClinic(id: string, banned: boolean): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(id) || typeof banned !== 'boolean') return BAD_ID;
   await dbConnect();
-  const clinic = await Clinic.findByIdAndUpdate(id, { status: banned ? 'banned' : 'approved' }, { projection: 'name' }).lean<{ name?: { ru?: string } } | null>();
-  if (!clinic) return { error: 'Клиника не найдена' };
+  const access = await checkAccess(staff, 'ban', 'clinic', id);
+  if (!access.ok) return { error: access.error };
+  const clinic = await Clinic.findOneAndUpdate(
+    { _id: id, ...scopeFilter(staff) }, { status: banned ? 'banned' : 'approved' }, { projection: 'name' }
+  ).lean<{ name?: { ru?: string } } | null>();
+  if (!clinic) return notAvailable(staff, 'Клиника');
   await recordAudit({
-    actor: admin, action: banned ? 'clinic.banned' : 'clinic.unbanned',
+    actor: staff, action: banned ? 'clinic.banned' : 'clinic.unbanned',
     entityType: 'clinic', entityId: id, entityLabel: clinic.name?.ru,
   });
   revalidateAdmin();
@@ -323,32 +356,42 @@ export async function banClinic(id: string, banned: boolean): Promise<AdminActio
 }
 
 export async function deleteClinic(id: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
-  const result = await trashClinic(id, admin);
+  const staff = await requireStaff();
+  const access = await checkAccess(staff, 'delete', 'clinic', id);
+  if (!access.ok) return { error: access.error };
+  const result = await trashClinic(id, staff);
   if (result.ok) { revalidateAdmin(); revalidatePublic('clinics', 'doctors'); }
   return done(result);
 }
 
 export async function deleteDoctor(id: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
-  const result = await trashDoctor(id, admin);
+  const staff = await requireStaff();
+  const access = await checkAccess(staff, 'delete', 'doctor', id);
+  if (!access.ok) return { error: access.error };
+  const result = await trashDoctor(id, staff);
   if (result.ok) { revalidateAdmin(); revalidatePublic('doctors', 'clinics', 'blog'); }
   return done(result);
 }
 
 export async function deleteArticle(id: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
-  const result = await trashArticle(id, admin);
+  const staff = await requireStaff();
+  const access = await checkAccess(staff, 'delete', 'article', id);
+  if (!access.ok) return { error: access.error };
+  const result = await trashArticle(id, staff);
   if (result.ok) revalidateArticles();
   return done(result);
 }
 
 export async function toggleDoctorBan(id: string, banned: boolean): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(id) || typeof banned !== 'boolean') return BAD_ID;
   await dbConnect();
-  const doctor = await Doctor.findByIdAndUpdate(id, { status: banned ? 'banned' : 'approved' }, { projection: 'name' }).lean<{ name?: string } | null>();
-  if (!doctor) return { error: 'Врач не найден' };
+  const access = await checkAccess(staff, 'ban', 'doctor', id);
+  if (!access.ok) return { error: access.error };
+  const doctor = await Doctor.findOneAndUpdate(
+    { _id: id, ...scopeFilter(staff) }, { status: banned ? 'banned' : 'approved' }, { projection: 'name' }
+  ).lean<{ name?: string } | null>();
+  if (!doctor) return notAvailable(staff, 'Врач');
 
   // Отправить email при восстановлении из бана (опционально, но здесь при одобрении)
   if (!banned) {
@@ -357,7 +400,7 @@ export async function toggleDoctorBan(id: string, banned: boolean): Promise<Admi
   }
 
   await recordAudit({
-    actor: admin, action: banned ? 'doctor.banned' : 'doctor.unbanned',
+    actor: staff, action: banned ? 'doctor.banned' : 'doctor.unbanned',
     entityType: 'doctor', entityId: id, entityLabel: doctor.name,
   });
   revalidateAdmin();
@@ -365,14 +408,16 @@ export async function toggleDoctorBan(id: string, banned: boolean): Promise<Admi
 }
 
 export async function approveArticle(articleId: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(articleId)) return BAD_ID;
   await dbConnect();
+  const access = await checkAccess(staff, 'approve', 'article', articleId);
+  if (!access.ok) return { error: access.error };
   const article = await Article.findByIdAndUpdate(articleId, { isVerified: true }, { projection: 'title slug' })
     .lean<{ title?: { ru?: string; uz?: string; tg?: string }; slug?: string } | null>();
   if (!article) return { error: 'Статья не найдена' };
   await recordAudit({
-    actor: admin, action: 'article.approved', entityType: 'article', entityId: articleId,
+    actor: staff, action: 'article.approved', entityType: 'article', entityId: articleId,
     entityLabel: article.title?.ru || article.title?.uz || article.title?.tg || article.slug,
   });
   revalidateArticles();
@@ -380,27 +425,32 @@ export async function approveArticle(articleId: string): Promise<AdminActionResu
 
 /** Takes a published article off the site without deleting it: it goes back to the moderation queue. */
 export async function unpublishArticle(articleId: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(articleId)) return BAD_ID;
   await dbConnect();
+  const access = await checkAccess(staff, 'approve', 'article', articleId);
+  if (!access.ok) return { error: access.error };
   const article = await Article.findByIdAndUpdate(articleId, { isVerified: false }, { projection: 'title slug' })
     .lean<{ title?: { ru?: string; uz?: string; tg?: string }; slug?: string } | null>();
   if (!article) return { error: 'Статья не найдена' };
   await recordAudit({
-    actor: admin, action: 'article.unpublished', entityType: 'article', entityId: articleId,
+    actor: staff, action: 'article.unpublished', entityType: 'article', entityId: articleId,
     entityLabel: article.title?.ru || article.title?.uz || article.title?.tg || article.slug,
   });
   revalidateArticles();
 }
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-// Reviews are published when they are written. The administrator can hide one (it stays in the list, with its author,
+// Reviews are published when they are written. The team can hide one (it stays in the list, with its author,
 // and can be shown again) or delete it (it goes to the trash). Every change refreshes the numbers of the doctor and the clinic.
+// A manager handles only the reviews of the doctors and clinics they manage.
 
 async function setReviewShown(reviewId: string, shown: boolean): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
+  const staff = await requireStaff();
   if (!isObjectId(reviewId)) return BAD_ID;
   await dbConnect();
+  const access = await checkAccess(staff, shown ? 'approve' : 'edit', 'review', reviewId);
+  if (!access.ok) return { error: access.error };
   const Review = (await import('@/models/Review')).default;
   const review = await Review.findById(reviewId);
   if (!review) return { error: 'Отзыв не найден' };
@@ -409,7 +459,7 @@ async function setReviewShown(reviewId: string, shown: boolean): Promise<AdminAc
   await Review.findByIdAndUpdate(reviewId, { isVerified: shown });
   await reviewChanged(review);
   await recordAudit({
-    actor: admin, action: shown ? 'review.shown' : 'review.hidden', entityType: 'review',
+    actor: staff, action: shown ? 'review.shown' : 'review.hidden', entityType: 'review',
     entityId: reviewId, entityLabel: String(review.text ?? '').slice(0, 80),
   });
   revalidateAdmin();
@@ -425,8 +475,10 @@ export async function hideReview(reviewId: string): Promise<AdminActionResult> {
 }
 
 export async function deleteReview(reviewId: string): Promise<AdminActionResult> {
-  const admin = await requireRole('portal_admin');
-  const result = await trashReview(reviewId, admin);
+  const staff = await requireStaff();
+  const access = await checkAccess(staff, 'delete', 'review', reviewId);
+  if (!access.ok) return { error: access.error };
+  const result = await trashReview(reviewId, staff);
   if (result.ok) revalidateAdmin();
   return done(result);
 }

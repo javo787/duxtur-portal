@@ -1,8 +1,9 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
 import Doctor from '@/models/Doctor';
-import { assertAdminPage } from '@/lib/admin-content/guard';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { checkAccess } from '@/lib/admin-scope';
 import AdminShell, { Banner, StatusBadge } from '../../_shared/AdminShell';
 import DoctorForm, { type ClinicOption, type DoctorDoc } from '../_components/DoctorForm';
 
@@ -11,8 +12,11 @@ export default async function EditDoctorPage({
 }: { params: Promise<{ lang: string; id: string }>; searchParams: Promise<{ error?: string }> }) {
   const { lang, id } = await params;
   const { error } = await searchParams;
-  await assertAdminPage(lang);
+  const staff = await assertStaffPage(lang);
   if (!/^[a-f0-9]{24}$/i.test(id)) notFound();
+  // a manager opens only the doctors they manage
+  const access = await checkAccess(staff, 'edit', 'doctor', id);
+  if (!access.ok) redirect(`/${lang}/admin/portal/doctors?error=${encodeURIComponent(access.error)}`);
 
   await dbConnect();
   const [raw, clinicsRaw] = await Promise.all([
@@ -24,7 +28,7 @@ export default async function EditDoctorPage({
   const clinics = JSON.parse(JSON.stringify(clinicsRaw)) as ClinicOption[];
 
   return (
-    <AdminShell lang={lang} active="doctors" title={doctor.name || 'Врач'} action={<StatusBadge status={doctor.status ?? 'pending'} />}>
+    <AdminShell lang={lang} active="doctors" staff={staff} title={doctor.name || 'Врач'} action={<StatusBadge status={doctor.status ?? 'pending'} />}>
       {error && <Banner kind="error">{error}</Banner>}
       <DoctorForm lang={lang} id={id} doctor={doctor} clinics={clinics} />
     </AdminShell>

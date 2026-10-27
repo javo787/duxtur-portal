@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import TrashItem from '@/models/TrashItem';
-import { assertAdminPage } from '@/lib/admin-content/guard';
+import { assertStaffPage } from '@/lib/admin-content/guard';
 import { AUDIT_ENTITY_LABELS, TRASH_RETENTION_DAYS, trashDaysLeft } from '@/lib/admin-moderation';
 import { purgeFromTrash, restoreFromTrash } from '@/app/actions/admin-trash';
 import { ActionBtn } from '@/app/[lang]/admin/_components/ActionBtn';
@@ -14,18 +14,18 @@ const when = (d: Date) => new Date(d).toLocaleString('ru-RU', { timeZone: 'Asia/
 
 export default async function TrashPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
-  await assertAdminPage(lang);
+  const staff = await assertStaffPage(lang);
 
   await dbConnect();
   // The snapshots themselves are heavy and not needed to draw the list
-  const rows = await TrashItem.find({})
+  const rows = await TrashItem.find(staff.role === 'portal_admin' ? {} : { deletedById: staff.userId })
     .select('entityType label deletedByEmail deletedAt expiresAt')
     .sort({ deletedAt: -1 })
     .limit(200)
     .lean<Row[]>();
 
   return (
-    <AdminShell lang={lang} active="trash" title={`Корзина (${rows.length})`}>
+    <AdminShell lang={lang} active="trash" staff={staff} title={`Корзина (${rows.length})`}>
       <p className="text-sm text-gray-500 -mt-2">
         Удалённое хранится {TRASH_RETENTION_DAYS} дней и потом исчезает само, вместе с копией аккаунта.
         «Восстановить» возвращает запись и всё, что удалялось вместе с ней (статьи врача, связь врача с клиникой).

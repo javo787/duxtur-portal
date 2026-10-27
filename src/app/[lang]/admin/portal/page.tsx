@@ -1,10 +1,13 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import {
   Users, Stethoscope, FileText, Building2, Eye, MessageSquareText, Hourglass, PenLine, ArrowRight,
   CircleCheck, CircleX, Trash2, Ban, ExternalLink, FileBadge, EyeOff, Link2, Undo2, PartyPopper,
 } from 'lucide-react';
 import { auth } from '@/auth';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { articleScope, queueQuery, reviewScope, type OwnedIds } from '@/lib/admin-queue';
+import { managedIds } from '@/lib/admin-scope';
+import type { Staff } from '@/lib/admin-access';
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -58,39 +61,47 @@ export default async function PortalAdminPage({
   params: Promise<{ lang: string }>;
   searchParams: Promise<{ view?: string }>;
 }) {
-  const session = await auth();
   const { lang } = await params;
   const { view: rawView } = await searchParams;
-
-  if (!session || (session.user as { role?: string } | undefined)?.role !== 'portal_admin') {
-    redirect(`/${lang}/login`);
-  }
+  // The administrator and the managers (a manager's role is rechecked in the database); everybody else goes to the login page
+  const staff = await assertStaffPage(lang);
+  const isAdmin = staff.role === 'portal_admin';
+  const session = await auth();
 
   const view: View = (VIEWS as readonly string[]).includes(rawView ?? '') ? (rawView as View) : 'overview';
 
   await dbConnect();
   const Review = (await import('@/models/Review')).default;
 
+  // An administrator sees everything. A manager sees the queue (applications nobody has taken) and, of everything
+  // else, only what belongs to their doctors and clinics: every count and every list asks queueQuery.
+  const own = isAdmin ? null : await managedIds(staff);
+  const q = (tab: Parameters<typeof queueQuery>[1], status: string) => queueQuery(staff, tab, status, own);
+
   // Numbers every view needs (badges, tabs, KPIs).
   const [
     doctorsPending, doctorsApproved, doctorsBanned, doctorsRejected,
     clinicsPending, clinicsApproved,
     articlesPending, articlesPublished,
-    totalUsers, reviewsTotal, reviewsHidden, viewsAgg,
+    totalUsers, reviewsPublished, reviewsHidden, viewsAgg,
   ] = await Promise.all([
-    Doctor.countDocuments({ status: 'pending' }),
-    Doctor.countDocuments({ status: 'approved' }),
-    Doctor.countDocuments({ status: 'banned' }),
-    Doctor.countDocuments({ status: 'rejected' }),
-    Clinic.countDocuments({ status: 'pending' }),
-    Clinic.countDocuments({ status: 'approved' }),
-    Article.countDocuments({ isVerified: false }),
-    Article.countDocuments({ isVerified: true }),
-    User.countDocuments(),
-    Review.countDocuments(),
-    Review.countDocuments({ isVerified: false }),
-    Article.aggregate<{ _id: null; views: number }>([{ $group: { _id: null, views: { $sum: '$views' } } }]),
+    Doctor.countDocuments(q('doctors', 'pending')),
+    Doctor.countDocuments(q('doctors', 'approved')),
+    Doctor.countDocuments(q('doctors', 'banned')),
+    Doctor.countDocuments(q('doctors', 'rejected')),
+    Clinic.countDocuments(q('clinics', 'pending')),
+    Clinic.countDocuments(q('clinics', 'approved')),
+    Article.countDocuments(q('articles', 'pending')),
+    Article.countDocuments(q('articles', 'published')),
+    isAdmin ? User.countDocuments() : Promise.resolve(0),
+    Review.countDocuments(q('reviews', 'published')),
+    Review.countDocuments(q('reviews', 'hidden')),
+    Article.aggregate<{ _id: null; views: number }>([
+      { $match: articleScope(staff, own) },
+      { $group: { _id: null, views: { $sum: '$views' } } },
+    ]),
   ]);
+  const reviewsTotal = reviewsPublished + reviewsHidden;
   const articleViews = viewsAgg[0]?.views ?? 0;
   const queueTotal = doctorsPending + clinicsPending + articlesPending;
 
@@ -105,16 +116,17 @@ export default async function PortalAdminPage({
     <AdminShell
       lang={lang}
       active="portal"
+      staff={staff}
       title="Панель управления"
-      description="Заявки, модерация, статьи и каталог — всё в одном месте."
-      action={
+      description={isAdmin ? 'Заявки, модерация, статьи и каталог — всё в одном месте.' : 'Ваши записи и очередь новых заявок.'}
+      action={!isAdmin ? undefined : (
         <Link
           href={`${base}/articles/new`}
           className="group inline-flex items-center gap-2 rounded-xl bg-linear-to-b from-sky-400 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(37,99,235,0.8)] ring-1 ring-inset ring-white/25 transition-[transform,filter] duration-200 ease-premium hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
         >
           <PenLine className="h-4 w-4" aria-hidden /> Написать статью
         </Link>
-      }
+      )}
     >
       {/* View switcher */}
       <nav aria-label="Вид панели" className="-mt-2 flex gap-1 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.06] sm:w-fit">
@@ -141,7 +153,8 @@ export default async function PortalAdminPage({
       {view === 'overview' && (
         <Overview
           lang={lang}
-          name={session.user?.name || ''}
+          name={session?.user?.name || ''}
+          isAdmin={isAdmin}
           queueTotal={queueTotal}
           counts={{
             doctorsApproved, clinicsApproved, articlesPending, articlesPublished, doctorsPending, clinicsPending,
@@ -149,12 +162,12 @@ export default async function PortalAdminPage({
           }}
         />
       )}
-      {view === 'moderation' && <Moderation lang={lang} />}
+      {view === 'moderation' && <Moderation lang={lang} staff={staff} own={own} />}
       {view === 'directory' && (
-        <Directory lang={lang} counts={{ doctorsApproved, clinicsApproved, doctorsBanned, doctorsRejected }} />
+        <Directory lang={lang} staff={staff} own={own} counts={{ doctorsApproved, clinicsApproved, doctorsBanned, doctorsRejected }} />
       )}
 
-      <AdminAIAssistantWrapper />
+      {isAdmin && <AdminAIAssistantWrapper />}
     </AdminShell>
   );
 }
@@ -163,9 +176,10 @@ export default async function PortalAdminPage({
 // OVERVIEW
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Overview({ lang, name, queueTotal, counts }: {
+async function Overview({ lang, name, isAdmin, queueTotal, counts }: {
   lang: string;
   name: string;
+  isAdmin: boolean;
   queueTotal: number;
   counts: {
     doctorsApproved: number; clinicsApproved: number; articlesPending: number; articlesPublished: number;
@@ -174,7 +188,8 @@ async function Overview({ lang, name, queueTotal, counts }: {
   };
 }) {
   const base = `/${lang}/admin/portal`;
-  const trends = await getPortalTrends();
+  // Portal-wide numbers and charts are the administrator's; a manager sees only their own totals
+  const trends = isAdmin ? await getPortalTrends() : null;
   const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dushanbe' }).format(new Date());
   const firstName = name.trim().split(/\s+/)[0];
 
@@ -203,33 +218,35 @@ async function Overview({ lang, name, queueTotal, counts }: {
             </p>
           </div>
           <Link
-            href={queueTotal > 0 ? `${base}?view=moderation` : `${base}/articles`}
+            href={queueTotal > 0 || !isAdmin ? `${base}?view=moderation` : `${base}/articles`}
             className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-medium text-white ring-1 ring-inset ring-white/15 transition-colors duration-200 hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           >
-            {queueTotal > 0 ? 'Открыть очередь' : 'Все статьи'} <ArrowRight className="h-4 w-4" aria-hidden />
+            {queueTotal > 0 || !isAdmin ? 'Открыть очередь' : 'Все статьи'} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </Card>
 
       {/* KPIs */}
       <section aria-label="Ключевые показатели" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <KpiCard
-          label="Пользователи" value={counts.totalUsers} icon={Users} tone="sky"
-          hint={`+${sum(trends.users)} за ${TREND_DAYS} дн.`} series={trends.users} seriesLabel="Новые пользователи по дням"
-        />
+        {trends && (
+          <KpiCard
+            label="Пользователи" value={counts.totalUsers} icon={Users} tone="sky"
+            hint={`+${sum(trends.users)} за ${TREND_DAYS} дн.`} series={trends.users} seriesLabel="Новые пользователи по дням"
+          />
+        )}
         <KpiCard
           label="Врачи на портале" value={counts.doctorsApproved} icon={Stethoscope} tone="emerald"
-          hint={`+${sum(trends.doctors)} заявок за ${TREND_DAYS} дн.`} series={trends.doctors} seriesLabel="Новые заявки врачей по дням"
+          hint={trends ? `+${sum(trends.doctors)} заявок за ${TREND_DAYS} дн.` : 'Под вашим управлением'} series={trends?.doctors} seriesLabel="Новые заявки врачей по дням"
           href={`${base}/doctors`}
         />
         <KpiCard
           label="Опубликовано статей" value={counts.articlesPublished} icon={FileText} tone="violet"
-          hint={`+${sum(trends.articles)} за ${TREND_DAYS} дн.`}
-          series={trends.articles} seriesLabel="Новые статьи по дням" href={`${base}/articles`}
+          hint={trends ? `+${sum(trends.articles)} за ${TREND_DAYS} дн.` : 'Статьи ваших врачей'}
+          series={trends?.articles} seriesLabel="Новые статьи по дням" href={isAdmin ? `${base}/articles` : undefined}
         />
         <KpiCard
           label="Клиники" value={counts.clinicsApproved} icon={Building2} tone="amber"
-          hint={`+${sum(trends.clinics)} за ${TREND_DAYS} дн.`} series={trends.clinics} seriesLabel="Новые клиники по дням"
+          hint={trends ? `+${sum(trends.clinics)} за ${TREND_DAYS} дн.` : 'Под вашим управлением'} series={trends?.clinics} seriesLabel="Новые клиники по дням"
           href={`${base}/clinics`}
         />
         <KpiCard label="Просмотры статей" value={counts.articleViews} icon={Eye} tone="sky" hint="За всё время" />
@@ -269,7 +286,7 @@ async function Overview({ lang, name, queueTotal, counts }: {
       {/* Quick access */}
       <section aria-label="Быстрые переходы" className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {[
-          { href: `${base}/articles/new`, icon: PenLine, title: 'Написать статью', text: 'Под подписью «Редакция Duxtur», сразу на сайте' },
+          ...(isAdmin ? [{ href: `${base}/articles/new`, icon: PenLine, title: 'Написать статью', text: 'Под подписью «Редакция Duxtur», сразу на сайте' }] : []),
           { href: `${base}/clinics`, icon: Building2, title: 'Клиники', text: 'Править любую клинику или создать новую' },
           { href: `${base}/doctors`, icon: Stethoscope, title: 'Врачи', text: 'Править профили или создать вручную' },
         ].map(item => {
@@ -290,7 +307,7 @@ async function Overview({ lang, name, queueTotal, counts }: {
         })}
       </section>
 
-      <PlacesSection />
+      {isAdmin && <PlacesSection />}
     </>
   );
 }
@@ -299,15 +316,15 @@ async function Overview({ lang, name, queueTotal, counts }: {
 // MODERATION
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Moderation({ lang }: { lang: string }) {
+async function Moderation({ lang, staff, own }: { lang: string; staff: Staff; own: OwnedIds | null }) {
   const Review = (await import('@/models/Review')).default;
 
   const [pendingDoctors, pendingClinics, pendingArticles, reviews] = await Promise.all([
-    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
-    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'pending', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Clinic.find(queueQuery(staff, 'clinics', 'pending', own)).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
+    Article.find(queueQuery(staff, 'articles', 'pending', own)).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
     // Every review, newest first: they are published when written, the administrator hides or deletes what should not stay
-    Review.find({}).sort({ createdAt: -1 }).limit(100)
+    Review.find(reviewScope(staff, own)).sort({ createdAt: -1 }).limit(100)
       .populate('doctorId')
       .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
       .populate({ path: 'articleId', model: Article, select: 'title slug' })
@@ -505,16 +522,18 @@ async function Moderation({ lang }: { lang: string }) {
 // DIRECTORY
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Directory({ lang, counts }: {
+async function Directory({ lang, staff, own, counts }: {
   lang: string;
+  staff: Staff;
+  own: OwnedIds | null;
   counts: { doctorsApproved: number; clinicsApproved: number; doctorsBanned: number; doctorsRejected: number };
 }) {
   const base = `/${lang}/admin/portal`;
   const [approvedDoctors, approvedClinics, bannedDoctors, rejectedDoctors] = await Promise.all([
-    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<DoctorRow[]>(),
-    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<ClinicRow[]>(),
-    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
-    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'approved', own)).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<DoctorRow[]>(),
+    Clinic.find(queueQuery(staff, 'clinics', 'approved', own)).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<ClinicRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'banned', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'rejected', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
   ]);
 
   const seeAll = (href: string, shown: number, total: number) => (

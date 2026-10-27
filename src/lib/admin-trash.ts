@@ -8,6 +8,7 @@ import Review from '@/models/Review';
 import TrashItem from '@/models/TrashItem';
 import { isObjectId, trashExpiry, type AuditEntityType } from '@/lib/admin-moderation';
 import { recordAudit } from '@/lib/audit-log';
+import { canUseTrashItem, isStaffRole, NOT_YOURS } from '@/lib/admin-access';
 import { reviewChanged } from '@/lib/review-service';
 
 /**
@@ -18,7 +19,7 @@ import { reviewChanged } from '@/lib/review-service';
  * doctor never stays in a clinic's list.
  */
 
-export interface AdminActor { userId: string; email: string }
+export interface AdminActor { userId: string; email: string; role?: string }
 export type TrashResult = { ok: true } | { ok: false; error: string };
 
 type Doc = Record<string, unknown> & { _id?: unknown };
@@ -127,6 +128,10 @@ export async function trashReview(id: string, actor: AdminActor): Promise<TrashR
   return { ok: true };
 }
 
+/** An administrator uses everything, a manager only what they deleted themselves, anybody else nothing. */
+const mayUse = (actor: AdminActor, item: Doc) =>
+  isStaffRole(actor.role) && canUseTrashItem({ role: actor.role, userId: actor.userId }, item.deletedById);
+
 // ─── Restore and purge ──────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Puts the snapshot back with its original _id. A document that is already there is left untouched, so a restore that stopped halfway can simply be run again. */
@@ -147,6 +152,7 @@ export async function restoreTrashItem(trashId: string, actor: AdminActor): Prom
   await dbConnect();
   const item = await TrashItem.findById(trashId).lean<Doc | null>();
   if (!item) return fail('Записи уже нет в корзине: срок хранения истёк или её восстановили');
+  if (!mayUse(actor, item)) return fail(NOT_YOURS);
 
   const p = (item.payload ?? {}) as Doc;
   try {
@@ -195,6 +201,7 @@ export async function purgeTrashItem(trashId: string, actor: AdminActor): Promis
   await dbConnect();
   const item = await TrashItem.findById(trashId).lean<Doc | null>();
   if (!item) return fail('Записи уже нет в корзине');
+  if (!mayUse(actor, item)) return fail(NOT_YOURS);
   await TrashItem.deleteOne({ _id: item._id });
   await audit(actor, 'trash.purged', item.entityType as AuditEntityType, String(item.entityId), String(item.label ?? ''));
   return { ok: true };

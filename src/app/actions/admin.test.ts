@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const m = vi.hoisted(() => ({
-  requireRole: vi.fn(),
+  requireStaff: vi.fn(),
+  checkAccess: vi.fn(),
   dbConnect: vi.fn(),
   recordAudit: vi.fn(),
   revalidatePath: vi.fn(),
@@ -11,14 +12,15 @@ const m = vi.hoisted(() => ({
   afterDoctorApproved: vi.fn(),
   reviewChanged: vi.fn(),
   trashDoctor: vi.fn(), trashClinic: vi.fn(), trashArticle: vi.fn(), trashReview: vi.fn(),
-  doctor: { findByIdAndUpdate: vi.fn(), findById: vi.fn() },
-  clinic: { findByIdAndUpdate: vi.fn(), findById: vi.fn() },
+  doctor: { findOneAndUpdate: vi.fn(), findById: vi.fn() },
+  clinic: { findOneAndUpdate: vi.fn(), findById: vi.fn() },
   article: { findByIdAndUpdate: vi.fn() },
   user: { findById: vi.fn() },
   review: { findById: vi.fn(), findByIdAndUpdate: vi.fn() },
 }));
 
-vi.mock('@/lib/authGuards', () => ({ requireRole: m.requireRole }));
+vi.mock('@/lib/authGuards', () => ({ requireStaff: m.requireStaff }));
+vi.mock('@/lib/admin-scope', () => ({ checkAccess: m.checkAccess }));
 vi.mock('@/lib/mongodb', () => ({ default: m.dbConnect }));
 vi.mock('@/lib/audit-log', () => ({ recordAudit: m.recordAudit }));
 vi.mock('next/cache', () => ({ revalidatePath: m.revalidatePath }));
@@ -38,14 +40,16 @@ import * as admin from './admin';
 
 const ID = '507f1f77bcf86cd799439011';
 const lean = (v: unknown) => ({ lean: async () => v });
-const ACTOR = { userId: 'admin1', email: 'a@duxtur.org', role: 'portal_admin' };
+const ACTOR = { userId: 'admin1', email: 'a@duxtur.org', role: 'portal_admin' as const };
+const MANAGER = { userId: 'm1', email: 'm@duxtur.org', role: 'portal_manager' as const };
 const reasonForm = (reason: string) => { const f = new FormData(); f.set('reason', reason); return f; };
 const sentHtml = () => String(m.sendEmail.mock.calls[0][0].html);
 
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.RESEND_API_KEY = 'test-key';
-  m.requireRole.mockResolvedValue(ACTOR);
+  m.requireStaff.mockResolvedValue(ACTOR);
+  m.checkAccess.mockResolvedValue({ ok: true, record: {} });
   m.sendEmail.mockResolvedValue({});
   m.afterDoctorApproved.mockResolvedValue(undefined);
   m.reviewChanged.mockResolvedValue(undefined);
@@ -53,10 +57,10 @@ beforeEach(() => {
   m.trashClinic.mockResolvedValue({ ok: true });
   m.trashArticle.mockResolvedValue({ ok: true });
   m.trashReview.mockResolvedValue({ ok: true });
-  m.doctor.findByIdAndUpdate.mockReturnValue(lean({ name: 'Иванов Иван' }));
+  m.doctor.findOneAndUpdate.mockReturnValue(lean({ name: 'Иванов Иван' }));
   m.doctor.findById.mockReturnValue(lean({ _id: ID, name: 'Иванов Иван', slug: 'ivanov', userId: 'u1' }));
   m.user.findById.mockReturnValue(lean({ email: 'doctor@example.com' }));
-  m.clinic.findByIdAndUpdate.mockReturnValue(lean({ name: { ru: 'Клиника Нур' } }));
+  m.clinic.findOneAndUpdate.mockReturnValue(lean({ name: { ru: 'Клиника Нур' } }));
   m.clinic.findById.mockReturnValue(lean({ _id: ID, name: { ru: 'Клиника Нур' }, userId: 'u2' }));
   m.article.findByIdAndUpdate.mockReturnValue(lean({ title: { ru: 'Статья' }, slug: 'statya' }));
   m.review.findById.mockResolvedValue({ _id: ID, isVerified: true, text: 'Хороший врач', doctorId: 'd1' });
@@ -64,7 +68,7 @@ beforeEach(() => {
 
 describe('authorization', () => {
   it('every action rejects a non-admin before touching the database, the trash or the log', async () => {
-    m.requireRole.mockRejectedValue(new Error('Unauthorized'));
+    m.requireStaff.mockRejectedValue(new Error('Unauthorized'));
     const calls: Array<() => Promise<unknown>> = [
       () => admin.updateDoctorStatus(ID, 'approved'),
       () => admin.approveClinic(ID),
@@ -81,7 +85,8 @@ describe('authorization', () => {
       () => admin.deleteReview(ID),
     ];
     for (const call of calls) await expect(call()).rejects.toThrow('Unauthorized');
-    expect(m.requireRole).toHaveBeenCalledWith('portal_admin');
+    expect(m.requireStaff).toHaveBeenCalled();
+    expect(m.checkAccess).not.toHaveBeenCalled();
     expect(m.dbConnect).not.toHaveBeenCalled();
     expect(m.recordAudit).not.toHaveBeenCalled();
     for (const t of [m.trashDoctor, m.trashClinic, m.trashArticle, m.trashReview]) expect(t).not.toHaveBeenCalled();
@@ -93,17 +98,17 @@ describe('updateDoctorStatus', () => {
     for (const status of ['banned', 'pending', 'pre_imported', 'whatever', '']) {
       expect(await admin.updateDoctorStatus(ID, status)).toEqual({ error: 'Недопустимый статус заявки' });
     }
-    expect(m.doctor.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(m.doctor.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('refuses an id that is not an ObjectId, without writing', async () => {
     expect(await admin.updateDoctorStatus('{"$ne":1}', 'approved')).toEqual({ error: 'Некорректный идентификатор' });
-    expect(m.doctor.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(m.doctor.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('approves: saves the status, e-mails, opens the cabinet, logs it', async () => {
     expect(await admin.updateDoctorStatus(ID, 'approved')).toBeUndefined();
-    expect(m.doctor.findByIdAndUpdate).toHaveBeenCalledWith(ID, { status: 'approved' }, expect.anything());
+    expect(m.doctor.findOneAndUpdate).toHaveBeenCalledWith({ _id: ID }, { status: 'approved' }, expect.anything());
     expect(m.sendEmail).toHaveBeenCalledTimes(1);
     expect(m.sendEmail.mock.calls[0][0].to).toBe('doctor@example.com');
     expect(m.afterDoctorApproved).toHaveBeenCalledWith(ID);
@@ -139,8 +144,8 @@ describe('updateDoctorStatus', () => {
   });
 
   it('answers with an error for a doctor that does not exist and sends and logs nothing', async () => {
-    m.doctor.findByIdAndUpdate.mockReturnValue(lean(null));
-    expect(await admin.updateDoctorStatus(ID, 'approved')).toEqual({ error: 'Врач не найден' });
+    m.doctor.findOneAndUpdate.mockReturnValue(lean(null));
+    expect(await admin.updateDoctorStatus(ID, 'approved')).toEqual({ error: 'Врач: запись не найдена' });
     expect(m.sendEmail).not.toHaveBeenCalled();
     expect(m.recordAudit).not.toHaveBeenCalled();
   });
@@ -156,7 +161,7 @@ describe('updateDoctorStatus', () => {
 describe('clinics', () => {
   it('approve and reject log the decision; reject carries the reason to the owner', async () => {
     await admin.approveClinic(ID);
-    expect(m.clinic.findByIdAndUpdate).toHaveBeenCalledWith(ID, { status: 'approved' }, expect.anything());
+    expect(m.clinic.findOneAndUpdate).toHaveBeenCalledWith({ _id: ID }, { status: 'approved' }, expect.anything());
     expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'clinic.approved', entityLabel: 'Клиника Нур' }));
 
     m.sendEmail.mockClear();
@@ -171,9 +176,9 @@ describe('clinics', () => {
   it('ban needs a real boolean and a real id', async () => {
     expect(await admin.banClinic(ID, 'true' as unknown as boolean)).toEqual({ error: 'Некорректный идентификатор' });
     expect(await admin.banClinic('x', true)).toEqual({ error: 'Некорректный идентификатор' });
-    expect(m.clinic.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(m.clinic.findOneAndUpdate).not.toHaveBeenCalled();
     await admin.banClinic(ID, true);
-    expect(m.clinic.findByIdAndUpdate).toHaveBeenCalledWith(ID, { status: 'banned' }, expect.anything());
+    expect(m.clinic.findOneAndUpdate).toHaveBeenCalledWith({ _id: ID }, { status: 'banned' }, expect.anything());
     expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'clinic.banned' }));
   });
 });
@@ -236,7 +241,8 @@ describe('articles and reviews', () => {
     expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'review.hidden', entityLabel: 'Хороший врач' }));
 
     vi.clearAllMocks();
-    m.requireRole.mockResolvedValue(ACTOR);
+    m.requireStaff.mockResolvedValue(ACTOR);
+    m.checkAccess.mockResolvedValue({ ok: true, record: {} });
     m.review.findById.mockResolvedValue({ _id: ID, isVerified: false, text: 'x' });
     expect(await admin.hideReview(ID)).toBeUndefined();
     expect(m.review.findByIdAndUpdate).not.toHaveBeenCalled();
@@ -246,5 +252,79 @@ describe('articles and reviews', () => {
   it('answers with an error for a review that does not exist', async () => {
     m.review.findById.mockResolvedValue(null);
     expect(await admin.approveReview(ID)).toEqual({ error: 'Отзыв не найден' });
+  });
+});
+
+describe('a manager', () => {
+  beforeEach(() => { m.requireStaff.mockResolvedValue(MANAGER); });
+
+  it('takes an application from the queue by approving it: the doctor becomes theirs', async () => {
+    m.checkAccess.mockResolvedValue({ ok: true, record: { status: 'pending' } });
+    expect(await admin.updateDoctorStatus(ID, 'approved')).toBeUndefined();
+    expect(m.checkAccess).toHaveBeenCalledWith(MANAGER, 'approve', 'doctor', ID);
+    const [filter, update] = m.doctor.findOneAndUpdate.mock.calls[0];
+    expect(update).toEqual({ status: 'approved', managedBy: 'm1' });
+    // the database repeats the rule, so two managers cannot take the same application at once
+    expect(filter).toEqual({ _id: ID, $or: [{ managedBy: null }, { managedBy: 'm1' }] });
+    expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ actor: MANAGER, action: 'doctor.approved' }));
+  });
+
+  it('does not claim a record that is already theirs', async () => {
+    m.checkAccess.mockResolvedValue({ ok: true, record: { managedBy: 'm1', status: 'approved' } });
+    await admin.updateDoctorStatus(ID, 'rejected');
+    expect(m.doctor.findOneAndUpdate.mock.calls[0][1]).toEqual({ status: 'rejected' });
+  });
+
+  it('is refused somebody else\'s doctor, with nothing written, e-mailed or logged', async () => {
+    m.checkAccess.mockResolvedValue({ ok: false, error: 'Эта запись не ваша' });
+    for (const call of [
+      () => admin.updateDoctorStatus(ID, 'approved'),
+      () => admin.toggleDoctorBan(ID, true),
+      () => admin.deleteDoctor(ID),
+      () => admin.approveClinic(ID),
+      () => admin.rejectClinic(ID),
+      () => admin.banClinic(ID, true),
+      () => admin.deleteClinic(ID),
+      () => admin.approveArticle(ID),
+      () => admin.deleteArticle(ID),
+      () => admin.approveReview(ID),
+      () => admin.hideReview(ID),
+      () => admin.deleteReview(ID),
+    ]) {
+      expect(await call()).toEqual({ error: 'Эта запись не ваша' });
+    }
+    for (const w of [m.doctor.findOneAndUpdate, m.clinic.findOneAndUpdate, m.article.findByIdAndUpdate, m.review.findByIdAndUpdate]) {
+      expect(w).not.toHaveBeenCalled();
+    }
+    for (const t of [m.trashDoctor, m.trashClinic, m.trashArticle, m.trashReview]) expect(t).not.toHaveBeenCalled();
+    expect(m.sendEmail).not.toHaveBeenCalled();
+    expect(m.recordAudit).not.toHaveBeenCalled();
+  });
+
+  it('asks the right question for every kind of action', async () => {
+    await admin.toggleDoctorBan(ID, true);
+    expect(m.checkAccess).toHaveBeenLastCalledWith(MANAGER, 'ban', 'doctor', ID);
+    expect(m.doctor.findOneAndUpdate.mock.calls[0][0]).toEqual({ _id: ID, managedBy: 'm1' });
+    await admin.deleteClinic(ID);
+    expect(m.checkAccess).toHaveBeenLastCalledWith(MANAGER, 'delete', 'clinic', ID);
+    await admin.deleteArticle(ID);
+    expect(m.checkAccess).toHaveBeenLastCalledWith(MANAGER, 'delete', 'article', ID);
+    await admin.hideReview(ID);
+    expect(m.checkAccess).toHaveBeenLastCalledWith(MANAGER, 'edit', 'review', ID);
+    await admin.approveReview(ID);
+    expect(m.checkAccess).toHaveBeenLastCalledWith(MANAGER, 'approve', 'review', ID);
+  });
+
+  it('says so when somebody took the application between the check and the write', async () => {
+    m.checkAccess.mockResolvedValue({ ok: true, record: { status: 'pending' } });
+    m.doctor.findOneAndUpdate.mockReturnValue(lean(null));
+    expect(await admin.updateDoctorStatus(ID, 'approved')).toEqual({ error: expect.stringContaining('другой менеджер') });
+    expect(m.sendEmail).not.toHaveBeenCalled();
+    expect(m.recordAudit).not.toHaveBeenCalled();
+  });
+
+  it('deleting goes to the trash with the manager as the one who deleted', async () => {
+    await admin.deleteDoctor(ID);
+    expect(m.trashDoctor).toHaveBeenCalledWith(ID, MANAGER);
   });
 });

@@ -85,9 +85,14 @@ describe('audit entries', () => {
       entityLabel: '  Иванов Иван  ', meta: { reason: 'нет диплома' },
     });
     expect(e).toEqual({
-      actorId: 'u1', actorEmail: 'admin@duxtur.org', action: 'doctor.rejected', entityType: 'doctor',
+      actorId: 'u1', actorEmail: 'admin@duxtur.org', actorRole: '', action: 'doctor.rejected', entityType: 'doctor',
       entityId: '507f1f77bcf86cd799439011', entityLabel: 'Иванов Иван', meta: { reason: 'нет диплома' },
     });
+  });
+
+  it('records the role of the person who acted', () => {
+    const e = buildAuditEntry({ actor: { ...actor, role: 'portal_manager' }, action: 'doctor.approved', entityType: 'doctor', entityId: 'x' });
+    expect(e.actorRole).toBe('portal_manager');
   });
 
   it('keeps only short flat values in meta', () => {
