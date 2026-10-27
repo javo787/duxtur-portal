@@ -27,6 +27,7 @@ describe('the doctor cabinet (/xx/admin)', () => {
 
   it('sends administrators and clinics to their own places', () => {
     expect(visit('/ru/admin', 'portal_admin')).toBe('/ru/admin/portal');
+    expect(visit('/ru/admin', 'portal_manager')).toBe('/ru/admin/portal');
     expect(visit('/ru/admin', 'clinic')).toBe('/ru/clinic/admin');
   });
 });
@@ -35,6 +36,7 @@ describe('the login page for somebody who is already signed in', () => {
   it('opens the place of their role', () => {
     expect(visit('/ru/login', 'doctor')).toBe('/ru/admin');
     expect(visit('/ru/login', 'portal_admin')).toBe('/ru/admin/portal');
+    expect(visit('/ru/login', 'portal_manager')).toBe('/ru/admin/portal');
     expect(visit('/ru/login', 'clinic')).toBe('/ru/clinic/admin');
     expect(visit('/ru/login', 'patient')).toBe('/ru/write');
   });
@@ -52,8 +54,11 @@ describe('the writing studio (/xx/write)', () => {
 });
 
 describe('the portal administration', () => {
-  it('stays for portal administrators', () => {
+  it('stays for portal administrators and managers', () => {
     expect(visit('/ru/admin/portal', 'portal_admin')).toBe(true);
+    expect(visit('/ru/admin/portal', 'portal_manager')).toBe(true);
+    expect(visit('/ru/admin/portal/clinics', 'portal_manager')).toBe(true);
+    for (const role of ['clinic', 'patient']) expect(visit('/ru/admin/portal', role)).toBe('/ru/login');
     expect(visit('/ru/admin/portal', 'doctor')).toBe('/ru/login');
     expect(visit('/ru/admin/portal')).toBe('/ru/login');
   });

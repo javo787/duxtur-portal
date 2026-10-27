@@ -1,10 +1,13 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import {
   Users, Stethoscope, FileText, Building2, Eye, MessageSquareText, Hourglass, PenLine, ArrowRight,
   CircleCheck, CircleX, Trash2, Ban, ExternalLink, FileBadge, EyeOff, Link2, Undo2, PartyPopper,
 } from 'lucide-react';
 import { auth } from '@/auth';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { articleScope, queueQuery, reviewScope, type OwnedIds } from '@/lib/admin-queue';
+import { managedIds } from '@/lib/admin-scope';
+import type { Staff } from '@/lib/admin-access';
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -17,8 +20,10 @@ import {
 import AdminShell from './_shared/AdminShell';
 import { getPortalTrends, sum, TREND_DAYS } from './_shared/trends';
 import { ActionButton } from './_components/ActionButton';
+import { RejectButton } from './_components/RejectButton';
 import { Avatar, Card, EmptyState, KpiCard, Pill, SectionHeader } from './_components/ui';
 import PlacesSection from './_components/PlacesSection';
+import type { ArticleRow, ClinicRow, DoctorRow, ReviewRow, Titles } from './_shared/rows';
 import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
 
 const VIEWS = ['overview', 'moderation', 'directory'] as const;
@@ -28,7 +33,7 @@ const DIRECTORY_LIMIT = 60;
 const FALLBACK_AVATAR = 'https://cdn-icons-png.flaticon.com/512/3774/3774299.png';
 const FALLBACK_ARTICLE_IMAGE = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200';
 
-const articleTitle = (a: any) => a.title?.ru || a.title?.uz || a.title?.tg || a.title?.ky || a.title?.kk || 'Без названия';
+const articleTitle = (a: { title?: Titles }) => a.title?.ru || a.title?.uz || a.title?.tg || a.title?.ky || a.title?.kk || 'Без названия';
 const shortDate = (d: unknown) => new Date(d as string).toLocaleDateString('ru');
 
 /** Greeting by the hour in Dushanbe (the portal's home time), not by the server's clock. */
@@ -56,39 +61,47 @@ export default async function PortalAdminPage({
   params: Promise<{ lang: string }>;
   searchParams: Promise<{ view?: string }>;
 }) {
-  const session = await auth();
   const { lang } = await params;
   const { view: rawView } = await searchParams;
-
-  if (!session || (session.user as { role?: string } | undefined)?.role !== 'portal_admin') {
-    redirect(`/${lang}/login`);
-  }
+  // The administrator and the managers (a manager's role is rechecked in the database); everybody else goes to the login page
+  const staff = await assertStaffPage(lang);
+  const isAdmin = staff.role === 'portal_admin';
+  const session = await auth();
 
   const view: View = (VIEWS as readonly string[]).includes(rawView ?? '') ? (rawView as View) : 'overview';
 
   await dbConnect();
   const Review = (await import('@/models/Review')).default;
 
+  // An administrator sees everything. A manager sees the queue (applications nobody has taken) and, of everything
+  // else, only what belongs to their doctors and clinics: every count and every list asks queueQuery.
+  const own = isAdmin ? null : await managedIds(staff);
+  const q = (tab: Parameters<typeof queueQuery>[1], status: string) => queueQuery(staff, tab, status, own);
+
   // Numbers every view needs (badges, tabs, KPIs).
   const [
     doctorsPending, doctorsApproved, doctorsBanned, doctorsRejected,
     clinicsPending, clinicsApproved,
     articlesPending, articlesPublished,
-    totalUsers, reviewsTotal, reviewsHidden, viewsAgg,
+    totalUsers, reviewsPublished, reviewsHidden, viewsAgg,
   ] = await Promise.all([
-    Doctor.countDocuments({ status: 'pending' }),
-    Doctor.countDocuments({ status: 'approved' }),
-    Doctor.countDocuments({ status: 'banned' }),
-    Doctor.countDocuments({ status: 'rejected' }),
-    Clinic.countDocuments({ status: 'pending' }),
-    Clinic.countDocuments({ status: 'approved' }),
-    Article.countDocuments({ isVerified: false }),
-    Article.countDocuments({ isVerified: true }),
-    User.countDocuments(),
-    Review.countDocuments(),
-    Review.countDocuments({ isVerified: false }),
-    Article.aggregate<{ _id: null; views: number }>([{ $group: { _id: null, views: { $sum: '$views' } } }]),
+    Doctor.countDocuments(q('doctors', 'pending')),
+    Doctor.countDocuments(q('doctors', 'approved')),
+    Doctor.countDocuments(q('doctors', 'banned')),
+    Doctor.countDocuments(q('doctors', 'rejected')),
+    Clinic.countDocuments(q('clinics', 'pending')),
+    Clinic.countDocuments(q('clinics', 'approved')),
+    Article.countDocuments(q('articles', 'pending')),
+    Article.countDocuments(q('articles', 'published')),
+    isAdmin ? User.countDocuments() : Promise.resolve(0),
+    Review.countDocuments(q('reviews', 'published')),
+    Review.countDocuments(q('reviews', 'hidden')),
+    Article.aggregate<{ _id: null; views: number }>([
+      { $match: articleScope(staff, own) },
+      { $group: { _id: null, views: { $sum: '$views' } } },
+    ]),
   ]);
+  const reviewsTotal = reviewsPublished + reviewsHidden;
   const articleViews = viewsAgg[0]?.views ?? 0;
   const queueTotal = doctorsPending + clinicsPending + articlesPending;
 
@@ -103,16 +116,17 @@ export default async function PortalAdminPage({
     <AdminShell
       lang={lang}
       active="portal"
+      staff={staff}
       title="Панель управления"
-      description="Заявки, модерация, статьи и каталог — всё в одном месте."
-      action={
+      description={isAdmin ? 'Заявки, модерация, статьи и каталог — всё в одном месте.' : 'Ваши записи и очередь новых заявок.'}
+      action={!isAdmin ? undefined : (
         <Link
           href={`${base}/articles/new`}
           className="group inline-flex items-center gap-2 rounded-xl bg-linear-to-b from-sky-400 to-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_30px_-10px_rgba(37,99,235,0.8)] ring-1 ring-inset ring-white/25 transition-[transform,filter] duration-200 ease-premium hover:brightness-110 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
         >
           <PenLine className="h-4 w-4" aria-hidden /> Написать статью
         </Link>
-      }
+      )}
     >
       {/* View switcher */}
       <nav aria-label="Вид панели" className="-mt-2 flex gap-1 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.06] sm:w-fit">
@@ -139,7 +153,8 @@ export default async function PortalAdminPage({
       {view === 'overview' && (
         <Overview
           lang={lang}
-          name={session.user?.name || ''}
+          name={session?.user?.name || ''}
+          isAdmin={isAdmin}
           queueTotal={queueTotal}
           counts={{
             doctorsApproved, clinicsApproved, articlesPending, articlesPublished, doctorsPending, clinicsPending,
@@ -147,12 +162,12 @@ export default async function PortalAdminPage({
           }}
         />
       )}
-      {view === 'moderation' && <Moderation lang={lang} />}
+      {view === 'moderation' && <Moderation lang={lang} staff={staff} own={own} />}
       {view === 'directory' && (
-        <Directory lang={lang} counts={{ doctorsApproved, clinicsApproved, doctorsBanned, doctorsRejected }} />
+        <Directory lang={lang} staff={staff} own={own} counts={{ doctorsApproved, clinicsApproved, doctorsBanned, doctorsRejected }} />
       )}
 
-      <AdminAIAssistantWrapper />
+      {isAdmin && <AdminAIAssistantWrapper />}
     </AdminShell>
   );
 }
@@ -161,9 +176,10 @@ export default async function PortalAdminPage({
 // OVERVIEW
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Overview({ lang, name, queueTotal, counts }: {
+async function Overview({ lang, name, isAdmin, queueTotal, counts }: {
   lang: string;
   name: string;
+  isAdmin: boolean;
   queueTotal: number;
   counts: {
     doctorsApproved: number; clinicsApproved: number; articlesPending: number; articlesPublished: number;
@@ -172,7 +188,8 @@ async function Overview({ lang, name, queueTotal, counts }: {
   };
 }) {
   const base = `/${lang}/admin/portal`;
-  const trends = await getPortalTrends();
+  // Portal-wide numbers and charts are the administrator's; a manager sees only their own totals
+  const trends = isAdmin ? await getPortalTrends() : null;
   const today = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dushanbe' }).format(new Date());
   const firstName = name.trim().split(/\s+/)[0];
 
@@ -201,33 +218,35 @@ async function Overview({ lang, name, queueTotal, counts }: {
             </p>
           </div>
           <Link
-            href={queueTotal > 0 ? `${base}?view=moderation` : `${base}/articles`}
+            href={queueTotal > 0 || !isAdmin ? `${base}?view=moderation` : `${base}/articles`}
             className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-medium text-white ring-1 ring-inset ring-white/15 transition-colors duration-200 hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           >
-            {queueTotal > 0 ? 'Открыть очередь' : 'Все статьи'} <ArrowRight className="h-4 w-4" aria-hidden />
+            {queueTotal > 0 || !isAdmin ? 'Открыть очередь' : 'Все статьи'} <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
       </Card>
 
       {/* KPIs */}
       <section aria-label="Ключевые показатели" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <KpiCard
-          label="Пользователи" value={counts.totalUsers} icon={Users} tone="sky"
-          hint={`+${sum(trends.users)} за ${TREND_DAYS} дн.`} series={trends.users} seriesLabel="Новые пользователи по дням"
-        />
+        {trends && (
+          <KpiCard
+            label="Пользователи" value={counts.totalUsers} icon={Users} tone="sky"
+            hint={`+${sum(trends.users)} за ${TREND_DAYS} дн.`} series={trends.users} seriesLabel="Новые пользователи по дням"
+          />
+        )}
         <KpiCard
           label="Врачи на портале" value={counts.doctorsApproved} icon={Stethoscope} tone="emerald"
-          hint={`+${sum(trends.doctors)} заявок за ${TREND_DAYS} дн.`} series={trends.doctors} seriesLabel="Новые заявки врачей по дням"
+          hint={trends ? `+${sum(trends.doctors)} заявок за ${TREND_DAYS} дн.` : 'Под вашим управлением'} series={trends?.doctors} seriesLabel="Новые заявки врачей по дням"
           href={`${base}/doctors`}
         />
         <KpiCard
           label="Опубликовано статей" value={counts.articlesPublished} icon={FileText} tone="violet"
-          hint={`+${sum(trends.articles)} за ${TREND_DAYS} дн.`}
-          series={trends.articles} seriesLabel="Новые статьи по дням" href={`${base}/articles`}
+          hint={trends ? `+${sum(trends.articles)} за ${TREND_DAYS} дн.` : 'Статьи ваших врачей'}
+          series={trends?.articles} seriesLabel="Новые статьи по дням" href={isAdmin ? `${base}/articles` : undefined}
         />
         <KpiCard
           label="Клиники" value={counts.clinicsApproved} icon={Building2} tone="amber"
-          hint={`+${sum(trends.clinics)} за ${TREND_DAYS} дн.`} series={trends.clinics} seriesLabel="Новые клиники по дням"
+          hint={trends ? `+${sum(trends.clinics)} за ${TREND_DAYS} дн.` : 'Под вашим управлением'} series={trends?.clinics} seriesLabel="Новые клиники по дням"
           href={`${base}/clinics`}
         />
         <KpiCard label="Просмотры статей" value={counts.articleViews} icon={Eye} tone="sky" hint="За всё время" />
@@ -267,7 +286,7 @@ async function Overview({ lang, name, queueTotal, counts }: {
       {/* Quick access */}
       <section aria-label="Быстрые переходы" className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {[
-          { href: `${base}/articles/new`, icon: PenLine, title: 'Написать статью', text: 'Под подписью «Редакция Duxtur», сразу на сайте' },
+          ...(isAdmin ? [{ href: `${base}/articles/new`, icon: PenLine, title: 'Написать статью', text: 'Под подписью «Редакция Duxtur», сразу на сайте' }] : []),
           { href: `${base}/clinics`, icon: Building2, title: 'Клиники', text: 'Править любую клинику или создать новую' },
           { href: `${base}/doctors`, icon: Stethoscope, title: 'Врачи', text: 'Править профили или создать вручную' },
         ].map(item => {
@@ -288,7 +307,7 @@ async function Overview({ lang, name, queueTotal, counts }: {
         })}
       </section>
 
-      <PlacesSection />
+      {isAdmin && <PlacesSection />}
     </>
   );
 }
@@ -297,22 +316,22 @@ async function Overview({ lang, name, queueTotal, counts }: {
 // MODERATION
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Moderation({ lang }: { lang: string }) {
+async function Moderation({ lang, staff, own }: { lang: string; staff: Staff; own: OwnedIds | null }) {
   const Review = (await import('@/models/Review')).default;
 
   const [pendingDoctors, pendingClinics, pendingArticles, reviews] = await Promise.all([
-    Doctor.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-    Clinic.find({ status: 'pending' }).sort({ createdAt: -1 }).lean(),
-    Article.find({ isVerified: false }).sort({ createdAt: -1 }).populate('authorId').lean(),
+    Doctor.find(queueQuery(staff, 'doctors', 'pending', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Clinic.find(queueQuery(staff, 'clinics', 'pending', own)).sort({ createdAt: -1 }).lean<ClinicRow[]>(),
+    Article.find(queueQuery(staff, 'articles', 'pending', own)).sort({ createdAt: -1 }).populate('authorId').lean<ArticleRow[]>(),
     // Every review, newest first: they are published when written, the administrator hides or deletes what should not stay
-    Review.find({}).sort({ createdAt: -1 }).limit(100)
+    Review.find(reviewScope(staff, own)).sort({ createdAt: -1 }).limit(100)
       .populate('doctorId')
       .populate({ path: 'clinicId', model: Clinic, select: 'name slug' })
       .populate({ path: 'articleId', model: Article, select: 'title slug' })
       .populate({ path: 'patientId', model: User, select: 'name email role provider' })
-      .lean(),
+      .lean<ReviewRow[]>(),
   ]);
-  const hiddenReviews = reviews.filter((review: any) => !review.isVerified).length;
+  const hiddenReviews = reviews.filter((review: ReviewRow) => !review.isVerified).length;
 
   return (
     <>
@@ -323,7 +342,7 @@ async function Moderation({ lang }: { lang: string }) {
           <EmptyState icon={PartyPopper} title="Все заявки обработаны" text="Новые заявки врачей появятся здесь." />
         ) : (
           <div className="grid gap-3">
-            {pendingDoctors.map((doc: any) => (
+            {pendingDoctors.map((doc: DoctorRow) => (
               <Card key={String(doc._id)} as="article" className="flex flex-col gap-5 p-4 sm:flex-row sm:items-center sm:p-5">
                 <a
                   href={doc.documentImage} target="_blank" rel="noopener noreferrer"
@@ -354,8 +373,8 @@ async function Moderation({ lang }: { lang: string }) {
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <ActionButton action={updateDoctorStatus.bind(null, doc._id.toString(), 'approved')} label="Одобрить" variant="success" icon={CircleCheck} />
-                    <ActionButton action={updateDoctorStatus.bind(null, doc._id.toString(), 'rejected')} label="Отклонить" variant="warning" icon={CircleX} />
-                    <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить заявку врача?" />
+                    <RejectButton action={updateDoctorStatus.bind(null, doc._id.toString(), 'rejected')} />
+                    <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить заявку, аккаунт и статьи врача? Копия хранится в корзине 30 дней." />
                   </div>
                 </div>
               </Card>
@@ -371,7 +390,7 @@ async function Moderation({ lang }: { lang: string }) {
           <EmptyState icon={Building2} title="Нет новых заявок от клиник" />
         ) : (
           <div className="grid gap-3">
-            {pendingClinics.map((clinic: any) => (
+            {pendingClinics.map((clinic: ClinicRow) => (
               <Card key={String(clinic._id)} as="article" className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
                 <Avatar src={clinic.logo || FALLBACK_AVATAR} name={clinic.name?.ru || ''} size={64} rounded="xl" />
                 <div className="min-w-0 flex-1">
@@ -391,8 +410,8 @@ async function Moderation({ lang }: { lang: string }) {
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <ActionButton action={approveClinic.bind(null, clinic._id.toString())} label="Одобрить" variant="success" icon={CircleCheck} />
-                    <ActionButton action={rejectClinic.bind(null, clinic._id.toString())} label="Отклонить" variant="warning" icon={CircleX} />
-                    <ActionButton action={deleteClinic.bind(null, clinic._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить клинику и аккаунт владельца?" />
+                    <RejectButton action={rejectClinic.bind(null, clinic._id.toString())} />
+                    <ActionButton action={deleteClinic.bind(null, clinic._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить клинику и аккаунт владельца? Копия хранится в корзине 30 дней." />
                   </div>
                 </div>
               </Card>
@@ -408,7 +427,7 @@ async function Moderation({ lang }: { lang: string }) {
           <EmptyState icon={PartyPopper} title="Нет статей на проверке" />
         ) : (
           <div className="grid gap-3">
-            {pendingArticles.map((article: any) => (
+            {pendingArticles.map((article: ArticleRow) => (
               <Card key={String(article._id)} as="article" className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <Avatar src={article.image || FALLBACK_ARTICLE_IMAGE} name={articleTitle(article)} size={64} rounded="xl" />
@@ -420,7 +439,7 @@ async function Moderation({ lang }: { lang: string }) {
                     </div>
                     <p className="truncate text-sm font-medium text-white">{articleTitle(article)}</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      {(article.authorId as any)?.name || 'Неизвестен'} · {shortDate(article.createdAt)}
+                      {article.authorId?.name || 'Неизвестен'} · {shortDate(article.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -429,7 +448,7 @@ async function Moderation({ lang }: { lang: string }) {
                     <Eye className="h-3.5 w-3.5" aria-hidden /> Просмотр
                   </Link>
                   <ActionButton action={approveArticle.bind(null, article._id.toString())} label="Одобрить" variant="success" icon={CircleCheck} />
-                  <ActionButton action={deleteArticle.bind(null, article._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить статью безвозвратно?" />
+                  <ActionButton action={deleteArticle.bind(null, article._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить статью? Копия хранится в корзине 30 дней." />
                 </div>
               </Card>
             ))}
@@ -447,7 +466,7 @@ async function Moderation({ lang }: { lang: string }) {
           <EmptyState icon={MessageSquareText} title="Отзывов пока нет" />
         ) : (
           <div className="grid gap-3">
-            {reviews.map((review: any) => {
+            {reviews.map((review: ReviewRow) => {
               const doctor = review.doctorId;
               const clinic = review.clinicId;
               const article = review.articleId;
@@ -487,7 +506,7 @@ async function Moderation({ lang }: { lang: string }) {
                     ) : (
                       <ActionButton action={approveReview.bind(null, review._id.toString())} label="Показать" variant="success" icon={Eye} />
                     )}
-                    <ActionButton action={deleteReview.bind(null, review._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить отзыв насовсем?" />
+                    <ActionButton action={deleteReview.bind(null, review._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить отзыв? Копия хранится в корзине 30 дней." />
                   </div>
                 </Card>
               );
@@ -503,16 +522,18 @@ async function Moderation({ lang }: { lang: string }) {
 // DIRECTORY
 // ═════════════════════════════════════════════════════════════════════════════
 
-async function Directory({ lang, counts }: {
+async function Directory({ lang, staff, own, counts }: {
   lang: string;
+  staff: Staff;
+  own: OwnedIds | null;
   counts: { doctorsApproved: number; clinicsApproved: number; doctorsBanned: number; doctorsRejected: number };
 }) {
   const base = `/${lang}/admin/portal`;
   const [approvedDoctors, approvedClinics, bannedDoctors, rejectedDoctors] = await Promise.all([
-    Doctor.find({ status: 'approved' }).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean(),
-    Clinic.find({ status: 'approved' }).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean(),
-    Doctor.find({ status: 'banned' }).sort({ createdAt: -1 }).lean(),
-    Doctor.find({ status: 'rejected' }).sort({ createdAt: -1 }).lean(),
+    Doctor.find(queueQuery(staff, 'doctors', 'approved', own)).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<DoctorRow[]>(),
+    Clinic.find(queueQuery(staff, 'clinics', 'approved', own)).sort({ createdAt: -1 }).limit(DIRECTORY_LIMIT).lean<ClinicRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'banned', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
+    Doctor.find(queueQuery(staff, 'doctors', 'rejected', own)).sort({ createdAt: -1 }).lean<DoctorRow[]>(),
   ]);
 
   const seeAll = (href: string, shown: number, total: number) => (
@@ -532,7 +553,7 @@ async function Directory({ lang, counts }: {
           <EmptyState icon={Stethoscope} title="Нет активных врачей" />
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {approvedDoctors.map((doc: any) => (
+            {approvedDoctors.map((doc: DoctorRow) => (
               <Card key={String(doc._id)} as="article" className="flex items-center gap-4 p-4">
                 <Avatar src={doc.image || FALLBACK_AVATAR} name={doc.name || ''} size={52} />
                 <div className="min-w-0 flex-1">
@@ -545,7 +566,7 @@ async function Directory({ lang, counts }: {
                     <Eye className="h-3.5 w-3.5" aria-hidden /> Профиль
                   </Link>
                   <ActionButton action={toggleDoctorBan.bind(null, doc._id.toString(), true)} label="Бан" variant="warning" icon={Ban} confirm="Заблокировать врача?" />
-                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить врача безвозвратно?" />
+                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить врача, его аккаунт и статьи? Копия хранится в корзине 30 дней." />
                 </div>
               </Card>
             ))}
@@ -562,7 +583,7 @@ async function Directory({ lang, counts }: {
           <EmptyState icon={Building2} title="Нет одобренных клиник" />
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {approvedClinics.map((clinic: any) => (
+            {approvedClinics.map((clinic: ClinicRow) => (
               <Card key={String(clinic._id)} as="article" className="flex items-center gap-4 p-4">
                 <Avatar src={clinic.logo || FALLBACK_AVATAR} name={clinic.name?.ru || ''} size={52} rounded="xl" />
                 <div className="min-w-0 flex-1">
@@ -575,7 +596,7 @@ async function Directory({ lang, counts }: {
                     <Eye className="h-3.5 w-3.5" aria-hidden /> Профиль
                   </Link>
                   <ActionButton action={banClinic.bind(null, clinic._id.toString(), true)} label="Бан" variant="warning" icon={Ban} confirm="Заблокировать клинику?" />
-                  <ActionButton action={deleteClinic.bind(null, clinic._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить клинику безвозвратно?" />
+                  <ActionButton action={deleteClinic.bind(null, clinic._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить клинику? Копия хранится в корзине 30 дней." />
                 </div>
               </Card>
             ))}
@@ -587,7 +608,7 @@ async function Directory({ lang, counts }: {
         <section aria-labelledby="banned">
           <SectionHeader id="banned" icon={Ban} title="Заблокированные" count={counts.doctorsBanned} tone="red" />
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {bannedDoctors.map((doc: any) => (
+            {bannedDoctors.map((doc: DoctorRow) => (
               <Card key={String(doc._id)} as="article" className="flex items-center gap-4 border-red-400/15 p-4">
                 <div className="opacity-60"><Avatar src={doc.image || FALLBACK_AVATAR} name={doc.name || ''} size={44} /></div>
                 <div className="min-w-0 flex-1">
@@ -596,7 +617,7 @@ async function Directory({ lang, counts }: {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <ActionButton action={toggleDoctorBan.bind(null, doc._id.toString(), false)} label="Разбанить" variant="success" icon={Undo2} />
-                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить врача безвозвратно?" />
+                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить врача, его аккаунт и статьи? Копия хранится в корзине 30 дней." />
                 </div>
               </Card>
             ))}
@@ -608,7 +629,7 @@ async function Directory({ lang, counts }: {
         <section aria-labelledby="rejected">
           <SectionHeader id="rejected" icon={CircleX} title="Отклонённые заявки" count={counts.doctorsRejected} tone="neutral" />
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {rejectedDoctors.map((doc: any) => (
+            {rejectedDoctors.map((doc: DoctorRow) => (
               <Card key={String(doc._id)} as="article" className="flex items-center gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-gray-300">{doc.name}</p>
@@ -617,7 +638,7 @@ async function Directory({ lang, counts }: {
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <ActionButton action={updateDoctorStatus.bind(null, doc._id.toString(), 'approved')} label="Одобрить" variant="success" icon={CircleCheck} />
-                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить заявку?" />
+                  <ActionButton action={deleteDoctor.bind(null, doc._id.toString())} label="Удалить" variant="danger" icon={Trash2} confirm="Удалить заявку, аккаунт и статьи врача? Копия хранится в корзине 30 дней." />
                 </div>
               </Card>
             ))}

@@ -73,3 +73,55 @@ describe('requireRole', () => {
     await expect(requireRole('portal_admin')).rejects.toThrow('Unauthorized');
   });
 });
+
+// ── Команда портала: администратор и менеджер ───────────────────────────────
+// Роль в токене живёт до 30 дней. Для менеджера она сверяется с базой каждый раз,
+// иначе снятая роль продолжала бы работать до следующего входа.
+const dbMocks = vi.hoisted(() => ({ dbConnect: vi.fn(), findById: vi.fn() }));
+vi.mock('@/lib/mongodb', () => ({ default: dbMocks.dbConnect }));
+vi.mock('@/models/User', () => ({ default: { findById: dbMocks.findById } }));
+
+import { getStaff, requireStaff } from '@/lib/authGuards';
+
+describe('getStaff / requireStaff', () => {
+  const roleInDb = (role: string | undefined) =>
+    dbMocks.findById.mockReturnValue({ select: () => ({ lean: async () => (role ? { role } : null) }) });
+
+  beforeEach(() => {
+    mockedAuth.mockReset();
+    dbMocks.dbConnect.mockReset();
+    dbMocks.findById.mockReset();
+  });
+
+  it('пускает администратора по сессии, не обращаясь к базе', async () => {
+    mockedAuth.mockResolvedValue(sessionWith('portal_admin'));
+    await expect(requireStaff()).resolves.toEqual({ userId: 'user_1', email: 'doc@example.com', role: 'portal_admin' });
+    expect(dbMocks.findById).not.toHaveBeenCalled();
+  });
+
+  it('пускает менеджера, только если в базе у него по-прежнему роль менеджера', async () => {
+    mockedAuth.mockResolvedValue(sessionWith('portal_manager'));
+    roleInDb('portal_manager');
+    await expect(requireStaff()).resolves.toEqual({ userId: 'user_1', email: 'doc@example.com', role: 'portal_manager' });
+  });
+
+  it('снятая роль менеджера перестаёт работать сразу, хотя в токене она ещё есть', async () => {
+    mockedAuth.mockResolvedValue(sessionWith('portal_manager'));
+    for (const now of ['patient', 'doctor', undefined]) {
+      roleInDb(now);
+      await expect(requireStaff()).rejects.toThrow('Unauthorized');
+      expect(await getStaff()).toBeNull();
+    }
+  });
+
+  it('не пускает врача, клинику, пациента, пустую сессию и сессию без email', async () => {
+    for (const role of ['doctor', 'clinic', 'patient', undefined]) {
+      mockedAuth.mockResolvedValue(sessionWith(role));
+      await expect(requireStaff()).rejects.toThrow('Unauthorized');
+    }
+    mockedAuth.mockResolvedValue(null as any);
+    await expect(requireStaff()).rejects.toThrow('Unauthorized');
+    mockedAuth.mockResolvedValue(sessionWith('portal_manager', null));
+    await expect(requireStaff()).rejects.toThrow('Unauthorized');
+  });
+});

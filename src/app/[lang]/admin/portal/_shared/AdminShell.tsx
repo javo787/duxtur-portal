@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
-  LayoutDashboard, FileText, PenLine, Building2, Stethoscope, ArrowUpRight, ShieldCheck, Sparkles,
+  LayoutDashboard, FileText, PenLine, Building2, Stethoscope, ArrowUpRight, ShieldCheck, Sparkles, ScrollText, Trash2, Users,
 } from 'lucide-react';
 import SignOutButton from './SignOutButton';
 import { getPortalCounts } from './counts';
+import { getStaff } from '@/lib/authGuards';
+import type { Staff } from '@/lib/admin-access';
 
-export type PortalSection = 'portal' | 'articles' | 'write' | 'clinics' | 'doctors';
+export type PortalSection = 'portal' | 'articles' | 'write' | 'clinics' | 'doctors' | 'audit' | 'trash' | 'team';
 
 interface NavItem {
   key: PortalSection;
@@ -15,6 +17,8 @@ interface NavItem {
   href: (lang: string) => string;
   /** Which count (if any) is shown as a badge on this item. */
   badge?: 'moderation' | 'articles';
+  /** Pages only the administrator opens (a manager does not see the link). */
+  adminOnly?: boolean;
 }
 
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -27,8 +31,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Контент',
     items: [
-      { key: 'articles', label: 'Статьи', icon: FileText, href: l => `/${l}/admin/portal/articles`, badge: 'articles' },
-      { key: 'write', label: 'Написать статью', icon: PenLine, href: l => `/${l}/admin/portal/articles/new` },
+      { key: 'articles', label: 'Статьи', icon: FileText, href: l => `/${l}/admin/portal/articles`, badge: 'articles', adminOnly: true },
+      { key: 'write', label: 'Написать статью', icon: PenLine, href: l => `/${l}/admin/portal/articles/new`, adminOnly: true },
     ],
   },
   {
@@ -38,9 +42,16 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { key: 'doctors', label: 'Врачи', icon: Stethoscope, href: l => `/${l}/admin/portal/doctors` },
     ],
   },
+  {
+    title: 'Контроль',
+    items: [
+      { key: 'audit', label: 'Журнал', icon: ScrollText, href: l => `/${l}/admin/portal/audit` },
+      { key: 'trash', label: 'Корзина', icon: Trash2, href: l => `/${l}/admin/portal/trash` },
+      { key: 'team', label: 'Команда', icon: Users, href: l => `/${l}/admin/portal/team`, adminOnly: true },
+    ],
+  },
 ];
 
-const ALL_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 function Badge({ value }: { value: number }) {
   if (value <= 0) return null;
@@ -68,7 +79,7 @@ function Brand() {
 }
 
 export default async function AdminShell({
-  lang, active, title, description, action, children,
+  lang, active, title, description, action, children, staff,
 }: {
   lang: string;
   active: PortalSection;
@@ -76,8 +87,17 @@ export default async function AdminShell({
   description?: string;
   action?: ReactNode;
   children: ReactNode;
+  /** Who is signed in. Pages that already know pass it; the others are asked here. */
+  staff?: Staff;
 }) {
-  const counts = await getPortalCounts();
+  const who = staff ?? (await getStaff());
+  const isAdmin = who?.role !== 'portal_manager';
+  const counts = who ? await getPortalCounts(who) : { doctors: 0, clinics: 0, articles: 0 };
+  // A manager sees only the sections they may open
+  const groups = NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(i => isAdmin || !i.adminOnly) }))
+    .filter(g => g.items.length > 0);
+  const allItems = groups.flatMap(g => g.items);
   const badgeFor = (item: NavItem) =>
     item.badge === 'moderation' ? counts.doctors + counts.clinics + counts.articles
     : item.badge === 'articles' ? counts.articles
@@ -96,7 +116,7 @@ export default async function AdminShell({
         <div className="px-2 pb-6"><Brand /></div>
 
         <nav aria-label="Разделы портала" className="flex-1 space-y-6 overflow-y-auto pr-1">
-          {NAV_GROUPS.map(group => (
+          {groups.map(group => (
             <div key={group.title}>
               <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-600">{group.title}</p>
               <ul className="space-y-0.5">
@@ -129,10 +149,10 @@ export default async function AdminShell({
 
         <div className="mt-4 space-y-1 border-t border-white/[0.06] pt-4">
           <div className="mb-2 flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5 ring-1 ring-inset ring-white/[0.05]">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-linear-to-br from-amber-300 to-orange-500 text-[11px] font-bold text-gray-900">SA</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-linear-to-br from-amber-300 to-orange-500 text-[11px] font-bold text-gray-900">{isAdmin ? 'SA' : 'M'}</span>
             <span className="leading-tight">
-              <span className="block text-[13px] font-medium text-gray-100">Супер-администратор</span>
-              <span className="block text-[11px] text-gray-500">Полный доступ</span>
+              <span className="block text-[13px] font-medium text-gray-100">{isAdmin ? 'Супер-администратор' : 'Менеджер'}</span>
+              <span className="block text-[11px] text-gray-500">{isAdmin ? 'Полный доступ' : 'Только ваши записи и очередь заявок'}</span>
             </span>
           </div>
           <Link href={`/${lang}`} className="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors duration-200 hover:bg-white/[0.04] hover:text-gray-100">
@@ -152,7 +172,7 @@ export default async function AdminShell({
             <Link href={`/${lang}`} className="rounded-lg px-2.5 py-1.5 text-xs text-gray-400 ring-1 ring-inset ring-white/10 hover:text-white">На сайт</Link>
           </div>
           <nav aria-label="Разделы портала" className="flex gap-1.5 overflow-x-auto px-4 pb-3 [scrollbar-width:none]">
-            {ALL_ITEMS.map(item => {
+            {allItems.map(item => {
               const isActive = item.key === active;
               const n = badgeFor(item);
               return (

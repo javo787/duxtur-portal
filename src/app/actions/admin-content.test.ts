@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { requireRole, dbConnect, uploadImage } = vi.hoisted(() => ({
-  requireRole: vi.fn(),
+const { requireStaff, checkAccess, dbConnect, uploadImage, recordAudit, trashClinic, trashDoctor } = vi.hoisted(() => ({
+  requireStaff: vi.fn(),
+  checkAccess: vi.fn(),
   dbConnect: vi.fn(),
   uploadImage: vi.fn(),
+  recordAudit: vi.fn(),
+  trashClinic: vi.fn(),
+  trashDoctor: vi.fn(),
 }));
-vi.mock('@/lib/authGuards', () => ({ requireRole }));
+vi.mock('@/lib/audit-log', () => ({ recordAudit }));
+vi.mock('@/lib/admin-trash', () => ({ trashClinic, trashDoctor }));
+vi.mock('@/lib/authGuards', () => ({ requireStaff }));
+vi.mock('@/lib/admin-scope', () => ({ checkAccess }));
 vi.mock('@/lib/mongodb', () => ({ default: dbConnect }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/navigation', () => ({
@@ -42,7 +49,10 @@ const redirectOf = async (p: Promise<unknown>) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  requireRole.mockResolvedValue({ userId: 'admin1', email: 'a@x.tj', role: 'portal_admin' });
+  requireStaff.mockResolvedValue({ userId: 'admin1', email: 'a@x.tj', role: 'portal_admin' });
+  checkAccess.mockResolvedValue({ ok: true, record: {} });
+  trashClinic.mockResolvedValue({ ok: true });
+  trashDoctor.mockResolvedValue({ ok: true });
   clinicModel.findOne.mockReturnValue(lean(null));
   clinicModel.findById.mockReturnValue(lean({ _id: 'c1', slug: 'vedanta-ab12cd' }));
   doctorModel.findById.mockReturnValue(lean({ _id: 'd1', slug: 'dr-a-1' }));
@@ -50,14 +60,14 @@ beforeEach(() => {
 
 describe('authorization', () => {
   it('every action rejects a non-admin before touching the database', async () => {
-    requireRole.mockRejectedValue(new Error('Unauthorized'));
+    requireStaff.mockRejectedValue(new Error('Unauthorized'));
     const f = form({ name_ru: 'Клиника Тест', name: 'Иван Иванов', specialty_ru: 'Хирург' });
     await expect(saveClinic('new', f)).rejects.toThrow('Unauthorized');
     await expect(saveClinic('c1', f)).rejects.toThrow('Unauthorized');
     await expect(deleteManagedClinic('c1', f)).rejects.toThrow('Unauthorized');
     await expect(saveDoctor('new', f)).rejects.toThrow('Unauthorized');
     await expect(deleteManagedDoctor('d1', f)).rejects.toThrow('Unauthorized');
-    expect(requireRole).toHaveBeenCalledWith('portal_admin');
+    expect(requireStaff).toHaveBeenCalled();
     expect(dbConnect).not.toHaveBeenCalled();
     expect(clinicModel.create).not.toHaveBeenCalled();
     expect(clinicModel.updateOne).not.toHaveBeenCalled();
@@ -140,12 +150,20 @@ describe('deleteManagedClinic', () => {
     expect(decodeURIComponent(r)).toMatch(/аккаунт владельца/);
     expect(clinicModel.deleteOne).not.toHaveBeenCalled();
   });
-  it('deletes an ownerless clinic and unlinks its doctors', async () => {
+  it('moves an ownerless clinic to the trash (which unlinks its doctors) instead of deleting it outright', async () => {
     clinicModel.findById.mockReturnValue(lean({}));
     const r = await redirectOf(deleteManagedClinic('c1', form()));
     expect(r).toBe('REDIRECT:/ru/admin/portal/clinics?deleted=1');
-    expect(doctorModel.updateMany).toHaveBeenCalledWith({ clinicId: 'c1' }, { $set: { clinicId: null } });
-    expect(clinicModel.deleteOne).toHaveBeenCalledWith({ _id: 'c1' });
+    expect(trashClinic).toHaveBeenCalledWith('c1', expect.objectContaining({ userId: 'admin1', email: 'a@x.tj' }));
+    expect(clinicModel.deleteOne).not.toHaveBeenCalled();
+    expect(doctorModel.updateMany).not.toHaveBeenCalled();
+  });
+  it('shows the reason and stays on the page when the trash cannot take the clinic', async () => {
+    clinicModel.findById.mockReturnValue(lean({}));
+    trashClinic.mockResolvedValue({ ok: false, error: 'Не удалось сохранить копию в корзину, ничего не удалено' });
+    const r = await redirectOf(deleteManagedClinic('c1', form()));
+    expect(r).toMatch(/^REDIRECT:\/ru\/admin\/portal\/clinics\/c1\?error=/);
+    expect(decodeURIComponent(r)).toMatch(/ничего не удалено/);
   });
 });
 
@@ -164,6 +182,67 @@ describe('doctors', () => {
     doctorModel.findById.mockReturnValue(lean({ userId: 'u1' }));
     const r = await redirectOf(deleteManagedDoctor('d1', form()));
     expect(decodeURIComponent(r)).toMatch(/есть аккаунт/);
+    expect(trashDoctor).not.toHaveBeenCalled();
     expect(doctorModel.deleteOne).not.toHaveBeenCalled();
+  });
+  it('moves an accountless doctor to the trash', async () => {
+    doctorModel.findById.mockReturnValue(lean({}));
+    const r = await redirectOf(deleteManagedDoctor('d1', form()));
+    expect(r).toBe('REDIRECT:/ru/admin/portal/doctors?deleted=1');
+    expect(trashDoctor).toHaveBeenCalledWith('d1', expect.objectContaining({ userId: 'admin1' }));
+    expect(doctorModel.deleteOne).not.toHaveBeenCalled();
+  });
+  it('writes saves of clinics and doctors to the audit log', async () => {
+    clinicModel.create.mockResolvedValue({ _id: 'c-new' });
+    await redirectOf(saveClinic('new', form({ name_ru: 'Клиника Нур', city: 'Душанбе', status: 'approved' })));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'clinic.created', entityType: 'clinic', entityId: 'c-new', entityLabel: 'Клиника Нур',
+    }));
+    doctorModel.create.mockResolvedValue({ _id: 'd-new' });
+    await redirectOf(saveDoctor('new', form({ name: 'Иванов Иван', specialty_ru: 'Хирург', status: 'pre_imported' })));
+    expect(recordAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'doctor.created', entityType: 'doctor', entityId: 'd-new', entityLabel: 'Иванов Иван',
+    }));
+  });
+});
+
+describe('a manager in the content editor', () => {
+  const manager = { userId: 'm1', email: 'm@x.tj', role: 'portal_manager' };
+  beforeEach(() => { requireStaff.mockResolvedValue(manager); });
+
+  it('adds a clinic and a doctor that become theirs; an administrator\'s additions have no owner', async () => {
+    clinicModel.create.mockResolvedValue({ _id: 'c-new' });
+    await redirectOf(saveClinic('new', form({ name_ru: 'Клиника Нур', city: 'Душанбе' })));
+    expect(clinicModel.create.mock.calls[0][0]).toMatchObject({ managedBy: 'm1' });
+
+    doctorModel.create.mockResolvedValue({ _id: 'd-new' });
+    await redirectOf(saveDoctor('new', form({ name: 'Иванов Иван', specialty_ru: 'Хирург', status: 'pre_imported' })));
+    expect(doctorModel.create.mock.calls[0][0]).toMatchObject({ managedBy: 'm1' });
+
+    requireStaff.mockResolvedValue({ userId: 'admin1', email: 'a@x.tj', role: 'portal_admin' });
+    clinicModel.create.mockClear();
+    await redirectOf(saveClinic('new', form({ name_ru: 'Клиника Заря', city: 'Худжанд' })));
+    expect(clinicModel.create.mock.calls[0][0]).not.toHaveProperty('managedBy');
+  });
+
+  it('cannot edit or delete what is not theirs: sent back to the list with the reason, nothing written', async () => {
+    checkAccess.mockResolvedValue({ ok: false, error: 'Эта запись не ваша' });
+    const edit = await redirectOf(saveClinic('c1', form({ name_ru: 'Клиника Нур', city: 'Душанбе' })));
+    expect(edit).toMatch(/^REDIRECT:\/ru\/admin\/portal\/clinics\?error=/);
+    expect(decodeURIComponent(edit)).toMatch(/не ваша/);
+    expect(decodeURIComponent(await redirectOf(saveDoctor('d1', form({ name: 'Иванов Иван', specialty_ru: 'Хирург', status: 'pre_imported' }))))).toMatch(/не ваша/);
+    expect(decodeURIComponent(await redirectOf(deleteManagedClinic('c1', form())))).toMatch(/не ваша/);
+    expect(decodeURIComponent(await redirectOf(deleteManagedDoctor('d1', form())))).toMatch(/не ваша/);
+    expect(clinicModel.updateOne).not.toHaveBeenCalled();
+    expect(doctorModel.updateOne).not.toHaveBeenCalled();
+    expect(trashClinic).not.toHaveBeenCalled();
+    expect(trashDoctor).not.toHaveBeenCalled();
+  });
+
+  it('asks the access check about the right action on the right record', async () => {
+    await redirectOf(saveClinic('c1', form({ name_ru: 'Клиника Нур', city: 'Душанбе' })));
+    expect(checkAccess).toHaveBeenCalledWith(manager, 'edit', 'clinic', 'c1');
+    await redirectOf(deleteManagedDoctor('d1', form()));
+    expect(checkAccess).toHaveBeenCalledWith(manager, 'delete', 'doctor', 'd1');
   });
 });

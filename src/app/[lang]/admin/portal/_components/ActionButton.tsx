@@ -1,7 +1,9 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import type { ComponentType, ReactNode } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
+
+export type ActionResult = void | { error: string };
 
 export type ActionVariant = 'success' | 'danger' | 'warning' | 'neutral' | 'primary';
 
@@ -35,18 +37,31 @@ function Submit({ label, variant, icon: Icon, confirm }: {
 
 /**
  * A server action behind a button: shows that it is working, asks first when `confirm` is given.
- * `action` is a server action already bound to its arguments (`approveArticle.bind(null, id)`).
+ * `action` is a server action already bound to its arguments (`approveArticle.bind(null, id)`). When the action
+ * answers `{ error }` (or fails), the message appears under the button, so a refused click never looks like it worked.
  */
 export function ActionButton({ action, label, variant = 'neutral', icon, confirm }: {
-  action: () => Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult>;
   label: ReactNode;
   variant?: ActionVariant;
   icon?: ComponentType<{ className?: string }>;
   confirm?: string;
 }) {
+  const [error, setError] = useState('');
   return (
-    <form action={action}>
+    <form
+      action={async (formData: FormData) => {
+        setError('');
+        try {
+          const result = await action(formData);
+          if (result && 'error' in result) setError(result.error);
+        } catch {
+          setError('Не удалось выполнить действие. Обновите страницу и попробуйте ещё раз.');
+        }
+      }}
+    >
       <Submit label={label} variant={variant} icon={icon} confirm={confirm} />
+      {error && <p role="alert" className="mt-1 max-w-[220px] text-[11px] leading-snug text-red-300">{error}</p>}
     </form>
   );
 }

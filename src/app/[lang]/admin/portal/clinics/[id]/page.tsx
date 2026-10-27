@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import dbConnect from '@/lib/mongodb';
 import Clinic from '@/models/Clinic';
-import { assertAdminPage } from '@/lib/admin-content/guard';
+import { assertStaffPage } from '@/lib/admin-content/guard';
+import { checkAccess } from '@/lib/admin-scope';
 import AdminShell, { Banner, StatusBadge } from '../../_shared/AdminShell';
 import ClinicForm, { type ClinicDoc } from '../_components/ClinicForm';
 
@@ -10,8 +11,11 @@ export default async function EditClinicPage({
 }: { params: Promise<{ lang: string; id: string }>; searchParams: Promise<{ error?: string }> }) {
   const { lang, id } = await params;
   const { error } = await searchParams;
-  await assertAdminPage(lang);
+  const staff = await assertStaffPage(lang);
   if (!/^[a-f0-9]{24}$/i.test(id)) notFound();
+  // a manager opens only the clinics they manage
+  const access = await checkAccess(staff, 'edit', 'clinic', id);
+  if (!access.ok) redirect(`/${lang}/admin/portal/clinics?error=${encodeURIComponent(access.error)}`);
 
   await dbConnect();
   const raw = await Clinic.findById(id).lean();
@@ -23,6 +27,7 @@ export default async function EditClinicPage({
     <AdminShell
       lang={lang}
       active="clinics"
+      staff={staff}
       title={clinic.name?.ru || 'Клиника'}
       action={<StatusBadge status={clinic.status ?? 'pending'} />}
     >
