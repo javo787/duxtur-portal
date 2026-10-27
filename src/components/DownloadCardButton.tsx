@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useT } from '@/i18n';
+import { cardServiceOrigin, fallbackFor, fetchCardFromService, warmCardService } from '@/lib/card-service';
 
 interface DownloadCardButtonProps {
   doctorSlug: string;
@@ -19,23 +20,30 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
   const { t } = useT(lang);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [errorKey, setErrorKey] = useState<'share.downloadError' | 'share.imageUnavailable'>('share.downloadError');
   const [format, setFormat] = useState<'pdf' | 'image'>('pdf');
 
-  const serviceUrl = process.env.NEXT_PUBLIC_CARD_SERVICE_URL;
+  // https-origin сервиса на Render или '' (не настроен: работает только клиентский рендер).
+  const serviceUrl = cardServiceOrigin();
+
+  // Бесплатный инстанс Render засыпает и просыпается ~минуту. Будим его, как только кнопка появилась на странице,
+  // а не по клику: к моменту нажатия сервис, как правило, уже готов.
+  useEffect(() => {
+    warmCardService(serviceUrl);
+  }, [serviceUrl]);
 
   const handleDownload = async () => {
     setLoading(true);
     setError(false);
+    setErrorKey('share.downloadError');
 
     // Основной путь: рендер через выделенный сервис (настоящий HTML/CSS
     // в headless Chrome — фон-градиенты, PT Serif для имени, чёткие QR).
-    // Пока NEXT_PUBLIC_CARD_SERVICE_URL не настроен (сервис ещё не задеплоен
-    // на Render) — тихо уходим в fallback ниже, чтобы кнопка не сломалась.
+    // Пока NEXT_PUBLIC_CARD_SERVICE_URL не настроен — тихо уходим в fallback ниже.
+    // Ждём сервис не дольше CARD_SERVICE_TIMEOUT_MS: если он не успел проснуться, PDF делается в браузере.
     if (serviceUrl) {
       try {
-        const res = await fetch(`${serviceUrl}/card/${doctorSlug}?lang=${lang}&format=${format}`);
-        if (!res.ok) throw new Error(`Service responded ${res.status}`);
-        const blob = await res.blob();
+        const blob = await fetchCardFromService({ origin: serviceUrl, slug: doctorSlug, lang, format });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -51,8 +59,14 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
         setLoading(false);
         return;
       } catch (err) {
-        console.warn('Card service failed, falling back to client-side render:', err);
-        // падаем ниже, на клиентский рендер (только PDF — см. комментарий у кнопок формата)
+        console.warn('Card service failed:', err);
+        // Клиентский рендер умеет только PDF. Для PNG не подсовываем PDF молча: честно говорим, что делать.
+        if (fallbackFor(format) === 'tell-user') {
+          setErrorKey('share.imageUnavailable');
+          setError(true);
+          setLoading(false);
+          return;
+        }
       }
     }
 
@@ -90,7 +104,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       const textSecondary  = theme === 'dark' ? '#888888' : '#666666';
       const textTertiary   = theme === 'dark' ? '#444444' : '#bbbbbb';
 
-      const t = (field: any) => {
+      const t = (field: string | Record<string, string> | null | undefined) => {
         if (!field) return '';
         if (typeof field === 'string') return field;
         return field[lang] || field['ru'] || '';
@@ -127,7 +141,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
       const qrFront = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${qrBg}&color=${qrColor}&margin=4`;
       const qrBack  = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://duxtur.org/${lang}/doctor/${doctorSlug}`)}&bgcolor=${theme === 'dark' ? '0c0c0c' : 'f9f9f9'}&color=${qrColor}&margin=6`;
 
-      const dict: Record<string, any> = {
+      const dict: Record<string, Record<string, string>> = {
         ru: { verified: 'Верифицирован', years: 'лет', scan: 'МОЙ ПРОФИЛЬ', reception: 'ЧАСЫ ПРИЁМА', langLabel: 'ЯЗЫКИ', mission: 'МОЯ МИССИЯ', contacts: 'КОНТАКТЫ', allByQr: 'Все статьи по QR-коду' },
         uz: { verified: 'Tasdiqlangan', years: 'yil', scan: 'MENING PROFILIM', reception: 'QABUL VAQTI', langLabel: 'TILLAR', mission: 'MAQSADIM', contacts: 'KONTAKTLAR', allByQr: 'Barcha maqolalar QR orqali' },
         tg: { verified: 'Тасдикшуда', years: 'сол', scan: 'ПРОФИЛИ МАН', reception: 'СОАТҲОИ ҚАБУЛ', langLabel: 'ЗАБОНҲО', mission: 'МАҚСАДИ МАН', contacts: 'ТАМОС', allByQr: 'Ҳама мақолаҳо тавассути QR' },
@@ -604,7 +618,7 @@ export default function DownloadCardButton({ doctorSlug, lang }: DownloadCardBut
             <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-red-300">{t('share.downloadError')}</span>
+            <span className="text-red-300">{t(errorKey)}</span>
           </>
         ) : (
           <>

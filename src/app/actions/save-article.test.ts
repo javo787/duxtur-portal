@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { authMock, publishArticle } = vi.hoisted(() => ({ authMock: vi.fn(), publishArticle: vi.fn() }));
+const { authMock, publishArticle, ensureEditorialAuthor, revalidatePath } = vi.hoisted(() => ({
+  authMock: vi.fn(), publishArticle: vi.fn(), ensureEditorialAuthor: vi.fn(), revalidatePath: vi.fn(),
+}));
 vi.mock('@/auth', () => ({ auth: authMock }));
 vi.mock('@/lib/mongodb', () => ({ default: vi.fn() }));
 vi.mock('@/lib/author-articles', () => ({ publishArticle }));
+vi.mock('@/lib/editorial-author', () => ({ ensureEditorialAuthor }));
+vi.mock('next/cache', () => ({ revalidatePath }));
 
 interface Draft { _id: { toString(): string }; userId: string; language: string; title: string; data: unknown }
 let user: Record<string, unknown> | null;
@@ -48,6 +52,7 @@ beforeEach(() => {
   doctor = null;
   authMock.mockResolvedValue({ user: { email: 'a@x.tj' } });
   publishArticle.mockResolvedValue('migren-12345');
+  ensureEditorialAuthor.mockResolvedValue({ _id: 'editorial1' });
 });
 
 describe('saveArticle', () => {
@@ -102,11 +107,27 @@ describe('saveArticle', () => {
     expect(drafts).toHaveLength(0);
   });
 
-  it('refuses administrators and clinics, which do not write articles', async () => {
-    for (const role of ['portal_admin', 'clinic']) {
-      user = { ...user!, role };
-      expect((await saveArticle(article, 'ru')).success, role).toBe(false);
-    }
+  it('refuses clinics, which do not write articles', async () => {
+    user = { ...user!, role: 'clinic' };
+    expect((await saveArticle(article, 'ru')).success).toBe(false);
+    expect(publishArticle).not.toHaveBeenCalled();
+  });
+
+  it('publishes the super admin\'s article at once under the editorial byline, already approved', async () => {
+    user = { ...user!, role: 'portal_admin', name: '' };
+    expect(await saveArticle(article, 'ru')).toEqual({ success: true, outcome: 'published', slug: 'migren-12345' });
+    expect(ensureEditorialAuthor).toHaveBeenCalledWith('u1');
+    expect(publishArticle).toHaveBeenCalledWith(article, 'ru', 'editorial1', { verified: true });
+    expect(revalidatePath).toHaveBeenCalledWith('/[lang]/blog', 'page');
+    expect(drafts).toHaveLength(0);
+  });
+
+  it('never publishes a doctor\'s article as already approved', async () => {
+    user = { ...user!, role: 'doctor' };
+    doctor = { _id: 'doc1', status: 'approved' };
+    await saveArticle(article, 'ru');
+    expect(publishArticle).toHaveBeenCalledWith(article, 'ru', 'doc1');
+    expect(ensureEditorialAuthor).not.toHaveBeenCalled();
   });
 
   it('refuses a language the portal does not have, and anything that is not an article object', async () => {

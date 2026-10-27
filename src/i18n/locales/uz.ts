@@ -139,6 +139,7 @@ export const uz = {
     articleRelated: 'Oʻxshash maqolalar',
     articleDisclaimer: 'Muhim',
     articleDisclaimerText: 'Ushbu maqola maʼlumot berish xarakteriga ega va shifokor maslahatining oʻrnini bosmaydi. Belgilar paydo boʻlganda mutaxassisga murojaat qiling.',
+    articleAiNotice: 'Material Duxtur tahririyati tomonidan sunʼiy intellekt yordamida ochiq manbalar asosida tayyorlangan (quyidagi roʻyxatga qarang) va hozircha shifokor tomonidan tekshirilmagan.',
     articlePublished: 'Nashr etildi',
     articleUpdated: 'Yangilandi',
     articleMedicalReview: 'Tibbiy tekshiruv',
@@ -592,6 +593,7 @@ export const uz = {
     downloadCard: 'Vizitkani yuklab olish',
     generating: 'PDF yaratilmoqda…',
     downloadError: 'Xatolik. Qayta urinib koʻring',
+    imageUnavailable: 'Rasm xizmati uygʻonmoqda. Bir daqiqadan soʻng qayta urinib koʻring yoki PDF yuklab oling',
   },
   search: {
     title: 'Qidiruv',

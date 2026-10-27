@@ -75,6 +75,7 @@ export const AUDIT_ACTIONS = {
   'clinic.updated': 'Клиника изменена',
   'clinic.trashed': 'Клиника удалена (в корзину)',
   'article.approved': 'Статья одобрена',
+  'article.unpublished': 'Статья снята с публикации',
   'article.trashed': 'Статья удалена (в корзину)',
   'review.shown': 'Отзыв показан',
   'review.hidden': 'Отзыв скрыт',

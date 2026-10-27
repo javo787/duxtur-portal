@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { MapPin, Plus } from 'lucide-react';
 import AddPlaceModal from './AddPlaceModal';
 
 export default function PlacesSection() {
@@ -72,23 +73,28 @@ export default function PlacesSection() {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-extrabold text-white">🗺 Места</h2>
-            {total > 0 && (
-              <span className="bg-blue-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full">
-                {total}
-              </span>
-            )}
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 ring-1 ring-inset ring-emerald-400/25">
+              <MapPin className="h-[18px] w-[18px] text-emerald-300" aria-hidden />
+            </span>
+            <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-white">
+              Места на карте
+              {total > 0 && (
+                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
+                  {total}
+                </span>
+              )}
+            </h2>
           </div>
           {deletedCount > 0 && (
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+            <p className="text-[11px] text-gray-500">
               В корзине: <span className="text-red-400">{deletedCount}</span>
               <button
                 onClick={handleCleanup}
                 disabled={cleaning}
-                className="ml-2 text-blue-400 hover:underline disabled:opacity-50"
+                className="ml-2 text-sky-300 hover:underline disabled:opacity-50"
               >
                 {cleaning ? 'Очистка...' : 'Очистить (90дн)'}
               </button>
@@ -97,13 +103,13 @@ export default function PlacesSection() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white/[0.06] px-3.5 py-2 text-xs font-medium text-white ring-1 ring-inset ring-white/10 transition-[transform,background-color] duration-150 ease-premium hover:bg-white/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
-          + Добавить место
+          <Plus className="h-3.5 w-3.5" aria-hidden /> Добавить место
         </button>
       </div>
 
-      <div className="bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
         {loading ? (
           <div className="p-10 text-center text-gray-500">Загрузка...</div>
         ) : places.length === 0 ? (
@@ -112,22 +118,22 @@ export default function PlacesSection() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-800 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <tr className="border-b border-white/[0.06] text-[10px] font-semibold uppercase tracking-widest text-gray-500">
                   <th className="px-6 py-4">Название</th>
                   <th className="px-6 py-4">Тип</th>
                   <th className="px-6 py-4">Город / Адрес</th>
                   <th className="px-6 py-4 text-right">Действия</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-white/[0.05]">
                 {places.map((place) => (
-                  <tr key={place._id} className="hover:bg-gray-800/50 transition">
+                  <tr key={place._id} className="transition-colors duration-150 hover:bg-white/[0.03]">
                     <td className="px-6 py-4">
                       <p className="font-bold text-white text-sm">{place.name?.ru || place.name}</p>
                       <p className="text-[10px] text-gray-500">{place.phone}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium uppercase text-gray-300 ring-1 ring-inset ring-white/10">
                         {place.type}
                       </span>
                     </td>
@@ -138,7 +144,7 @@ export default function PlacesSection() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => handleDelete(place._id)}
-                        className="text-red-500 hover:text-red-400 font-bold text-xs"
+                        className="text-xs font-medium text-red-300 hover:text-red-200 hover:underline"
                       >
                         Удалить
                       </button>
@@ -152,7 +158,7 @@ export default function PlacesSection() {
       </div>
 
       {cleanupLogs.length > 0 && (
-        <div className="mt-8 bg-gray-950/50 p-6 rounded-3xl border border-gray-800">
+        <div className="mt-4 rounded-2xl border border-white/[0.06] bg-black/20 p-5">
           <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">История очистки</h3>
           <div className="space-y-3">
             {cleanupLogs.map((log) => (

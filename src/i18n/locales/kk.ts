@@ -139,6 +139,7 @@ export const kk = {
     articleRelated: 'Ұқсас мақалалар',
     articleDisclaimer: 'Маңызды',
     articleDisclaimerText: 'Бұл мақала ақпараттық сипатта және дәрігер кеңесін алмастырмайды. Белгілер болған жағдайда маманға хабарласыңыз.',
+    articleAiNotice: 'Материалды Duxtur редакциясы жасанды интеллект көмегімен ашық дереккөздер негізінде дайындады (төмендегі тізімді қараңыз), әзірге дәрігер тексермеген.',
     articlePublished: 'Жарияланды',
     articleUpdated: 'Жаңартылды',
     articleMedicalReview: 'Медициналық тексеріс',
@@ -592,6 +593,7 @@ export const kk = {
     downloadCard: 'Визитканы жүктеу',
     generating: 'PDF жасалуда…',
     downloadError: 'Қате. Қайта көріңіз',
+    imageUnavailable: 'Сурет қызметі оянуда. Бір минуттан кейін қайталап көріңіз немесе PDF жүктеңіз',
   },
   search: {
     title: 'Іздеу',

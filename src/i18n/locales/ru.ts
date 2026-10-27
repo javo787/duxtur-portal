@@ -139,6 +139,7 @@ export const ru = {
     articleRelated: 'Похожие статьи',
     articleDisclaimer: 'Важно',
     articleDisclaimerText: 'Эта статья носит информационный характер и не заменяет консультацию врача. При наличии симптомов обратитесь к специалисту.',
+    articleAiNotice: 'Материал подготовлен редакцией Duxtur с помощью ИИ на основе открытых источников (список ниже) и пока не проверен врачом.',
     articlePublished: 'Опубликовано',
     articleUpdated: 'Обновлено',
     articleMedicalReview: 'Медицинская проверка',
@@ -593,6 +594,7 @@ export const ru = {
     downloadCard: 'Скачать визитку',
     generating: 'Генерируем PDF…',
     downloadError: 'Ошибка. Попробуйте ещё раз',
+    imageUnavailable: 'Сервис картинок просыпается. Попробуйте через минуту или скачайте PDF',
   },
   search: {
     title: 'Поиск',

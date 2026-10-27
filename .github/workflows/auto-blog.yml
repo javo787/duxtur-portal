@@ -1,0 +1,59 @@
+name: Auto blog
+
+# One article every 3 days. GitHub cron cannot say "every 3 days" exactly, so it fires daily and the site
+# answers "not due yet" until 70 hours have passed since the last automatic article (src/lib/auto-blog/types.ts).
+# A failed run is retried by the next day's run on its own.
+#
+# Needs repository secrets: CRON_SECRET (same as on Vercel) and GOOGLE_AI_KEY (free key from aistudio.google.com).
+# Optional repository variables: SITE_URL (default https://www.duxtur.org), AUTO_BLOG_MODELS.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Write the article but do not publish (test run)'
+        type: boolean
+        default: true
+      force:
+        description: 'Ignore the 3-day interval'
+        type: boolean
+        default: false
+
+# Never two runs at once: two articles on the same night would defeat the 3-day rhythm.
+concurrency:
+  group: auto-blog
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Write and publish the article
+        run: npx tsx scripts/auto-blog.ts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          GOOGLE_AI_KEY: ${{ secrets.GOOGLE_AI_KEY }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          AUTO_BLOG_MODELS: ${{ vars.AUTO_BLOG_MODELS }}
+          # Scheduled runs are real; manual runs are a dry run unless the box is unticked.
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force && '1' || '0' }}
+      - name: Keep the dry-run article
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-blog-dry-run
+          path: auto-blog-dry-run.json
+          if-no-files-found: ignore

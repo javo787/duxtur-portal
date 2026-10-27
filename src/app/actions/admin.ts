@@ -239,6 +239,13 @@ function revalidatePublic(...areas: Array<'doctors' | 'clinics' | 'blog'>) {
   for (const area of areas) for (const path of paths[area]) revalidatePath(path, 'page');
 }
 
+/** The article lists of the public site and of the portal, after an article went live, was hidden or was removed. */
+function revalidateArticles() {
+  revalidateAdmin();
+  revalidatePath('/[lang]/admin/portal/articles', 'page');
+  revalidatePublic('blog');
+}
+
 const done = (result: TrashResult): AdminActionResult => (result.ok ? undefined : { error: result.error });
 
 /**
@@ -332,7 +339,7 @@ export async function deleteDoctor(id: string): Promise<AdminActionResult> {
 export async function deleteArticle(id: string): Promise<AdminActionResult> {
   const admin = await requireRole('portal_admin');
   const result = await trashArticle(id, admin);
-  if (result.ok) { revalidateAdmin(); revalidatePublic('blog'); }
+  if (result.ok) revalidateArticles();
   return done(result);
 }
 
@@ -368,8 +375,22 @@ export async function approveArticle(articleId: string): Promise<AdminActionResu
     actor: admin, action: 'article.approved', entityType: 'article', entityId: articleId,
     entityLabel: article.title?.ru || article.title?.uz || article.title?.tg || article.slug,
   });
-  revalidateAdmin();
-  revalidatePublic('blog');
+  revalidateArticles();
+}
+
+/** Takes a published article off the site without deleting it: it goes back to the moderation queue. */
+export async function unpublishArticle(articleId: string): Promise<AdminActionResult> {
+  const admin = await requireRole('portal_admin');
+  if (!isObjectId(articleId)) return BAD_ID;
+  await dbConnect();
+  const article = await Article.findByIdAndUpdate(articleId, { isVerified: false }, { projection: 'title slug' })
+    .lean<{ title?: { ru?: string; uz?: string; tg?: string }; slug?: string } | null>();
+  if (!article) return { error: 'Статья не найдена' };
+  await recordAudit({
+    actor: admin, action: 'article.unpublished', entityType: 'article', entityId: articleId,
+    entityLabel: article.title?.ru || article.title?.uz || article.title?.tg || article.slug,
+  });
+  revalidateArticles();
 }
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -75,6 +75,7 @@ describe('authorization', () => {
       () => admin.deleteArticle(ID),
       () => admin.toggleDoctorBan(ID, true),
       () => admin.approveArticle(ID),
+      () => admin.unpublishArticle(ID),
       () => admin.approveReview(ID),
       () => admin.hideReview(ID),
       () => admin.deleteReview(ID),
@@ -214,6 +215,15 @@ describe('deleting goes through the trash', () => {
 });
 
 describe('articles and reviews', () => {
+  it('taking an article off the site sends it back to the queue and is logged', async () => {
+    expect(await admin.unpublishArticle(ID)).toBeUndefined();
+    expect(m.article.findByIdAndUpdate).toHaveBeenCalledWith(ID, { isVerified: false }, expect.anything());
+    expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'article.unpublished', entityLabel: 'Статья' }));
+    expect(await admin.unpublishArticle('{"$ne":1}')).toEqual({ error: 'Некорректный идентификатор' });
+    m.article.findByIdAndUpdate.mockReturnValue(lean(null));
+    expect(await admin.unpublishArticle(ID)).toEqual({ error: 'Статья не найдена' });
+  });
+
   it('approving an article is logged with its title', async () => {
     await admin.approveArticle(ID);
     expect(m.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'article.approved', entityLabel: 'Статья' }));

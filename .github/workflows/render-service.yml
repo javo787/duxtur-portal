@@ -1,0 +1,71 @@
+name: Render service
+
+# Сервис на Render (services/render-service) собирается из корня репозитория и включает общий код ботов из /src.
+# Отдельный workflow с фильтром путей: тяжёлая сборка Docker-образа идёт только когда что-то из этого действительно менялось.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/render-service/**'
+      - 'src/lib/bots/**'
+      - 'src/lib/edu-*.ts'
+      - 'src/lib/mongodb.ts'
+      - 'src/lib/models.ts'
+      - 'src/lib/rate-limit.ts'
+      - 'src/models/**'
+      - '.dockerignore'
+      - '.github/workflows/render-service.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/render-service/**'
+      - 'src/lib/bots/**'
+      - 'src/lib/edu-*.ts'
+      - 'src/lib/mongodb.ts'
+      - 'src/lib/models.ts'
+      - 'src/lib/rate-limit.ts'
+      - 'src/models/**'
+      - '.dockerignore'
+      - '.github/workflows/render-service.yml'
+
+jobs:
+  render-service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            services/render-service/package-lock.json
+      # Корневые зависимости нужны только для типов: общий код из /src импортирует mongoose и @upstash/*.
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: services/render-service
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: services/render-service
+      - name: Bundle (fails if the bundle needs a package the service does not install)
+        run: npm run build
+        working-directory: services/render-service
+      - name: Smoke test the bundle
+        run: npm run smoke
+        working-directory: services/render-service
+      - name: Build the Docker image exactly as Render does
+        run: docker build -f services/render-service/Dockerfile -t render-service-ci .
+      - name: Run the image (Chromium present, service answers)
+        run: |
+          docker run --rm --entrypoint chromium render-service-ci --version
+          docker run -d --name svc -p 3000:3000 \
+            -e MONGODB_URI='mongodb://127.0.0.1:1/ci?serverSelectionTimeoutMS=500' \
+            -e EDU_TELEGRAM_BOT_SECRET=ci -e TELEGRAM_BOT_SECRET=ci \
+            render-service-ci
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3000/healthz && break || sleep 1; done
+          curl -fsS http://127.0.0.1:3000/healthz | grep '"ok":true'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3000/telegram/edu -H 'content-type: application/json' -d '{}')" = "401"
+          docker logs svc
+          docker rm -f svc

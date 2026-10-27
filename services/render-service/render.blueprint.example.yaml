@@ -1,0 +1,34 @@
+# СПРАВОЧНЫЙ ПРИМЕР. Этот файл ничего не запускает и намеренно лежит не в корне репозитория.
+#
+# Почему не Blueprint: «New → Blueprint» в Render просит платёжную карту, а прежний render.yaml был на `plan: starter`
+# ($7 в месяц), поэтому деньги и списывались. Сервис создаётся ВРУЧНУЮ как Web Service на тарифе Free:
+# пошагово в docs/RENDER_SETUP.md. Здесь те же настройки в виде кода, чтобы их было видно в одном месте.
+services:
+  - type: web
+    name: duxtur-render
+    runtime: docker
+    plan: free              # НЕ starter: Free не требует карты и ничего не списывает
+    region: frankfurt
+    dockerfilePath: ./services/render-service/Dockerfile
+    dockerContext: .        # корень репозитория: в образ попадает общий код ботов из /src
+    healthCheckPath: /healthz
+    autoDeploy: true
+    buildFilter:            # пересобирать только когда меняется то, что входит в образ (на Free 500 билд-минут в месяц)
+      paths:
+        - services/render-service/**
+        - src/lib/bots/**
+        - src/lib/edu-*.ts
+        - src/lib/mongodb.ts
+        - src/lib/models.ts
+        - src/lib/rate-limit.ts
+        - src/models/**
+    envVars:                # значения вводятся в панели Render, в репозиторий секреты не попадают
+      - { key: MONGODB_URI, sync: false }
+      - { key: EDU_TELEGRAM_BOT_TOKEN, sync: false }
+      - { key: EDU_TELEGRAM_BOT_SECRET, sync: false }
+      - { key: TELEGRAM_BOT_TOKEN, sync: false }
+      - { key: TELEGRAM_BOT_SECRET, sync: false }
+      - { key: UPSTASH_REDIS_REST_URL, sync: false }
+      - { key: UPSTASH_REDIS_REST_TOKEN, sync: false }
+      - { key: DUXTUR_BASE_URL, value: https://www.duxtur.org }
+      - { key: ALLOWED_ORIGINS, value: "https://www.duxtur.org,https://duxtur.org" }

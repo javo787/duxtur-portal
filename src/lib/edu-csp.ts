@@ -16,7 +16,18 @@ const EDU_DIRECTIVES = [
   "form-action 'self'",
 ];
 
-export const EDU_CSP = [...EDU_DIRECTIVES, "frame-ancestors 'none'"].join('; ');
+/**
+ * `connectOrigin`: an extra origin the Edu app may call with fetch (the Study.tj API service when the browser calls it
+ * directly instead of through the /edu/api/study rewrite). Empty = the policy below, unchanged.
+ */
+export function eduCsp(connectOrigin = ''): string {
+  const directives = connectOrigin
+    ? EDU_DIRECTIVES.map((d) => (d.startsWith('connect-src ') ? `${d} ${connectOrigin}` : d))
+    : EDU_DIRECTIVES;
+  return [...directives, "frame-ancestors 'none'"].join('; ');
+}
+
+export const EDU_CSP = eduCsp();
 
 /**
  * The one Edu page that duxtur.org itself puts in a hidden frame, to learn who is signed in to Edu in this browser
