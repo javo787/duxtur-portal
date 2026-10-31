@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 
 export const inputCls =
-  'w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500';
+  'w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:focus:ring-0';
 
 export function Card({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 space-y-4">
+    <section className="bg-gray-50/60 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 space-y-4">
       <div>
-        <h3 className="font-bold">{title}</h3>
-        {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+        <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
+        {hint && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{hint}</p>}
       </div>
       {children}
     </section>
@@ -18,9 +18,9 @@ export function Card({ title, hint, children }: { title: string; hint?: string; 
 export function Label({ text, hint, children }: { text: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-semibold text-gray-400">{text}</span>
+      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">{text}</span>
       {children}
-      {hint && <span className="block text-[11px] text-gray-600">{hint}</span>}
+      {hint && <span className="block text-[11px] text-gray-500 dark:text-gray-600">{hint}</span>}
     </label>
   );
 }
@@ -56,18 +56,18 @@ export function ImagePicker({
 }: { label: string; urlName: string; fileName: string; current?: string }) {
   return (
     <div className="space-y-2">
-      <span className="text-xs font-semibold text-gray-400">{label}</span>
+      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">{label}</span>
       <div className="flex items-start gap-4">
         {current ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={current} alt="" className="w-20 h-20 rounded-lg object-cover border border-gray-700 bg-gray-800" />
+          <img src={current} alt="" className="w-20 h-20 rounded-lg object-cover border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800" />
         ) : (
-          <div className="w-20 h-20 rounded-lg border border-dashed border-gray-700 grid place-items-center text-[10px] text-gray-600">нет</div>
+          <div className="w-20 h-20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 grid place-items-center text-[10px] text-gray-500 dark:text-gray-600">нет</div>
         )}
         <div className="flex-1 space-y-2">
-          <input type="file" name={fileName} accept="image/jpeg,image/png,image/webp" className="text-xs text-gray-400" />
+          <input type="file" name={fileName} accept="image/jpeg,image/png,image/webp" className="text-xs text-gray-600 dark:text-gray-400" />
           <input name={urlName} defaultValue={current ?? ''} placeholder="или ссылка https://res.cloudinary.com/…" className={inputCls} />
-          <p className="text-[11px] text-gray-600">JPG, PNG или WebP до 5 МБ. Файл загружается в Cloudinary, ссылка подставится сама.</p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-600">JPG, PNG или WebP до 5 МБ. Файл загружается в Cloudinary, ссылка подставится сама.</p>
         </div>
       </div>
     </div>
