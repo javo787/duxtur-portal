@@ -16,14 +16,21 @@ import Clinic from '@/models/Clinic';
 import {
   toggleDoctorBan,
   banClinic,
+
+  deleteDoctor,
+  deleteClinic,
+  updateDoctorStatus
 } from '@/app/actions/admin';
 import AdminShell from './_shared/AdminShell';
 import { getPortalTrends, sum, TREND_DAYS } from './_shared/trends';
 import { ActionButton } from './_components/ActionButton';
 import { Moderation } from './_views/Moderation';
+import type { DoctorRow, ClinicRow } from './_shared/rows';
 import { Avatar, Card, EmptyState, KpiCard, SectionHeader } from './_components/ui';
 import PlacesSection from './_components/PlacesSection';
 import { AdminAIAssistantWrapper } from './AdminAIAssistantWrapper';
+
+const shortDate = (d: unknown) => new Date(d as string).toLocaleDateString('ru');
 
 const VIEWS = ['overview', 'moderation', 'directory'] as const;
 type View = (typeof VIEWS)[number];
