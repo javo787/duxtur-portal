@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { getT, T } from '@/i18n';
 import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
+import { doctorIndexability } from '@/lib/doctor-seo';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
 import MobileStickyShare from '@/components/MobileStickyShare';
@@ -57,9 +58,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description = `${doctor.name} — ${specialty}. ${doctor.city}. ${doctor.experience} ${T('common.yearsExp', lang)}. ${articlesCount} ${T('common.articles', lang)} Duxtur.org`;
 
+  const { index } = doctorIndexability(doctor as any);
+
   return {
     title: `${doctor.name} — ${specialty} | Duxtur.org`,
     description,
+    robots: index ? { index: true, follow: true } : { index: false, follow: true },
     alternates: buildAlternates(`doctor/${doctor.slug || doctor._id}`, lang),
     openGraph: {
       type: 'profile',

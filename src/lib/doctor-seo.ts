@@ -99,3 +99,15 @@ export function specialtyStats(
     .map((slug) => stats.get(slug))
     .filter((stat): stat is SpecialtyStat => !!stat);
 }
+
+export interface DoctorSeoInput {
+  name?: string;
+  city?: string;
+  experience?: number | null;
+  image?: unknown;
+}
+
+export function doctorIndexability(doctor: DoctorSeoInput): { index: boolean } {
+  // Require name, city, experience, and an image to be indexable.
+  return { index: !!(doctor.name && doctor.city && typeof doctor.experience === 'number' && doctor.experience > 0 && doctor.image) };
+}
