@@ -10,7 +10,7 @@ if (cleanKey.length <= 5) {
 const genAI = new GoogleGenerativeAI(cleanKey);
 
 export const model = genAI.getGenerativeModel({
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash"
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash"
 });
 
 export async function generateContent(prompt: string, options?: { signal?: AbortSignal }) {
