@@ -14,51 +14,59 @@ interface DoctorsHeroProps {
 export default function DoctorsHero({ lang, searchParams, cities, activeSpecialty, L }: DoctorsHeroProps) {
   const t = getT(lang);
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-amber-50/40 pt-8 pb-7 border-b border-slate-200/60">
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50 pt-10 pb-8 md:pt-16 md:pb-12 border-b border-slate-200/60">
       
-      {/* Декоративные блики */}
-      <div aria-hidden="true" className="absolute top-0 right-0 w-96 h-96 bg-blue-400/6 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl pointer-events-none" />
-      <div aria-hidden="true" className="absolute bottom-0 left-0 w-72 h-72 bg-amber-400/8 rounded-full translate-y-1/2 -translate-x-1/3 blur-3xl pointer-events-none" />
-      <div aria-hidden="true" className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1e3a8a 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      {/* Decorative premium background elements */}
+      <div aria-hidden="true" className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-[80px] pointer-events-none" />
+      <div aria-hidden="true" className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full translate-y-1/3 -translate-x-1/3 blur-[60px] pointer-events-none" />
+      <div aria-hidden="true" className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #0f172a 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
-      <div className="relative max-w-7xl mx-auto px-4">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
 
-        {/* Хлебные крошки — усиленный контраст */}
-        <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-5 font-medium" aria-label="Breadcrumb">
-          <Link href={`/${lang}`} className="hover:text-blue-600 transition text-slate-600">{t('nav.home')}</Link>
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-xs md:text-sm text-slate-500 mb-6 font-medium animate-fade-in" aria-label="Breadcrumb" style={{ animationDelay: '0.1s' }}>
+          <Link href={`/${lang}`} className="hover:text-blue-600 transition-colors text-slate-600">{t('nav.home')}</Link>
           <span aria-hidden="true" className="text-slate-300">/</span>
-          <span className="text-slate-800 font-semibold">{L('title')}</span>
+          <span className="text-slate-900 font-semibold">{L('title')}</span>
         </nav>
 
-        <div className="mb-7">
-          {/* Верификационный бейдж */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold uppercase tracking-wider mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true" />
+        <div className="mb-10 max-w-3xl">
+          {/* Verification Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] md:text-xs font-bold uppercase tracking-wider mb-5 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
             {t('home.authorsSubtitle')}
           </div>
 
-          {/* Заголовок */}
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-3 leading-tight">
+          {/* Title */}
+          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-4 leading-[1.1] animate-slide-up" style={{ animationDelay: '0.3s' }}>
             {L('title')}
           </h1>
 
-          {/* Акцентная черта под заголовком */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-[3px] bg-gradient-to-r from-blue-500 to-amber-400 rounded-full" />
-            <div className="w-6 h-[3px] bg-slate-200 rounded-full" />
+          {/* Elegant Accent Line */}
+          <div className="flex items-center gap-3 mb-5 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <div className="w-12 h-[4px] bg-gradient-to-r from-blue-600 to-amber-500 rounded-full" />
+            <div className="w-4 h-[4px] bg-slate-200 rounded-full" />
+            <div className="w-2 h-[4px] bg-slate-200 rounded-full" />
           </div>
 
-          {/* Подзаголовок — усиленный цвет */}
-          <p className="text-slate-600 text-base font-medium max-w-lg leading-relaxed">
+          {/* Subtitle */}
+          <p className="text-slate-600 text-base md:text-lg font-medium leading-relaxed max-w-2xl animate-slide-up" style={{ animationDelay: '0.5s' }}>
             {L('subtitle')}
           </p>
         </div>
 
-        {/* Поисковая форма */}
-        <SearchForm lang={lang} searchParams={searchParams} cities={cities} L={L} />
+        {/* Search Form Wrapper */}
+        <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
+          <SearchForm lang={lang} searchParams={searchParams} cities={cities} L={L} />
+        </div>
 
-        {/* Чипсы специальностей */}
-        <SpecialtyChips lang={lang} activeSpecialty={activeSpecialty} />
+        {/* Specialty Chips */}
+        <div className="animate-fade-in" style={{ animationDelay: '0.7s' }}>
+          <SpecialtyChips lang={lang} activeSpecialty={activeSpecialty} />
+        </div>
       </div>
     </section>
   );
