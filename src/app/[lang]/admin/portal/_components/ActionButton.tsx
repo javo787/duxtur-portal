@@ -8,10 +8,10 @@ export type ActionResult = void | { error: string };
 export type ActionVariant = 'success' | 'danger' | 'warning' | 'neutral' | 'primary';
 
 const VARIANTS: Record<ActionVariant, string> = {
-  success: 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/30 hover:bg-emerald-500/25 hover:text-emerald-200',
-  danger: 'bg-red-500/10 text-red-300 ring-red-400/25 hover:bg-red-500/20 hover:text-red-200',
-  warning: 'bg-amber-500/10 text-amber-300 ring-amber-400/25 hover:bg-amber-500/20 hover:text-amber-200',
-  neutral: 'bg-white/[0.05] text-gray-200 ring-white/10 hover:bg-white/[0.09] hover:text-white',
+  success: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-500/30 dark:ring-emerald-400/30 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 hover:text-emerald-800 dark:hover:text-emerald-200',
+  danger: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-600 dark:text-red-300 ring-red-500/25 dark:ring-red-400/25 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-800 dark:hover:text-red-200',
+  warning: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 ring-amber-500/25 dark:ring-amber-400/25 hover:bg-amber-100 dark:hover:bg-amber-500/20 hover:text-amber-800 dark:hover:text-amber-200',
+  neutral: 'bg-gray-100 dark:bg-white/[0.05] text-gray-700 dark:text-gray-200 ring-black/10 dark:ring-white/10 hover:bg-gray-200 dark:hover:bg-white/[0.09] hover:text-gray-900 dark:hover:text-white',
   primary: 'bg-sky-500 text-white ring-sky-300/40 hover:bg-sky-400',
 };
 
