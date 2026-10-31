@@ -17,5 +17,5 @@ const genAI = new GoogleGenerativeAI(cleanKey);
 
 // 2. Используем модель, которая работает в вашем HTML-проекте
 export const model = genAI.getGenerativeModel({ 
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash"
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash"
 });
