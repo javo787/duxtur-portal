@@ -21,9 +21,14 @@ export default function robots(): MetadataRoute.Robots {
   ];
 
   return {
-    // One group: Googlebot falls back to "*" when it has no group of its own, so the duplicate Googlebot group
-    // added nothing. Crawl-delay is gone too: Google ignores it, and it only slowed Bing down.
-    rules: [{ userAgent: "*", allow: "/", disallow }],
+    rules: [
+      { userAgent: "*", allow: "/", disallow },
+      { userAgent: "Google-Extended", allow: "/", disallow },
+      { userAgent: "ChatGPT-User", allow: "/", disallow },
+      { userAgent: "OAI-SearchBot", allow: "/", disallow },
+      { userAgent: "Claude-Web", allow: "/", disallow },
+      { userAgent: "PerplexityBot", allow: "/", disallow },
+    ],
     sitemap: `${BASE_URL}/sitemap.xml`,
   };
 }
