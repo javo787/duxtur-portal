@@ -118,6 +118,7 @@ export const uz = {
   },
   blog: {
     title: 'Barcha maqolalar',
+    description: 'Tasdiqlangan shifokorlardan tibbiy maqolalar. Dalillarga asoslangan tibbiyot va ekspertlar maslahati.',
     verified: 'Shifokor tomonidan tekshirilgan',
     readMore: 'Oʻqish',
     comingSoon: 'Maqolalar tez orada paydo boʻladi',

@@ -3,7 +3,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BASE_URL, buildAlternates } from '@/lib/seo';
+import { BASE_URL, buildAlternates, safeJsonLd } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -36,7 +36,7 @@ export default async function EditorialPage({ params }: { params: Promise<{ lang
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
       {/* Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">

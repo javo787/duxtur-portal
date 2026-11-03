@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getT, T } from '@/i18n';
 import FadeIn from '@/components/FadeIn';
-import { buildAlternates, buildPageUrl, BASE_URL } from '@/lib/seo';
+import { buildAlternates, buildPageUrl, BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales } from '@/lib/seo';
 import { blogListingCanonicalPath } from '@/lib/blog-seo';
 import Image from 'next/image';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
@@ -24,26 +24,26 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
   return {
     title: T('blog.title', lang),
-    description: T('home.authorsSubtitle', lang),
+    description: T('blog.description', lang),
     // ?category=cardiology lists what the cardiology landing page lists, so it points there; the plain index is
     // the only variant that is its own canonical and so the only one that declares hreflang.
     alternates: isVariant
       ? { canonical: buildPageUrl(lang, blogListingCanonicalPath(category)) }
       : buildAlternates('blog', lang),
     ...(page && parseInt(page) > 1 ? { robots: { index: false, follow: true } } : {}),
-    other: {
-      'link:rss': `${BASE_URL}/${lang}/feed.xml`,
-    },
+
     openGraph: {
       title: T('blog.title', lang),
-      description: T('home.authorsSubtitle', lang),
+      description: T('blog.description', lang),
       type: 'website',
+      locale: ogLocale(lang),
+      alternateLocale: ogAlternateLocales(lang),
       images: [`${BASE_URL}/og-blog.png`],
     },
     twitter: {
       card: 'summary_large_image',
       title: T('blog.title', lang),
-      description: T('home.authorsSubtitle', lang),
+      description: T('blog.description', lang),
     },
   };
 }
@@ -138,7 +138,7 @@ export default async function BlogListPage({ params, searchParams }: Props) {
     <div className="min-h-screen bg-[#faf8ff] text-[#131b2e] antialiased selection:bg-[#89f5e7] selection:text-[#00201d] pb-24 md:pb-12 flex flex-col font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* HEADER */}

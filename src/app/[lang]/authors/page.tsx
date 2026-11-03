@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, BASE_URL, safeJsonLd, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 
 type Props = { params: Promise<{ lang: string }> };
@@ -76,7 +77,7 @@ export default async function AuthorsPage({ params }: Props) {
     <div className="min-h-screen bg-[#f4f6fb] font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       {/* HEADER */}

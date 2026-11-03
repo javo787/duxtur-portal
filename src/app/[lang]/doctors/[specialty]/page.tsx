@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { buildAlternates, buildPageUrl, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, buildPageUrl, BASE_URL, safeJsonLd, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import { isPlainSpecialtyListing, specialtyIndexable } from '@/lib/doctor-seo';
 import ContactDoctorButton from '@/components/ContactDoctorButton';
@@ -139,11 +139,11 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
     <div className="min-h-screen bg-[#f8fafc] pb-20">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(itemListJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
       />
       <div className="bg-white border-b border-slate-100 pt-8 md:pt-12 pb-10 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 md:px-5 text-center">

@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/[lang]/doctors/_components/DoctorsPageContent.tsx
 'use client';
+import { safeJsonLd } from '@/lib/seo';
 
 import Link from 'next/link';
 import DoctorsHero from './DoctorsHero';
@@ -44,7 +46,7 @@ export default function DoctorsPageContent({
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
       />
 
       {/* Header */}

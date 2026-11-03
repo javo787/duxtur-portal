@@ -5,7 +5,7 @@ import { buildAlternates } from '@/lib/seo';
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   return {
-    title: 'Восстановление пароля | Duxtur.org',
+    title: 'Восстановление пароля',
     robots: { index: false },
     alternates: buildAlternates('forgot-password', lang),
   };
