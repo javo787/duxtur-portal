@@ -3,14 +3,14 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import { notFound } from 'next/navigation';
 import ReactMarkdown, { type Components } from 'react-markdown';
-import { getT, T } from '@/i18n';
+import { getT } from '@/i18n';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleEngagement from '@/components/ArticleEngagement';
 import ArticleShare from '@/components/ArticleShare';
 import ArticleReviews from '@/components/reviews/ArticleReviews';
 import { articleRatingSummary, listPublicReviews } from '@/lib/review-service';
-import { buildAlternates, BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -239,7 +239,6 @@ export default async function BlogPage({
   const authorUrl = isEditorialAuthor ? `${BASE_URL}/${lang}/editorial` : `${BASE_URL}/${lang}/doctor/${authorSlug}`;
 
   // ── FAQ из секций (для Google "People Also Ask") ──────────────────────────
-  const faqSections = sections.slice(0, 4);
 
   // ── Автор, проверяющий, рубрика ───────────────────────────────────────────
   // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.

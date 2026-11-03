@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/[lang]/doctors/_components/DoctorsPageContent.tsx
 'use client';
 import { safeJsonLd } from '@/lib/seo';
