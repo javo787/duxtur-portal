@@ -6,7 +6,7 @@ vi.mock('next-auth', () => ({ default: () => ({ auth: () => new Response(null) }
 vi.mock('@/auth.config', () => ({ authConfig: {} }));
 
 // The policy the site shipped before the card service existed. Anything not asked for must stay exactly like this.
-const POLICY_BEFORE = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://cdn-icons-png.flaticon.com https://*.tile.openstreetmap.org https://*.mapbox.com; media-src 'self' https://res.cloudinary.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.mapbox.com https://api.cloudinary.com; frame-src 'self';";
+const POLICY_BEFORE = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://cdn.jsdelivr.net https://mc.yandex.ru; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com https://cdn-icons-png.flaticon.com https://*.tile.openstreetmap.org https://*.mapbox.com https://mc.yandex.ru; media-src 'self' https://res.cloudinary.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.mapbox.com https://api.cloudinary.com https://mc.yandex.ru; frame-src 'self';";
 
 const connectSrc = (policy: string) => policy.split('; ').find((d) => d.startsWith('connect-src '));
 
@@ -17,7 +17,7 @@ describe('mainCsp', () => {
 
   it('adds origins to connect-src only', () => {
     const policy = mainCsp(['https://duxtur-render.onrender.com']);
-    expect(connectSrc(policy)).toBe("connect-src 'self' https://*.mapbox.com https://api.cloudinary.com https://duxtur-render.onrender.com;".slice(0, -1));
+    expect(connectSrc(policy)).toBe("connect-src 'self' https://*.mapbox.com https://api.cloudinary.com https://mc.yandex.ru https://duxtur-render.onrender.com");
     expect(policy.replace(' https://duxtur-render.onrender.com', '')).toBe(POLICY_BEFORE);
   });
 
@@ -37,10 +37,10 @@ describe('next.config: card service in the CSP', () => {
     vi.resetModules();
     if (value === undefined) delete process.env.NEXT_PUBLIC_CARD_SERVICE_URL;
     else process.env.NEXT_PUBLIC_CARD_SERVICE_URL = value;
-    const config = (await import('../../next.config')).default as any;
-    const rules = (await config.headers()) as any[];
-    const main = rules.find((r: any) => r.source.startsWith('/((?!edu/'));
-    return main.headers.find((h: any) => h.key === 'Content-Security-Policy').value;
+    const config = (await import('../../next.config')).default as { headers: () => Promise<Array<{ source: string, headers: Array<{ key: string, value: string }> }>> };
+    const rules = (await config.headers());
+    const main = rules.find((r) => r.source.startsWith('/((?!edu/'));
+    return main!.headers.find((h) => h.key === 'Content-Security-Policy')!.value;
   }
 
   it('lets the browser call the configured service', async () => {

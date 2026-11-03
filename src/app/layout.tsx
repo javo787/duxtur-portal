@@ -4,6 +4,10 @@ import "./globals.css";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { BASE_URL } from "@/lib/seo";
 import { bingVerificationOther } from "@/lib/bing-verification";
+import { yandexVerificationOther } from "@/lib/yandex-verification";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import YandexMetrica from "@/components/YandexMetrica";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +25,7 @@ export const metadata: Metadata = {
   description: "Верифицированные медицинские статьи от врачей Центральной Азии.",
   verification: {
     google: "6bOuk1K-oKwgnVTNliTZopECkE1YfNYUm7sEZTS7IHo",
+    yandex: yandexVerificationOther()?.yandex,
     // Bing Webmaster Tools (msvalidate.01); only rendered when BING_SITE_VERIFICATION is set
     other: bingVerificationOther(),
   },
@@ -75,6 +80,9 @@ export default function RootLayout({
   return (
     <ErrorBoundary>
       {children}
+      <Analytics />
+      <SpeedInsights />
+      {process.env.NEXT_PUBLIC_YANDEX_METRICA_ID && <YandexMetrica ymid={process.env.NEXT_PUBLIC_YANDEX_METRICA_ID} />}
     </ErrorBoundary>
   );
 }
