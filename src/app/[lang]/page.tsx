@@ -13,7 +13,7 @@ import HomeCTA from '@/components/home/HomeCTA';
 import HomeFooter from '@/components/home/HomeFooter';
 import ScrollReveal from '@/components/ScrollReveal';
 import { clinicSerif } from '@/lib/fonts';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales } from '@/lib/seo';
 import { eduNavLabels } from '@/lib/edu-labels';
 
 type Props = { params: Promise<{ lang: string }> };
@@ -31,6 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: dict.meta_title,
       description: dict.meta_desc,
       type: 'website',
+      locale: ogLocale(lang),
+      alternateLocale: ogAlternateLocales(lang),
       siteName: 'Duxtur.org',
       images: [`${BASE_URL}/og-default.png`],
     },
@@ -41,9 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [`${BASE_URL}/og-default.png`],
     },
     alternates: buildAlternates('', lang),
-    other: {
-      'link:rss': `${BASE_URL}/${lang}/feed.xml`,
-    },
+
   };
 }
 
@@ -140,14 +140,6 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
         ],
         inLanguage: ['ru', 'uz', 'tg', 'kk', 'ky'],
         sameAs: ['https://t.me/duxturcom'],
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: {
-            '@type': 'EntryPoint',
-            urlTemplate: `${BASE_URL}/${lang}/search?q={search_term_string}`,
-          },
-          'query-input': 'required name=search_term_string',
-        },
       }
     ]
   };
@@ -156,7 +148,7 @@ for (const item of (categoryAgg as { _id: string; count: number }[])) {
     <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <HomeHeader lang={lang} labels={headerLabels} eduLabel={eduLabels.students} eduTeacherLabel={eduLabels.teachers} />
       <main>

@@ -10,7 +10,7 @@ import ArticleEngagement from '@/components/ArticleEngagement';
 import ArticleShare from '@/components/ArticleShare';
 import ArticleReviews from '@/components/reviews/ArticleReviews';
 import { articleRatingSummary, listPublicReviews } from '@/lib/review-service';
-import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales, buildBreadcrumbJsonLd } from '@/lib/seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -50,7 +50,7 @@ export async function generateMetadata({
   // The page shows ONE language; metadata must describe that same text
   const { contentLang, available, isFallback } = resolveArticleLanguage(article, lang);
   const t = (f: any) => f?.[contentLang] || '';
-  const title = `${t(article.title)} | Duxtur.org`;
+  const title = `${t(article.title)}`;
   const description = t(article.overview).substring(0, 160);
 
   const fullText = [
@@ -74,6 +74,8 @@ return {
     description,
     images: [ogImage],
     type: 'article',
+    locale: ogLocale(contentLang),
+    alternateLocale: ogAlternateLocales(contentLang),
     publishedTime: article.createdAt
       ? new Date(article.createdAt).toISOString()
       : undefined,
@@ -94,8 +96,6 @@ return {
   other: {
     "twitter:label1": "Reading time",
     "twitter:data1": `${readingMinutes} min read`,
-    "keywords": article.category || "health, medicine",
-    ...(article.image ? { "link:preload:hero": article.image } : {}),
   }
   };
 } 
@@ -240,20 +240,6 @@ export default async function BlogPage({
 
   // ── FAQ из секций (для Google "People Also Ask") ──────────────────────────
   const faqSections = sections.slice(0, 4);
-  const faqJsonLd = faqSections.length > 1
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faqSections.map((sec) => ({
-          '@type': 'Question',
-          name: sec.title,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: sec.content.replace(/[#*`_]/g, '').substring(0, 500),
-          },
-        })),
-      }
-    : null;
 
   // ── Автор, проверяющий, рубрика ───────────────────────────────────────────
   // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.
@@ -266,7 +252,8 @@ export default async function BlogPage({
   const category: string = article.category || '';
   const categoryKey = category ? `blog.category${category[0].toUpperCase()}${category.slice(1)}` : '';
   const categoryLabel = categoryKey && t(categoryKey) !== categoryKey ? t(categoryKey) : '';
-  const careQuery = category && category !== 'general' ? `?specialty=${category}` : '';
+  const doctorsHref = category && category !== 'general' ? `/${lang}/doctors/${category}` : `/${lang}/doctors`;
+  const clinicsHref = category && category !== 'general' ? `/${lang}/clinics?specialty=${category}` : `/${lang}/clinics`;
   // Отметка «проверено» только если материал реально подтверждён администратором
   const showVerified = article.isVerified === true && !reviewerName && !dateMedicalReview;
   const title = dbT(article.title);
@@ -328,13 +315,6 @@ export default async function BlogPage({
       "cssSelector": `#${sec.id}`
     })),
     ...(avgRating > 0 && {
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: avgRating,
-        ratingCount,
-        bestRating: 5,
-        worstRating: 1,
-      },
     }),
     medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
     breadcrumb: buildBreadcrumbJsonLd([
@@ -353,9 +333,8 @@ export default async function BlogPage({
     <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <ViewCounter slug={article.slug} />
       {/* Article Schema */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }} />
       {/* FAQ Schema — отдельный тег */}
-      {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
 
       <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
         <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
@@ -482,10 +461,10 @@ export default async function BlogPage({
             <section className="mt-6 max-w-[42rem] rounded-[10px] border border-border p-5">
               <p className="font-clinic text-xl font-semibold">{t('blog.needConsult')}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link href={`/${lang}/doctors${careQuery}`} className={btnPrimary}>
+                <Link href={doctorsHref} className={btnPrimary}>
                   {t('doctors.title')}
                 </Link>
-                <Link href={`/${lang}/clinics${careQuery}`} className={btnQuiet}>
+                <Link href={clinicsHref} className={btnQuiet}>
                   {t('clinic.findClinic')}
                 </Link>
               </div>

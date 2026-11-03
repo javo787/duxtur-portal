@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const seo = clinic as unknown as ClinicSeoInput;
   const name = clinicName(seo, lang);
-  // No " | Duxtur.org" here: the root layout's title template already appends it.
+  // No "" here: the root layout's title template already appends it.
   const title = buildClinicTitle(seo, lang, t);
   const { text: description } = buildClinicDescription(seo, lang, t);
   const { index } = clinicIndexability(seo);
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       type: 'website',
       siteName: 'Duxtur.org',
-      title: `${title} | Duxtur.org`,
+      title: `${title}`,
       description,
       url: alternates.canonical,
       locale: ogLocale(lang),
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} | Duxtur.org`,
+      title: `${title}`,
       description,
       images: [preview.url],
     },

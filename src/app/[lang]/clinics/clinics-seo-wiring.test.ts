@@ -65,7 +65,7 @@ describe('clinic profile metadata', () => {
     const m = await profile('tg');
     expect(m.openGraph).toMatchObject({ siteName: 'Duxtur.org', locale: 'tg_TJ', url: 'https://www.duxtur.org/tg/clinics/shifo', type: 'website' });
     expect((m.openGraph as { alternateLocale: string[] }).alternateLocale).toHaveLength(4);
-    expect((m.openGraph as { title: string }).title).toBe(`${title(m)} | Duxtur.org`);
+    expect((m.openGraph as { title: string }).title).toBe(`${title(m)}`);
   });
 
   it('shares the clinic photo as a 1200x630 JPEG on both Open Graph and Twitter', async () => {

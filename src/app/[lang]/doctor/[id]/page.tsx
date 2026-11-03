@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getT, T } from '@/i18n';
-import { buildAlternates, BASE_URL, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { buildAlternates, BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales, buildBreadcrumbJsonLd } from '@/lib/seo';
 import DoctorHero from './_components/DoctorHero';
 import TrustBadges from './_components/TrustBadges';
 import ShareButtons from '@/components/ShareButtons';
@@ -55,15 +55,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const articlesCount = await Article.countDocuments({ authorId: doctor._id });
 
-  const description = `${doctor.name} — ${specialty}. ${doctor.city}. ${doctor.experience} ${T('common.yearsExp', lang)}. ${articlesCount} ${T('common.articles', lang)} Duxtur.org`;
+  const parts = [];
+  parts.push(`${doctor.name} — ${specialty}`);
+  if (doctor.city) parts.push(doctor.city);
+  if (doctor.experience) parts.push(`${doctor.experience} ${T('common.yearsExp', lang)}`);
+  if (articlesCount > 0) parts.push(`${articlesCount} ${T('common.articles', lang)}`);
+  parts.push('Duxtur.org');
+  const description = parts.join('. ');
 
   return {
-    title: `${doctor.name} — ${specialty} | Duxtur.org`,
+    title: `${doctor.name} — ${specialty}`,
     description,
     alternates: buildAlternates(`doctor/${doctor.slug || doctor._id}`, lang),
     openGraph: {
       type: 'profile',
-      images: [doctor.image || `${BASE_URL}/og-default.png`],
+      locale: ogLocale(lang),
+      alternateLocale: ogAlternateLocales(lang),
+      images: [doctor.image && !doctor.image.includes('flaticon.com') ? doctor.image : `${BASE_URL}/og-default.png`],
     }
   };
 }
@@ -242,7 +250,7 @@ export default async function DoctorProfilePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] font-sans">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <DoctorViewTracker slug={doctor.slug || doctor._id.toString()} />
 
       <style>{`

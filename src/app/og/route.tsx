@@ -7,11 +7,25 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
+
     const title = searchParams.get('title') || 'Duxtur.org';
     const author = searchParams.get('author') || 'Medical Portal';
     const lang = searchParams.get('lang') || 'ru';
 
+    const byMap: Record<string, string> = {
+      ru: 'Автор',
+      uz: 'Muallif',
+      tg: 'Муаллиф',
+      kk: 'Авторы',
+      ky: 'Автору'
+    };
+    const byText = byMap[lang] || 'By';
+
+    const regularFont = await fetch(new URL('../../../public/fonts/NotoSans-Regular.ttf', import.meta.url)).then(res => res.arrayBuffer());
+    const blackFont = await fetch(new URL('../../../public/fonts/NotoSans-Black.ttf', import.meta.url)).then(res => res.arrayBuffer());
+
     return new ImageResponse(
+
       (
         <div
           style={{
@@ -22,6 +36,7 @@ export async function GET(request: NextRequest) {
             alignItems: 'flex-start',
             justifyContent: 'center',
             backgroundColor: '#0f172a',
+            fontFamily: '"Noto Sans"',
             backgroundImage: 'radial-gradient(circle at 25% 25%, #1e293b 0%, #0f172a 100%)',
             padding: '80px',
           }}
@@ -79,7 +94,7 @@ export async function GET(request: NextRequest) {
                 marginRight: '20px',
               }}
             >
-              By {author}
+              {byText}: {author}
             </div>
             <div
               style={{
@@ -101,6 +116,20 @@ export async function GET(request: NextRequest) {
       {
         width: 1200,
         height: 630,
+        fonts: [
+          {
+            name: 'Noto Sans',
+            data: regularFont,
+            style: 'normal',
+            weight: 400,
+          },
+          {
+            name: 'Noto Sans',
+            data: blackFont,
+            style: 'normal',
+            weight: 900,
+          }
+        ],
       }
     );
   } catch (e: any) {

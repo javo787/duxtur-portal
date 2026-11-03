@@ -62,7 +62,7 @@ export async function generateMetadata({ params, searchParams }: {
   if (filters.q) return { title, robots: { index: false, follow: true } };
 
   const alternates = buildAlternates('clinics', lang, filters);
-  const fullTitle = `${title} | Duxtur.org`;
+  const fullTitle = `${title}`;
 
   return {
     title,

@@ -6,7 +6,7 @@ import { buildAlternates } from '@/lib/seo';
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   return {
-    title: 'Вход в кабинет | Duxtur.org',
+    title: 'Вход в кабинет',
     robots: { index: false },
     alternates: buildAlternates('login', lang),
   };

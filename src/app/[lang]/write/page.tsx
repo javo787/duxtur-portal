@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import AuthorStudio from './AuthorStudio';
 
 export const metadata: Metadata = {
-  title: 'Кабинет автора | Duxtur.org',
+  title: 'Кабинет автора',
   robots: { index: false, follow: false },
 };
 

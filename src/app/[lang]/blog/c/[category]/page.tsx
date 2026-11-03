@@ -4,7 +4,7 @@ import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import FadeIn from '@/components/FadeIn';
-import { buildAlternates, BASE_URL } from '@/lib/seo';
+import { buildAlternates, BASE_URL, safeJsonLd } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 import Image from 'next/image';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
@@ -37,8 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const categoryName = T(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`, lang);
 
   return {
-    title: `${categoryName} — ${T('nav.authors', lang)} | Duxtur.org`,
-    description: `${categoryName}. ${T('home.authorsSubtitle', lang)}.`,
+    title: categoryName,
+    description: `${categoryName}. ${T('blog.description', lang)}`,
     alternates: buildAlternates(`blog/c/${category}`, lang),
   };
 }
@@ -84,7 +84,7 @@ export default async function BlogCategoryPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f4f6fb] font-sans">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
       {/* HEADER */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40 shadow-sm">
