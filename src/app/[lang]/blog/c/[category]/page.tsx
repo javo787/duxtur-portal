@@ -5,11 +5,12 @@ import Doctor from '@/models/Doctor';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import FadeIn from '@/components/FadeIn';
-import { buildAlternates, BASE_URL, safeJsonLd } from '@/lib/seo';
+import { buildAlternates, buildBreadcrumbJsonLd, buildPageUrl, BASE_URL, safeJsonLd } from '@/lib/seo';
 import { getT, T } from '@/i18n';
 import Image from 'next/image';
 import { LANG_ENDONYMS, resolveListLanguage, type ArticleLang } from '@/lib/article-lang';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 
 type Props = {
   params: Promise<{ lang: string; category: string }>;
@@ -24,6 +25,25 @@ const CATEGORIES = [
   { label: { ru: 'Дерматология', uz: 'Dermatologiya', tg: 'Дерматология', kk: 'Дерматология', ky: 'Дерматология' }, slug: 'dermatology', icon: '🩺' },
 ];
 
+// Built at deploy time, so without this a category stays as it was built ("0 articles", noindex) until the next deploy.
+// The editor actions also revalidate it on save; this is the safety net for every other way an article changes.
+export const revalidate = 1800;
+
+/** The articles the page lists: one language each, and only those with a title in it. Metadata and page share it,
+ * so "noindex" and "0 articles" can never disagree. cache(): one database query per request for both. */
+const listedArticles = cache(async (category: string, lang: string) => {
+  await dbConnect();
+  void Doctor;
+  const articles: any[] = await Article.find({ category })
+    .sort({ createdAt: -1 })
+    .populate('authorId', 'name image specialty slug')
+    .select('slug title overview image authorId createdAt category ratings')
+    .lean();
+  return articles
+    .map((a) => ({ ...a, _lang: resolveListLanguage(a, lang).contentLang as ArticleLang }))
+    .filter((a) => (a.title?.[a._lang] || '').trim().length > 0);
+});
+
 export async function generateStaticParams() {
   const languages = ['ru', 'uz', 'tg', 'kk', 'ky'];
   const categories = CATEGORIES.filter(c => c.slug).map(c => c.slug);
@@ -36,11 +56,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!categoryInfo) return notFound();
 
   const categoryName = T(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`, lang);
+  const path = `blog/c/${category}`;
+  // An empty category ("Статьи скоро появятся") is a page with no content: kept out of the index (and out of the
+  // sitemap, see sitemap-entries.ts) until its first article. follow: its links to the blog and doctors still count.
+  const empty = (await listedArticles(category, lang)).length === 0;
 
   return {
     title: categoryName,
     description: `${categoryName}. ${T('blog.description', lang)}`,
-    alternates: buildAlternates(`blog/c/${category}`, lang),
+    alternates: empty ? { canonical: buildPageUrl(lang, path) } : buildAlternates(path, lang),
+    ...(empty ? { robots: { index: false, follow: true } } : {}),
   };
 }
 
@@ -50,20 +75,9 @@ export default async function BlogCategoryPage({ params }: Props) {
   const categoryInfo = CATEGORIES.find(c => c.slug === category);
   if (!categoryInfo) notFound();
 
-  await dbConnect();
-  void Doctor;
-
-  const articles: any[] = await Article.find({ category })
-    .sort({ createdAt: -1 })
-    .populate('authorId', 'name image specialty slug')
-    .select('slug title overview image authorId createdAt category ratings')
-    .lean();
-
   // One language per article, marked when it is not the reader's (same rule as the blog index)
-  const items = articles.map((a) => ({ ...a, _lang: resolveListLanguage(a, lang).contentLang as ArticleLang }));
+  const validArticles = await listedArticles(category, lang);
   const dbT = (a: { _lang: string }, field: Record<string, string> | undefined | null): string => field?.[a._lang] || '';
-
-  const validArticles = items.filter((a) => dbT(a, a.title).length > 0);
   const categoryName = t(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`);
 
   const jsonLd = {
@@ -73,14 +87,16 @@ export default async function BlogCategoryPage({ params }: Props) {
     url: `${BASE_URL}/${lang}/blog/c/${category}`,
     description: `${categoryName} — Duxtur.org`,
     numberOfItems: validArticles.length,
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Duxtur.org', item: `${BASE_URL}/${lang}` },
-        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${BASE_URL}/${lang}/blog` },
-        { '@type': 'ListItem', position: 3, name: categoryName, item: `${BASE_URL}/${lang}/blog/c/${category}` },
-      ],
-    },
+    // Same names as the visible breadcrumb, in the page language
+    breadcrumb: Object.fromEntries(
+      Object.entries(
+        buildBreadcrumbJsonLd([
+          { name: t('nav.home'), url: `/${lang}` },
+          { name: t('nav.articles'), url: `/${lang}/blog` },
+          { name: categoryName, url: `/${lang}/blog/c/${category}` },
+        ]),
+      ).filter(([key]) => key !== '@context'), // nested inside CollectionPage, which already has it
+    ),
   };
 
   return (
@@ -95,7 +111,7 @@ export default async function BlogCategoryPage({ params }: Props) {
           </Link>
           <nav className="flex items-center gap-5">
             <Link href={`/${lang}/blog`} className="text-sm text-gray-500 hover:text-gray-900 font-medium transition">
-              {t('nav.home')}
+              {t('nav.articles')}
             </Link>
           </nav>
         </div>
@@ -105,12 +121,14 @@ export default async function BlogCategoryPage({ params }: Props) {
       <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white pt-14 pb-16 relative overflow-hidden">
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           <FadeIn>
-            <nav className="flex items-center justify-center gap-1.5 text-xs text-blue-400/70 mb-5">
-              <Link href={`/${lang}`} className="hover:text-blue-300 transition">{t('nav.home')}</Link>
-              <span>/</span>
-              <Link href={`/${lang}/blog`} className="hover:text-blue-300 transition">Blog</Link>
-              <span>/</span>
-              <span className="text-blue-200">{categoryName}</span>
+            <nav aria-label="Breadcrumb" className="mb-5 text-xs text-blue-400/70">
+              <ol className="flex items-center justify-center gap-1.5">
+                <li><Link href={`/${lang}`} className="hover:text-blue-300 transition">{t('nav.home')}</Link></li>
+                <li aria-hidden="true">/</li>
+                <li><Link href={`/${lang}/blog`} className="hover:text-blue-300 transition">{t('nav.articles')}</Link></li>
+                <li aria-hidden="true">/</li>
+                <li><span aria-current="page" className="text-blue-200">{categoryName}</span></li>
+              </ol>
             </nav>
             <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight">
               {categoryName}

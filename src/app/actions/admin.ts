@@ -242,7 +242,7 @@ function revalidatePublic(...areas: Array<'doctors' | 'clinics' | 'blog'>) {
   const paths: Record<string, string[]> = {
     doctors: ['/[lang]/doctors', '/[lang]/doctor/[slug]'],
     clinics: ['/[lang]/clinics', '/[lang]/clinics/[slug]'],
-    blog: ['/[lang]/blog', '/[lang]/blog/[slug]'],
+    blog: ['/[lang]/blog', '/[lang]/blog/[slug]', '/[lang]/blog/c/[category]'],
   };
   for (const area of areas) for (const path of paths[area]) revalidatePath(path, 'page');
 }

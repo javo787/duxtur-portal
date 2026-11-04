@@ -110,6 +110,8 @@ export async function saveArticleTranslation(slug: string, language: string, art
 
     revalidatePath(`/${language}/blog/${existing.slug}`);
     revalidatePath('/[lang]/blog', 'page');
+    // Category pages are static: without this a new article would not appear there (and an empty one stays noindex)
+    revalidatePath('/[lang]/blog/c/[category]', 'page');
     return { success: true, slug: existing.slug, language, moderated: !who.admin };
   } catch (error: unknown) {
     console.error('saveArticleTranslation error:', error);

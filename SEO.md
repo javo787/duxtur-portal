@@ -57,6 +57,14 @@ We use Schema.org structured data to help search engines understand our content 
 
 ## 📓 Журнал решений
 
+### 2026-11 · Пустые рубрики вне индекса, хлебные крошки рубрик (ветка `seo/empty-categories-noindex`)
+
+- **Пустая рубрика → `noindex, follow`.** Все пять `/blog/c/*` показывали «0 статей, скоро появятся» и были `index, follow`, хотя sitemap их уже не включал. Теперь metadata и страница берут список статей из одной функции (`listedArticles`, `react.cache`), поэтому «0 статей» и `noindex` не расходятся; у пустой рубрики только canonical, без hreflang. Первая статья с заголовком (на любом языке показа) делает рубрику индексируемой.
+- **Рубрики обновляются без деплоя.** Страница была полностью статической (`generateStaticParams` без `revalidate`), её пересобирал только автоблог: статья из редактора или после модерации на странице рубрики не появлялась, рубрика осталась бы `noindex`. Добавлены `revalidate = 1800` и `revalidatePath('/[lang]/blog/c/[category]', 'page')` в сохранении, переводе, модерации и корзине.
+- **Хлебные крошки:** «Blog» → `nav.articles` на языке страницы, «Duxtur.org» → `nav.home` в JSON-LD (через `buildBreadcrumbJsonLd`), `<ol>` с `aria-current`. Ссылка на блог в шапке рубрики была подписана «Главная», теперь «Статьи».
+- Тест: `blog/c/blog-category-seo-render.test.ts`.
+
+
 ### 2026-11 · Код из плана роста: редирект, sitemap, title, перелинковка (ветка `seo/growth-plan-code`)
 
 Реализована кодовая часть [`docs/SEO_GROWTH_PLAN.md`](docs/SEO_GROWTH_PLAN.md) (P0-2, P1-1, P1-2, P1-4).
