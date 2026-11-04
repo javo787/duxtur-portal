@@ -10,7 +10,7 @@ function refresh() {
   for (const path of ['', '/doctors', '/clinics', '/trash', '/audit']) {
     revalidatePath(`/[lang]/admin/portal${path}`, 'page');
   }
-  for (const path of ['/[lang]/doctors', '/[lang]/doctor/[slug]', '/[lang]/clinics', '/[lang]/clinics/[slug]', '/[lang]/blog', '/[lang]/blog/[slug]']) {
+  for (const path of ['/[lang]/doctors', '/[lang]/doctor/[slug]', '/[lang]/clinics', '/[lang]/clinics/[slug]', '/[lang]/blog', '/[lang]/blog/[slug]', '/[lang]/blog/c/[category]']) {
     revalidatePath(path, 'page');
   }
 }

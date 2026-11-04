@@ -46,6 +46,8 @@ export async function saveArticle(articleData: unknown, language: string, draftI
       const editorial = await ensureEditorialAuthor(user._id);
       const slug = await publishArticle(data, language, editorial._id, { verified: true });
       revalidatePath('/[lang]/blog', 'page');
+      // Category pages are static: without this a new article would not appear there (and an empty one stays noindex)
+      revalidatePath('/[lang]/blog/c/[category]', 'page');
       revalidatePath('/[lang]/admin/portal/articles', 'page');
       return { success: true, outcome: 'published', slug };
     }
