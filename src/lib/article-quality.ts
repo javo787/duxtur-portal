@@ -117,7 +117,7 @@ const KYRGYZ_LETTERS = /[ңөү]/i;
 
 /** Section titles that promise the reader what to do. One per language, plus Russian (doctors often mix). */
 const PRACTICAL_RE =
-  /(что делать|когда (нужно )?обрат|рекомендац|советы|памятк|профилактик|чӣ (бояд )?кор|тавсия|кай ба духтур|маслиҳат|пешгирӣ|nima qilish|tavsiya|shifokorga|maslahat|oldini olish|не істеу|кеңес|дәрігерге|алдын алу|эмне кылуу|кеңеш|дарыгерге|алдын алуу)/i;
+  /(что делать|практическ|как действовать|как быть|амалӣ|amaliy|практикалық|практикалык|когда (нужно )?обрат|рекомендац|советы|памятк|профилактик|чӣ (бояд )?кор|тавсия|кай ба духтур|маслиҳат|пешгирӣ|nima qilish|tavsiya|shifokorga|maslahat|oldini olish|не істеу|кеңес|дәрігерге|алдын алу|эмне кылуу|кеңеш|дарыгерге|алдын алуу)/i;
 
 /** Promises a medical text must not make. */
 const HYPE_RE =

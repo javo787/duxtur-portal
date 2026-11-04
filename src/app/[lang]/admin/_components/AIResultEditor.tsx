@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef } from 'react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { saveArticle } from '@/app/actions/save-article';
+import { saveArticleTranslation } from '@/app/actions/translate-article';
 import type { SaveSuccess } from '@/lib/author-types';
 import { SectionEditor } from './SectionEditor';
 import { TagsInput } from './TagsInput';
@@ -39,6 +40,8 @@ interface AIResultEditorProps {
   aiMode?: AiMode;
   /** References the server removed because they pointed only to a site's home page. */
   droppedReferences?: string[];
+  /** Slug of the author's article this text translates: saving adds the language to that article. */
+  translationOf?: string;
 }
 
 // Convert raw AI article object → structured sections array
@@ -64,7 +67,7 @@ function parseTags(raw: any): string[] {
   return String(raw).split(/[,;]/).map((s) => s.trim()).filter(Boolean);
 }
 
-export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved, draftId, sourceText = '', aiMode = 'write', droppedReferences = [] }: AIResultEditorProps) {
+export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved, draftId, sourceText = '', aiMode = 'write', droppedReferences = [], translationOf }: AIResultEditorProps) {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initialArticle.title || '');
@@ -146,6 +149,13 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
     const blocking = quality.issues.filter((i) => i.level === 'error');
     if (blocking.length > 0 && !window.confirm(`Проверка качества нашла серьёзные проблемы:\n\n• ${blocking.map((i) => i.message).join('\n• ')}\n\nВсё равно опубликовать?`)) return;
     setIsSaving(true);
+    if (translationOf) {
+      const res = await saveArticleTranslation(translationOf, language, buildArticleData());
+      setIsSaving(false);
+      if (res.success) onSaved({ success: true, outcome: 'published', slug: res.slug });
+      else alert('Ошибка: ' + res.error);
+      return;
+    }
     const result = await saveArticle(buildArticleData(), language, draftId);
     setIsSaving(false);
     if (result.success) {
@@ -179,7 +189,7 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
           disabled={isSaving}
           className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-green-200 transition disabled:opacity-70"
         >
-          {isSaving ? <><Spinner /> Публикация...</> : '🚀 Опубликовать'}
+          {isSaving ? <><Spinner /> Публикация...</> : translationOf ? '🌐 Сохранить перевод' : '🚀 Опубликовать'}
         </button>
       </div>
 
@@ -407,7 +417,7 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
             disabled={isSaving}
             className="flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg shadow-green-200 transition disabled:opacity-70"
           >
-            {isSaving ? <><Spinner /> Публикация...</> : '🚀 Опубликовать статью'}
+            {isSaving ? <><Spinner /> Публикация...</> : translationOf ? '🌐 Сохранить перевод' : '🚀 Опубликовать статью'}
           </button>
         </div>
       </div>
