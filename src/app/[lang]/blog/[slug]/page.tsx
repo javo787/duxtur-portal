@@ -10,7 +10,17 @@ import ArticleEngagement from '@/components/ArticleEngagement';
 import ArticleShare from '@/components/ArticleShare';
 import ArticleReviews from '@/components/reviews/ArticleReviews';
 import { articleRatingSummary, listPublicReviews } from '@/lib/review-service';
-import { BASE_URL, safeJsonLd, ogLocale, ogAlternateLocales, buildBreadcrumbJsonLd } from '@/lib/seo';
+import { BASE_URL, safeJsonLd, ogLocale } from '@/lib/seo';
+import { articleLanguages } from '@/lib/article-lang';
+import { blogCategoryHref } from '@/lib/blog-seo';
+import {
+  articleMetaDescription,
+  articleOgImage,
+  articleSeoTitle,
+  buildArticleJsonLd,
+  latestIso,
+  readingStats,
+} from '@/lib/article-seo';
 import TableOfContents from '@/components/TableOfContents';
 import Image from 'next/image';
 import { getOptimizedCloudinaryUrl } from '@/lib/utils';
@@ -28,13 +38,12 @@ export const revalidate = 21600;
 export async function generateStaticParams() {
   await dbConnect();
   const articles = await Article.find({})
-    .select('slug')
+    .sort({ createdAt: -1 })
+    .select('slug title overview symptoms causes diagnosis_treatment prevention section1_content section2_content section3_content section4_content section5_content')
     .limit(50)
     .lean();
-  const langs = ['ru', 'uz', 'tg', 'kk', 'ky'];
-  return articles.flatMap((a: any) =>
-    langs.map((lang) => ({ slug: a.slug, lang }))
-  );
+  // Only the languages the article is written in: the other URLs are noindex fallbacks, rendered on demand.
+  return articles.flatMap((a: any) => articleLanguages(a).map((lang) => ({ slug: a.slug, lang })));
 }
 
 // ─── Metadata ────────────────────────────────────────────────────────────────
@@ -45,60 +54,66 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   await dbConnect();
   const { slug, lang } = await params;
-  const article = await Article.findOne({ slug }).lean() as any;
-  if (!article) return { title: 'Not Found' };
+  const article = await Article.findOne({ slug }).populate('authorId', 'name').lean() as any;
+  if (!article) return { title: getT(lang)('blog.notFound'), robots: { index: false, follow: false } };
   // The page shows ONE language; metadata must describe that same text
   const { contentLang, available, isFallback } = resolveArticleLanguage(article, lang);
   const t = (f: any) => f?.[contentLang] || '';
-  const title = `${t(article.title)}`;
-  const description = t(article.overview).substring(0, 160);
+  const tc = getT(contentLang);
+  const headline = t(article.title);
+  const description = articleMetaDescription(t(article.overview));
+  const { minutes } = readingStats(articleBodyParts(article, t));
+  const authorName: string = article.authorId?.name || '';
+  const image = articleOgImage(article.image, { title: headline, author: authorName || 'Duxtur', lang: contentLang });
+  const alternates = buildArticleAlternates(BASE_URL, slug, available, contentLang);
+  const category: string = article.category && article.category !== 'general' ? article.category : '';
+  const categoryKey = category ? `blog.category${category[0].toUpperCase()}${category.slice(1)}` : '';
+  const section = categoryKey && tc(categoryKey) !== categoryKey ? tc(categoryKey) : undefined;
 
-  const fullText = [
+  return {
+    title: articleSeoTitle(headline),
+    description,
+    // A page-level openGraph replaces the root one entirely, so siteName, url and locale are repeated here.
+    openGraph: {
+      type: 'article',
+      siteName: 'Duxtur.org',
+      url: alternates.canonical,
+      title: headline,
+      description,
+      images: [image],
+      locale: ogLocale(contentLang),
+      alternateLocale: available.filter((l) => l !== contentLang).map(ogLocale),
+      publishedTime: latestIso(article.createdAt),
+      modifiedTime: latestIso(article.updatedAt, article.lastMedicalReview),
+      ...(authorName ? { authors: [authorName] } : {}),
+      ...(section ? { section } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: headline,
+      description,
+      images: [{ url: image.url, alt: image.alt }],
+    },
+    // canonical and hreflang only for languages that have the text; this URL, when it shows another
+    // language, is kept out of the index and points at the real version
+    alternates,
+    ...(isFallback ? { robots: { index: false, follow: true } } : {}),
+    other: {
+      ...(authorName ? { 'twitter:label1': tc('blog.byAuthor'), 'twitter:data1': authorName } : {}),
+      'twitter:label2': tc('blog.readingTime'),
+      'twitter:data2': `${minutes} ${tc('blog.articleReadingMin')}`,
+    },
+  };
+}
+
+/** Every text field of the article, in the order the page shows them (reading time, word count). */
+function articleBodyParts(article: any, t: (f: any) => string): string[] {
+  return [
     t(article.overview), t(article.symptoms), t(article.causes),
     t(article.diagnosis_treatment), t(article.prevention),
-    ...[1, 2, 3, 4, 5].map((i) => t(article[`section${i}_content`])),
-  ].join(' ');
-  const readingMinutes = Math.max(1, Math.ceil(fullText.split(' ').length / 200));
-
-const ogImage = article.image
-  ? article.image.startsWith('http')
-    ? article.image
-    : `${BASE_URL}${article.image}`
-  : `${BASE_URL}/og?title=${encodeURIComponent(t(article.title))}&author=${encodeURIComponent(article.authorId?.name || 'Duxtur')}&lang=${contentLang}`;
-
-return {
-  title,
-  description,
-  openGraph: {
-    title,
-    description,
-    images: [ogImage],
-    type: 'article',
-    locale: ogLocale(contentLang),
-    alternateLocale: ogAlternateLocales(contentLang),
-    publishedTime: article.createdAt
-      ? new Date(article.createdAt).toISOString()
-      : undefined,
-    modifiedTime: article.updatedAt
-      ? new Date(article.updatedAt).toISOString()
-      : undefined,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title,
-    description,
-    images: [ogImage],
-  },
-  // canonical and hreflang only for languages that have the text; this URL, when it shows another
-  // language, is kept out of the index and points at the real version
-  alternates: buildArticleAlternates(BASE_URL, slug, available, contentLang),
-  ...(isFallback ? { robots: { index: false, follow: true } } : {}),
-  other: {
-    "twitter:label1": "Reading time",
-    "twitter:data1": `${readingMinutes} min read`,
-  }
-  };
-} 
+    ...[1, 2, 3, 4, 5].flatMap((i) => [t(article[`section${i}_title`]), t(article[`section${i}_content`])]),
+  ];
+}
 
 type Ml = Record<string, string> | null | undefined;
 type RelatedArticle = { _id: string; slug: string; image?: string; title?: Ml; overview?: Ml };
@@ -172,13 +187,7 @@ export default async function BlogPage({
   const contentLangAttr = isFallback ? contentLang : undefined;
 
   // ── Время чтения ──────────────────────────────────────────────────────────
-  const fullText = [
-    dbT(article.overview), dbT(article.symptoms), dbT(article.causes),
-    dbT(article.diagnosis_treatment), dbT(article.prevention),
-    ...[1, 2, 3, 4, 5].map((i) => dbT(article[`section${i}_content`])),
-  ].join(' ');
-  const wordCount = fullText.split(/\s+/).length;
-  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+  const { wordCount, minutes: readingMinutes } = readingStats(articleBodyParts(article, dbT));
 
   // ── Рейтинг и отзывы: старые оценки статьи + одобренные отзывы читателей ──────
   const [{ avg: avgRating, count: ratingCount }, reviews] = await Promise.all([
@@ -211,6 +220,11 @@ export default async function BlogPage({
       : null;
   const datePublished = fmt(article.createdAt);
   const dateMedicalReview = fmt(article.lastMedicalReview);
+  const publishedIso = latestIso(article.createdAt);
+  const updatedIso = latestIso(article.updatedAt);
+  // "Updated" only for a real later edit (a week or more), not for the save right after publishing
+  const showUpdated = !!publishedIso && !!updatedIso && Date.parse(updatedIso) - Date.parse(publishedIso) > 7 * 864e5;
+  const dateUpdated = showUpdated ? fmt(article.updatedAt) : null;
 
   // ── Секции ────────────────────────────────────────────────────────────────
   const legacySections = [
@@ -236,9 +250,7 @@ export default async function BlogPage({
   // The editorial byline ("Редакция Duxtur") is the portal team, not a doctor: it has no doctor page.
   const isEditorialAuthor = article.authorId?.isEditorial === true;
   const authorSlug = article.authorId?.slug || article.authorId?._id;
-  const authorUrl = isEditorialAuthor ? `${BASE_URL}/${lang}/editorial` : `${BASE_URL}/${lang}/doctor/${authorSlug}`;
-
-  // ── FAQ из секций (для Google "People Also Ask") ──────────────────────────
+  const authorUrl = isEditorialAuthor ? `${BASE_URL}/${contentLang}/editorial` : `${BASE_URL}/${contentLang}/doctor/${authorSlug}`;
 
   // ── Автор, проверяющий, рубрика ───────────────────────────────────────────
   // Никаких выдуманных имён: если автора или проверяющего нет, строки просто нет.
@@ -250,7 +262,9 @@ export default async function BlogPage({
   const reviewerHref = reviewer ? `/${lang}/doctor/${reviewer.slug || reviewer._id}` : null;
   const category: string = article.category || '';
   const categoryKey = category ? `blog.category${category[0].toUpperCase()}${category.slice(1)}` : '';
-  const categoryLabel = categoryKey && t(categoryKey) !== categoryKey ? t(categoryKey) : '';
+  const categoryLabel = category !== 'general' && categoryKey && t(categoryKey) !== categoryKey ? t(categoryKey) : '';
+  // Only some categories have a landing page; the others link to the filtered list (no 404 link)
+  const categoryHref = category ? blogCategoryHref(lang, category) : '';
   const doctorsHref = category && category !== 'general' ? `/${lang}/doctors/${category}` : `/${lang}/doctors`;
   const clinicsHref = category && category !== 'general' ? `/${lang}/clinics?specialty=${category}` : `/${lang}/clinics`;
   // Отметка «проверено» только если материал реально подтверждён администратором
@@ -258,82 +272,41 @@ export default async function BlogPage({
   const title = dbT(article.title);
 
   // ── Article JSON-LD ───────────────────────────────────────────────────────
-  const articleJsonLd: any = {
-    '@context': 'https://schema.org',
-    '@type': ['Article', 'MedicalWebPage'],
-    headline: dbT(article.title),
-    description: dbT(article.overview).substring(0, 160),
+  const tcCategoryKey = category && category !== 'general' ? `blog.category${category[0].toUpperCase()}${category.slice(1)}` : '';
+  const sectionName = tcCategoryKey && tc(tcCategoryKey) !== tcCategoryKey ? tc(tcCategoryKey) : undefined;
+  const reviewerUrl = reviewer ? `${BASE_URL}/${contentLang}/doctor/${reviewer.slug || reviewer._id}` : undefined;
+  const articleJsonLd = buildArticleJsonLd({
     url: articleUrl,
-    image: article.image || `${BASE_URL}/og-default.png`,
-    thumbnailUrl: article.image || undefined,
+    lang: contentLang,
+    title,
+    description: articleMetaDescription(dbT(article.overview)),
+    image: articleOgImage(article.image, { title, author: author?.name || 'Duxtur', lang: contentLang }),
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
-    dateReviewed: article.lastMedicalReview || undefined,
-    inLanguage: contentLang,
-    isAccessibleForFree: true,
-    wordCount: wordCount,
-    speakable: {
-      "@type": "SpeakableSpecification",
-      "cssSelector": ["h1", ".article-overview"]
-    },
-    reviewedBy: article.reviewedById
-      ? {
-          '@type': 'Person',
-          '@id': `${BASE_URL}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
-          name: article.reviewedById?.name,
-          url: `${BASE_URL}/${lang}/doctor/${article.reviewedById?.slug || article.reviewedById?._id}`,
-        }
-      : undefined,
+    lastReviewed: article.lastMedicalReview,
+    wordCount,
+    minutes: readingMinutes,
+    section: sectionName,
+    sectionUrl: sectionName ? `${BASE_URL}${blogCategoryHref(contentLang, category)}` : undefined,
     // Three kinds of author: the editorial byline of the super admin («Редакция Duxtur», an Organization with its own
     // page), a doctor (a Person), and auto-blog articles that have no doctor (the portal itself, never an invented person).
     author: isEditorialAuthor
-      ? { '@type': 'Organization', '@id': authorUrl, name: article.authorId?.name, url: authorUrl }
-      : article.authorId
-        ? {
-            '@type': 'Person',
-            '@id': authorUrl,
-            name: article.authorId?.name,
-            jobTitle: uiT(article.authorId?.specialty),
-            url: authorUrl,
-          }
-        : { '@type': 'Organization', name: 'Duxtur.org', url: BASE_URL },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Duxtur.org',
-      url: BASE_URL,
-      logo: { '@type': 'ImageObject', url: `${BASE_URL}/logo.png` },
-    },
-    interactionStatistic: {
-      "@type": "InteractionCounter",
-      "interactionType": "https://schema.org/ReadAction",
-      "userInteractionCount": article.views || 0
-    },
-    hasPart: sections.map(sec => ({
-      "@type": "WebPageElement",
-      "isAccessibleForFree": true,
-      "cssSelector": `#${sec.id}`
-    })),
-    ...(avgRating > 0 && {
-    }),
-    medicalAudience: { '@type': 'MedicalAudience', audienceType: 'Patient' },
-    breadcrumb: buildBreadcrumbJsonLd([
-      { name: 'Duxtur.org', url: `/${lang}` },
-      { name: 'Blog', url: `/${lang}/blog` },
-      { name: dbT(article.title), url: `blog/${article.slug}` },
-    ]),
-  };
-
-  // Убираем undefined поля
-  Object.keys(articleJsonLd).forEach(
-    (k) => articleJsonLd[k] === undefined && delete articleJsonLd[k]
-  );
+      ? { kind: 'editorial', name: author.name, url: authorUrl }
+      : author
+        ? { kind: 'person', name: author.name, url: authorUrl, jobTitle: uiT(author.specialty) }
+        : null,
+    reviewer: reviewerName ? { name: reviewerName, url: reviewerUrl } : null,
+    references: article.references || [],
+    views: article.views,
+    sectionIds: sections.map((sec) => sec.id),
+    breadcrumb: { home: tc('nav.home'), blog: tc('nav.articles') },
+  });
 
   return (
     <div className={`${clinicSerif.variable} min-h-screen bg-background text-foreground`}>
       <ViewCounter slug={article.slug} />
-      {/* Article Schema */}
+      {/* Article + MedicalWebPage + BreadcrumbList */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }} />
-      {/* FAQ Schema — отдельный тег */}
 
       <nav className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4 text-sm md:px-8">
         <Link href={`/${lang}`} className="font-clinic text-base font-semibold">
@@ -359,13 +332,27 @@ export default async function BlogPage({
               />
             )}
             <header className={isFallback ? 'pt-6 md:pt-8' : 'pt-6 md:pt-10'}>
-              {categoryLabel && (
-                <p className="text-sm">
-                  <Link href={`/${lang}/blog/c/${category}`} className="font-medium text-primary underline-offset-4 hover:underline">
-                    {categoryLabel}
-                  </Link>
-                </p>
-              )}
+              <nav aria-label="Breadcrumb" className="text-sm">
+                <ol className="flex flex-wrap items-center gap-x-1.5 text-foreground/65">
+                  <li>
+                    <Link href={`/${lang}`} className="hover:text-foreground hover:underline">{t('nav.home')}</Link>
+                  </li>
+                  <li aria-hidden="true">/</li>
+                  <li>
+                    <Link href={`/${lang}/blog`} className="hover:text-foreground hover:underline">{t('nav.articles')}</Link>
+                  </li>
+                  {categoryLabel && (
+                    <>
+                      <li aria-hidden="true">/</li>
+                      <li>
+                        <Link href={categoryHref} className="font-medium text-primary underline-offset-4 hover:underline">
+                          {categoryLabel}
+                        </Link>
+                      </li>
+                    </>
+                  )}
+                </ol>
+              </nav>
               <h1 lang={contentLangAttr} className="mt-3 font-clinic text-[2rem] leading-[1.12] font-semibold tracking-[-0.01em] text-balance md:text-[2.75rem]">
                 {title}
               </h1>
@@ -397,7 +384,15 @@ export default async function BlogPage({
                     </p>
                   )}
                   <p className="text-foreground/65">
-                    {datePublished} · {readingMinutes} {t('blog.articleReadingMin')}
+                    {datePublished && <time dateTime={publishedIso}>{datePublished}</time>}
+                    {dateUpdated && (
+                      <>
+                        {' · '}
+                        {t('blog.articleUpdated')} <time dateTime={updatedIso}>{dateUpdated}</time>
+                      </>
+                    )}
+                    {' · '}
+                    {readingMinutes} {t('blog.articleReadingMin')}
                   </p>
                   {showVerified && (
                     <p className="inline-flex items-center gap-1.5 font-medium text-ok">

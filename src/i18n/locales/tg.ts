@@ -147,6 +147,8 @@ export const tg = {
     articleReviewedBy: 'Санҷида шуд',
     articleFaqTitle: 'Саволҳои зуд-зуд додашаванда',
     articleReadingMin: 'дақ. хониш',
+    readingTime: 'Вақти хондан',
+    notFound: 'Мақола ёфт нашуд',
     byAuthor: 'Муаллиф',
     needConsult: 'Ба машварати ҳузурӣ эҳтиёҷ доред?',
     langNoticeTitle: 'Мақола бо забони дигар навишта шудааст',
