@@ -2,6 +2,8 @@
 
 This document outlines the SEO strategies implemented in the Duxtur.org project and the roadmap for future improvements.
 
+> **План роста SEO (аудит 2026-11-04, приоритеты, KPI, ресурсы):** [`docs/SEO_GROWTH_PLAN.md`](docs/SEO_GROWTH_PLAN.md)
+
 ## 🚀 Implemented Features
 
 ### 1. Internationalization (i18n) & Hreflang
