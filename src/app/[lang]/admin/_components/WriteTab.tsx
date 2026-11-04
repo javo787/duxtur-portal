@@ -6,6 +6,7 @@ import { processMedicalDraft, processMedicalArticle, translateMedicalArticle } f
 import { TutorialModal } from './TutorialModal';
 import { ManualEditor } from './ManualEditor';
 import { AIResultEditor } from './AIResultEditor';
+import { TranslateSourcePicker, LANGUAGE_LABELS, type TranslationSource } from './TranslateSourcePicker';
 import { INPUT_LIMITS } from '@/lib/ai-prompts';
 import { AuthorCompletion } from './AuthorCompletion';
 import type { SaveSuccess } from '@/lib/author-types';
@@ -32,7 +33,7 @@ const MODES: {
   {
     id: 'translate', icon: '🌐', title: 'Перевести',
     desc: 'Вставьте готовый текст — AI переведёт профессионально',
-    hint: 'Вставьте медицинскую статью на любом языке. AI переведёт с сохранением медицинской точности.',
+    hint: 'Выберите свою статью — перевод добавится к ней как новая языковая версия. Или вставьте любой медицинский текст: AI переведёт его с сохранением точности.',
     limit: INPUT_LIMITS.translate, minLimit: 100,
   },
   {
@@ -82,7 +83,7 @@ interface WriteTabProps {
 }
 
 type Saved =
-  | { kind: 'published'; slug: string }
+  | { kind: 'published'; slug: string; translatedTo?: string; moderated?: boolean }
   | { kind: 'draft'; missing: AuthorField[] }
   | { kind: 'sent' };
 
@@ -96,16 +97,20 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
   const [saved, setSaved] = useState<Saved | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   /** What the AI got and dropped: the editor checks the result against the author's own text. */
-  const [aiInput, setAiInput] = useState<{ text: string; mode: 'write' | 'process' | 'translate'; dropped: string[] } | null>(null);
+  const [aiInput, setAiInput] = useState<{ text: string; mode: 'write' | 'process' | 'translate'; dropped: string[]; translationOf: TranslationSource | null } | null>(null);
+  /** "Перевести" → one of the author's own articles: the translation is saved into that article. */
+  const [translationOf, setTranslationOf] = useState<TranslationSource | null>(null);
 
   const handleSaved = (result: SaveSuccess) => {
-    if (result.outcome === 'published') setSaved({ kind: 'published', slug: result.slug });
+    if (result.outcome === 'published' && aiInput?.translationOf) {
+      setSaved({ kind: 'published', slug: result.slug, translatedTo: language, moderated: !adminMode });
+    } else if (result.outcome === 'published') setSaved({ kind: 'published', slug: result.slug });
     else if (result.missing.length > 0) setSaved({ kind: 'draft', missing: result.missing });
     else setSaved({ kind: 'sent' });
     onChanged?.();
   };
 
-  const startOver = () => { setSaved(null); setStep(1); setDraft(''); setArticle(null); setAiInput(null); };
+  const startOver = () => { setSaved(null); setStep(1); setDraft(''); setArticle(null); setAiInput(null); setTranslationOf(null); };
 
   const completionOpen = saved?.kind === 'draft';
   useEffect(() => {
@@ -119,6 +124,8 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
   const currentMode = MODES.find((m) => m.id === mode)!;
   const isOverLimit = currentMode.limit > 0 && draft.length > currentMode.limit;
   const isUnderMin = draft.trim().length < currentMode.minLimit;
+  const activeTranslation = mode === 'translate' ? translationOf : null;
+  const sameLanguage = !!activeTranslation && activeTranslation.sourceLanguage === language;
 
   const handleCloseTutorial = () => {
     setShowTutorial(false);
@@ -126,7 +133,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
   };
 
   const handleProcess = async () => {
-    if (isUnderMin || isOverLimit) return;
+    if (isUnderMin || isOverLimit || sameLanguage) return;
     setIsLoading(true);
     const fn =
       mode === 'write' ? processMedicalDraft
@@ -135,7 +142,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
     const result = await fn(draft, language);
     setIsLoading(false);
     if (result.success) {
-      setAiInput({ text: draft, mode: mode as 'write' | 'process' | 'translate', dropped: result.droppedReferences });
+      setAiInput({ text: draft, mode: mode as 'write' | 'process' | 'translate', dropped: result.droppedReferences, translationOf: activeTranslation });
       setArticle(result.data);
       setStep(2);
     }
@@ -175,9 +182,11 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
     <div className="flex items-center justify-center py-16">
       <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-md w-full text-center border-t-4 border-green-400">
         <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Статья опубликована</h2>
+        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{saved.translatedTo ? 'Перевод сохранён' : 'Статья опубликована'}</h2>
         <p className="text-gray-500 mb-2">
-          {adminMode
+          {saved.translatedTo
+            ? `Версия «${LANGUAGE_LABELS[saved.translatedTo] || saved.translatedTo}» добавлена к статье.${saved.moderated ? ' Редакция проверит перевод и вернёт отметку «Проверено».' : ''}`
+            : adminMode
             ? 'Она уже на сайте под подписью «Редакция Duxtur» и сразу отмечена как проверенная.'
             : 'Она уже на сайте. Редакция проверит текст и поставит отметку «Проверено».'}
         </p>
@@ -187,7 +196,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
             : 'Все статьи и их статус — во вкладке «Мои статьи» кабинета.'}
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
-          <Link href={`/${lang}/blog/${saved.slug}`}
+          <Link href={`/${saved.translatedTo || lang}/blog/${saved.slug}`}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
             Посмотреть →
           </Link>
@@ -230,6 +239,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
         sourceText={aiInput?.text}
         aiMode={aiInput?.mode}
         droppedReferences={aiInput?.dropped}
+        translationOf={aiInput?.translationOf?.slug}
         onBack={() => setStep(1)}
         onSaved={handleSaved}
       />
@@ -297,12 +307,29 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
           {/* Language selector */}
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Язык статьи</span>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{mode === 'translate' ? 'Перевести на' : 'Язык статьи'}</span>
             <select value={language} onChange={(e) => setLanguage(e.target.value)}
               className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 font-medium focus:border-blue-500 outline-none">
               {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
           </div>
+
+          {mode === 'translate' && (
+            <TranslateSourcePicker
+              targetLanguage={language}
+              selected={translationOf}
+              onLoaded={(source, text) => {
+                setTranslationOf(source);
+                setDraft(text);
+                // Translate into a language the article does not have yet, if there is one.
+                if (source.sourceLanguage === language) {
+                  const free = LANGUAGES.map((l) => l.value).find((l) => !source.languages.includes(l));
+                  if (free) setLanguage(free);
+                }
+              }}
+              onClear={() => { setTranslationOf(null); setDraft(''); }}
+            />
+          )}
 
           {/* Auto‑resize textarea with internal counter */}
           <div className="relative">
@@ -334,7 +361,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
 
           {/* Button + smart disabled hint */}
           <div className="space-y-2">
-            <button onClick={handleProcess} disabled={isLoading || isUnderMin || isOverLimit}
+            <button onClick={handleProcess} disabled={isLoading || isUnderMin || isOverLimit || sameLanguage}
               className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all shadow-sm disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none">
               {isLoading ? (
                 <><Spinner />

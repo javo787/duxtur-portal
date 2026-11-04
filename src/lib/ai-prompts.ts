@@ -22,7 +22,7 @@ export const CATEGORIES = [
 export const targetLanguageOf = (language: string) => LANGUAGE_NAMES[language] || LANGUAGE_NAMES.ru;
 
 /** Hard limits of the input for each mode (characters). Kept in one place for the UI and the server. */
-export const INPUT_LIMITS = { write: 8000, process: 12000, translate: 12000 } as const;
+export const INPUT_LIMITS = { write: 8000, process: 12000, translate: 20000 } as const;
 
 function editorialRules(targetLanguage: string) {
   return `

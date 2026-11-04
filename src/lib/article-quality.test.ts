@@ -86,6 +86,13 @@ describe('checkArticleQuality', () => {
     expect(codes).toEqual(expect.arrayContaining(['content_lost', 'numbers_lost']));
   });
 
+  it('recognises practical sections by their usual titles', () => {
+    for (const t of ['Практическое руководство: как действовать безопасно', 'Тавсияҳо', 'Когда обратиться к врачу', 'Amaliy tavsiyalar']) {
+      const a = { ...good, sections: [...good.sections.slice(0, 2), { title: t, content: '1. Духтур.' }] };
+      expect(checkArticleQuality(a, 'tg').issues.map(i => i.code)).not.toContain('no_practical');
+    }
+  });
+
   it('counts Latin letters without URLs', () => {
     expect(latinShare('Текст https://example.com/very/long/latin/path')).toBe(0);
     expect(latinShare('abc где')).toBe(0.5);
