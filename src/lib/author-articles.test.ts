@@ -50,6 +50,12 @@ describe('articleSlug', () => {
     expect(slug).toBe('doruhoi-glp-1-ozempik-munjaro-manfiat-havfho-va-vaziyat-dar-92116');
   });
 
+  it('cuts a long title on a whole word, not in the middle of one', () => {
+    const slug = articleSlug('50 yoshdan keyin gastroskopiya: oshqozon saratonini barvaqt aniqlash', 1_700_000_087_889);
+    expect(slug).toBe('50-yoshdan-keyin-gastroskopiya-oshqozon-saratonini-barvaqt-87889');
+    expect(slug.length).toBeLessThanOrEqual(66);
+  });
+
   it('copes with an empty title', () => {
     expect(articleSlug('', 1_700_000_000_007)).toBe('article-00007');
   });

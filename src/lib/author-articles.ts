@@ -21,18 +21,29 @@ const TRANSLIT: Record<string, string> = {
   'ң':'n','ү':'u','ұ':'u','ө':'o','ә':'a','і':'i',
 };
 
+const SLUG_MAX = 60;
+
+/** Joins words up to SLUG_MAX characters, never cutting one in half ("...-barvaqt-a-87889" read badly). */
+function cutOnWord(slug: string): string {
+  let out = '';
+  for (const word of slug.split('-')) {
+    const next = out ? `${out}-${word}` : word;
+    if (next.length > SLUG_MAX) break;
+    out = next;
+  }
+  // A single word longer than the limit is the only case still cut inside a word
+  return out || slug.substring(0, SLUG_MAX);
+}
+
 export function articleSlug(title: string, now: number = Date.now()): string {
   const transliterated = (title || 'article').toLowerCase().split('').map(char => TRANSLIT[char] ?? char).join('');
-  return (
-    transliterated
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]+/g, '')
-      .replace(/--+/g, '-')
-      .substring(0, 60)
-      // Trim after cutting: a cut on a space leaves a trailing "-", which made "...-dar--92116".
-      .replace(/^-+|-+$/g, '') +
-    '-' + now.toString().slice(-5)
-  );
+  const clean = transliterated
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/_+/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${cutOnWord(clean).replace(/-+$/g, '') || 'article'}-${now.toString().slice(-5)}`;
 }
 
 type EditorData = Record<string, unknown>;

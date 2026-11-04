@@ -147,6 +147,8 @@ export const uz = {
     articleReviewedBy: 'Tekshirgan',
     articleFaqTitle: 'Koʻp beriladigan savollar',
     articleReadingMin: 'daqiqalik oʻqish',
+    readingTime: 'Oʻqish vaqti',
+    notFound: 'Maqola topilmadi',
     byAuthor: 'Muallif',
     needConsult: 'Yuzma-yuz maslahat kerakmi?',
     langNoticeTitle: 'Maqola boshqa tilda yozilgan',

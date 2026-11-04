@@ -147,6 +147,8 @@ export const ru = {
     articleReviewedBy: 'Проверено',
     articleFaqTitle: 'Часто задаваемые вопросы',
     articleReadingMin: 'мин чтения',
+    readingTime: 'Время чтения',
+    notFound: 'Статья не найдена',
     byAuthor: 'Автор',
     needConsult: 'Нужна очная консультация?',
     langNoticeTitle: 'Статья написана на другом языке',

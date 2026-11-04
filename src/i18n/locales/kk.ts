@@ -147,6 +147,8 @@ export const kk = {
     articleReviewedBy: 'Тексерген',
     articleFaqTitle: 'Жиі қойылатын сұрақтар',
     articleReadingMin: 'мин оқу',
+    readingTime: 'Оқу уақыты',
+    notFound: 'Мақала табылмады',
     byAuthor: 'Автор',
     needConsult: 'Жүзбе-жүз кеңес керек пе?',
     langNoticeTitle: 'Мақала басқа тілде жазылған',

@@ -147,6 +147,8 @@ export const ky = {
     articleReviewedBy: 'Текшерилди',
     articleFaqTitle: 'Көп берилүүчү суроолор',
     articleReadingMin: 'мүнөт окуу',
+    readingTime: 'Окуу убактысы',
+    notFound: 'Макала табылган жок',
     byAuthor: 'Автор',
     needConsult: 'Бетме-бет кеңеш керекпи?',
     langNoticeTitle: 'Макала башка тилде жазылган',

@@ -15,7 +15,7 @@ We use Schema.org structured data to help search engines understand our content 
 - **Article & MedicalWebPage:** Implemented for all blog posts, including reading time, author info, and review status.
 - **Physician & MedicalBusiness:** Detailed profiles for doctors, including education, experience, and contact info.
 - **MedicalClinic:** Comprehensive data for clinics.
-- **FAQPage:** Automatically generated from article sections to appear in "People Also Ask" results.
+- **FAQPage:** not used on articles: their sections are not questions and answers, and marking them up as FAQ would be misleading markup.
 - **BreadcrumbList:** Clear navigation paths on all deep pages.
 - **ItemList:** Used on specialty and category pages to list doctors/articles.
 
@@ -54,6 +54,29 @@ We use Schema.org structured data to help search engines understand our content 
 ---
 
 ## 📓 Журнал решений
+
+### 2026-11 · SEO страницы статьи (ветка `seo-article-pages`)
+
+**Что было не так (проверено на живом сайте).**
+- В JSON-LD последний пункт «хлебных крошек» вёл на адрес без языка: `https://www.duxtur.org/blog/<slug>` (307-редирект вместо страницы). Названия пунктов были по-английски («Blog»).
+- `description` резался ровно на 160-м символе, посреди слова («...почти половина взрослого »), и мог содержать markdown (`**`, `##`).
+- Нет `og:url` и `og:site_name`: `openGraph` страницы целиком заменяет корневой, поэтому их нужно повторять. `og:locale:alternate` перечислял все 5 языков, даже если перевода нет.
+- `og:image` отдавал оригинал любого размера; без `width/height/alt`.
+- В JSON-LD поле `dateReviewed`, которого нет в schema.org (нужно `lastReviewed`); `dateModified` не учитывал медицинскую проверку; не было `mainEntityOfPage`, `articleSection`, `citation`; пустой `...(avgRating > 0 && {})`.
+- Ссылка на рубрику всегда вела на `/blog/c/<рубрика>`, а такие страницы есть только у пяти рубрик: для гинекологии, хирургии, офтальмологии ссылка давала 404.
+- `twitter:label1` по-английски («Reading time»), время чтения в метатегах и на странице считалось по-разному.
+- `generateStaticParams` заранее собирал все 5 языков каждой статьи, в том числе noindex-заглушки без перевода.
+- Новые адреса статей резались посреди слова: `...-saratonini-barvaqt-a-87889`.
+
+**Что сделано.**
+- `src/lib/article-seo.ts` (+ `article-seo.test.ts`): чистый текст из markdown, описание с обрезкой по концу предложения или по слову, `<title>` без « | Duxtur.org», если с ним длиннее 60 символов, единый подсчёт слов и времени чтения, OG-картинка 1200×630 JPEG через Cloudinary (или карточка `/og`), сборка JSON-LD `Article + MedicalWebPage` с `BreadcrumbList`, `citation` из списка источников, `lastReviewed`, `isPartOf`, `timeRequired`.
+- `blog/[slug]/page.tsx`: всё выше подключено; видимые «хлебные крошки» (Главная / Статьи / Рубрика); `<time datetime>` для дат и «Обновлено», если статью правили позже чем через неделю; ссылка на рубрику через `blogCategoryHref`; `twitter:label1/2` (автор, время чтения) на языке статьи; 404 статьи → `noindex`.
+- `articleSlug`: обрезка по целому слову.
+- Локали: `blog.readingTime`, `blog.notFound` на всех пяти языках.
+- `blog/blog-article-seo-render.test.ts`: рендер настоящей страницы с копией статьи про GLP-1.
+
+**Не менял (нужно решение владельца).** Старая статья с адресом `/ru/blog/---------65481` (рак молочной железы): адрес без слов. Менять slug можно только вместе с 301-редиректом со старого адреса, иначе потеряются уже набранные позиции.
+
 
 ### 2026-10 · Bing и IndexNow: чтобы ChatGPT и Bing видели новые страницы (ветка `feat/bing-indexnow`)
 
