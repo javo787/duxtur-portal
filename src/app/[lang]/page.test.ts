@@ -19,7 +19,7 @@ vi.mock('@/models/Doctor', () => ({ default: { find: () => emptyQuery() } }));
 // next/font only works inside the Next compiler
 vi.mock('@/lib/fonts', () => ({ clinicSerif: { variable: '' } }));
 
-import Home from './page';
+import Home, { generateMetadata } from './page';
 import HomeHeader from '@/components/home/HomeHeader';
 import { eduNavLabels } from '@/lib/edu-labels';
 import { i18n } from '../../i18n-config';
@@ -37,6 +37,21 @@ function findByType(node: unknown, type: unknown): ReactElement | null {
   if (element.type === type) return element;
   return findByType(element.props?.children, type);
 }
+
+// The root layout adds " | Duxtur.org" to every page title (title.template), and the home title already starts with the
+// brand: without `absolute` it read "Duxtur.org — … | Duxtur.org" (docs/SEO_GROWTH_PLAN.md, P1-4).
+describe('home page <title>', () => {
+  it.each(i18n.locales)('%s: is absolute, so the layout template cannot repeat the brand', async locale => {
+    const meta = await generateMetadata({ params: Promise.resolve({ lang: locale }) });
+    const title = meta.title as { absolute?: string };
+
+    expect(typeof title).toBe('object');
+    expect(title.absolute?.trim()).toBeTruthy();
+    expect(title.absolute!.match(/Duxtur\.org/g)).toHaveLength(1);
+    // the social cards keep the same wording
+    expect(meta.openGraph?.title).toBe(title.absolute);
+  });
+});
 
 // The real home page, with the database stubbed out. Guards the contract between the page and its header:
 // the page once passed t('nav.edu') through its local t(field) helper, which returns '' for a UI key, and the

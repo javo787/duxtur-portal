@@ -24,7 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = (await params) as { lang: Locale };
   const dict = await getDictionary(lang);
   return {
-    title: dict.meta_title,
+    // `absolute`: the brand is already in the sentence, and the root layout's "%s | Duxtur.org" template
+    // would add it a second time ("Duxtur.org — … | Duxtur.org") and push the title past what Google shows.
+    title: { absolute: dict.meta_title },
     description: dict.meta_desc,
     keywords: ['врач', 'медицина', 'здоровье', 'статьи врачей', 'Узбекистан', 'Таджикистан', 'Казахстан'],
     openGraph: {

@@ -8,8 +8,22 @@ import { BASE_URL } from "@/lib/seo";
 
 const { auth } = NextAuth(authConfig);
 
+/**
+ * The bare domain (duxtur.org) of the main host. Derived from BASE_URL on purpose: canonical-host.test.ts keeps the
+ * bare-domain URL out of this file, so the host is never written down twice.
+ */
+const APEX_HOST = new URL(BASE_URL).hostname.replace(/^www\./, '');
+
 export default async function middleware(request: NextRequest) {
   const { pathname, host } = request.nextUrl;
+
+  // 0. The bare domain goes to the main host with a PERMANENT redirect (308 keeps the method and the body).
+  // A temporary one (307, what Vercel sends for a plain domain redirect) lets Google keep both hosts in the index
+  // and split the signals between them. This is the fallback from docs/SEO_GROWTH_PLAN.md (P0-2): it only runs
+  // when the request reaches the app, so the Vercel domain setting must not intercept duxtur.org first.
+  if (host === APEX_HOST) {
+    return NextResponse.redirect(new URL(`${BASE_URL}${pathname}${request.nextUrl.search}`), 308);
+  }
 
   // 1. Redirect from *.vercel.app to the main host
   if (host.endsWith('.vercel.app')) {

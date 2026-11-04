@@ -127,6 +127,43 @@ describe('buildSitemapEntries', () => {
     expect(list.some((u) => u.includes('/blog/none'))).toBe(false);
   });
 
+  it('lists a blog category page only when it has an article to show, in all five languages', () => {
+    const readable = { overview: { ru: 'Краткое описание' }, section1_content: { ru: 'Текст раздела' } };
+    const list = urls(
+      base({
+        articles: [
+          { slug: 'a', category: 'cardiology', title: { ru: 'Заголовок на русском' }, ...readable },
+          // a category with no title anywhere: the page would show "coming soon", so it stays out
+          { slug: 'b', category: 'neurology', title: {} },
+          // a category that is only a filter of /blog and has no page of its own
+          { slug: 'c', category: 'surgery', title: { ru: 'Хирургия' }, ...readable },
+          // listed in the language of its title, like on the page
+          { slug: 'd', category: 'dentistry', title: { tg: 'Сарлавҳа' } },
+        ],
+      }),
+    );
+    for (const lang of ['ru', 'uz', 'tg', 'kk', 'ky']) {
+      expect(list).toContain(`https://www.duxtur.org/${lang}/blog/c/cardiology`);
+      expect(list).toContain(`https://www.duxtur.org/${lang}/blog/c/dentistry`);
+    }
+    for (const gone of ['neurology', 'surgery', 'pediatrics', 'dermatology']) {
+      expect(list.some((u) => u.includes(`/blog/c/${gone}`)), gone).toBe(false);
+    }
+  });
+
+  it('dates a blog category by its newest article', () => {
+    const entries = buildSitemapEntries(
+      base({
+        articles: [
+          { slug: 'a', category: 'cardiology', updatedAt: '2026-02-01T00:00:00.000Z', title: { ru: 'Первый заголовок' } },
+          { slug: 'b', category: 'cardiology', updatedAt: '2026-05-01T00:00:00.000Z', title: { ru: 'Второй заголовок' } },
+          { slug: 'c', category: 'neurology', updatedAt: '2026-09-01T00:00:00.000Z', title: { ru: 'Заголовок другой рубрики' } },
+        ],
+      }),
+    );
+    expect(entries.find((e) => e.url === 'https://www.duxtur.org/ru/blog/c/cardiology')?.lastModified).toEqual(new Date('2026-05-01T00:00:00.000Z'));
+  });
+
   it('falls back to the id for a doctor without a slug', () => {
     const list = urls(base({ doctors: [{ slug: 'ivanov', _id: '1' }, { _id: '64b0c0ffee0000000000abcd' }] }));
     expect(list).toContain('https://www.duxtur.org/ru/doctor/ivanov');
@@ -171,12 +208,68 @@ describe('buildSitemapEntries', () => {
   });
 });
 
+describe('hreflang in the sitemap', () => {
+  const hreflangOf = (entries: ReturnType<typeof buildSitemapEntries>, url: string) => entries.find((e) => e.url === url)?.alternates?.languages;
+  const site = (path: string, langs = ['ru', 'uz', 'tg', 'kk', 'ky']) =>
+    Object.fromEntries([...langs.map((l) => [l, `https://www.duxtur.org/${l}${path}`]), ['x-default', `https://www.duxtur.org/${langs.includes('ru') ? 'ru' : langs[0]}${path}`]]);
+
+  it('gives a listed page the same set as its own <link rel="alternate">: every language and x-default (Russian)', () => {
+    const entries = buildSitemapEntries(
+      base({ clinics: [clinic('verified')], doctors: [{ slug: 'ivanov', _id: '1' }] }),
+    );
+    expect(hreflangOf(entries, 'https://www.duxtur.org/uz/about')).toEqual(site('/about'));
+    expect(hreflangOf(entries, 'https://www.duxtur.org/ky')).toEqual(site(''));
+    expect(hreflangOf(entries, 'https://www.duxtur.org/tg/clinics/verified')).toEqual(site('/clinics/verified'));
+    expect(hreflangOf(entries, 'https://www.duxtur.org/ru/doctor/ivanov')).toEqual(site('/doctor/ivanov'));
+  });
+
+  it('is the same set for every language version of a page', () => {
+    const entries = buildSitemapEntries(base());
+    const sets = ['ru', 'uz', 'tg', 'kk', 'ky'].map((l) => JSON.stringify(hreflangOf(entries, `https://www.duxtur.org/${l}/editorial`)));
+    expect(new Set(sets).size).toBe(1);
+  });
+
+  it('keeps the facet query on every language of a clinic facet', () => {
+    const clinics = [clinic('a', { type: 'dental_clinic' }), clinic('b', { type: 'dental_clinic' }), clinic('c', { type: 'dental_clinic' }), clinic('d', { city: 'Худжанд', type: 'hospital' })];
+    const entries = buildSitemapEntries(base({ clinics }));
+    const set = hreflangOf(entries, 'https://www.duxtur.org/uz/clinics?type=dental_clinic');
+    expect(set?.ru).toBe('https://www.duxtur.org/ru/clinics?type=dental_clinic');
+    expect(set?.['x-default']).toBe('https://www.duxtur.org/ru/clinics?type=dental_clinic');
+    expect(Object.keys(set ?? {})).toHaveLength(6);
+  });
+
+  it('lists an article only in the languages it exists in, and x-default is Russian when there is one', () => {
+    const entries = buildSitemapEntries(
+      base({
+        articles: [
+          { slug: 'both', title: { ru: 'Заголовок на русском', tg: 'Сарлавҳа ба тоҷикӣ' }, overview: { ru: 'Описание', tg: 'Тавсиф' }, section1_content: { ru: 'Текст', tg: 'Матн' } },
+          // no Russian version: x-default is the page's own language, as in its <link rel="alternate">
+          { slug: 'tg-only', title: { tg: 'Сарлавҳа' }, overview: { tg: 'Тавсиф' }, section1_content: { tg: 'Матн' } },
+        ],
+      }),
+    );
+    expect(hreflangOf(entries, 'https://www.duxtur.org/tg/blog/both')).toEqual(site('/blog/both', ['ru', 'tg']));
+    expect(hreflangOf(entries, 'https://www.duxtur.org/ru/blog/both')).toEqual(site('/blog/both', ['ru', 'tg']));
+    expect(hreflangOf(entries, 'https://www.duxtur.org/tg/blog/tg-only')).toEqual({
+      tg: 'https://www.duxtur.org/tg/blog/tg-only',
+      'x-default': 'https://www.duxtur.org/tg/blog/tg-only',
+    });
+  });
+});
+
 describe('the sitemap as Next writes it', () => {
   const data = base({
     // d keeps the Dushanbe and dental facets a real subset of the directory (a facet with every clinic is not listed)
     clinics: [clinic('a', { type: 'dental_clinic' }), clinic('b', { type: 'dental_clinic' }), clinic('c', { type: 'dental_clinic' }), clinic('d', { city: 'Худжанд', type: 'hospital' })],
   });
   const xml = resolveSitemap(buildSitemapEntries(data));
+
+  it('writes hreflang as xhtml:link, with the namespace declared, and escapes the facet query inside it', () => {
+    expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="x-default" href="https://www.duxtur.org/ru/about" />');
+    expect(xml).toContain('hreflang="kk" href="https://www.duxtur.org/kk/clinics?type=dental_clinic"');
+    expect(xml).toContain('hreflang="ru" href="https://www.duxtur.org/ru/clinics?city=%D0%94%D1%83%D1%88%D0%B0%D0%BD%D0%B1%D0%B5&amp;type=dental_clinic"');
+  });
 
   it('is well-formed: every ampersand is an entity', () => {
     // Next does not escape <loc> itself; if a Next upgrade starts to, this fails on "&amp;amp;" before it ships.
