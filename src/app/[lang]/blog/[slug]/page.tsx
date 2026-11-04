@@ -1,4 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- legacy: this page types the Mongo document as `any`. Disabled for the file so a small change here does not need a refactor; remove together with the `any`s. */
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy */
+
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import { notFound } from 'next/navigation';
@@ -50,7 +52,7 @@ export async function generateMetadata({
   // The page shows ONE language; metadata must describe that same text
   const { contentLang, available, isFallback } = resolveArticleLanguage(article, lang);
   const t = (f: any) => f?.[contentLang] || '';
-  const title = `${t(article.title)} | Duxtur.org`;
+  const title = `${t(article.title)}`;
   const description = t(article.overview).substring(0, 160);
 
   const fullText = [

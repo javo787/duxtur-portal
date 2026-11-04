@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       type: 'website',
       siteName: 'Duxtur.org',
-      title: `${title} | Duxtur.org`,
+      title: `${title}`,
       description,
       url: alternates.canonical,
       locale: ogLocale(lang),
@@ -78,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} | Duxtur.org`,
+      title: `${title}`,
       description,
       images: [preview.url],
     },

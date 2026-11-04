@@ -62,7 +62,7 @@ export async function generateMetadata({ params, searchParams }: {
   if (filters.q) return { title, robots: { index: false, follow: true } };
 
   const alternates = buildAlternates('clinics', lang, filters);
-  const fullTitle = `${title} | Duxtur.org`;
+
 
   return {
     title,
@@ -74,14 +74,14 @@ export async function generateMetadata({ params, searchParams }: {
     openGraph: {
       type: 'website',
       siteName: 'Duxtur.org',
-      title: fullTitle,
+      title: title,
       description,
       url: alternates.canonical,
       locale: ogLocale(lang),
       alternateLocale: ogAlternateLocales(lang),
       images: [{ url: `${BASE_URL}/og-default.png`, width: 1424, height: 752, alt: title }],
     },
-    twitter: { card: 'summary_large_image', title: fullTitle, description, images: [`${BASE_URL}/og-default.png`] },
+    twitter: { card: 'summary_large_image', title: title, description, images: [`${BASE_URL}/og-default.png`] },
   };
 }
 

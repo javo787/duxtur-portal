@@ -1,3 +1,6 @@
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy */
+
 import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import Doctor from '@/models/Doctor';
@@ -37,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const categoryName = T(`blog.category${category.charAt(0).toUpperCase() + category.slice(1)}`, lang);
 
   return {
-    title: `${categoryName} — ${T('nav.authors', lang)} | Duxtur.org`,
+    title: `${categoryName} — ${T('nav.authors', lang)}`,
     description: `${categoryName}. ${T('home.authorsSubtitle', lang)}.`,
     alternates: buildAlternates(`blog/c/${category}`, lang),
   };

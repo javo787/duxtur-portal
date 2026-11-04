@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy */
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -58,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `${doctor.name} — ${specialty}. ${doctor.city}. ${doctor.experience} ${T('common.yearsExp', lang)}. ${articlesCount} ${T('common.articles', lang)} Duxtur.org`;
 
   return {
-    title: `${doctor.name} — ${specialty} | Duxtur.org`,
+    title: `${doctor.name} — ${specialty}`,
     description,
     alternates: buildAlternates(`doctor/${doctor.slug || doctor._id}`, lang),
     openGraph: {

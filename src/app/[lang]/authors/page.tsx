@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy */
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
 import Article from '@/models/Article';
@@ -13,7 +14,7 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   return {
-    title: T('nav.authors', lang) + ' — Duxtur.org',
+    title: T('nav.authors', lang),
     description: T('home.authorsSubtitle', lang),
     alternates: buildAlternates('authors', lang),
   };
@@ -60,7 +61,7 @@ export default async function AuthorsPage({ params }: Props) {
       },
       {
         '@type': 'CollectionPage',
-        name: `${t('nav.authors')} — Duxtur.org`,
+        name: `${t('nav.authors')}`,
         url: `${BASE_URL}/${lang}/authors`,
         description: t('home.authorsSubtitle'),
         publisher: { '@id': `${BASE_URL}/#organization` },
