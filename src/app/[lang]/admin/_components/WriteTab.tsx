@@ -6,6 +6,7 @@ import { processMedicalDraft, processMedicalArticle, translateMedicalArticle } f
 import { TutorialModal } from './TutorialModal';
 import { ManualEditor } from './ManualEditor';
 import { AIResultEditor } from './AIResultEditor';
+import { INPUT_LIMITS } from '@/lib/ai-prompts';
 import { AuthorCompletion } from './AuthorCompletion';
 import type { SaveSuccess } from '@/lib/author-types';
 import type { AuthorField } from '@/lib/author-profile';
@@ -20,19 +21,19 @@ const MODES: {
     id: 'write', icon: '✍️', title: 'Написать',
     desc: 'Опишите тему своими словами — AI структурирует статью',
     hint: 'Напишите черновик: о чём статья, симптомы, что важно знать пациентам. Не нужно быть идеальным — AI всё оформит.',
-    limit: 3000, minLimit: 100,
+    limit: INPUT_LIMITS.write, minLimit: 100,
   },
   {
     id: 'process', icon: '📄', title: 'Обработать',
     desc: 'Вставьте научную статью — AI адаптирует для пациентов',
     hint: 'Вставьте текст из PubMed, ВОЗ, учебника. AI упростит язык и структурирует для читателей.',
-    limit: 12000, minLimit: 200,
+    limit: INPUT_LIMITS.process, minLimit: 200,
   },
   {
     id: 'translate', icon: '🌐', title: 'Перевести',
     desc: 'Вставьте готовый текст — AI переведёт профессионально',
     hint: 'Вставьте медицинскую статью на любом языке. AI переведёт с сохранением медицинской точности.',
-    limit: 12000, minLimit: 100,
+    limit: INPUT_LIMITS.translate, minLimit: 100,
   },
   {
     id: 'manual', icon: '📝', title: 'Вручную',
@@ -94,6 +95,8 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
   const [article, setArticle] = useState<any>(resume ? resume.data : null);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  /** What the AI got and dropped: the editor checks the result against the author's own text. */
+  const [aiInput, setAiInput] = useState<{ text: string; mode: 'write' | 'process' | 'translate'; dropped: string[] } | null>(null);
 
   const handleSaved = (result: SaveSuccess) => {
     if (result.outcome === 'published') setSaved({ kind: 'published', slug: result.slug });
@@ -102,7 +105,7 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
     onChanged?.();
   };
 
-  const startOver = () => { setSaved(null); setStep(1); setDraft(''); setArticle(null); };
+  const startOver = () => { setSaved(null); setStep(1); setDraft(''); setArticle(null); setAiInput(null); };
 
   const completionOpen = saved?.kind === 'draft';
   useEffect(() => {
@@ -131,7 +134,11 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
       : translateMedicalArticle;
     const result = await fn(draft, language);
     setIsLoading(false);
-    if (result.success) { setArticle(result.data); setStep(2); }
+    if (result.success) {
+      setAiInput({ text: draft, mode: mode as 'write' | 'process' | 'translate', dropped: result.droppedReferences });
+      setArticle(result.data);
+      setStep(2);
+    }
     else alert('Ошибка AI: ' + result.error);
   };
 
@@ -220,6 +227,9 @@ export function WriteTab({ lang, resume = null, accountName = '', onChanged, aut
         language={language}
         initialArticle={article}
         draftId={resume?.id}
+        sourceText={aiInput?.text}
+        aiMode={aiInput?.mode}
+        droppedReferences={aiInput?.dropped}
         onBack={() => setStep(1)}
         onSaved={handleSaved}
       />

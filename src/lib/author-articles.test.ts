@@ -44,6 +44,12 @@ describe('articleSlug', () => {
     expect(articleSlug('Дарди сар', 1_700_000_000_001)).toBe('dardi-sar-00001');
   });
 
+  it('never leaves a double dash when the 60-character cut falls on a space', () => {
+    const slug = articleSlug('Доруҳои GLP-1 (Оземпик, Мунҷаро): Манфиат, хавфҳо ва вазъият дар Тоҷикистон', 1_700_000_092_116);
+    expect(slug).not.toContain('--');
+    expect(slug).toBe('doruhoi-glp-1-ozempik-munjaro-manfiat-havfho-va-vaziyat-dar-92116');
+  });
+
   it('copes with an empty title', () => {
     expect(articleSlug('', 1_700_000_000_007)).toBe('article-00007');
   });

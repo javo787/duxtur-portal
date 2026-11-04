@@ -477,7 +477,7 @@ export default async function BlogPage({
                     const urlMatch = ref.match(/(?:https?:\/\/)?(?:www\.)[^\s]+/) || ref.match(/https?:\/\/[^\s]+/);
                     const rawUrl = urlMatch ? urlMatch[0] : null;
                     const href = rawUrl && !rawUrl.startsWith('http') ? 'https://' + rawUrl : rawUrl;
-                    const label = rawUrl ? ref.replace(rawUrl, '').trim().replace(/^[-–—:]\s*/, '') : ref;
+                    const label = rawUrl ? ref.replace(rawUrl, '').trim().replace(/^[-–—:]\s*/, '').replace(/\s*[-–—:]\s*$/, '') : ref;
                     return (
                       <li key={i}>
                         {urlMatch ? (

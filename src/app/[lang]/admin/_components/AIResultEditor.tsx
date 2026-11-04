@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { uploadImageToCloudinary } from '@/app/actions/upload-image';
 import { saveArticle } from '@/app/actions/save-article';
 import type { SaveSuccess } from '@/lib/author-types';
 import { SectionEditor } from './SectionEditor';
 import { TagsInput } from './TagsInput';
 import { ReadabilityMeter } from './ReadabilityMeter';
+import { QualityPanel } from './QualityPanel';
+import { CATEGORIES } from '@/lib/ai-prompts';
+import { checkArticleQuality, type AiMode } from '@/lib/article-quality';
 
 const Spinner = () => (
   <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -31,6 +34,11 @@ interface AIResultEditorProps {
   onSaved: (result: SaveSuccess) => void;
   /** The saved draft this text came from, when an old draft is opened again. */
   draftId?: string;
+  /** The author's text the AI worked from: the quality check compares the result with it. */
+  sourceText?: string;
+  aiMode?: AiMode;
+  /** References the server removed because they pointed only to a site's home page. */
+  droppedReferences?: string[];
 }
 
 // Convert raw AI article object → structured sections array
@@ -56,7 +64,7 @@ function parseTags(raw: any): string[] {
   return String(raw).split(/[,;]/).map((s) => s.trim()).filter(Boolean);
 }
 
-export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved, draftId }: AIResultEditorProps) {
+export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved, draftId, sourceText = '', aiMode = 'write', droppedReferences = [] }: AIResultEditorProps) {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(initialArticle.title || '');
@@ -79,12 +87,6 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const CATEGORIES = [
-    'Кардиология', 'Неврология', 'Педиатрия', 'Гастроэнтерология',
-    'Эндокринология', 'Пульмонология', 'Ортопедия', 'Дерматология',
-    'Урология', 'Гинекология', 'Офтальмология', 'Психиатрия',
-    'Инфекционные болезни', 'Онкология', 'Общая практика',
-  ];
 
   const updateSection = (i: number, patch: Partial<AISection>) => {
     setSections((prev) => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
@@ -134,8 +136,15 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
     return data;
   };
 
+  const quality = useMemo(
+    () => checkArticleQuality({ title, overview, sections, references }, language, sourceText, aiMode),
+    [title, overview, sections, references, language, sourceText, aiMode],
+  );
+
   const handlePublish = async () => {
     if (!validate()) return;
+    const blocking = quality.issues.filter((i) => i.level === 'error');
+    if (blocking.length > 0 && !window.confirm(`Проверка качества нашла серьёзные проблемы:\n\n• ${blocking.map((i) => i.message).join('\n• ')}\n\nВсё равно опубликовать?`)) return;
     setIsSaving(true);
     const result = await saveArticle(buildArticleData(), language, draftId);
     setIsSaving(false);
@@ -173,6 +182,9 @@ export function AIResultEditor({ lang, language, initialArticle, onBack, onSaved
           {isSaving ? <><Spinner /> Публикация...</> : '🚀 Опубликовать'}
         </button>
       </div>
+
+      {/* ── QUALITY CHECK ───────────────────────────────────────────── */}
+      <QualityPanel report={quality} droppedReferences={droppedReferences} />
 
       {/* ── AI HINT ─────────────────────────────────────────────────── */}
       <div className="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-3 flex items-start gap-3">
