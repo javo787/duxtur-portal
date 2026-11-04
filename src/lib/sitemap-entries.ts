@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { articleLanguages } from './article-lang';
+import { articleLanguages, buildArticleAlternates, resolveListLanguage } from './article-lang';
+import { BLOG_CATEGORY_PAGES } from './blog-seo';
 import { clinicIndexability, indexableListingFacets, type ClinicSeoInput } from './clinic-seo';
 import { specialtyIndexable, specialtyStats } from './doctor-seo';
-import { BASE_URL, SEO_LANGS, buildFilterQuery } from './seo';
+import { BASE_URL, SEO_LANGS, buildAlternates, buildFilterQuery, type AlternateFilters } from './seo';
 
 type DateLike = Date | string | undefined | null;
 
@@ -11,6 +12,8 @@ type Multilingual = Partial<Record<string, string>> | null | undefined;
 /** The fields articleLanguages() reads: a language is listed only if the article page can really show it. */
 export type SitemapArticle = {
   slug: string;
+  /** Decides which /blog/c/<category> landing pages have something to list. */
+  category?: string | null;
   updatedAt?: DateLike;
   title?: Multilingual;
   overview?: Multilingual;
@@ -75,16 +78,33 @@ type Freq = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>;
 export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
   const languages = SEO_LANGS;
 
-  const entry = (path: string, opts: { lastModified?: Date; changeFrequency: Freq; priority: number; query?: string }) => ({
-    url: escapeXmlUrl(`${BASE_URL}/${path}${opts.query ?? ''}`),
+  const entry = (
+    path: string,
+    opts: {
+      lastModified?: Date;
+      changeFrequency: Freq;
+      priority: number;
+      /** Listing filters that make up the query string of the URL (clinic facets). */
+      filters?: AlternateFilters;
+      /** hreflang -> URL, written as <xhtml:link rel="alternate">. Left out when a page has no translations to point at. */
+      hreflang?: Record<string, string>;
+    },
+  ) => ({
+    url: escapeXmlUrl(`${BASE_URL}/${path}${buildFilterQuery(opts.filters)}`),
     // A key with value undefined would still end up as an empty <lastmod>; only add it when it is known.
     ...(opts.lastModified ? { lastModified: opts.lastModified } : {}),
     changeFrequency: opts.changeFrequency,
     priority: opts.priority,
+    // Next writes the href as it is, like <loc>, so it is escaped the same way.
+    ...(opts.hreflang
+      ? { alternates: { languages: Object.fromEntries(Object.entries(opts.hreflang).map(([code, href]) => [code, escapeXmlUrl(href)])) } }
+      : {}),
   });
 
-  const perLang = (path: string, opts: Parameters<typeof entry>[1]) =>
-    languages.map((lang) => entry(path ? `${lang}/${path}` : lang, opts));
+  // Every page listed per language gets the same hreflang set as its own <link rel="alternate"> tags:
+  // buildAlternates is what each of those pages calls, so the sitemap cannot say something else than the HTML.
+  const perLang = (path: string, opts: Omit<Parameters<typeof entry>[1], 'hreflang'>) =>
+    languages.map((lang) => entry(path ? `${lang}/${path}` : lang, { ...opts, hreflang: buildAlternates(path, lang, opts.filters).languages }));
 
   const articleDate = latest(...data.articles.map((a) => a.updatedAt));
   const doctorDate = latest(...data.doctors.map((d) => d.updatedAt));
@@ -99,13 +119,34 @@ export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
     const readable = new Set<string>(articleLanguages(article));
     const available = languages.filter((lang) => readable.has(lang));
     return available.map((lang) =>
-      entry(`${lang}/blog/${article.slug}`, { lastModified: toDate(article.updatedAt), changeFrequency: 'weekly', priority: 0.85 }),
+      entry(`${lang}/blog/${article.slug}`, {
+        lastModified: toDate(article.updatedAt),
+        changeFrequency: 'weekly',
+        priority: 0.85,
+        // hreflang only between the languages the article really exists in: the page itself says the same.
+        hreflang: buildArticleAlternates(BASE_URL, article.slug, available, lang).languages,
+      }),
     );
+  });
+
+  // Category landing pages (/blog/c/<slug>) that list at least one article. An empty one shows "coming soon": a thin
+  // page that must stay out. "Lists" means what the page itself counts: a title in the language the article is shown in.
+  const categoryPages = BLOG_CATEGORY_PAGES.flatMap((slug) => {
+    const listed = data.articles.filter(
+      (a) => a.category === slug && (a.title?.[resolveListLanguage(a, 'ru').contentLang] ?? '').trim().length > 0,
+    );
+    if (listed.length === 0) return [];
+    return perLang(`blog/c/${slug}`, {
+      lastModified: latest(...listed.map((a) => a.updatedAt)),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
   });
 
   return [
     ...perLang('', { lastModified: latest(articleDate, doctorDate, clinicDate), changeFrequency: 'daily', priority: 1.0 }),
     ...perLang('blog', { lastModified: articleDate, changeFrequency: 'daily', priority: 0.9 }),
+    ...categoryPages,
     ...perLang('doctors', { lastModified: doctorDate, changeFrequency: 'daily', priority: 0.9 }),
     // /doctors/map is not listed: it is a client-only map with no text for a crawler to read, so it is noindex.
     ...perLang('authors', { lastModified: latest(articleDate, doctorDate), changeFrequency: 'weekly', priority: 0.8 }),
@@ -114,7 +155,7 @@ export function buildSitemapEntries(data: SitemapData): MetadataRoute.Sitemap {
     ...perLang('clinic/register', { changeFrequency: 'monthly', priority: 0.6 }),
     // City / type / specialty listings with enough clinics to be more than a thin page.
     ...facets.flatMap((facet) =>
-      perLang('clinics', { lastModified: facet.lastModified, changeFrequency: 'weekly', priority: 0.7, query: buildFilterQuery(facet) }),
+      perLang('clinics', { lastModified: facet.lastModified, changeFrequency: 'weekly', priority: 0.7, filters: facet }),
     ),
     // Only clinics that are indexable: the sitemap must never list a page that says noindex.
     ...indexableClinics.flatMap((clinic) =>

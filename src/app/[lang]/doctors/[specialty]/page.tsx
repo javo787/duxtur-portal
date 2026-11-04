@@ -1,7 +1,10 @@
 import dbConnect from '@/lib/mongodb';
 import Doctor from '@/models/Doctor';
+import Article from '@/models/Article';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { getT } from '@/i18n';
+import { blogCategoryHref, hasBlogCategoryPage } from '@/lib/blog-seo';
 import { buildAlternates, buildPageUrl, BASE_URL, safeJsonLd, buildBreadcrumbJsonLd } from '@/lib/seo';
 import { CATEGORY_LABELS } from '@/lib/doctor-constants';
 import { isPlainSpecialtyListing, specialtyIndexable } from '@/lib/doctor-seo';
@@ -94,11 +97,14 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
   const limit = 12;
   const skip = (page - 1) * limit;
 
-  const [doctors, total] = await Promise.all([
+  const [doctors, total, hasArticles] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
     Doctor.find(query).sort(sort).skip(skip).limit(limit).lean() as Promise<any[]>,
     Doctor.countDocuments(query),
+    // Link to the articles of this specialty only when the category page has something to show (an empty one is a thin page)
+    hasBlogCategoryPage(specialty) ? Article.exists({ category: specialty }) : null,
   ]);
+  const articlesHref = hasArticles ? blogCategoryHref(lang, specialty) : null;
 
   const L = (key: string) => UI[key]?.[lang] || UI[key]?.ru || '';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing: Mongo documents are untyped here, typing them is a separate change
@@ -157,9 +163,16 @@ export default async function SpecialtyDoctorsPage({ params, searchParams }: Pro
           <h1 className="text-2xl md:text-5xl font-black text-slate-900 mb-3 md:mb-4 tracking-tight">
             {specLabel}
           </h1>
-          <p className="text-slate-500 text-sm md:text-lg mb-6 md:mb-10 max-w-2xl mx-auto">
+          <p className={`text-slate-500 text-sm md:text-lg max-w-2xl mx-auto ${articlesHref ? 'mb-3 md:mb-4' : 'mb-6 md:mb-10'}`}>
             Найдено {total} специалистов
           </p>
+          {articlesHref && (
+            <p className="mb-6 md:mb-10">
+              <Link href={articlesHref} className="text-sm md:text-base font-bold text-blue-600 hover:underline">
+                {getT(lang)('nav.articles')}: {specLabel} →
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

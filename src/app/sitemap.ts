@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, doctors, clinics] = await Promise.all([
     Article.find({})
       .select(
-        "slug updatedAt title overview symptoms causes diagnosis_treatment prevention section1_content section2_content section3_content section4_content section5_content",
+        "slug category updatedAt title overview symptoms causes diagnosis_treatment prevention section1_content section2_content section3_content section4_content section5_content",
       )
       .lean(),
     // specialty.ru: which specialty pages have a doctor (an empty page is noindex and must not be listed)

@@ -112,6 +112,35 @@ describe('article page', () => {
     expect(markup).toContain('Обновлено');
   });
 
+  it('links the editorial policy from an article that has no author (auto-blog), and only once when there is a doctor', async () => {
+    const policy = 'href="/ru/editorial"';
+    const count = (markup: string) => markup.split(policy).length - 1;
+
+    state.article = article({ authorId: null });
+    expect(count(html(await BlogPage(params('ru'))))).toBe(1);
+
+    // a doctor author: the policy link is in the author card, and the notice does not repeat it
+    state.article = article({ authorId: { _id: 'd2', name: 'Иван Иванов', slug: 'ivanov', specialty: { ru: 'Кардиолог' } } });
+    const withDoctor = html(await BlogPage(params('ru')));
+    expect(count(withDoctor)).toBe(1);
+    expect(withDoctor).toContain('href="/ru/doctor/ivanov"');
+  });
+
+  it('shows the reviewer by name with the review date, and the bare "verified" badge only when there is neither', async () => {
+    state.article = article({
+      isVerified: true,
+      reviewedById: { _id: 'd3', name: 'Мария Петрова', slug: 'petrova' },
+      lastMedicalReview: new Date('2026-10-20T00:00:00Z'),
+    });
+    const named = html(await BlogPage(params('ru')));
+    expect(named).toContain('href="/ru/doctor/petrova"');
+    expect(named).toContain('Мария Петрова');
+    expect(named).not.toContain('Проверено врачом');
+
+    state.article = article({ isVerified: true });
+    expect(html(await BlogPage(params('ru')))).toContain('Проверено врачом');
+  });
+
   it('links a category without a landing page to the filtered list, not to a 404', async () => {
     state.article = article({ category: 'gynecology' });
     const markup = html(await BlogPage(params('ru')));

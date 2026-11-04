@@ -116,6 +116,10 @@ export default async function BlogCategoryPage({ params }: Props) {
               {categoryName}
             </h1>
             <p className="text-blue-200 text-base">{validArticles.length} {t('common.articles')}</p>
+            {/* Articles and doctors of one specialty link to each other: a crawler (and a reader) can walk from the text to the people */}
+            <Link href={`/${lang}/doctors/${category}`} className="mt-5 inline-block text-sm font-semibold text-blue-200 underline underline-offset-4 transition hover:text-white">
+              {t('nav.findDoctor')}: {categoryName} →
+            </Link>
           </FadeIn>
         </div>
       </div>
