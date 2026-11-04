@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Article from '@/models/Article';
 import ArticleDraft from '@/models/ArticleDraft';
 import { stripHtml } from '@/lib/utils';
+import { sanitizeReferences } from '@/lib/article-quality';
 
 /**
  * Turning what the editors produce into an Article, and publishing the drafts of an author.
@@ -27,8 +28,9 @@ export function articleSlug(title: string, now: number = Date.now()): string {
       .replace(/\s+/g, '-')
       .replace(/[^\w-]+/g, '')
       .replace(/--+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .substring(0, 60) +
+      .substring(0, 60)
+      // Trim after cutting: a cut on a space leaves a trailing "-", which made "...-dar--92116".
+      .replace(/^-+|-+$/g, '') +
     '-' + now.toString().slice(-5)
   );
 }
@@ -39,7 +41,8 @@ const str = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 /** The Article document for what an editor produced, in one language. */
 export function buildArticleDoc(data: EditorData, language: string, authorId: unknown, verified = false) {
-  const references = Array.isArray(data.references) ? data.references : [];
+  // A link to a site's home page is not a source: such references never reach the site (see sanitizeReferences).
+  const references = Array.isArray(data.references) ? sanitizeReferences(data.references).references : [];
   const doc: Record<string, unknown> = {
     slug: articleSlug(str(data.title)),
     authorId,

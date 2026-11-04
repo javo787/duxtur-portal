@@ -3,222 +3,83 @@
 import { model } from '@/lib/gemini';
 import { requireRole } from '@/lib/authGuards';
 import { rateLimit } from '@/lib/rate-limit';
+import { INPUT_LIMITS, processPrompt, translatePrompt, writePrompt } from '@/lib/ai-prompts';
+import { parseModelJson } from '@/lib/ai-json';
+import { aiDataToCheckable, checkArticleQuality, sanitizeReferences, type AiMode, type QualityReport } from '@/lib/article-quality';
 
-const languageNames: Record<string, string> = {
-  ru: 'Russian',
-  uz: 'Uzbek',
-  tg: 'Tajik (Тоҷикӣ) — use Cyrillic Tajik script only, NOT Persian/Farsi/Arabic',
-  kk: 'Kazakh (Қазақша) — use Cyrillic Kazakh script only',
-  ky: 'Kyrgyz (Кыргызча) — use Cyrillic Kyrgyz script only',
-};
+type AiResult =
+  | { success: true; data: Record<string, unknown>; quality: QualityReport; droppedReferences: string[] }
+  | { success: false; error: string };
 
-// ─── РЕЖИМ 1: Написать статью из черновика ───
-export async function processMedicalDraft(draftText: string, language: string = 'ru') {
+async function guard() {
   const { email } = await requireRole('doctor', 'portal_admin');
   const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
   if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
+}
 
-  console.log(`--- [WRITE MODE] Язык: ${language}`);
-  const targetLanguage = languageNames[language] || 'Russian';
+const clip = (text: string, limit: number) => (text.length > limit ? text.substring(0, limit) + '…' : text);
 
-  const prompt = `
-You are a senior medical editor at a top health portal (like WebMD or Healthline).
+async function run(mode: AiMode, text: string, language: string, prompt: string): Promise<AiResult> {
+  console.log(`--- [AI ${mode.toUpperCase()}] Язык: ${language}, Длина: ${text.length}`);
+  const result = await callGemini(prompt);
+  if (!result.success) return result;
 
-INPUT TEXT FROM DOCTOR:
-"${draftText}"
+  // Фильтры кодом: убираем выдуманные ссылки-«заглушки», возвращаем ссылки автора, считаем качество.
+  const { references, dropped } = sanitizeReferences(result.data.references, text);
+  const data = { ...result.data, references };
+  const quality = checkArticleQuality(aiDataToCheckable(data), language, text, mode);
+  if (dropped.length) console.log(`--- [AI ${mode.toUpperCase()}] Убраны источники без конкретной ссылки: ${dropped.length}`);
+  return { success: true, data, quality, droppedReferences: dropped };
+}
 
-TARGET LANGUAGE: ${targetLanguage}
-CRITICAL: Write ALL text fields strictly in ${targetLanguage}. No English except imageQuery.
-
-YOUR TASKS:
-1. DETECT ARTICLE TYPE: disease / procedure / nutrition / mental_health / child_health / prevention / anatomy / other
-2. CHOOSE BEST STRUCTURE based on type:
-   - disease: symptoms + causes + diagnosis_treatment + prevention
-   - procedure: preparation + how_it_works + recovery + risks
-   - nutrition: benefits + how_to_use + who_needs_it + cautions
-   - mental_health: signs + causes + coping_strategies + when_to_seek_help
-   - child_health: age_norms + warning_signs + parent_tips + when_to_see_doctor
-   - prevention: risk_factors + prevention_steps + lifestyle_tips + screening
-   - anatomy: functions + common_problems + how_to_keep_healthy
-   - other: key_points + practical_advice + conclusion
-3. Use **bold** for terms, bullet points for lists, short paragraphs.
-4. PROVIDE 3+ real sources (WHO, CDC, Mayo Clinic, PubMed, Lancet).
-
-OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
-{
-  "type": "article type",
-  "title": "engaging title in ${targetLanguage}",
-  "overview": "2-3 sentence intro in ${targetLanguage}",
-  "section1_title": "section title in ${targetLanguage}",
-  "section1_content": "content in ${targetLanguage}",
-  "section2_title": "section title in ${targetLanguage}",
-  "section2_content": "content in ${targetLanguage}",
-  "section3_title": "section title in ${targetLanguage}",
-  "section3_content": "content in ${targetLanguage}",
-  "section4_title": "",
-  "section4_content": "",
-  "section5_title": "",
-  "section5_content": "",
-  "references": ["WHO: title - url", "Mayo Clinic: title - url", "PubMed: title - url"],
-  "imageQuery": "english image search query"
-}`;
-
-  return await callGemini(prompt);
+// ─── РЕЖИМ 1: Написать статью из черновика ───
+export async function processMedicalDraft(draftText: string, language: string = 'ru') {
+  await guard();
+  const text = clip(draftText, INPUT_LIMITS.write);
+  return run('write', text, language, writePrompt(text, language));
 }
 
 // ─── РЕЖИМ 2: Обработать готовую статью ───
 export async function processMedicalArticle(articleText: string, language: string = 'ru') {
-  const { email } = await requireRole('doctor', 'portal_admin');
-  const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
-  if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
-
-  console.log(`--- [PROCESS MODE] Язык: ${language}, Длина: ${articleText.length}`);
-  const targetLanguage = languageNames[language] || 'Russian';
-
-  // Обрезаем до 12000 символов
-  const safeText = articleText.length > 12000
-    ? articleText.substring(0, 12000) + '...'
-    : articleText;
-
-  const prompt = `
-You are a senior medical editor. Your task is to take a complex medical/scientific text and adapt it into a clear, patient-friendly article.
-
-ORIGINAL TEXT:
-"${safeText}"
-
-TARGET LANGUAGE: ${targetLanguage}
-CRITICAL: Write ALL output fields strictly in ${targetLanguage}. No English except imageQuery.
-
-YOUR TASKS:
-1. Extract the KEY medical information patients need to know.
-2. Simplify complex medical terminology — explain it in plain language.
-3. Remove excessive scientific details, statistics, drug tables — keep only what's useful for patients.
-4. Structure into 3-5 clear sections with informative titles.
-5. Add a practical "What should I do?" or "When to see a doctor?" section.
-6. PROVIDE 3+ real sources from the original text or add relevant ones.
-
-OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
-{
-  "type": "processed",
-  "title": "patient-friendly title in ${targetLanguage}",
-  "overview": "2-3 sentence summary in ${targetLanguage}",
-  "section1_title": "section title in ${targetLanguage}",
-  "section1_content": "simplified content in ${targetLanguage}",
-  "section2_title": "section title in ${targetLanguage}",
-  "section2_content": "simplified content in ${targetLanguage}",
-  "section3_title": "section title in ${targetLanguage}",
-  "section3_content": "simplified content in ${targetLanguage}",
-  "section4_title": "",
-  "section4_content": "",
-  "section5_title": "",
-  "section5_content": "",
-  "references": ["source1", "source2", "source3"],
-  "imageQuery": "english image search query"
-}`;
-
-  return await callGemini(prompt);
+  await guard();
+  const text = clip(articleText, INPUT_LIMITS.process);
+  return run('process', text, language, processPrompt(text, language));
 }
 
 // ─── РЕЖИМ 3: Перевести статью ───
 export async function translateMedicalArticle(articleText: string, language: string = 'ru') {
-  const { email } = await requireRole('doctor', 'portal_admin');
-  const { success } = await rateLimit(email, 20, 10 * 60 * 1000); // 20 запросов / 10 минут на врача
-  if (!success) throw new Error('Слишком много запросов. Попробуйте через несколько минут.');
-
-  console.log(`--- [TRANSLATE MODE] Язык: ${language}, Длина: ${articleText.length}`);
-  const targetLanguage = languageNames[language] || 'Russian';
-
-  const safeText = articleText.length > 12000
-    ? articleText.substring(0, 12000) + '...'
-    : articleText;
-
-  const prompt = `
-You are a professional medical translator specializing in Central Asian languages.
-
-ORIGINAL TEXT:
-"${safeText}"
-
-TARGET LANGUAGE: ${targetLanguage}
-CRITICAL RULES:
-- Translate ALL content strictly into ${targetLanguage}
-- Use Cyrillic script for Tajik/Kazakh/Kyrgyz — NEVER use Latin or Arabic/Persian script
-- Preserve all medical terminology accurately
-- Keep the same structure as the original
-- Make it readable and natural in ${targetLanguage}
-
-YOUR TASKS:
-1. Translate the full text professionally into ${targetLanguage}.
-2. Keep the original structure but organize into clear sections.
-3. Preserve all important medical information.
-4. Add sources if mentioned in original, otherwise add 2-3 relevant ones.
-
-OUTPUT: Strictly valid JSON only. No text outside JSON. No markdown code blocks.
-{
-  "type": "translated",
-  "title": "translated title in ${targetLanguage}",
-  "overview": "translated introduction in ${targetLanguage}",
-  "section1_title": "section title in ${targetLanguage}",
-  "section1_content": "translated content in ${targetLanguage}",
-  "section2_title": "section title in ${targetLanguage}",
-  "section2_content": "translated content in ${targetLanguage}",
-  "section3_title": "section title in ${targetLanguage}",
-  "section3_content": "translated content in ${targetLanguage}",
-  "section4_title": "",
-  "section4_content": "",
-  "section5_title": "",
-  "section5_content": "",
-  "references": ["source1", "source2", "source3"],
-  "imageQuery": "english image search query"
-}`;
-
-  return await callGemini(prompt);
+  await guard();
+  const text = clip(articleText, INPUT_LIMITS.translate);
+  return run('translate', text, language, translatePrompt(text, language));
 }
 
 // ─── Общая функция вызова Gemini ───
 
-async function callGemini(prompt: string) {
+async function callGemini(prompt: string): Promise<{ success: true; data: Record<string, unknown> } | { success: false; error: string }> {
+  let rawText = '';
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text();
-    console.log('--- [GEMINI RAW] First 200 chars:', text.substring(0, 200));
-
-    // Убираем markdown блоки
-    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-    // Находим JSON между первой { и последней }
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      text = text.substring(firstBrace, lastBrace + 1);
-    }
-
-    // Убираем управляющие символы ТОЛЬКО вне строк JSON
-    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-
-    // Фиксируем переносы строк внутри строковых значений
-    text = text.replace(/"([\s\S]*?)"/g, (_match: string, inner: string) => {
-      const fixed = inner
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t');
-      return `"${fixed}"`;
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      // JSON mode: модель обязана вернуть JSON; невысокая температура — меньше «фантазий» в медицинском тексте.
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
     });
+    rawText = result.response.text();
+    return { success: true, data: parseModelJson(rawText) };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('AI Error:', message);
+    if (!rawText) return { success: false, error: message || 'AI недоступен' };
 
-    const parsed = JSON.parse(text);
-    return { success: true, data: parsed };
-  } catch (error: any) {
-    console.error('AI Error:', error);
-
-    // Попытка 2 — попросить Gemini исправить JSON
+    // Попытка 2 — попросить модель исправить её же JSON.
     try {
-      const fixPrompt = `The following text should be valid JSON but has errors. Fix it and return ONLY valid JSON, nothing else:\n\n${error.text || ''}`;
-      const retry = await model.generateContent(fixPrompt);
-      const retryText = retry.response.text().replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      const parsed = JSON.parse(retryText);
-      return { success: true, data: parsed };
+      const fixPrompt = `The following text should be valid JSON but has errors. Fix it and return ONLY valid JSON, nothing else:\n\n${rawText}`;
+      const retry = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: fixPrompt }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+      });
+      return { success: true, data: parseModelJson(retry.response.text()) };
     } catch {
-      return { success: false, error: error.message };
+      return { success: false, error: message || 'Не удалось разобрать ответ AI' };
     }
   }
 }
