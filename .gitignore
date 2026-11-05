@@ -61,3 +61,6 @@ auto-blog-dry-run.json
 services/render-service/dist/
 services/render-service/node_modules/
 services/render-service/preview-*.html
+
+# personal Claude Code permissions (never committed)
+.claude/settings.local.json
