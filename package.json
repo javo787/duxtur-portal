@@ -12,7 +12,9 @@
     "test:seo": "node scripts/validate-jsonld.js",
     "ingest": "tsx scripts/ingest.ts",
     "ingest:strip-ratings": "tsx scripts/strip-imported-ratings.ts",
-    "geo:audit": "tsx scripts/geo-audit.ts"
+    "geo:audit": "tsx scripts/geo-audit.ts",
+    "queue": "node scripts/agent-queue.js",
+    "checkpoint": "node scripts/agent-checkpoint.js"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.2",
